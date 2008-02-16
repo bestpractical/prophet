@@ -50,7 +50,7 @@ sub get_props {
 sub get_prop {
     my $self = shift;
     my %args = validate(@_, {name => 1});
-    return %{$self->get_props}->{$args{'name'}};
+    return $self->get_props->{$args{'name'}};
 }
 
 
