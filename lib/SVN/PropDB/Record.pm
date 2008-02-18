@@ -30,9 +30,9 @@ sub create {
 sub load {
     my $self = shift;
     my %args = validate(@_, { uuid => 1});
-    my %props = $self->handle->fetch_node_props( uuid => $args{uuid});
+    #my %props = $self->handle->get_node_props( uuid => $args{uuid});
     $self->uuid($args{uuid});
-    $self->props(\%props);
+    #$self->props(\%props);
 
 }
 
@@ -47,7 +47,7 @@ sub get_props {
     return $self->handle->get_node_props(uuid => $self->uuid);
 }
 
-sub get_prop {
+sub prop {
     my $self = shift;
     my %args = validate(@_, {name => 1});
     return $self->get_props->{$args{'name'}};
