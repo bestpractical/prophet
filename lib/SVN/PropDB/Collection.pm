@@ -4,7 +4,7 @@ use strict;
 package SVN::PropDB::Collection;
 use Params::Validate;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw'handle');
+__PACKAGE__->mk_accessors(qw'handle type');
 use SVN::PropDB::Record;
 
 
@@ -12,8 +12,8 @@ sub new {
     my $class = shift;
     my $self = {};
     bless $self, $class;
-    my %args = validate(@_, { handle => 1});
-    $self->handle($args{'handle'});
+    my %args = validate(@_, { handle => 1, type => 1});
+    $self->$_($args{$_}) for (keys %args);
     return $self;
 }
 
@@ -23,17 +23,14 @@ sub matching {
     my $coderef = shift;
 
     # find all items,
-    my $nodes = $self->handle->current_root->dir_entries('/_propdb','/');
+    my $nodes = $self->handle->current_root->dir_entries($self->handle->db_root.'/'.$self->type.'/');
     # run coderef against each item;
     # if it matches, add it to _items
     foreach my $key (keys %$nodes) {
-        warn "considering $key";    
-        my $record = SVN::PropDB::Record->new(handle => $self->handle);
+        my $record = SVN::PropDB::Record->new(handle => $self->handle, type => $self->type);
         $record->load(uuid => $key);
         if($coderef->($record)) {
             push @{$self->{_items}}, $record;
-           } else {
-            warn "no love!";
         }
     
     }
