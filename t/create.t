@@ -15,9 +15,9 @@ my $record = SVN::PropDB::Record->new(handle =>$cxn, type => 'Person');
 isa_ok($record, 'SVN::PropDB::Record');
 my $uuid  = $record->create(props => { name => 'Jesse', age => 31});
 ok($uuid);
-is($record->prop(name => 'age'), 31);
+is($record->prop('age'), 31);
 $record->set_prop( name => 'age', value => 32);
-is($record->prop(name => 'age'), 32);
+is($record->prop('age'), 32);
 
     my $kaia = $record->create(props => { name => 'Kaia', age => 24});
 ok( $kaia);
@@ -28,19 +28,19 @@ ok ($mei);
 use_ok('SVN::PropDB::Collection');
 
 my $people = SVN::PropDB::Collection->new( handle => $cxn, type => 'Person');
-$people->matching(sub { (shift->prop(name => 'species')||'') ne 'cat'});
+$people->matching(sub { (shift->prop( 'species')||'') ne 'cat'});
 is($#{$people->as_array_ref}, 1);
 my @people= @{$people->as_array_ref};
-is_deeply([ sort map {$_->prop(name => 'name')} @people], [qw(Jesse Kaia)]);
+is_deeply([ sort map {$_->prop('name')} @people], [qw(Jesse Kaia)]);
 
 my $cats = SVN::PropDB::Collection->new( handle => $cxn, type => 'Person');
-$cats->matching(sub { (shift->prop(name => 'species')||'') eq 'cat'});
+$cats->matching(sub { (shift->prop( 'species')||'') eq 'cat'});
 is($#{$cats->as_array_ref}, 1);
 my @cats= @{$cats->as_array_ref};
 for (@cats) {
-    is ($_->prop(name=>'age') , "0.7");
+    is ($_->prop('age') , "0.7");
 }
-is_deeply([ sort map {$_->prop(name => 'name')} @cats], [qw(Mao Mei)]);
+is_deeply([ sort map {$_->prop('name')} @cats], [qw(Mao Mei)]);
 
 my $cat = SVN::PropDB::Record->new(handle => $cxn, type => 'Person');
 $cat->load(uuid => $mao);
@@ -51,7 +51,7 @@ $cat2->set_prop(name => 'age', value => '0.8');
 
 is($#{$cats->as_array_ref}, 1);
 for (@cats) {
-    is ($_->prop(name=>'age') , "0.8");
+    is ($_->prop('age') , "0.8");
 }
 
 for (@cats) {
