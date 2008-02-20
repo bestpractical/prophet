@@ -18,5 +18,10 @@ sub validate_name {
 
 }
 
+sub canonicalize_email {
+    my $self = shift;
+    my %args = (@_);
+    $args{props}->{email} = lc($args{props}->{email});
+}
 
 1;
