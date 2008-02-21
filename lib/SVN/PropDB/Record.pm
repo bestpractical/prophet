@@ -44,14 +44,24 @@ sub load {
 
 sub set_prop {
     my $self = shift;
+
     my %args = validate(@_, { name => 1, value => 1});
-
     my $props = { $args{'name'} => $args{'value'}};
-
-    $self->_canonicalize_props($props);
-    $self->_validate_props($props) || return undef;
-    $self->handle->set_node_props(type => $self->type, uuid => $self->uuid, props => $props );
+    $self->set_props(props => $props);
 }
+
+
+sub set_props {
+    my $self = shift;
+    my %args = validate(@_, { props => 1});
+
+    $self->_canonicalize_props($args{'props'});
+    $self->_validate_props($args{'props'}) || return undef;
+    $self->handle->set_node_props(type => $self->type, uuid => $self->uuid, props => $args{'props'} );
+}
+
+
+
 
 sub get_props {
     my $self = shift;
@@ -102,5 +112,9 @@ sub _canonicalize_props {
     return 1;
 }
 
+sub storage_node {
+    my $self = shift;
+    return $self->handle->file_for(type => $self->type, uuid => $self->uuid);
+}
 
 1;
