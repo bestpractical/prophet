@@ -63,6 +63,7 @@ sub begin_edit {
 sub commit_edit {
     my $self = shift;
     my $txn = shift;
+    $txn->change_prop('svn:author',$ENV{'USER'});
     $txn->commit;
 
 }
@@ -119,8 +120,9 @@ sub set_node_props {
 
 sub get_node_props {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1, type => 1 } );
-    return $self->current_root->node_proplist($self->file_for(uuid => $args{'uuid'}, type => $args{'type'}));
+    my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
+    my $root = $args{'root'} || $self->current_root;
+    return $root->node_proplist($self->file_for(uuid => $args{'uuid'}, type => $args{'type'}));
 }
 
 

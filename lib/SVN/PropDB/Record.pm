@@ -3,6 +3,7 @@ use warnings;
 use strict;
 package SVN::PropDB::Record;
 use Params::Validate;
+use SVN::PropDB::HistoryEntry;
 use base qw'Class::Accessor';
 __PACKAGE__->mk_accessors(qw'handle props uuid type');
 my $UUIDGEN = Data::UUID->new();
@@ -117,4 +118,81 @@ sub storage_node {
     return $self->handle->file_for(type => $self->type, uuid => $self->uuid);
 }
 
+
+
+sub history {
+    my $self       = shift;
+    my $oldest_rev = 0;
+    my @history;
+    $self->handle->repo_handle->get_logs(
+        [ $self->storage_node ],
+        $self->handle->repo_handle->fs->youngest_rev,
+        $oldest_rev,
+        1,
+        0,
+        sub { $self->_history_entry_callback( \@history, @_ ) }
+    );
+    $self->_compute_history_deltas(\@history);
+    return \@history;
+}
+
+
+sub _history_entry_callback {
+    my $self = shift;
+    my ( $accumulator, $paths, $rev, $author, $date, $msg ) = @_;
+    my @nodes = keys %$paths;
+    die "We should only have one node!" unless ( $#nodes == 0 );
+
+    my $node = $paths->{ $nodes[0] };
+    my $data = SVN::PropDB::HistoryEntry->new( handle => $self->handle );
+
+    $data->rev($rev);
+    $data->author($author);
+    $data->date($date);
+    $data->msg($msg);
+    $data->action( $node->action() );
+    $data->copy_from( $node->copyfrom_path() );
+    $data->copy_from_rev( $node->copyfrom_rev() );
+    $data->props( $self->handle->repo_handle->fs()->revision_root($rev)->node_proplist( $nodes[0] ) );
+
+    push @$accumulator, $data;
+}
+
+sub _compute_history_deltas {
+    my $self    = shift;
+    my $log_ref = shift;
+    warn $self, $log_ref;
+    @$log_ref = reverse @$log_ref;
+    my $last_props = {};
+    for my $i ( 0 .. $#{$log_ref} ) {
+
+        warn "Node $i - rev " . $log_ref->[$i]->rev;
+
+        my $props = $log_ref->[$i]->props;
+
+        for my $key ( keys %$props ) {
+
+            if ( !exists $last_props->{$key} ) {
+                $log_ref->[$i]->prop_changes->{$key}->{'add'}
+                    = $props->{$key};
+            } elsif ( $last_props->{$key} ne $props->{$key} ) {
+                $log_ref->[$i]->prop_changes->{$key}->{'add'}
+                    = $props->{$key};
+                $log_ref->[$i]->prop_changes->{$key}->{'del'}
+                    = $last_props->{$key};
+            }
+        }
+        foreach my $key ( keys %$last_props ) {
+            if ( !exists $props->{$key} ) {
+                $log_ref->[$i]->prop_changes->{$key}->{'del'}
+                    = $last_props->{$key};
+            }
+        }
+
+        $last_props = $props;
+    }
+
+    return $log_ref;
+
+}
 1;

@@ -6,6 +6,7 @@ use File::Temp qw'tempdir';
 use_ok('SVN::PropDB::Handle');
 my $REPO= tempdir(CLEANUP => 0).'/repo-'.$$;
 ok(! -d $REPO);
+diag ($REPO);
 `svnadmin create $REPO`;
 ok(-d $REPO, "The repo exists ater svnadmin create");
 my $cxn = SVN::PropDB::Handle->new( repository => "$REPO", db_root => '/_propdb-test');
