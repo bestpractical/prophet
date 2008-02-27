@@ -1,0 +1,85 @@
+PLAIN
+K 3
+age
+V 3
+0.8
+K 4
+name
+V 3
+Mei
+K 7
+species
+V 3
+cat
+END
+ENDREP
+id: 6.0.r9/70
+type: file
+pred: 6.0.r7/159
+count: 1
+text: 7 0 76 103 f52b8a4b3ea3698e01b00ec3191a3525
+props: 9 0 57 0 095cee8b58dad00ae4e630e548213ca8
+cpath: /_propdb-test/Person/BB60886A-E49C-11DC-BAB8-7D03477A88B7
+copyroot: 0 /
+
+PLAIN
+K 36
+BB3D6484-E49C-11DC-BAB8-7D03477A88B7
+V 14
+file 3.0.r4/51
+K 36
+BB49ADB6-E49C-11DC-BAB8-7D03477A88B7
+V 15
+file 4.0.r5/122
+K 36
+BB500F1C-E49C-11DC-BAB8-7D03477A88B7
+V 14
+file 5.0.r8/70
+K 36
+BB60886A-E49C-11DC-BAB8-7D03477A88B7
+V 14
+file 6.0.r9/70
+END
+ENDREP
+id: 2.0.r9/566
+type: dir
+pred: 2.0.r8/567
+count: 7
+text: 9 300 253 253 24173e19dff02b29f96a1c44b63a9fa5
+cpath: /_propdb-test/Person
+copyroot: 0 /
+
+PLAIN
+K 6
+Person
+V 14
+dir 2.0.r9/566
+END
+ENDREP
+id: 1.0.r9/761
+type: dir
+pred: 1.0.r8/762
+count: 8
+text: 9 713 35 35 56e519b1f8165f6eb0d4b004e2c03b73
+cpath: /_propdb-test
+copyroot: 0 /
+
+PLAIN
+K 12
+_propdb-test
+V 14
+dir 1.0.r9/761
+END
+ENDREP
+id: 0.0.r9/954
+type: dir
+pred: 0.0.r8/955
+count: 9
+text: 9 899 42 42 91672f2adfed2382780bba87dedd302c
+cpath: /
+copyroot: 0 /
+
+6.0.t8-1 modify false true /_propdb-test/Person/BB60886A-E49C-11DC-BAB8-7D03477A88B7
+
+
+954 1080

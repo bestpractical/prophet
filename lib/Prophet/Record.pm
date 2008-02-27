@@ -1,9 +1,9 @@
 
 use warnings;
 use strict;
-package SVN::PropDB::Record;
+package Prophet::Record;
 use Params::Validate;
-use SVN::PropDB::HistoryEntry;
+use Prophet::HistoryEntry;
 use base qw'Class::Accessor';
 __PACKAGE__->mk_accessors(qw'handle props uuid type');
 my $UUIDGEN = Data::UUID->new();
@@ -147,7 +147,7 @@ sub _history_entry_callback {
     die "We should only have one node!" unless ( $#nodes == 0 );
 
     my $node = $paths->{ $nodes[0] };
-    my $data = SVN::PropDB::HistoryEntry->new( handle => $self->handle );
+    my $data = Prophet::HistoryEntry->new( handle => $self->handle );
 
     $data->rev($rev);
     $data->author($author);

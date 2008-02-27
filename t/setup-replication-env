@@ -1,0 +1,36 @@
+export SVKROOT=/tmp/replication/svk-mirror-a
+mkdir /tmp/replication
+svnadmin create /tmp/replication/master-a
+svnadmin create /tmp/replication/master-b
+
+mkdir $SVKROOT
+svnadmin create $SVKROOT/local
+
+export EDITOR=echo 
+
+echo "c\ny\n" |svk depotmap
+reset
+
+svk mirror file:///tmp/replication/master-a //mirror/master-a
+svk mirror file:///tmp/replication/master-b //mirror/master-b
+svk sync -a
+svk mkdir -m '' //local
+svk cp -m '' //mirror/master-a //local/mirror-a
+
+
+svn co file:///tmp/replication/master-a/ /tmp/replication/a-checkout
+touch /tmp/replication/a-checkout/file
+svn add /tmp/replication/a-checkout/file
+svk pull -m ''  //local/mirror-a
+svn commit -m ' ' /tmp/replication/a-checkout
+EDITOR="echo 'foo' >" svn pe testprop /tmp/replication/a-checkout/file 
+svn commit -m ' ' /tmp/replication/a-checkout
+svk sync -a 
+svk pull //local/mirror-a
+svn co file://$SVKROOT/local/local/mirror-a /tmp/replication/mirrored-a-checkout
+EDITOR="echo 'bart' >" svn pe testprop /tmp/replication/mirrored-a-checkout/file 
+svn commit -m ' ' /tmp/replication/mirrored-a-checkout
+
+
+
+

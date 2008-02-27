@@ -3,6 +3,6 @@
 use inc::Module::Install;
 
 requires('SVN::Core');
-all_from('lib/SVN/PropDB.pm');
+all_from('lib/Prophet.pm');
 
 WriteAll();

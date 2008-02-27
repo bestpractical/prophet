@@ -2,7 +2,7 @@ use warnings;
 use strict;
 
 package TestApp::Bug;
-use base qw/SVN::PropDB::Record/;
+use base qw/Prophet::Record/;
 
 
 sub new { shift->SUPER::new( @_, type => 'bug') }

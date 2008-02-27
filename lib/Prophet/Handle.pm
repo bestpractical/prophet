@@ -1,13 +1,13 @@
 use warnings;
 use strict;
 
-package SVN::PropDB::Handle;
+package Prophet::Handle;
 use base 'Class::Accessor';
 use Params::Validate;
 use Data::Dumper;
 use Data::UUID;
 
-use SVN::PropDB::Editor;
+use Prophet::Editor;
 use SVN::Core;
 use SVN::Repos;
 use SVN::Fs;

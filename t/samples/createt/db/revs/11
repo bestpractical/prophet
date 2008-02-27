@@ -1,0 +1,53 @@
+PLAIN
+K 36
+BB3D6484-E49C-11DC-BAB8-7D03477A88B7
+V 14
+file 3.0.r4/51
+K 36
+BB49ADB6-E49C-11DC-BAB8-7D03477A88B7
+V 15
+file 4.0.r5/122
+END
+ENDREP
+id: 2.0.r11/142
+type: dir
+pred: 2.0.r10/204
+count: 9
+text: 11 0 129 129 93b0058e61352a2a77431cb1e04f8562
+cpath: /_propdb-test/Person
+copyroot: 0 /
+
+PLAIN
+K 6
+Person
+V 15
+dir 2.0.r11/142
+END
+ENDREP
+id: 1.0.r11/339
+type: dir
+pred: 1.0.r10/400
+count: 10
+text: 11 290 36 36 55fa783ea3ff6f106970cc87798ab096
+cpath: /_propdb-test
+copyroot: 0 /
+
+PLAIN
+K 12
+_propdb-test
+V 15
+dir 1.0.r11/339
+END
+ENDREP
+id: 0.0.r11/537
+type: dir
+pred: 0.0.r10/596
+count: 11
+text: 11 481 43 43 f499c44b69ba672977cad6437328b26c
+cpath: /
+copyroot: 0 /
+
+6.0.r9/70 delete false false /_propdb-test/Person/BB60886A-E49C-11DC-BAB8-7D03477A88B7
+
+
+537 667

@@ -8,8 +8,8 @@ my $opts = {};
 GetOptions($opts, 'local=s', 'remote=s');
 
 
-my $local_source = SVN::PropDB::MergeSource->new(url => $opts->{'local'});
-my $remote_source = SVN::PropDB::MergeSource->new(url => $opts->{'remote'});
+my $local_source = Prophet::MergeSource->new(url => $opts->{'local'});
+my $remote_source = Prophet::MergeSource->new(url => $opts->{'remote'});
 
 
 $local_source->snapshot;
@@ -55,7 +55,7 @@ if ( $remote_source->accepts_txns ) {
 
 }
 
-package SVN::PropDB::MergeSource;
+package Prophet::MergeSource;
 use base 'Class::Accessor';
 
 __PACKAGE__->mk_accessors(qw'url unique_id');

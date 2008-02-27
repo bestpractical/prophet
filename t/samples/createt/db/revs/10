@@ -1,0 +1,57 @@
+PLAIN
+K 36
+BB3D6484-E49C-11DC-BAB8-7D03477A88B7
+V 14
+file 3.0.r4/51
+K 36
+BB49ADB6-E49C-11DC-BAB8-7D03477A88B7
+V 15
+file 4.0.r5/122
+K 36
+BB60886A-E49C-11DC-BAB8-7D03477A88B7
+V 14
+file 6.0.r9/70
+END
+ENDREP
+id: 2.0.r10/204
+type: dir
+pred: 2.0.r9/566
+count: 8
+text: 10 0 191 191 e25ae66493c162a284323b0e6ebf415c
+cpath: /_propdb-test/Person
+copyroot: 0 /
+
+PLAIN
+K 6
+Person
+V 15
+dir 2.0.r10/204
+END
+ENDREP
+id: 1.0.r10/400
+type: dir
+pred: 1.0.r9/761
+count: 9
+text: 10 351 36 36 ea297d8ea01978e9697250a49b293682
+cpath: /_propdb-test
+copyroot: 0 /
+
+PLAIN
+K 12
+_propdb-test
+V 15
+dir 1.0.r10/400
+END
+ENDREP
+id: 0.0.r10/596
+type: dir
+pred: 0.0.r9/954
+count: 10
+text: 10 540 43 43 07e00dfd2a3e34a736e75221c2898b46
+cpath: /
+copyroot: 0 /
+
+5.0.r8/70 delete false false /_propdb-test/Person/BB500F1C-E49C-11DC-BAB8-7D03477A88B7
+
+
+596 725

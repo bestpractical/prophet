@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-package SVN::PropDB::HistoryEntry;
+package Prophet::HistoryEntry;
 
 use base qw/Class::Accessor/;
 use Params::Validate;
