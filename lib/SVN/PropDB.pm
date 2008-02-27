@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-package SVN::PropDB;
+package Prophet;
 
 our $VERSION = '0.01';
 1;
