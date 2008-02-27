@@ -15,47 +15,198 @@ my $remote_source = SVN::PropDB::MergeSource->new(url => $opts->{'remote'});
 $local_source->snapshot;
 $remote_source->snapshot;
 
-my @deltas_to_integrate = $remote_source->fetch_deltas(after => $remote_source->last_delta_seen);
+my @txns_to_integrate = $remote_source->fetch_txns(after => $remote_source->last_txn_seen);
 
 
 
-for my $delta (@deltas_to_integrate) {
-    next if ($local_source->has_seen($delta) );
-    if ($local_source->delta_will_conflict($delta)) { 
+for my $txn (@txns_to_integrate) {
+    next if ($local_source->has_seen_txn($txn) );
+    if ($local_source->txn_will_conflict($txn)) { 
+        die "Conflicts are hard";
         # make a decision about who wins the conflict 
-        # For parts of the conflict _remote_ should win, write out a nullification delta beforehand,
-            # apply the delta. it will now apply cleanly
+        # For parts of the conflict _remote_ should win, write out a nullification txn beforehand,
+            # apply the txn. it will now apply cleanly
         
         # For parts of the conflict _local_ should win, 
-            # write out a nullification delta beforehand,
+            # write out a nullification txn beforehand,
                 # - that way, the remote update will apply cleanly
-            # Then write out the remote delta
-            # Then write out a new delta which reverts the parts of the remote delta which local should win
+            # Then write out the remote txn
+            # Then write out a new txn which reverts the parts of the remote txn which local should win
 
 
     } else {
-        $local_source->apply_delta($delta);
+        $local_source->apply_txn($txn);
     }
 }
 
-if ( $remote_source->accepts_deltas ) {
-    my @deltas_to_send = $local_source->fetch_deltas( after =>
-            $remote_source->last_delta_received( source => $local_source ) );
+if ( $remote_source->accepts_txns ) {
+    my @txns_to_send = $local_source->fetch_txns( after =>
+            $remote_source->last_txn_received( source => $local_source ) );
 
-    for my $delta (@deltas_to_send) {
-        next if ( $remote_source->has_seen($delta) );
-        if ( $remote_source->delta_will_conflict($delta) ) {
-                What we need to do here is:
-                    a good fucking question
-                            
-
-
+    for my $txn (@txns_to_send) {
+        next if ( $remote_source->has_seen_txn($txn) );
+        if ( $remote_source->txn_will_conflict($txn) ) {
+            die "Conflicts are hard"
         } else {
-            $remote_source->apply_delta($delta);
+            $remote_source->apply_txn($txn);
         }
 
     }
 
 }
 
+package SVN::PropDB::MergeSource;
+use base 'Class::Accessor';
+
+__PACKAGE__->mk_accessors(qw'url unique_id');
+
+sub accepts_txns {}
+sub has_seen_txn {}
+sub txn_will_conflict {}
+sub apply_txn {}
+sub fetch_txns {}
+sub last_txn_received {}
+
+
+=head2 Assumptions about merge sources
+
+    - a source represents a branch 
+    - a branch has had many revisions applied
+    - revisions we apply to a branch from another branch are always applied UNCHANGED
+    - in the event of a conflict, we will apply a "pre-txn" to smooth the application and a "post-txn" if the applied txn doesn't match the desired outcome.
+
+    on pull
+        we end up applying every single remote txn this peer has seen since the last time we saw this peer, one by one
+        we possibly apply another two txns for each txn to smooth the application
+
+
+
+        we skip any remote txn we've seen from another source before
+        
+
+    on push,
+        we publish each txn we've made locally.
+            - including "after" fixup txns
+            - not including "before" fixup txns.
+
+
+
+
+
+
+=head2 assumptions about merge txns
+
+we can get (and hash):
+    -original database uuid
+    -original database revno
+    -original database author
+    -all changes
+
+
+
+
+
+
+Audrey@1:
+
+    Createdb
+    Add ticket 1 - subject 'foo'; status 'new'
+
+
+Jesse@1:
+
+    j pull from a@1
+
+    j@1 - foo;new
+    a@1 - foo;new
+
+    j@2  foo->bar
+    a@2  foo->baz
+        
+    c@1 pull from j@2
+
+        c now has:
+            a@1
+            j@2
+
+
+    c@2 bar->frotz
+
+    c@3 pull from a@2
+    
+        a hands c: a@2:foo->baz     
+
+        Conflict
+
+        to local c applies a pre-fixup:  
+            frotz->foo
+        to local c applies a@2:
+            foo->baz
+        to local c applies a conflict resolution
+            baz->frotz
+
+
+    c@4 push to a@2
+
+        beforehand, a's state: baz
+        beforehand, c's state: frotz
+
+        beforehand, c's unpushed transactions: 
+            j@2 foo->bar
+            c@2 bar->frotz
+            c@3
+                    pre-fixup: frotz->foo
+                    a@2: foo->baz
+                    post-fixup: baz->frotz
+
+            so, what do we push?
+            options:
+                fixup to get a to our earliest state unpushed. that's kind of stupid and results in us replaying everthing all the time.
+                compute a single large txn from a@HEAD to c@HEAD and apply that?
+
+
+        
+investigate "rumor" peer to peer replication
+
+
+take 2
+
+    there's a new peer I've not seen before. I need to merge in all their changes:
+
+        if a txn comes from a replica@rev lower than our last-seen version for replica, skip it
+
+        for each of their txns, import it, applying fixups as needed
+    
+
+=head3 push
+    
+    get the remote list of all merge tickets.
+    find all local revs which remote has never seen.
+        - genuine local txns
+        - third-party txns that the remote has no merge ticket for
+
+        - skip "before" fixup txns 
+        - include "after" fixup txns, since they're merge resolutions
+
+
+    iterate over these revs the remote has never seen.
+    when the txn applies cleanly, just apply it.
+
+    when the txn does _not_ apply cleanly, 
+        - apply a 'before' fix up transaction
+        - apply the original txn
+        - apply a merge resolution txn.
+            - TODO: this doesn't feel quite right
+            - the resolution should be the same as the equivalent merge resolution transaction on the "pull" variant if it exists.
+	                    What info do we have here?
+	                        - record uuid
+	                        - nearest parent variant
+	                        - local variant
+	                        - remote variant
+	                        - information from the 'future (local head)' about the eventual desired outcome 
+	                    
+    - audit stage:
+        compare local head and remote head. - they should now be identical, since the last transactions we replayed were all local merge fixup txns. (is that true?)
+
+=cut
 

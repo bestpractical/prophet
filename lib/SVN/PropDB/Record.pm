@@ -93,6 +93,7 @@ sub _validate_props {
     my $props = shift;
     my $errors = {};
     for my $key (keys %$props) {
+        return undef unless ($self->_validate_prop_name($key));
         if (my $sub = $self->can('validate_'.$key)) { 
             $sub->($self, props => $props, errors => $errors) || return undef;
         }
@@ -100,6 +101,8 @@ sub _validate_props {
     return 1;
 }
 
+
+sub _validate_prop_name { 1}
 
 sub _canonicalize_props {
     my $self = shift;
