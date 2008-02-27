@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+my $opts = {};
+
+GetOptions($opts, 'local=s', 'remote=s');
+
+
+my $local_source = SVN::PropDB::MergeSource->new(url => $opts->{'local'});
+my $remote_source = SVN::PropDB::MergeSource->new(url => $opts->{'remote'});
+
+
+$local_source->snapshot;
+$remote_source->snapshot;
+
+my @deltas_to_integrate = $remote_source->fetch_deltas(after => $remote_source->last_delta_seen);
+
+
+
+for my $delta (@deltas_to_integrate) {
+    next if ($local_source->has_seen($delta) );
+    if ($local_source->delta_will_conflict($delta)) { 
+        # make a decision about who wins the conflict 
+        # For parts of the conflict _remote_ should win, write out a nullification delta beforehand,
+            # apply the delta. it will now apply cleanly
+        
+        # For parts of the conflict _local_ should win, 
+            # write out a nullification delta beforehand,
+                # - that way, the remote update will apply cleanly
+            # Then write out the remote delta
+            # Then write out a new delta which reverts the parts of the remote delta which local should win
+
+
+    } else {
+        $local_source->apply_delta($delta);
+    }
+}
+
+if ( $remote_source->accepts_deltas ) {
+    my @deltas_to_send = $local_source->fetch_deltas( after =>
+            $remote_source->last_delta_received( source => $local_source ) );
+
+    for my $delta (@deltas_to_send) {
+        next if ( $remote_source->has_seen($delta) );
+        if ( $remote_source->delta_will_conflict($delta) ) {
+                What we need to do here is:
+                    a good fucking question
+                            
+
+
+        } else {
+            $remote_source->apply_delta($delta);
+        }
+
+    }
+
+}
+
+
