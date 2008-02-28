@@ -12,3 +12,216 @@ The Fallacies of Distributed Computing are a set of common but flawed assumption
    8. The network is homogeneous.
 
 
+nihao
+
+Glossary:
+
+
+Database
+    A term to describe a uniquely identified set of object types and records sharing a single 'base' revision and Replica identifier
+    A database contains multiple Records
+    
+Replica
+    An instance of a database. Replicas are expected to contain all Changesets from any other replica they have been synchronized with, but those Changesets are not guaranteed to be in the same sequence on each replica
+    
+Changeset
+    A changeset contains "old" and "new" versions of a set of database "Records", they can be of any Record Type.
+    
+   
+Record
+    A Record is composed of zero or more Attributes and a universally unique identifier. Each record is categorized into a Record Type.
+        
+    (Discussion:    Really? I was just storing them under different dirs in the database. the goal was to provide a little separation between different kinds of nodes for managability.
+
+(ah fine. then need to forget about changing types ;)    
+indeed. 
+
+
+Record Type 
+    A Record Type is a category or "bucket" for zero or more records applications may define specific behaviours for Records of a certain Record Type, but Prophet does no more than to tag Records with a Record Type.
+Record Types are uniquely identified with a textual name and a UUID
+    
+    
+
+Attribute
+    A key-value pair on a Record.    
+
+Conflict
+    A Conflict occurs when synchronizing Replica A to B, if different Changesets have been applied to both replicas
+    
+    when the "old" version in the changeset doens't match the value of the record in the target replica?  changeset X: record alpha key FOO, old => BAR, new => ORZ from A.  If B has record alpha key FOO being BAR => applied cleanly
+    
+    
+    
+    Initial state:
+    
+    clkao: record 1.   foo: bar (clkao@1)
+    
+     merge -> jesse
+     
+     clkao: record 1 foo:bar (@1)
+     jesse: record 1 foo:bar (@1) (merged from: clkao@1)
+     
+      clkao: changes record 1: foo  bar->baz     (@2)
+      jesse: changes record 1: foo  bar->frotz   (@2)
+      
+    Current state:
+      
+       clkao: record 1@2. foo: baz
+       jesse: record 1@2. foo: frotz 
+      
+      (right so far?)
+      
+      
+    merge: clkao -> jesse
+    
+        replay clkao@2 (first new rev)
+        
+        update record 1:
+            change foo from bar->baz
+            
+            CONFLICT!
+            
+            (jesse's proposed merge algorithm)
+            
+                 pre-fixup:  record 1, foo: revert frotz to bar jesse@3     
+      
+                apply clkao@2: record 1, foo:  bar->baz
+                
+                conflict resolution:
+                    baz vs frotz
+                    in the case that they were the same, resolve in favor of (always pick local?)
+                    
+                    but they're not the same, so we:    
+                        * look for a pre-existing resolution between
+                            clkao@2 and jesse@2?
+                            record 1, bar->baz AND record 1, bar->frotz?
+                
+      
+      
+    ya, that's because frotz does't match bar, not because frotz doesn't match baz.  if the two changesets make the same change, it's still a conflict which is.. normally resolved as "hey, we have the same change"  
+     ya
+      
+    ok
+    let me try to write out what I was thinking for merge here? or skip it and keep going with this as our definition of conflict?
+    
+    now I'll shut up. I feel like this is at the edges of my grasp of distributed systems.
+    
+    the thing is, the resolution strategy has to be in the db or be predefined. otherwise different replica can get different stuff. or is this going to be allowed? or if so we should layer it ontop as local changes to be applied to this replica, which should also be based on the head of the Database. so when merge, we either resolve conflict making the change gone, or keep it local on top of the Database. right, but not all replicas want that particular resolution, no?  so World will know all changes, except in replica A it's using X, in replica B it's using Y after the conflict Z ? ok. so your resolution is a new changeset that overrides the one conflicts with you.
+
+    A and B conflcit on X, resolved as Y
+    A and C conflict on X, resolved as Z
+    
+how about two variants of conflict resolution? as they are parallel.  who is to decide Y and Z? 
+
+In your example, do you assume the merges take place on B and C in parallel but neither feeds back to A yet?
+Assuming so,
+
+B@post-conflict = Y
+C@post-conflict=  Z
+
+B merges to A.
+
+A ends up with resolution as Y
+
+C merges to A. 
+
+There is a conflict between Y and Z. 
+
+Presumably that last update wins.
+    
+next time you sync A->B, B gets told that Y beat Z
+
+what if B<-> C sync before A<->B and A<->C sync.
+
+in the worst case, assume they decide on "Y beats Z"
+
+Do we need a 4th node for the pessimal case here?
+
+Then A<->C sync.
+
+I guess the main problem is "who is deciding", the one that initiates the sync?  practically yes, because you can publish a resolution based on the latest HEAD of the others. so there's no "they decide", it's up to who syncs the other first?    
+
+
+fwiw, I believe we're running into the byzantine generals problem.
+http://en.wikipedia.org/wiki/Paxos_algorithm
+
+
+But those require knowing how many replicas you have, don't they?
+
+so, how do we stabilize the system?
+
+hm. I wonder if there's a way to publish a list of "whom you trust in in the face of conflicts" and to have that be a higher-level function. that feels sort of evil and wrong, though
+
+the thing we're trying to avoid is ping-pong.
+
+and we can detect the ping-pong reliably, right?
+
+i don't think there'll ping-pong in our case, because the one who merges always wins (not that his version, but he gets to decide and publish), the resolution is a change based on the latest version of the other party, so the next sync will work without conflict
+
+and because we record all previous merge decisions, even if there's a long loop of other replicas off in the wilderness, when they come back, we'll still know what we decided originally?
+
+
+
+right, you get to "insist on" your change, but that's supposedly not a conflict, but of higher level functionality, which might cause ping-pong, but not in the db sync layer
+
+ok.
+    
+I need to be @client in 8 hours. I should probably go sleep.
+
+if this is interesting enough for you to hack on, the bits I stalled out on code wise were:
+    * storing merges
+    * actually beating SVN::Ra into giving me revision history (no easy-to-decode examples)
+
+get_logs(), it's quita painful.
+    
+    I noticed
+
+    * bin/merger had my state
+
+ok.  i will do customer stuff first next hour, and see how much i can get    
+
+much appreciated :)
+
+I'll commit this file
+
+
+
+
+but then when X and Y sync, there will be conflict AA. and they'll need to resolve.
+
+it should not be possible to fork. conflicting Database HEAD is still a Conflict
+and when you sync, you'll propagate your resolutions.
+
+
+
+
+
+    hm. my vision had the resolution as something that got propagated. but when calcualating future conflicts, treating the resolution and the 
+
+Every replica needs to be eventually consistent.
+
+if you go back and forth, eventually, someone will win and someone will lose.
+
+    
+    
+but the goal is for us to end up with one current worldview when all is said and done.
+    
+    
+
+    I think we need to allow for users to make conflicting, distributed resolution decisions. and forcing reconcilation later.
+    possibly with:
+        * bob chose to reconcile this as A over B
+        * jesse and clkao chose to reconcile this as B over C
+        
+        
+can upstream reject the changes?  then we shouldn't call these replicas
+
+    I don't think there is 'upstream' 
+
+
+
+    
+    
+Resolution
+    When the local Replica 
