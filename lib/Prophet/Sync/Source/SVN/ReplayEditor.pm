@@ -38,7 +38,7 @@ sub open_directory {
 sub delete_entry { 
     my $self = shift;
     my ($path, $revision, $parent_baton) = (@_);
-    push @{$self->{'paths'}->{ $self->{'dir_stack'}->[-1]->{path} }->{delete_path}}, $path;
+    $self->{'paths'}->{$path}->{fs} = 'delete';
 }
 
 sub add_file { 
@@ -46,14 +46,14 @@ sub add_file {
     my ($path, $parent_baton, $copy_path, $copy_revision, $file_pool, $file_baton) = (@_);
     $self->{'current_file'} = $path;
     $self->{'current_file_base_rev'} = "newly created";
-    push @{$self->{'paths'}->{ $self->{'dir_stack'}->[-1]->{path} }->{create_file}}, $path;
+    $self->{'paths'}->{$path}->{fs} = 'add_file';
 }
 
 sub add_directory {
     my $self = shift;
     my ($path, $parent_baton, $copyfrom_path, $copyfrom_revision, $dir_pool, $child_baton) = (@_);
     push @{$self->{'dir_stack'}}, { path => $path, base_rev => -1 };
-    push @{$self->{'paths'}->{ $self->{'dir_stack'}->[-1]->{path} }->{create_dir}}, $path;
+    $self->{'paths'}->{$path}->{fs} = 'add_dir';
 }
 
 sub open_file {
@@ -66,6 +66,7 @@ sub open_file {
     my ($stream, $pool);
     my ($rev_fetched, $prev_props)  =  $self->ra->get_file($path, $self->{'revision'}-1, $stream,$pool);
 
+    $self->{'paths'}->{$path}->{fs} = 'update_file';
     $self->{'paths'}->{$path}->{prev_properties} = $prev_props;
 
 

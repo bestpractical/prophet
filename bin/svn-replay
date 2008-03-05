@@ -2,9 +2,8 @@
 use strict;
 
 use Prophet::Sync::Source::SVN;
-my $sync = Prophet::Sync::Source::SVN->new();
+my $sync = Prophet::Sync::Source::SVN->new({ url => shift @ARGV} );
 
-$sync->setup(shift @ARGV);
 my @changes = $sync->fetch_changesets();
 warn YAML::Dump(\@changes); use YAML;
 

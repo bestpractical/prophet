@@ -5,67 +5,75 @@ use strict;
 
 my $opts = {};
 
-GetOptions($opts, 'local=s', 'remote=s');
+use Getopt::Long;
+GetOptions( $opts, 'target=s', 'source=s' );
+use Prophet::Sync::Source::SVN;
 
+validate_options($opts);
 
-my $local_source = Prophet::MergeSource->new(url => $opts->{'local'});
-my $remote_source = Prophet::MergeSource->new(url => $opts->{'remote'});
+my $target = Prophet::Sync::Source::SVN->new( { url => $opts->{'target'} });
+my $source = Prophet::Sync::Source::SVN->new( {url => $opts->{'source'} });
 
+fatal_error("You appear to be trying to merge two identical replicas. ".
+            "Either you're trying to merge a replica to itself or ".
+            "someone did a bad job cloning your database") if ($target->unique_id eq $source->unique_id);
 
-$local_source->snapshot;
-$remote_source->snapshot;
+if ( $target->accepts_changesets ) {
+    my @changesets_to_integrate = $source->fetch_changesets( 
+            after => $target->last_changeset_for_source(source => $source->unique_id) );
 
-my @txns_to_integrate = $remote_source->fetch_txns(after => $remote_source->last_txn_seen);
+    for my $changeset (@changesets_to_integrate) {
+        next if ( $target->has_seen_changeset(source => $source->unique_id, changeset => $changeset->unique_id));
+        if ( $target->changeset_will_conflict($changeset) ) {
+            die "Conflicts are hard";
 
+# make a decision about who wins the conflict
+# For parts of the conflict _source_ should win, write out a nullification changeset beforehand,
+# apply the changeset. it will now apply cleanly
 
+# For parts of the conflict _target_ should win,
+# write out a nullification changeset beforehand,
+# - that way, the source update will apply cleanly
+# Then write out the source changeset
+# Then write out a new changeset which reverts the parts of the source changeset which target should win
 
-for my $txn (@txns_to_integrate) {
-    next if ($local_source->has_seen_txn($txn) );
-    if ($local_source->txn_will_conflict($txn)) { 
-        die "Conflicts are hard";
-        # make a decision about who wins the conflict 
-        # For parts of the conflict _remote_ should win, write out a nullification txn beforehand,
-            # apply the txn. it will now apply cleanly
-        
-        # For parts of the conflict _local_ should win, 
-            # write out a nullification txn beforehand,
-                # - that way, the remote update will apply cleanly
-            # Then write out the remote txn
-            # Then write out a new txn which reverts the parts of the remote txn which local should win
-
-
-    } else {
-        $local_source->apply_txn($txn);
-    }
-}
-
-if ( $remote_source->accepts_txns ) {
-    my @txns_to_send = $local_source->fetch_txns( after =>
-            $remote_source->last_txn_received( source => $local_source ) );
-
-    for my $txn (@txns_to_send) {
-        next if ( $remote_source->has_seen_txn($txn) );
-        if ( $remote_source->txn_will_conflict($txn) ) {
-            die "Conflicts are hard"
         } else {
-            $remote_source->apply_txn($txn);
+            $target->apply_changeset($changeset);
         }
 
+        $target->record_changeset_for_source(source => $source->unique_id, changeset => $changeset->);
     }
 
+} else {
+    fatal_error($target->url." does not accept changesets. Perhaps it's unwritable or something");
+
 }
+
+sub validate_options {
+    my $opts = shift;
+for (qw(source target)){ 
+die "You need to specify a --$_ url" unless ($opts->{$_});
+}
+}
+
+sub fatal_error {
+    my $reason = shift;
+    die $reason."\n";
+
+}
+
 
 package Prophet::MergeSource;
 use base 'Class::Accessor';
 
 __PACKAGE__->mk_accessors(qw'url unique_id');
 
-sub accepts_txns {}
-sub has_seen_txn {}
-sub txn_will_conflict {}
-sub apply_txn {}
-sub fetch_txns {}
-sub last_txn_received {}
+sub accepts_changesets {}
+sub has_seen_changeset {}
+sub changeset_will_conflict {}
+sub apply_changeset {}
+sub fetch_changesets {}
+sub last_changeset_seen {}
 
 
 =head2 Assumptions about merge sources
@@ -73,28 +81,28 @@ sub last_txn_received {}
     - a source represents a branch 
     - a branch has had many revisions applied
     - revisions we apply to a branch from another branch are always applied UNCHANGED
-    - in the event of a conflict, we will apply a "pre-txn" to smooth the application and a "post-txn" if the applied txn doesn't match the desired outcome.
+    - in the event of a conflict, we will apply a "pre-changeset" to smooth the application and a "post-changeset" if the applied changeset doesn't match the desired outcome.
 
     on pull
-        we end up applying every single remote txn this peer has seen since the last time we saw this peer, one by one
-        we possibly apply another two txns for each txn to smooth the application
+        we end up applying every single source changeset this peer has seen since the last time we saw this peer, one by one
+        we possibly apply another two changesets for each changeset to smooth the application
 
 
 
-        we skip any remote txn we've seen from another source before
+        we skip any source changeset we've seen from another source before
         
 
     on push,
-        we publish each txn we've made locally.
-            - including "after" fixup txns
-            - not including "before" fixup txns.
+        we publish each changeset we've made targetly.
+            - including "after" fixup changesets
+            - not including "before" fixup changesets.
 
 
 
 
 
 
-=head2 assumptions about merge txns
+=head2 assumptions about merge changesets
 
 we can get (and hash):
     -original database uuid
@@ -138,11 +146,11 @@ Jesse@1:
 
         Conflict
 
-        to local c applies a pre-fixup:  
+        to target c applies a pre-fixup:  
             frotz->foo
-        to local c applies a@2:
+        to target c applies a@2:
             foo->baz
-        to local c applies a conflict resolution
+        to target c applies a conflict resolution
             baz->frotz
 
 
@@ -162,7 +170,7 @@ Jesse@1:
             so, what do we push?
             options:
                 fixup to get a to our earliest state unpushed. that's kind of stupid and results in us replaying everthing all the time.
-                compute a single large txn from a@HEAD to c@HEAD and apply that?
+                compute a single large changeset from a@HEAD to c@HEAD and apply that?
 
 
         
@@ -173,40 +181,40 @@ take 2
 
     there's a new peer I've not seen before. I need to merge in all their changes:
 
-        if a txn comes from a replica@rev lower than our last-seen version for replica, skip it
+        if a changeset comes from a replica@rev lower than our last-seen version for replica, skip it
 
-        for each of their txns, import it, applying fixups as needed
+        for each of their changesets, import it, applying fixups as needed
     
 
 =head3 push
     
-    get the remote list of all merge tickets.
-    find all local revs which remote has never seen.
-        - genuine local txns
-        - third-party txns that the remote has no merge ticket for
+    get the source list of all merge tickets.
+    find all target revs which source has never seen.
+        - genuine target changesets
+        - third-party changesets that the source has no merge ticket for
 
-        - skip "before" fixup txns 
-        - include "after" fixup txns, since they're merge resolutions
+        - skip "before" fixup changesets 
+        - include "after" fixup changesets, since they're merge resolutions
 
 
-    iterate over these revs the remote has never seen.
-    when the txn applies cleanly, just apply it.
+    iterate over these revs the source has never seen.
+    when the changeset applies cleanly, just apply it.
 
-    when the txn does _not_ apply cleanly, 
+    when the changeset does _not_ apply cleanly, 
         - apply a 'before' fix up transaction
-        - apply the original txn
-        - apply a merge resolution txn.
+        - apply the original changeset
+        - apply a merge resolution changeset.
             - TODO: this doesn't feel quite right
             - the resolution should be the same as the equivalent merge resolution transaction on the "pull" variant if it exists.
 	                    What info do we have here?
 	                        - record uuid
 	                        - nearest parent variant
-	                        - local variant
-	                        - remote variant
-	                        - information from the 'future (local head)' about the eventual desired outcome 
+	                        - target variant
+	                        - source variant
+	                        - information from the 'future (target head)' about the eventual desired outcome 
 	                    
     - audit stage:
-        compare local head and remote head. - they should now be identical, since the last transactions we replayed were all local merge fixup txns. (is that true?)
+        compare target head and source head. - they should now be identical, since the last transactions we replayed were all target merge fixup changesets. (is that true?)
 
 =cut
-
+1;

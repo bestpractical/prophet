@@ -26,7 +26,9 @@ Replica
     
 Changeset
     A changeset contains "old" and "new" versions of a set of database "Records", they can be of any Record Type.
-    
+
+Change
+    An entry in a changeset. Contains all the updates to a given record for this changeset
    
 Record
     A Record is composed of zero or more Attributes and a universally unique identifier. Each record is categorized into a Record Type.
