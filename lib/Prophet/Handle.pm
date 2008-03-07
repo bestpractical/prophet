@@ -161,27 +161,25 @@ sub file_for {
 
 
 my $MERGETICKET_METATYPE = '_merge_tickets';
-sub last_changeset_for_source {
+sub last_changeset_from_source {
     my $self = shift;
-    my %args = validate( @_, { source => 1, } );
+    my ($source)  = validate_pos( @_, { isa => 'Prophet::Sync::Source' } );
 
-    my %props = $self->get_node_props(uuid => $args{'source'}, type => $MERGETICKET_METATYPE);
+    my $props = eval {$self->get_node_props(uuid => $source->uuid, type => $MERGETICKET_METATYPE)};
     
-    return $props{'last-rev'};
-
-
+    return $props->{'last-changeset'};
 
 }
 
-sub record_changeset_for_source {
+sub record_changeset_integration {
     my $self = shift;
-    my %args = validate( @_, { source => 1,  changeset => 1} );
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
 
-    my $props = eval { $self->get_node_props(uuid => $args{'source'}, type => $MERGETICKET_METATYPE)};
-    unless ($props->{'last-rev'}) {
-            eval { $self->create_node( uuid => $args{'source'}, type => $MERGETICKET_METATYPE, props => {} )};
+    my $props = eval { $self->get_node_props(uuid => $changeset->source_uuid, type => $MERGETICKET_METATYPE)};
+    unless ($props->{'last-changeset'}) {
+            eval { $self->create_node( uuid => $changeset->source_uuid, type => $MERGETICKET_METATYPE, props => {} )};
     }
-    $self->set_node_props(uuid => $args{'source'}, type => $MERGETICKET_METATYPE, props => { 'last-rev' => $args{'changeset'}});
+    $self->set_node_props(uuid => $changeset->source_uuid, type => $MERGETICKET_METATYPE, props => { 'last-changeset' => $changeset->sequence_no});
 
 }
 

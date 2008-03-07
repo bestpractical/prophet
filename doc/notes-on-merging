@@ -188,3 +188,147 @@ can upstream reject the changes?  then we shouldn't call these replicas
     
 Resolution
     When the local Replica 
+
+
+=head2 Assumptions about merge sources
+
+    - a source represents a branch 
+    - a branch has had many revisions applied
+    - revisions we apply to a branch from another branch are always applied UNCHANGED
+    - in the event of a conflict, we will apply a "pre-changeset" to smooth the application and a "post-changeset" if the applied changeset doesn't match the desired outcome.
+
+    on pull
+        we end up applying every single source changeset this peer has seen since the last time we saw this peer, one by one
+        we possibly apply another two changesets for each changeset to smooth the application
+
+
+
+        we skip any source changeset we've seen from another source before
+        
+
+    on push,
+        we publish each changeset we've made targetly.
+            - including "after" fixup changesets
+            - not including "before" fixup changesets.
+
+
+
+
+
+
+=head2 assumptions about merge changesets
+
+we can get (and hash):
+    -original database uuid
+    -original database revno
+    -original database author
+    -all changes
+
+
+
+
+
+
+Audrey@1:
+
+    Createdb
+    Add ticket 1 - subject 'foo'; status 'new'
+
+
+Jesse@1:
+
+    j pull from a@1
+
+    j@1 - foo;new
+    a@1 - foo;new
+
+    j@2  foo->bar
+    a@2  foo->baz
+        
+    c@1 pull from j@2
+
+        c now has:
+            a@1
+            j@2
+
+
+    c@2 bar->frotz
+
+    c@3 pull from a@2
+    
+        a hands c: a@2:foo->baz     
+
+        Conflict
+
+        to target c applies a pre-fixup:  
+            frotz->foo
+        to target c applies a@2:
+            foo->baz
+        to target c applies a conflict resolution
+            baz->frotz
+
+
+    c@4 push to a@2
+
+        beforehand, a's state: baz
+        beforehand, c's state: frotz
+
+        beforehand, c's unpushed transactions: 
+            j@2 foo->bar
+            c@2 bar->frotz
+            c@3
+                    pre-fixup: frotz->foo
+                    a@2: foo->baz
+                    post-fixup: baz->frotz
+
+            so, what do we push?
+            options:
+                fixup to get a to our earliest state unpushed. that's kind of stupid and results in us replaying everthing all the time.
+                compute a single large changeset from a@HEAD to c@HEAD and apply that?
+
+
+        
+investigate "rumor" peer to peer replication
+
+
+take 2
+
+    there's a new peer I've not seen before. I need to merge in all their changes:
+
+        if a changeset comes from a replica@rev lower than our last-seen version for replica, skip it
+
+        for each of their changesets, import it, applying fixups as needed
+    
+
+=head3 push
+    
+    get the source list of all merge tickets.
+    find all target revs which source has never seen.
+        - genuine target changesets
+        - third-party changesets that the source has no merge ticket for
+
+        - skip "before" fixup changesets 
+        - include "after" fixup changesets, since they're merge resolutions
+
+
+    iterate over these revs the source has never seen.
+    when the changeset applies cleanly, just apply it.
+
+    when the changeset does _not_ apply cleanly, 
+        - apply a 'before' fix up transaction
+        - apply the original changeset
+        - apply a merge resolution changeset.
+            - TODO: this doesn't feel quite right
+            - the resolution should be the same as the equivalent merge resolution transaction on the "pull" variant if it exists.
+	                    What info do we have here?
+	                        - record uuid
+	                        - nearest parent variant
+	                        - target variant
+	                        - source variant
+	                        - information from the 'future (target head)' about the eventual desired outcome 
+	                    
+    - audit stage:
+        compare target head and source head. - they should now be identical, since the last transactions we replayed were all target merge fixup changesets. (is that true?)
+
+=cut
+1;

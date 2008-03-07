@@ -1,7 +1,8 @@
+
+
 - ability to record a merge ticket for a uuid
 - ability to read all merge tickets
 
-- 
 
 - ability to 'pull' non-conflicting updates from a remote db
 - ability to 'pull' conflicting updates from a remote db

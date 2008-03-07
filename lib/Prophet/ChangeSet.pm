@@ -7,7 +7,7 @@ use Params::Validate;
 
 use base qw/Class::Accessor/;
 
-__PACKAGE__->mk_accessors(qw/changeset_uuid source_uuid/);
+__PACKAGE__->mk_accessors(qw/sequence_no source_uuid/);
 
 sub add_change {
     my $self = shift;
