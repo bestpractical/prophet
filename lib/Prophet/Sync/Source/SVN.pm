@@ -53,28 +53,29 @@ sub fetch_changesets {
     my @results;
     my $last_editor;
     my $handle_replayed_txn = sub {
-        $last_editor
-            = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
+        $last_editor = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
         $last_editor->ra( $self->ra );
         return $last_editor;
     };
 
     for my $rev ( 1 .. $self->ra->get_latest_revnum ) {
-        $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO
-            = $rev;
+        # This horrible hack is here because I have no idea how to pass custom variables into the editor
+        $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
 
-# This horrible hack is here because I have no idea how to pass custom variables into the editor
         $self->ra->replay( $rev, 0, 1, $handle_replayed_txn->() );
-
-        push @results, $last_editor->dump_deltas;
+        push @results, $self->_recode_changeset( $last_editor->dump_deltas);
 
     }
+    return \@results;
+}
 
-    # XXX TODO, we should be creating the changesets directly earlier
-    my @changesets;
-    for my $entry (@results) {
+
+sub _recode_changeset {
+    my $self = shift;
+    my $entry = shift;
+
         my $changeset = Prophet::ChangeSet->new(
-            {   change_uuid => $entry->{'revision'},
+            {   changeset_uuid => $entry->{'revision'}.'@'.$self->unique_id,
                 source_uuid => $self->unique_id
             }
         );
@@ -87,41 +88,68 @@ sub fetch_changesets {
                         change_type => $entry->{'paths'}->{$path}->{'fs'}
                     }
                 );
-                for my $name (
-                    keys %{ $entry->{'paths'}->{$path}->{prop_deltas} } )
-                {
+                for my $name ( keys %{ $entry->{'paths'}->{$path}->{prop_deltas} } ) {
                     warn "Changing $name for $change";
                     $change->add_prop_change(
                         name => $name,
-                        old =>
-                            $entry->{paths}->{$path}->{prop_deltas}->{$name}
-                            ->{'old'},
-                        new =>
-                            $entry->{paths}->{$path}->{prop_deltas}->{$name}
-                            ->{'new'},
+                        old => $entry->{paths}->{$path}->{prop_deltas}->{$name}->{'old'},
+                        new => $entry->{paths}->{$path}->{prop_deltas}->{$name}->{'new'},
                     );
                 }
 
                 $changeset->add_change( change => $change );
             } else {
-                warn "Discarding change to a non-record: $path";
-                warn "Someday, we should be less stupid about this";
+                     warn "Discarding change to a non-record: $path";
             }
 
         }
-        warn YAML::Dump($changeset);
-
+        return $changeset;
     }
-
-    exit;
-    return \@changesets;
-}
-
 sub accepts_changesets {
     my $self = shift;
     return 1 if $self->prophet_handle;
     return undef;
 }
+
+
+sub has_seen_changeset { warn "\tneed to implement has_seen_changeset"; return undef;}
+sub changeset_will_conflict { warn "\tneed to implement changeset_will_conflict"; return undef }
+sub apply_changeset {
+    my $self = shift;
+    my $changeset = shift;
+    # open up a change handle locally
+    warn "Applying Changeset ".$changeset->changeset_uuid;
+
+    $self->prophet_handle->begin_edit();
+
+    for my $change ($changeset->changes) {
+        warn "\tApplying a change";
+        warn "\t".$change->change_type;
+
+        my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
+
+        if ($change->change_type eq 'add_file') {
+                warn "\tAdded a file - ".$change->node_type,$change->node_uuid;
+                $self->prophet_handle->create_node(type => $change->node_type, uuid => $change->node_uuid, props => \%new_props);
+        } elsif ($change->change_type eq 'add_dir') {
+                warn "\tAdded a dir - ".$change->node_type,$change->node_uuid;
+        } elsif ($change->change_type eq 'update_file') {
+                warn "\tUpdated a file - ".$change->node_type,$change->node_uuid;
+                $self->prophet_handle->set_node_props(type => $change->node_type, uuid => $change->node_uuid, props => \%new_props);
+        } elsif ($change->change_type eq 'delete') {
+                warn "\tDeleted file - ".$change->node_type,$change->node_uuid;
+                $self->prophet_handle->delete_node(type => $change->node_type, uuid => $change->node_uuid);
+        }
+
+    }
+
+    $self->prophet_handle->commit_edit();
+
+    # finalize the local change
+}
+
+
+
 
 # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
 sub last_changeset_for_source {

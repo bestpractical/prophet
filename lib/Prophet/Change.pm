@@ -9,6 +9,11 @@ use Prophet::PropChange;
 use Params::Validate;
 __PACKAGE__->mk_accessors(qw/node_type node_uuid change_type/);
 
+sub prop_changes {
+    my $self = shift;
+    return @{$self->{prop_changes}};
+}
+
 sub add_prop_change {
     my $self = shift;
     my %args = validate(@_, { name => 1, old => 0, new => 0 } );

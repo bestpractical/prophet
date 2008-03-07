@@ -19,11 +19,10 @@ fatal_error("You appear to be trying to merge two identical replicas. ".
             "someone did a bad job cloning your database") if ($target->unique_id eq $source->unique_id);
 
 if ( $target->accepts_changesets ) {
-    my @changesets_to_integrate = $source->fetch_changesets( 
-            after => $target->last_changeset_for_source(source => $source->unique_id) );
+    my $changesets_to_integrate = $source->fetch_changesets( after => $target->last_changeset_for_source(source => $source->unique_id) );
 
-    for my $changeset (@changesets_to_integrate) {
-        next if ( $target->has_seen_changeset(source => $source->unique_id, changeset => $changeset->unique_id));
+    for my $changeset (@$changesets_to_integrate) {
+        next if ( $target->has_seen_changeset(source => $source->unique_id, changeset => $changeset->changeset_uuid));
         if ( $target->changeset_will_conflict($changeset) ) {
             die "Conflicts are hard";
 
@@ -41,7 +40,7 @@ if ( $target->accepts_changesets ) {
             $target->apply_changeset($changeset);
         }
 
-        $target->record_changeset_for_source(source => $source->unique_id, changeset => $changeset->);
+        $target->record_changeset_for_source(source => $source->unique_id, changeset => $changeset->changeset_uuid);
     }
 
 } else {
