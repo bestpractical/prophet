@@ -160,7 +160,7 @@ sub file_for {
 }
 
 
-my $MERGETICKET_METATYPE = '_merge_tickets';
+our $MERGETICKET_METATYPE = '_merge_tickets';
 sub last_changeset_from_source {
     my $self = shift;
     my ($source)  = validate_pos( @_, { isa => 'Prophet::Sync::Source' } );

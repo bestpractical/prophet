@@ -50,15 +50,27 @@ sub uuid {
 
 sub fetch_changesets {
     my $self = shift;
+
+
+
+
+    my %args = validate( @_, { after => 1});
+
     my @results;
     my $last_editor;
+
+
     my $handle_replayed_txn = sub {
         $last_editor = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
         $last_editor->ra( $self->ra );
         return $last_editor;
     };
 
-    for my $rev ( 1 .. $self->ra->get_latest_revnum ) {
+    my $first_rev = $args{'after'} || 1;
+
+    warn "The first rev is $first_rev";
+
+    for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
         $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
 
@@ -149,25 +161,25 @@ sub changeset_will_conflict {
 
 sub change_will_conflict {
     my $self = shift;
-    my ($change) =  validate_pos(@_, {isa => "Prophet::Change"} );
+    my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
 
     $change->change_type;
-    
-    my $current_state = $self->prophet_handle->get_node_props(uuid => $change->node_uuid, type => $change->node_type);
 
-     # It's ok to delete a node that exists
-     return 0 if ($change->change_type eq 'delete' && keys %$current_state) ;
-     
-     # It's ok to create a node that doesn't exist
-     return 0 if ($change->change_type eq 'add_file' && ! keys %$current_state) ;
-     return 0 if ($change->change_type eq 'add_dir' && ! keys %$current_state) ;
+    my $current_state = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
+
+    # It's ok to delete a node that exists
+    return 0 if ( $change->change_type eq 'delete' && keys %$current_state );
+
+    # It's ok to create a node that doesn't exist
+    return 0 if ( $change->change_type eq 'add_file' && !keys %$current_state );
+    return 0 if ( $change->change_type eq 'add_dir'  && !keys %$current_state );
 
     for my $propchange ( $change->prop_changes ) {
         next if ( !defined $current_state->{ $propchange->name } && !defined $propchange->old_value );
-        return 1 if 
-        (      !exists $current_state->{ $propchange->name }
-            || !defined $propchange->old_value
-            || ( $current_state->{ $propchange->name } ne $propchange->old_value ) );
+        return 1
+            if (       !exists $current_state->{ $propchange->name }
+                    || !defined $propchange->old_value
+                    || ( $current_state->{ $propchange->name } ne $propchange->old_value ) );
     }
 
     return 0;
@@ -185,37 +197,8 @@ sub integrate_changeset {
     warn "Applying Changeset " . $changeset->sequence_no;
 
     $self->prophet_handle->begin_edit();
-
     for my $change ( $changeset->changes ) {
-        warn "\tApplying a change";
-        warn "\t" . $change->change_type;
-
-        my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
-
-        if ( $change->change_type eq 'add_file' ) {
-            warn "\tAdded a file - " . $change->node_type, $change->node_uuid;
-            $self->prophet_handle->create_node(
-                type  => $change->node_type,
-                uuid  => $change->node_uuid,
-                props => \%new_props
-            );
-        } elsif ( $change->change_type eq 'add_dir' ) {
-            warn "\tAdded a dir - " . $change->node_type, $change->node_uuid;
-        } elsif ( $change->change_type eq 'update_file' ) {
-            warn "\tUpdated a file - " . $change->node_type, $change->node_uuid;
-            $self->prophet_handle->set_node_props(
-                type  => $change->node_type,
-                uuid  => $change->node_uuid,
-                props => \%new_props
-            );
-        } elsif ( $change->change_type eq 'delete' ) {
-            warn "\tDeleted file - " . $change->node_type, $change->node_uuid;
-            $self->prophet_handle->delete_node(
-                type => $change->node_type,
-                uuid => $change->node_uuid
-            );
-        }
-
+        $self->_integrate_change($change);
     }
 
     $self->prophet_handle->commit_edit();
@@ -224,6 +207,38 @@ sub integrate_changeset {
 }
 
 
+sub _integrate_change {
+    my $self   = shift;
+    my $change = shift;
+    warn "\tApplying a change";
+    warn "\t" . $change->change_type;
+
+    my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
+
+    if ( $change->change_type eq 'add_file' ) {
+        warn "\tAdded a file - " . $change->node_type, $change->node_uuid;
+        $self->prophet_handle->create_node(
+            type  => $change->node_type,
+            uuid  => $change->node_uuid,
+            props => \%new_props
+        );
+    } elsif ( $change->change_type eq 'add_dir' ) {
+        warn "\tAdded a dir - " . $change->node_type, $change->node_uuid;
+    } elsif ( $change->change_type eq 'update_file' ) {
+        warn "\tUpdated a file - " . $change->node_type, $change->node_uuid;
+        $self->prophet_handle->set_node_props(
+            type  => $change->node_type,
+            uuid  => $change->node_uuid,
+            props => \%new_props
+        );
+    } elsif ( $change->change_type eq 'delete' ) {
+        warn "\tDeleted file - " . $change->node_type, $change->node_uuid;
+        $self->prophet_handle->delete_node(
+            type => $change->node_type,
+            uuid => $change->node_uuid
+        );
+    }
+}
 
 
 # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
@@ -236,11 +251,12 @@ sub last_changeset_from_source {
 
     # XXX HACK
     my $filename = join( "/", "_prophet", $Prophet::Handle::MERGETICKET_METATYPE, $source );
-    warn "Looking up $filename";
+    warn "Looking up $filename to find its last seen changeset";
     my ( $rev_fetched, $props ) = eval {
         $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool );
     };
 
+    warn "Its last changeset as ".$props->{'last-changeset'};
     return ( $props->{'last-changeset'} ||0 );
 
 }
