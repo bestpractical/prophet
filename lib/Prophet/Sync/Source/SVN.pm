@@ -25,20 +25,12 @@ sub new {
 
 sub setup {
     my $self = shift;
-    my ( $baton, $ref )
-        = SVN::Core::auth_open_helper( SVK::Config->get_auth_providers );
+    my ( $baton, $ref ) = SVN::Core::auth_open_helper( SVK::Config->get_auth_providers );
     my $config = SVK::Config->svnconfig;
-    $self->ra(
-        SVN::Ra->new( url => $self->url, config => $config, auth => $baton )
-    );
+    $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton ));
 
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
-        warn "Connecting to $1";
-        $self->prophet_handle(
-            Prophet::Handle->new(
-                { repository => $1, db_root => '_prophet' }
-            )
-        );
+        $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' }));
     }
 
 }
@@ -50,15 +42,10 @@ sub uuid {
 
 sub fetch_changesets {
     my $self = shift;
-
-
-
-
     my %args = validate( @_, { after => 1});
 
     my @results;
     my $last_editor;
-
 
     my $handle_replayed_txn = sub {
         $last_editor = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
@@ -68,14 +55,11 @@ sub fetch_changesets {
 
     my $first_rev = $args{'after'} || 1;
 
-    warn "The first rev is $first_rev";
-
     for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
         $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
-
         $self->ra->replay( $rev, 0, 1, $handle_replayed_txn->() );
-        push @results, $self->_recode_changeset( $last_editor->dump_deltas);
+        push @results, $self->_recode_changeset( $last_editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
     }
     return \@results;
@@ -85,12 +69,18 @@ sub fetch_changesets {
 sub _recode_changeset {
     my $self  = shift;
     my $entry = shift;
+    my $revprops = shift;
 
     my $changeset = Prophet::ChangeSet->new(
-        {   sequence_no => $entry->{'revision'},
-            source_uuid => $self->uuid
+        {   sequence_no          => $entry->{'revision'},
+            source_uuid          => $self->uuid,
+            original_source_uuid => $revprops->{original_source_uuid},
+            original_sequence_no => $revprops->{original_sequence_no},
+
         }
     );
+
+    # add each node's changes to the changeset
     for my $path ( keys %{ $entry->{'paths'} } ) {
         if ( $path =~ qr|^(.+)/(.*?)/(.*?)$| ) {
             my ( $prefix, $type, $record ) = ( $1, $2, $3 );
@@ -101,7 +91,6 @@ sub _recode_changeset {
                 }
             );
             for my $name ( keys %{ $entry->{'paths'}->{$path}->{prop_deltas} } ) {
-                warn "Changing $name for $change";
                 $change->add_prop_change(
                     name => $name,
                     old  => $entry->{paths}->{$path}->{prop_deltas}->{$name}->{'old'},
@@ -110,6 +99,7 @@ sub _recode_changeset {
             }
 
             $changeset->add_change( change => $change );
+
         } else {
             warn "Discarding change to a non-record: $path";
         }
@@ -117,53 +107,73 @@ sub _recode_changeset {
     }
     return $changeset;
 }
+
+
+
+=head2 accepts_changesets
+
+Returns true if this source is one we know how to write to (and have permission to write to)
+
+Returns false otherwise
+
+=cut
+
 sub accepts_changesets {
     my $self = shift;
+
     return 1 if $self->prophet_handle;
     return undef;
 }
 
 
-sub has_seen_changeset { 
+sub has_seen_changeset {
     my $self = shift;
-    my ($changeset) =  validate_pos(@_, {isa => "Prophet::ChangeSet"});
+    my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    # find the last changeset for the source
-    my $last_changeset_from_source = $self->last_changeset_from_source($changeset->source_uuid);
-    
+    my $last_changeset_from_source
+        = $self->last_changeset_from_source( $changeset->original_source_uuid || $changeset->source_uuid );
+
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
-  
-    warn "the liast changeset I saw from ".$changeset->source_uuid . " was $last_changeset_from_source";
-    warn "my changeset is ".$changeset->sequence_no;
-    if ($last_changeset_from_source >= $changeset->sequence_no) {
-        return 1;
-    }
-
-    
-    
+    return 1 if ( $last_changeset_from_source >= $changeset->sequence_no );
+}
 
 
+
+
+sub changeset_will_conflict {
+    my $self = shift;
+    my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
+
+    return 1 if ( keys %{$self->conflicts_from_changeset($changeset)});
+    return undef;
 
 }
 
-sub changeset_will_conflict { 
+sub conflicts_from_changeset{
     my $self = shift;
-    my ($changeset) =  validate_pos(@_, {isa => "Prophet::ChangeSet"} );
+    my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    warn "Checking ".$changeset->sequence_no."@".$changeset->source_uuid ." for conflicts";
+    my $conflict = Prophet::Conflict->new();
 
-    for my $change ($changeset->changes) {
+    # XXX TODO
+    die "Right here, we need to actually walk through all the changes and generate 
+    
+    - a ConflictingChange if there are any conflicts in the change
+    - for each conflictingchange, we need to create a conflicting change property for each and every property that conflicts
+
+
+    for my $change ( $changeset->changes ) {
         return 1 if $self->change_will_conflict($change);
     }
 
     return 0;
 }
 
+
+
 sub change_will_conflict {
     my $self = shift;
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
-
-    $change->change_type;
 
     my $current_state = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
 
@@ -175,7 +185,12 @@ sub change_will_conflict {
     return 0 if ( $change->change_type eq 'add_dir'  && !keys %$current_state );
 
     for my $propchange ( $change->prop_changes ) {
+        # skip properties added by the change
         next if ( !defined $current_state->{ $propchange->name } && !defined $propchange->old_value );
+
+        # If either the old version didn't have a value or the delta didn't have a value, then we
+        # know there's a conflict
+        # Ditto if they don't agree
         return 1
             if (       !exists $current_state->{ $propchange->name }
                     || !defined $propchange->old_value
@@ -186,57 +201,21 @@ sub change_will_conflict {
 
 }
 
-
-
-
 sub integrate_changeset {
-    my $self      = shift;
-    my $changeset = shift;
+    my $self = shift;
 
-    # open up a change handle locally
-    warn "Applying Changeset " . $changeset->sequence_no;
+    if (there's a conflict ) {
+        figure out our conflict resolution
+        generate a nullification change
+        # IMPORTANT: these should be an atomic unit. dying here would be poor.
+        # BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
+            integrate the nullification change
+            integrate the original change
+            integrate the conflict resolution change
 
-    $self->prophet_handle->begin_edit();
-    for my $change ( $changeset->changes ) {
-        $self->_integrate_change($change);
-    }
+    } else {
+        $self->prophet_handle->integrate_changeset(@_);
 
-    $self->prophet_handle->commit_edit();
-
-    # finalize the local change
-}
-
-
-sub _integrate_change {
-    my $self   = shift;
-    my $change = shift;
-    warn "\tApplying a change";
-    warn "\t" . $change->change_type;
-
-    my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
-
-    if ( $change->change_type eq 'add_file' ) {
-        warn "\tAdded a file - " . $change->node_type, $change->node_uuid;
-        $self->prophet_handle->create_node(
-            type  => $change->node_type,
-            uuid  => $change->node_uuid,
-            props => \%new_props
-        );
-    } elsif ( $change->change_type eq 'add_dir' ) {
-        warn "\tAdded a dir - " . $change->node_type, $change->node_uuid;
-    } elsif ( $change->change_type eq 'update_file' ) {
-        warn "\tUpdated a file - " . $change->node_type, $change->node_uuid;
-        $self->prophet_handle->set_node_props(
-            type  => $change->node_type,
-            uuid  => $change->node_uuid,
-            props => \%new_props
-        );
-    } elsif ( $change->change_type eq 'delete' ) {
-        warn "\tDeleted file - " . $change->node_type, $change->node_uuid;
-        $self->prophet_handle->delete_node(
-            type => $change->node_type,
-            uuid => $change->node_uuid
-        );
     }
 }
 
@@ -251,24 +230,11 @@ sub last_changeset_from_source {
 
     # XXX HACK
     my $filename = join( "/", "_prophet", $Prophet::Handle::MERGETICKET_METATYPE, $source );
-    warn "Looking up $filename to find its last seen changeset";
-    my ( $rev_fetched, $props ) = eval {
-        $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool );
-    };
+    my ( $rev_fetched, $props ) = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
 
-    warn "Its last changeset as ".$props->{'last-changeset'};
     return ( $props->{'last-changeset'} ||0 );
 
 }
 
-sub record_changeset_integration {
-    my $self = shift;
-
-    return undef unless ( $self->accepts_changesets );
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-
-    $self->prophet_handle->record_changeset_integration($changeset);
-
-}
 
 1;

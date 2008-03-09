@@ -19,9 +19,7 @@ sub ra {
     return $self->{'_ra'};
 
 }
-sub apply {
-    my $self = shift;
-};
+
 
 sub open_root {
     my $self = shift;
@@ -68,10 +66,10 @@ sub open_file {
 
     $self->{'paths'}->{$path}->{fs} = 'update_file';
     $self->{'paths'}->{$path}->{prev_properties} = $prev_props;
-
-
-
 }
+
+
+
 sub close_file {
     my $self = shift;
     my ($file_baton, $text_checksum, $pool) = (@_);
@@ -83,16 +81,12 @@ sub close_file {
 sub absent_file {
     my $self = shift;
     my ($file_baton, $text_checksum, $pool) = (@_);
-
-
 }
 
 sub close_directory {
     my $self = shift;
     my ($dir_baton, $pool) = (@_);
     pop @{$self->{dir_stack}};
-
-
 }
 
 sub absent_directory {
@@ -102,13 +96,14 @@ sub absent_directory {
 
 sub change_file_prop {
     my $self = shift;
-    my ($file_baton, $name, $value, $pool) = (@_);
+    my ( $file_baton, $name, $value, $pool ) = (@_);
 
-    $self->{'paths'}->{$self->{'current_file'}}->{prop_deltas}->{$name} = { old => 
-        $self->{'paths'}->{$self->{'current_file'}}->{'prev_properties'}->{$name}
-        , new => $value };
-       
+    $self->{'paths'}->{ $self->{'current_file'} }->{prop_deltas}->{$name} = {
+        old => $self->{'paths'}->{ $self->{'current_file'} }->{'prev_properties'}->{$name},
+        new => $value
+    };
 }
+
 sub change_dir_prop {
     my $self = shift;
     my ($dir_baton, $name, $value, $pool) = (@_);
@@ -119,13 +114,10 @@ sub change_dir_prop {
 
 }
 
-#sub set_target_revision { my $self = shift; my ($edit_baton, $target_revnum, $pool) = (@_); }
-
 
 sub close_edit {
     my $self = shift;
     my ($edit_baton, $pool) = (@_); 
-    warn YAML::Dump($self->{'paths'}); use YAML;
 }
 
 

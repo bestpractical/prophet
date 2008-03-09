@@ -79,6 +79,75 @@ sub commit_edit {
 
 }
 
+
+sub integrate_changeset {
+    my $self      = shift;
+    my $changeset = shift;
+
+    # open up a change handle locally
+
+    $self->begin_edit();
+
+    for my $change ( $changeset->changes ) {
+        $self->_integrate_change($change);
+    }
+
+
+    $self->_set_original_source_metadata($changeset);
+
+
+    # finalize the local change
+    $self->commit_edit();
+
+
+
+    # update the change's metadata with: 
+    #   original repo
+    #   orignal sequence no
+}
+
+sub _set_original_source_metadata {
+    my $self = shift;
+    my $change = shift;
+
+    $self->current_edit->change_prop( 'prophet:original-source'  => $change->original_source_uuid  ||$change->source_uuid );
+    $self->current_edit->change_prop( 'prophet:original-sequence-no'  => $change->original_sequence_no  ||$change->sequence_no);
+
+
+}
+
+
+
+
+sub _integrate_change {
+    my $self   = shift;
+    my $change = shift;
+
+    my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
+
+    if ( $change->change_type eq 'add_file' ) {
+        $self->create_node(
+            type  => $change->node_type,
+            uuid  => $change->node_uuid,
+            props => \%new_props
+        );
+    } elsif ( $change->change_type eq 'add_dir' ) {
+    } elsif ( $change->change_type eq 'update_file' ) {
+        $self->set_node_props(
+            type  => $change->node_type,
+            uuid  => $change->node_uuid,
+            props => \%new_props
+        );
+    } elsif ( $change->change_type eq 'delete' ) {
+        $self->delete_node(
+            type => $change->node_type,
+            uuid => $change->node_uuid
+        );
+    }
+}
+
+
+
 sub create_node {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
@@ -161,25 +230,42 @@ sub file_for {
 
 
 our $MERGETICKET_METATYPE = '_merge_tickets';
+
 sub last_changeset_from_source {
     my $self = shift;
     my ($source)  = validate_pos( @_, { isa => 'Prophet::Sync::Source' } );
-
     my $props = eval {$self->get_node_props(uuid => $source->uuid, type => $MERGETICKET_METATYPE)};
-    
     return $props->{'last-changeset'};
 
 }
 
 sub record_changeset_integration {
     my $self = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    my $props = eval { $self->get_node_props(uuid => $changeset->source_uuid, type => $MERGETICKET_METATYPE)};
-    unless ($props->{'last-changeset'}) {
-            eval { $self->create_node( uuid => $changeset->source_uuid, type => $MERGETICKET_METATYPE, props => {} )};
+    # Record a merge ticket for the changeset's "direct" source
+    $self->_record_merge_ticket( $changeset->source_uuid, $changeset->sequence_no );
+
+    # Record a merge ticket for the changeset's "original" source
+    $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no )
+        if ( $changeset->original_source_uuid && $changeset->original_source_uuid ne $changeset->source_uuid );
+
+}
+
+sub _record_merge_ticket {
+    my $self = shift;
+    my ($source_uuid, $sequence_no) = validate_pos(@_, 1,1);
+
+    my $props = eval { $self->get_node_props( uuid => $source_uuid, type => $MERGETICKET_METATYPE ) };
+    unless ( $props->{'last-changeset'} ) {
+        eval { $self->create_node( uuid => $source_uuid, type => $MERGETICKET_METATYPE, props => {} ) };
     }
-    $self->set_node_props(uuid => $changeset->source_uuid, type => $MERGETICKET_METATYPE, props => { 'last-changeset' => $changeset->sequence_no});
+
+    $self->set_node_props(
+        uuid  => $source_uuid,
+        type  => $MERGETICKET_METATYPE,
+        props => { 'last-changeset' => $sequence_no }
+    );
 
 }
 

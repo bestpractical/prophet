@@ -1,12 +1,16 @@
+- when committing any change:
+    - record the original depot uuid and change sequence_no as revprops
+    - record two merge tickets:
+        - sequence_no from the source that gave it to us
+        - sequence_no from the original recording source
 
 
-- ability to record a merge ticket for a uuid
-- ability to read all merge tickets
+
+- implement merge of conflicts with: "local always wins"
 
 
-- ability to 'pull' non-conflicting updates from a remote db
+
 - ability to 'pull' conflicting updates from a remote db
-- ability to 'push' updates to a remote db
 - base bug tracking schemb
 - naive support for large attachments
 - elegant support for large attachments

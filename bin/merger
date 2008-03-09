@@ -53,12 +53,10 @@ sub import_changesets {
     for my $changeset (@$changesets_to_integrate) {
         next if ( $target->has_seen_changeset($changeset));
         if ( $target->changeset_will_conflict($changeset) ) {
+           
+            my $conflicts = $target->conflicts_from_changeset($changeset);
+            
 
-             # make a decision about who wins the conflict
-             # For parts of the conflict _source_ should win, write out a nullification changeset beforehand,
-             # apply the changeset. it will now apply cleanly
-             
-             # For parts of the conflict _target_ should win,
              # write out a nullification changeset beforehand,
              # - that way, the source update will apply cleanly
              # Then write out the source changeset
@@ -67,7 +65,6 @@ sub import_changesets {
             $target->integrate_changeset($changeset);
         }
 
-        $target->record_changeset_integration($changeset);
     }
 }
 
