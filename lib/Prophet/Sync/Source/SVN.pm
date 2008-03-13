@@ -126,92 +126,82 @@ sub accepts_changesets {
 }
 
 
+=head2 has_seen_changeset Prophet::ChangeSet
+
+Returns true if we've previously integrated this changeset, even if we originally recieved it from a different peer
+
+=cut
+
+
 sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    my $last_changeset_from_source
-        = $self->last_changeset_from_source( $changeset->original_source_uuid || $changeset->source_uuid );
+    my $last = $self->last_changeset_from_source( $changeset->original_source_uuid || $changeset->source_uuid );
 
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
-    return 1 if ( $last_changeset_from_source >= $changeset->sequence_no );
+    return 1 if ( $last >= $changeset->sequence_no );
+
 }
 
 
+=head2 changeset_will_conflict Prophet::ChangeSet
 
+Returns true if any change that's part of this changeset won't apply cleanly to the head of the current replica
+
+=cut
 
 sub changeset_will_conflict {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    return 1 if ( keys %{$self->conflicts_from_changeset($changeset)});
+    return 1 if ( $self->conflicts_from_changeset($changeset));
+    
     return undef;
 
 }
 
-sub conflicts_from_changeset{
+
+=head2 conflicts_from_changeset Prophet::ChangeSet
+
+Returns a L<Prophet::Conflict> object if the supplied L<Prophet::ChangeSet
+will generate conflicts if applied to the current replica.
+
+Returns undef if the current changeset wouldn't generate a conflict.
+
+=cut
+
+sub conflicts_from_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    my $conflict = Prophet::Conflict->new();
+    my $conflict = Prophet::Conflict->new({ prophet_handle => $self->prophet_handle});
 
-    # XXX TODO
-    die "Right here, we need to actually walk through all the changes and generate 
+    $conflict->analyze_changeset($changeset);
     
-    - a ConflictingChange if there are any conflicts in the change
-    - for each conflictingchange, we need to create a conflicting change property for each and every property that conflicts
+
+    return undef unless $#{$conflict->conflicting_changes()};
+
+    return $conflict;
 
 
-    for my $change ( $changeset->changes ) {
-        return 1 if $self->change_will_conflict($change);
-    }
-
-    return 0;
 }
 
-
-
-sub change_will_conflict {
-    my $self = shift;
-    my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
-
-    my $current_state = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
-
-    # It's ok to delete a node that exists
-    return 0 if ( $change->change_type eq 'delete' && keys %$current_state );
-
-    # It's ok to create a node that doesn't exist
-    return 0 if ( $change->change_type eq 'add_file' && !keys %$current_state );
-    return 0 if ( $change->change_type eq 'add_dir'  && !keys %$current_state );
-
-    for my $propchange ( $change->prop_changes ) {
-        # skip properties added by the change
-        next if ( !defined $current_state->{ $propchange->name } && !defined $propchange->old_value );
-
-        # If either the old version didn't have a value or the delta didn't have a value, then we
-        # know there's a conflict
-        # Ditto if they don't agree
-        return 1
-            if (       !exists $current_state->{ $propchange->name }
-                    || !defined $propchange->old_value
-                    || ( $current_state->{ $propchange->name } ne $propchange->old_value ) );
-    }
-
-    return 0;
-
-}
 
 sub integrate_changeset {
     my $self = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+
+    if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
 
     if (there's a conflict ) {
         figure out our conflict resolution
         generate a nullification change
         # IMPORTANT: these should be an atomic unit. dying here would be poor.
         # BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
-            integrate the nullification change
-            integrate the original change
-            integrate the conflict resolution change
+        #integrate the nullification change
+        #    integrate the original change
+        #    integrate the conflict resolution change
 
     } else {
         $self->prophet_handle->integrate_changeset(@_);

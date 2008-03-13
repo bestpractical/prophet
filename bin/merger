@@ -44,23 +44,23 @@ sub fatal_error {
 
 
 sub import_changesets {
-    my %args = validate(@_, { from => 1, to => 1 } );
+    my %args   = validate( @_, { from => 1, to => 1 } );
     my $source = $args{'from'};
     my $target = $args{'to'};
 
-    my $changesets_to_integrate = $source->fetch_changesets( after => $target->last_changeset_from_source($source->uuid) );
+    my $changesets_to_integrate
+        = $source->fetch_changesets( after => $target->last_changeset_from_source( $source->uuid ) );
 
     for my $changeset (@$changesets_to_integrate) {
-        next if ( $target->has_seen_changeset($changeset));
+        next if ( $target->has_seen_changeset($changeset) );
         if ( $target->changeset_will_conflict($changeset) ) {
-           
-            my $conflicts = $target->conflicts_from_changeset($changeset);
-            
 
-             # write out a nullification changeset beforehand,
-             # - that way, the source update will apply cleanly
-             # Then write out the source changeset
-             # Then write out a new changeset which reverts the parts of the source changeset which target should win
+            my $conflicts = $target->conflicts_from_changeset($changeset);
+
+            # write out a nullification changeset beforehand,
+            # - that way, the source update will apply cleanly
+            # Then write out the source changeset
+            # Then write out a new changeset which reverts the parts of the source changeset which target should win
         } else {
             $target->integrate_changeset($changeset);
         }
