@@ -40,6 +40,15 @@ sub uuid {
     return $self->ra->get_uuid;
 }
 
+=head2 fetch_changesets { after => SEQUENCE_NO } 
+
+Fetch all changesets from the source. 
+
+Returns a reference to an array of L<Prophet::ChangeSet> objects.
+
+
+=cut
+
 sub fetch_changesets {
     my $self = shift;
     my %args = validate( @_, { after => 1});
@@ -77,8 +86,7 @@ sub _recode_changeset {
             original_source_uuid => $revprops->{original_source_uuid},
             original_sequence_no => $revprops->{original_sequence_no},
 
-        }
-    );
+        });
 
     # add each node's changes to the changeset
     for my $path ( keys %{ $entry->{'paths'} } ) {
@@ -193,10 +201,8 @@ sub integrate_changeset {
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
 
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
-
-    if (there's a conflict ) {
-        figure out our conflict resolution
-        generate a nullification change
+        #figure out our conflict resolution
+        # generate a nullification change
         # IMPORTANT: these should be an atomic unit. dying here would be poor.
         # BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
         #integrate the nullification change
