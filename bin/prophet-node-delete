@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+use Prophet::CLI;
+my $prophet = Prophet->new();
+my $cli_handle = Prophet::CLI->new();
+$cli_handle->parse_record_cmd_args();
+
+my $record = Prophet::Record->new( handle => $prophet->handle);
+$record->load(uuid => $cli_handle->uuid;
+if( $record->delete ) {
+    print $record->type." ".$record->uuid." deleted.\n";
+} else {
+    print $record->type." ".$record->uuid."could not be deleted.\n";
+}
+
+
+    

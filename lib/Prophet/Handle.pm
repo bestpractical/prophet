@@ -7,12 +7,18 @@ use Params::Validate;
 use Data::Dumper;
 use Data::UUID;
 
-use Prophet::Editor;
 use SVN::Core;
 use SVN::Repos;
 use SVN::Fs;
 
 __PACKAGE__->mk_accessors(qw(repo_path repo_handle db_root current_edit));
+
+
+=head2 new { repository => $FILESYSTEM_PATH, db_root => $REPOS_PATH }
+ 
+Create a new subversion filesystem backend repository handle. If the repository/path don't exist, create it.
+
+=cut
 
 sub new {
     my $class = shift;
@@ -26,26 +32,26 @@ sub new {
     return $self;
 }
 
+=head2 current_root
+
+Returns a handle to the svn filesystem's HEAD
+
+=cut
+
 sub current_root {
     my $self = shift;
-    $self->repo_handle->fs->revision_root(
-        $self->repo_handle->fs->youngest_rev );
+    $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev );
 }
 
 sub _connect {
     my $self = shift;
+    my $repos = eval { SVN::Repos::open( $self->repo_path ); };
 
-    my $repos;
-    eval {
-        $repos = SVN::Repos::open( $self->repo_path );
-
-    };
-
-    if ( $@ && !-d $self->repo_path ) {
-        $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef,
-            undef );
-
+    # If we couldn't open the repository handle, we should create it
+    if ( $@ && ! -d $self->repo_path ) {
+        $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef );
     }
+
     $self->repo_handle($repos);
     $self->_create_nonexistent_dir( $self->db_root );
 }
@@ -59,14 +65,12 @@ sub _create_nonexistent_dir {
         $self->current_edit->root->make_dir($dir);
         $self->commit_edit() unless ($inside_edit);
     }
-
 }
 
 sub begin_edit {
     my $self = shift;
     my $fs   = $self->repo_handle->fs;
     $self->current_edit( $fs->begin_txn( $fs->youngest_rev ));
-
     return $self->current_edit;
 }
 
@@ -84,26 +88,10 @@ sub integrate_changeset {
     my $self      = shift;
     my $changeset = shift;
 
-    # open up a change handle locally
-
     $self->begin_edit();
-
-    for my $change ( $changeset->changes ) {
-        $self->_integrate_change($change);
-    }
-
-
+    $self->_integrate_change($_) for ($changeset->changes);
     $self->_set_original_source_metadata($changeset);
-
-
-    # finalize the local change
     $self->commit_edit();
-
-
-
-    # update the change's metadata with: 
-    #   original repo
-    #   orignal sequence no
 }
 
 sub _set_original_source_metadata {
@@ -112,8 +100,6 @@ sub _set_original_source_metadata {
 
     $self->current_edit->change_prop( 'prophet:original-source'  => $change->original_source_uuid  ||$change->source_uuid );
     $self->current_edit->change_prop( 'prophet:original-sequence-no'  => $change->original_sequence_no  ||$change->sequence_no);
-
-
 }
 
 

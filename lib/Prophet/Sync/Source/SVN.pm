@@ -7,26 +7,19 @@ use Params::Validate qw(:all);
 
 use SVN::Core;
 use SVN::Ra;
-use SVK;
-use SVK::Config;
 use SVN::Delta;
 
 use Prophet::Handle;
 use Prophet::Sync::Source::SVN::ReplayEditor;
+use Prophet::Sync::Source::SVN::Util;
 use Prophet::ChangeSet;
 
 __PACKAGE__->mk_accessors(qw/url ra prophet_handle/);
 
-sub new {
-    my $self = shift->SUPER::new(@_);
-    $self->setup();
-    return $self;
-}
-
 sub setup {
     my $self = shift;
-    my ( $baton, $ref ) = SVN::Core::auth_open_helper( SVK::Config->get_auth_providers );
-    my $config = SVK::Config->svnconfig;
+    my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
+    my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
     $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton ));
 
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
@@ -44,7 +37,7 @@ sub uuid {
 
 Fetch all changesets from the source. 
 
-Returns a reference to an array of L<Prophet::ChangeSet> objects.
+Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 
 
 =cut
@@ -172,7 +165,7 @@ sub changeset_will_conflict {
 
 =head2 conflicts_from_changeset Prophet::ChangeSet
 
-Returns a L<Prophet::Conflict> object if the supplied L<Prophet::ChangeSet
+Returns a L<Prophet::Conflict/> object if the supplied L<Prophet::ChangeSet/>
 will generate conflicts if applied to the current replica.
 
 Returns undef if the current changeset wouldn't generate a conflict.

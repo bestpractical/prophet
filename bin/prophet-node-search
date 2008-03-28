@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+unless  ($regex = $cli_handle->args->{regex}) {
+   die "Specify a regular expression and we'll search for records matching that regex"
+}
+
+
+my $records = Prophet::Collection->new(handle => $svb->handle, type => $cli_handle->type);
+$records->matching( sub {
+            my $item = shift; 
+            my $props = $item->get_props;
+            map { return 1 if $props->{$_} =~ $regex} keys %$props;
+            return 0
+            });
+
+for (@{$records->as_array_ref}) {
+    printf ("%s %s %s \n", $_->uuid, $_->prop( 'summary')||"(no summary)", $_->prop('status')||'(no status)');
+}

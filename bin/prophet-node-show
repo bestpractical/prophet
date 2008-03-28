@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+use Prophet::CLI;
+my $prophet = Prophet->new();
+my $cli_handle = Prophet::CLI->new();
+$cli_handle->parse_record_cmd_args();
+
+my $record = Prophet::Record->new(handle => $prophet->handle, type => $cli_handle->type);
+
+$record->load(uuid => $cli_handle->uuid);
+print "id: ".$record->uuid."\n";
+my $props = $record->get_props();
+for (keys %$props) {
+    print $_.": ".$props->{$_}."\n";
+}
+
+
+
+    

@@ -12,8 +12,8 @@ my $opts = {};
 GetOptions( $opts, 'target=s', 'source=s' );
 validate_options($opts);
 
-my $target = Prophet::Sync::Source::SVN->new( { url => $opts->{'target'} } );
-my $source = Prophet::Sync::Source::SVN->new( { url => $opts->{'source'} } );
+my $target = Prophet::Sync::Source->new( { url => $opts->{'target'} } );
+my $source = Prophet::Sync::Source->new( { url => $opts->{'source'} } );
 
 if ( $target->uuid eq $source->uuid ) {
     fatal_error( "You appear to be trying to merge two identical replicas. "
