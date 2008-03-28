@@ -7,11 +7,13 @@ use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle   source_change target_change nullification/);
+__PACKAGE__->mk_accessors(qw/prophet_handle   nullification_changeset resolution_changeset autoresolved/);
 
 =head2 analyze_changeset Prophet::ChangeSet
 
-Take a look at a changeset. if there are any conflicts, populate the L<conflicting_changes> array on this object with a set of L<Prophet::ConflictingChange> objects.
+Take a look at a changeset. if there are any conflicts, populate
+the L<conflicting_changes> array on this object with a set of
+L<Prophet::ConflictingChange> objects.
 
 =cut
 
@@ -21,12 +23,64 @@ sub analyze_changeset {
 
     $self->generate_changeset_conflicts($changeset);
     $self->generate_nullification_changeset;
-    $self->generate_conflict_resolution;
-
+    $self->attempt_automatic_conflict_resolution;
 
     return 1;
 
 }
+
+=head2 attempt_automatic_conflict_resolution
+
+Given a L<Prophet::Conflict> which can not be cleanly applied to a
+replica, it is sometimes possible to automatically determine a sane
+resolution to the conflict.
+
+=over
+
+=item When the new-state of the conflicting change matches the
+previous head of the replica.
+
+=item When someone else has previously done the resolution and we
+have a copy of that hanging aroun
+
+** This bit seems hard
+
+=back
+
+
+In those cases, this routine will generate a L<Prophet::ChangeSet> which resolves 
+as many conflicts as possible.
+
+It will then update $self->conflicting_changes to mark which
+L<Prophet::ConflictingChange>s and L<Prophet::ConflictingPropChanges>
+have been automatically resolved.
+
+
+=cut
+
+
+sub attempt_automatic_conflict_resolution {
+    my $self = shift;
+
+
+    # for everything from the changeset that is the same as the old value of the target replica
+        # we can skip applying 
+
+    die "have not implemented automatic conflict resolution yet";
+    $self->autoresolved(1);
+
+
+
+
+}
+
+
+=head2 generate_changeset_conflicts Prophet::ChangeSet
+
+Given a changeset, populates $self->conflicting_changes with all the conflicts that applying that changeset to the target replica would result in.
+
+=cut
+
 
 sub generate_changeset_conflicts {
     my $self = shift;
@@ -37,6 +91,13 @@ sub generate_changeset_conflicts {
         }
     }
 }
+
+
+=head2 _generate_change_conflicts Prophet::Change
+
+Given a change, generates a set of Prophet::ConflictingChange entries.
+
+=cut
 
 sub _generate_change_conflicts {
     my $self = shift;
@@ -69,6 +130,13 @@ sub _generate_change_conflicts {
     return ( $#{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
 }
 
+
+=head2 _generate_prop_change_conflicts Prophet::Change %hash_of_current_properties
+
+Given a change and the current state of a node, returns an array of Prophet::ConflictingPropChange objects describing conflicts which would occur if the change were applied
+
+
+=cut
 
 sub _generate_prop_change_conflicts {
     my $self          = shift;
@@ -111,6 +179,19 @@ sub conflicting_changes {
     $self->{'conflicting_changes'} ||= ();
     return $self->{'conflicting_changes'};
 }
+
+
+=head2 generate_nullification_changeset
+
+In order to record a changeset which might not apply cleanly to the
+current state of a replica, Prophet generates a I<nullification
+changeset>. That is, a changeset which sets the state of the replica
+back to what it needs to be in order to apply the new changeset.
+
+This routine computes a new L<Prophet::ChangeSet> which contains
+everything needed to nullify the conflicting state of the replica.
+
+=cut
 
 sub generate_nullification_changeset {
     my $self = shift;
