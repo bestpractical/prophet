@@ -9,15 +9,49 @@ use Prophet::PropChange;
 use Params::Validate;
 __PACKAGE__->mk_accessors(qw/node_type node_uuid change_type/);
 
+=head1 NAME
 
-# Valid values for change_type:
-# add_file add_dir update_file delete
-#
+Prophet::Change
+
+=head1 DESCRIPTION
+
+This class encapsulates a change to a single node in a Prophet replica.
+
+=head1 METHODS
+
+=head2 node_type
+
+The record type for the node.
+
+=head2 node_uuid
+
+The UUID of the node being changed
+
+=head2 change_type
+
+One of create_file, add_dir, update_file, delete
+XXX TODO is it create_file or add_file?
+
+=head2 prop_changes
+
+Returns a list of L<Prophet::PropChange/> associated with this Change
+
+=cut
+
 
 sub prop_changes {
     my $self = shift;
     return @{$self->{prop_changes}};
 }
+
+
+=head2 add_prop_change { new => __, old => ___, name => ___ }
+
+Adds a new L<Prophet::PropChange> to this L<Prophet::Change>.
+
+Takes a C<name>, and the C<old> and C<new> values.
+
+=cut
 
 sub add_prop_change {
     my $self = shift;

@@ -2,12 +2,17 @@
 use warnings;
 use strict;
 
-unless  ($regex = $cli_handle->args->{regex}) {
+
+use Prophet::CLI;
+my $cli = Prophet::CLI->new();
+$cli->parse_record_cmd_args();
+my $regex;
+unless  ($regex = $cli->args->{regex}) {
    die "Specify a regular expression and we'll search for records matching that regex"
 }
 
 
-my $records = Prophet::Collection->new(handle => $svb->handle, type => $cli_handle->type);
+my $records = Prophet::Collection->new(handle => $cli->handle, type => $cli->type);
 $records->matching( sub {
             my $item = shift; 
             my $props = $item->get_props;

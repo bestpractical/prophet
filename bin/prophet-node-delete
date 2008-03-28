@@ -2,13 +2,13 @@
 use warnings;
 use strict;
 
-use Prophet::CLI;
-my $prophet = Prophet->new();
-my $cli_handle = Prophet::CLI->new();
-$cli_handle->parse_record_cmd_args();
 
-my $record = Prophet::Record->new( handle => $prophet->handle);
-$record->load(uuid => $cli_handle->uuid;
+use Prophet::CLI;
+my $cli = Prophet::CLI->new();
+$cli->parse_record_cmd_args();
+
+my $record = Prophet::Record->new(handle => $cli->handle, type => $cli->type);
+$record->load(uuid => $cli->uuid)
 if( $record->delete ) {
     print $record->type." ".$record->uuid." deleted.\n";
 } else {

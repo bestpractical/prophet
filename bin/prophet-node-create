@@ -3,10 +3,9 @@ use warnings;
 use strict;
 
 use Prophet::CLI;
-my $prophet = Prophet->new();
-my $cli_handle = Prophet::CLI->new();
-$cli_handle->parse_record_cmd_args();
+my $cli = Prophet::CLI->new();
+$cli->parse_record_cmd_args();
 
-my $record = Prophet::Record->new(handle => $prophet->handle, type => $cli_handle->type);
-my ($id, $results)= $record->create( props => $cli_handle->args);
-print "Created $type ".$record->uuid."\n";
+my $record = Prophet::Record->new(handle => $cli->handle, type => $cli->type);
+my ($id, $results)= $record->create( props => $cli->args);
+print "Created ". $cli->type." ".$record->uuid."\n";

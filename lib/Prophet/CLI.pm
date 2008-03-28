@@ -3,8 +3,32 @@ use strict;
 
 package Prophet::CLI;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/type uuid/);
+__PACKAGE__->mk_accessors(qw/type uuid _handle/);
+
+use Path::Class;
 use Prophet;
+use Prophet::Handle;
+use Prophet::Record;
+use Prophet::Collection;
+
+
+=head2 handle
+
+
+=cut
+
+sub handle {
+    my $self = shift;
+    unless ($self->_handle) {
+    my $root = $ENV{'PROPHET_ROOT'} || dir($ENV{'HOME'},'.prophet');
+    my $path = $ENV{'PROPHET_REPO_PATH'} ||'_prophet';
+    $self->_handle( Prophet::Handle->new( repository => $root, db_root => $path ));
+
+    }
+    return $self->_handle();
+}
+
+
 
 =head2 parse_args
 
@@ -15,8 +39,8 @@ This routine pulls arguments passed on the command line out of ARGV and sticks t
 
 sub parse_args {
     my $self = shift;
-    $self->{args} = @ARGV;
-    for my $name ( keys $self->{'args'} ) {
+    %{$self->{'args'}} = @ARGV;
+    for my $name ( keys %{$self->{'args'}} ) {
         die "$name doesn't look like --prop-name" if ( $name !~ /^--/ );
         $name =~ /^--(.*)$/;
         $self->{args}->{$1} = delete $self->{'args'}->{$name};
@@ -35,7 +59,7 @@ sub parse_record_cmd_args {
     $self->parse_args();
 
     if ( my $uuid = delete $self->{args}->{uuid} ) {
-        $self->type( $uuid);
+        $self->uuid( $uuid);
     }
     if ( $self->{args}->{type} ) {
         $self->type( delete $self->{args}->{'type'} );
