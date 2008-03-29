@@ -20,8 +20,10 @@ sub new {
 sub create {
     my $self = shift;
     my %args = validate(@_, {  props => 1});
+        my $uuid = $UUIDGEN->create_b64;
+        $uuid =~ s/==$//g;
 
-    $self->uuid($UUIDGEN->create_str);
+    $self->uuid($uuid);
 
 
     $self->_canonicalize_props($args{'props'});

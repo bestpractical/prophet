@@ -201,7 +201,6 @@ sub set_node_props {
 sub get_node_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
-
     my $root = $args{'root'} || $self->current_root;
     return $root->node_proplist( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 }

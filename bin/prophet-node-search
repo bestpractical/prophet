@@ -14,7 +14,7 @@ unless  ($regex = $cli->args->{regex}) {
 
 my $records = Prophet::Collection->new(handle => $cli->handle, type => $cli->type);
 $records->matching( sub {
-            my $item = shift; 
+        my $item = shift;
             my $props = $item->get_props;
             map { return 1 if $props->{$_} =~ $regex} keys %$props;
             return 0
