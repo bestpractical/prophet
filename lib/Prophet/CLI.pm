@@ -20,7 +20,7 @@ use Prophet::Collection;
 sub handle {
     my $self = shift;
     unless ($self->_handle) {
-    my $root = $ENV{'PROPHET_ROOT'} || dir($ENV{'HOME'},'.prophet');
+    my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'},'.prophet');
     my $path = $ENV{'PROPHET_REPO_PATH'} ||'_prophet';
     $self->_handle( Prophet::Handle->new( repository => $root, db_root => $path ));
 

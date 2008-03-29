@@ -22,7 +22,7 @@ for my $node (@$nodes) {
 print "="x40 ."\n";
 print $node->rev.'@'. $node->date .' <'.$node->author.">\n";
 print "- should show source information\n";
-print " - should skip merge info if not in a verbose mode";
+print " - should skip merge info if not in a verbose mode\n";
 print $node->msg."\n" if ($node->msg);
 for my $key ( keys %{ $node->prop_changes } ) {
     print "$key ";

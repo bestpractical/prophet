@@ -164,12 +164,9 @@ sub _history_entry_callback {
 sub _compute_history_deltas {
     my $self    = shift;
     my $log_ref = shift;
-    warn $self, $log_ref;
     @$log_ref = reverse @$log_ref;
     my $last_props = {};
     for my $i ( 0 .. $#{$log_ref} ) {
-
-        warn "Node $i - rev " . $log_ref->[$i]->rev;
 
         my $props = $log_ref->[$i]->props;
 
