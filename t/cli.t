@@ -3,12 +3,11 @@
 use warnings;
 use strict;
 
-use Test::More qw/no_plan/;
+use Prophet::Test tests => 3;
 
-$ENV{'PROPHET_REPO'} = '/tmp/prophet';
-
-
-ok(`bin/prophet-node-create --type Bug --status new` );
+as_alice {
+    ok(`bin/prophet-node-create --type Bug --status new` );
+}
 
 # create 1 node
 # update the node

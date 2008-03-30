@@ -12,25 +12,26 @@ The Fallacies of Distributed Computing are a set of common but flawed assumption
    8. The network is homogeneous.
 
 
-nihao
-
 Glossary:
 
+=head1 Terms
 
-Database
+
+
+=head2 Database
     A term to describe a uniquely identified set of object types and records sharing a single 'base' revision and Replica identifier
     A database contains multiple Records
    
     Has one: uuid
 
 
-Replica
+=head2 Replica
     An instance of a database. Replicas are expected to contain all Changesets from any other replica they have been synchronized with, but those Changesets are not guaranteed to be in the same sequence on each replica
 
 
     Has one: uuid
 
-Changeset
+=head2 Changeset
     A changeset contains "old" and "new" versions of a set of database "Records", they can be of any Record Type.
     
     Has one: source_uuid, sequence_no
@@ -38,10 +39,10 @@ Changeset
 
 
 
-Change
+=head2 Change
     An entry in a changeset. Contains all the updates to a given record for this changeset
    
-Record
+=head2 Record
     A Record is composed of zero or more Attributes and a universally unique identifier. Each record is categorized into a Record Type.
        
 
@@ -50,7 +51,7 @@ Record
 
 
 
-Record Type 
+=head2 Record Type 
     A Record Type is a category or "bucket" for zero or more records applications may define specific behaviours for Records of a certain Record Type, but Prophet does no more than to tag Records with a Record Type.
 Record Types are uniquely identified with a textual name and a UUID
     
@@ -59,13 +60,13 @@ Record Types are uniquely identified with a textual name and a UUID
 
 
 
-Attribute
+=head2 Attribute
     A key-value pair on a Record.    
 
     Has one: key, value
 
 
-Conflict
+=head2 Conflict
     A Conflict occurs when a Changeset is being applied and the current state of a Replica meets any of the following criteria:
 
         * The Replica already contains a node marked as "created" in the changeset
@@ -73,5 +74,21 @@ Conflict
         * The Replica doesn't contain a node marked as "updated" in the changeset
         * The Replica contains a node marked as "updated" in the changeset, but the current state of the properties on the node does not match the "old" state of the node in the changeset.
     
-Resolution
+=head2 Resolution
     When the local Replica 
+
+
+
+=head1 NON-TERMS
+
+=head2 Node
+
+Too many things get called nodes
+
+=head2 revision
+
+Revision is a term from version control. the backing store may describe it but it's not a Prophet term
+
+=head2 
+
+
