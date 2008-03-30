@@ -1,15 +1,4 @@
 
-Done, I think.
-
-- when committing any change:
-    - record the original depot uuid and change sequence_no as revprops
-    - record two merge tickets:
-        - sequence_no from the source that gave it to us
-        - sequence_no from the original recording source
-
-- naive support for large attachments
-
-
 
 Todo
 
@@ -23,3 +12,16 @@ Todo
 - base bug tracking schema
 - Replace this todo list with a svb database
 - elegant support for large attachments
+- RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
+
+
+Done, I think.
+
+- when committing any change:
+    - record the original depot uuid and change sequence_no as revprops
+    - record two merge tickets:
+        - sequence_no from the source that gave it to us
+        - sequence_no from the original recording source
+
+- naive support for large attachments
+
