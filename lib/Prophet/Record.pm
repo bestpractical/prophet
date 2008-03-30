@@ -34,8 +34,7 @@ Instantiates a new, empty L<Prophet::Record/> of type $type.
 
 sub new {
     my $class = shift;
-    my $self = {};
-    bless $self, $class;
+    my $self = bless {}, $class;
     my %args = validate(@_, { handle => 1, type => 1});
     $self->$_($args{$_}) for keys(%args);
     return $self;
@@ -60,12 +59,9 @@ sub create {
 
     $self->uuid($uuid);
 
-
     $self->_canonicalize_props($args{'props'});
     $self->_validate_props($args{'props'}) || return undef;
-
     $self->handle->create_node( props => $args{'props'}, uuid => $self->uuid, type => $self->type);
-
     return $self->uuid;
 }
 

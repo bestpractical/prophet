@@ -82,7 +82,7 @@ Called for any file/directory deleted within this edit.
 sub delete_entry { 
     my $self = shift;
     my ($path, $revision, $parent_baton) = (@_);
-    $self->{'paths'}->{$path}->{fs} = 'delete';
+    $self->{'paths'}->{$path}->{fs_operation} = 'delete';
 }
 
 =head2 add_file ($path, $parent_baton, $copy_path, $copy_revision, $file_pool, $file_baton) 
@@ -96,7 +96,7 @@ sub add_file {
     my ($path, $parent_baton, $copy_path, $copy_revision, $file_pool, $file_baton) = (@_);
     $self->{'current_file'} = $path;
     $self->{'current_file_base_rev'} = "newly created";
-    $self->{'paths'}->{$path}->{fs} = 'add_file';
+    $self->{'paths'}->{$path}->{fs_operation} = 'add_file';
 }
 
 =head2 add_directory ($path, $parent_baton, $copy_path, $copy_revision, $dir_pool, $child_baton) 
@@ -110,7 +110,7 @@ sub add_directory {
     my $self = shift;
     my ($path, $parent_baton, $copyfrom_path, $copyfrom_revision, $dir_pool, $child_baton) = (@_);
     push @{$self->{'dir_stack'}}, { path => $path, base_rev => -1 };
-    $self->{'paths'}->{$path}->{fs} = 'add_dir';
+    $self->{'paths'}->{$path}->{fs_operation} = 'add_dir';
 }
 
 
@@ -133,7 +133,7 @@ sub open_file {
     my ($stream, $pool);
     my ($rev_fetched, $prev_props)  =  $self->ra->get_file($path, $self->{'revision'}-1, $stream,$pool);
 
-    $self->{'paths'}->{$path}->{fs} = 'update_file';
+    $self->{'paths'}->{$path}->{fs_operation} = 'update_file';
     $self->{'paths'}->{$path}->{prev_properties} = $prev_props;
 }
 

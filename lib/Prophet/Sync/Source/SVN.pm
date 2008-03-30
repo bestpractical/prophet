@@ -71,6 +71,8 @@ sub fetch_changesets {
 
     my $first_rev = $args{'after'} || 1;
 
+    # XXX TODO we should  be using a svn get_log call here rather than simple iteration
+    # clkao explains that this won't deal cleanly with cases where there are revision "holes"
     for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
         $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
@@ -102,7 +104,7 @@ sub _recode_changeset {
             my $change = Prophet::Change->new(
                 {   node_type   => $type,
                     node_uuid   => $record,
-                    change_type => $entry->{'paths'}->{$path}->{'fs'}
+                    change_type => $entry->{'paths'}->{$path}->{fs_operation}
                 }
             );
             for my $name ( keys %{ $entry->{'paths'}->{$path}->{prop_deltas} } ) {
@@ -236,6 +238,8 @@ sub integrate_changeset {
 =head2 last_changeset_from_source $SOURCE_UUID
 
 Returns the last changeset id seen from the source identified by $SOURCE_UUID
+
+# XXX TODO, we need to move the code from handle here entirely
 
 =cut
 

@@ -178,7 +178,7 @@ sub create_node {
     $self->current_edit->root->make_file($file);
     {
         my $stream = $self->current_edit->root->apply_text( $file, undef );
-        print $stream Dumper( $args{'props'} );
+        # print $stream Dumper( $args{'props'} );
         close $stream;
     }
     $self->_set_node_props(
