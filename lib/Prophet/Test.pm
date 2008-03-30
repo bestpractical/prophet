@@ -59,7 +59,7 @@ sub run_ok {
 }
 
 sub _mk_cmp_closure {
-    my ($exp, $err, $negate) = @_;
+    my ($exp, $err) = @_;
     my $line = 0;
     sub {
 	my $output = shift;
@@ -93,8 +93,8 @@ sub is_script_output {
     my @cmd = ($^X, (map { "-I$_" } @INC), 'bin/'.$script);
 
     my $ret = run3 [@cmd, @$arg], undef,
-	_mk_cmp_closure($exp_stdout, $stdout_err,0), # stdout
-	_mk_cmp_closure($exp_stderr, $stdout_err,0); # stderr
+	_mk_cmp_closure($exp_stdout, $stdout_err), # stdout
+	_mk_cmp_closure($exp_stderr, $stdout_err); # stderr
 	
     if (@$stdout_err) {
     	@_ = (0, join(' ', "$msg:", $script, @$arg));
@@ -175,6 +175,12 @@ sub as_bob (&){ as_user( bob => shift) }
 sub as_charlie(&) { as_user( charlie => shift) }
 sub as_david(&) { as_user( david => shift) }
 
+use File::Path 'rmtree';
+END {
+    for (qw(alice bob charlie david)) {
+        as_user( $_, sub { rmtree [ $ENV{'PROPHET_REPO'} ] } );
+    }
+}
 
 
 1;
