@@ -265,6 +265,7 @@ sub get_node_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
     my $root = $args{'root'} || $self->current_root;
+    Carp::cluck unless $self->node_exists(%args);
     return $root->node_proplist( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 }
 
@@ -279,6 +280,21 @@ sub file_for {
     my %args = validate( @_, { uuid => 1, type => 1 } );
     my $file = join( "/", $self->db_root, ,$args{'type'}, $args{'uuid'} );
     return $file;
+
+}
+
+=head2 node_exists {uuid => $uuid, type => $type, root => $root }
+
+Returns true if the node in question exists. False otherwise
+
+=cut
+
+sub node_exists{
+ my $self = shift;
+     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
+
+     my $root = $args{'root'} || $self->current_root;
+    return $root->check_path( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 
 }
 

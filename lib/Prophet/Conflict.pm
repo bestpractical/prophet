@@ -1,8 +1,9 @@
+
 use warnings;
 use strict;
 
 package Prophet::Conflict;
-
+use Params::Validate;
 use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
@@ -22,6 +23,10 @@ sub analyze_changeset {
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     $self->generate_changeset_conflicts($changeset);
+    return unless (@{$self->conflicting_changes});
+
+    use Data::Dumper;
+    warn Dumper($self->conflicting_changes) if @{$self->conflicting_changes};
     $self->generate_nullification_changeset;
     $self->attempt_automatic_conflict_resolution;
 
@@ -66,7 +71,7 @@ sub attempt_automatic_conflict_resolution {
     # for everything from the changeset that is the same as the old value of the target replica
         # we can skip applying 
 
-    die "have not implemented automatic conflict resolution yet";
+    Carp::cluck "have not implemented automatic conflict resolution yet";
     $self->autoresolved(1);
 
 
@@ -102,32 +107,42 @@ Given a change, generates a set of Prophet::ConflictingChange entries.
 sub _generate_change_conflicts {
     my $self = shift;
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
-    my $current_state = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
     my $file_op_conflict = '';
-
+    
+    my $file_exists = $self->prophet_handle->node_exists(uuid => $change->node_uuid, type => $change->node_type);
+    
     # It's ok to delete a node that exists
-    if ( $change->change_type eq 'delete' && !keys %$current_state ) {
+    if ( $change->change_type eq 'delete' && !$file_exists ) {
         $file_op_conflict = "delete_missing_file";
-    } elsif ( $change->change_type eq 'update' && !keys %$current_state ) {
+    } elsif ( $change->change_type eq 'update' && !$file_exists) {
         $file_op_conflict = "update_missing_file";
-    } elsif ( $change->change_type eq 'add_file' && keys %$current_state ) {
+    } elsif ( $change->change_type eq 'add_file' && $file_exists) {
         $file_op_conflict = "create_existing_file";
-    } elsif ( $change->change_type eq 'add_dir' && keys %$current_state ) {
+    } elsif ( $change->change_type eq 'add_dir' && $file_exists) {
+        # XXX TODO: this isn't right
         $file_op_conflict = "create_existing_dir";
     }
+
+    
+
+
 
     my $change_conflict = Prophet::ConflictingChange->new(
         {   node_type          => $change->node_type,
             node_uuid          => $change->node_uuid,
-            target_node_exists => ( keys %$current_state ? 1 : 0 ),
+            target_node_exists => $file_exists,
             change_type        => $change->change_type,
             file_op_conflict   => $file_op_conflict
         }
     );
 
-    push @{ $change_conflict->prop_conflicts }, $self->_generate_prop_change_conflicts( $change, $current_state );
+    if ($file_exists) {
+        my $current_state = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
 
-    return ( $#{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
+        push @{ $change_conflict->prop_conflicts }, $self->_generate_prop_change_conflicts( $change, $current_state );
+    }
+    
+     return ( @{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
 }
 
 
@@ -176,7 +191,7 @@ Returns a referencew to an array of conflicting changes for this conflict
 
 sub conflicting_changes {
     my $self = shift;
-    $self->{'conflicting_changes'} ||= ();
+    $self->{'conflicting_changes'} ||= [];
     return $self->{'conflicting_changes'};
 }
 

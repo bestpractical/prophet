@@ -19,7 +19,7 @@ Returns a reference to an array of Prophet::ConflictingPropChange objects
 sub prop_conflicts {
     my $self = shift;
 
-    $self->{'prop_conflicts'} ||= ();
+    $self->{'prop_conflicts'} ||= [];
     return $self->{prop_conflicts};
 
 }

@@ -13,6 +13,7 @@ use Prophet::Handle;
 use Prophet::Sync::Source::SVN::ReplayEditor;
 use Prophet::Sync::Source::SVN::Util;
 use Prophet::ChangeSet;
+use Prophet::Conflict;
 
 __PACKAGE__->mk_accessors(qw/url ra prophet_handle/);
 

@@ -1,8 +1,10 @@
-package Prophet::Test;
 use strict;
+use warnings;
+package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david run_ok run_output_matches/;
+our @EXPORT = qw/as_alice as_bob as_charlie as_david run_ok run_script run_output_matches/;
 
+use File::Path 'rmtree';
 use File::Temp qw/tempdir/;
 use Path::Class 'dir';
 use Test::Exception;
@@ -175,7 +177,6 @@ sub as_bob (&){ as_user( bob => shift) }
 sub as_charlie(&) { as_user( charlie => shift) }
 sub as_david(&) { as_user( david => shift) }
 
-use File::Path 'rmtree';
 END {
     for (qw(alice bob charlie david)) {
         as_user( $_, sub { rmtree [ $ENV{'PROPHET_REPO'} ] } );
