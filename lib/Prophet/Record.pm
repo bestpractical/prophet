@@ -54,8 +54,7 @@ In case of failure, returns undef.
 sub create {
     my $self = shift;
     my %args = validate(@_, {  props => 1});
-        my $uuid = $UUIDGEN->create_b64;
-        $uuid =~ s/==$//g;
+        my $uuid = $UUIDGEN->create_str;
 
     $self->uuid($uuid);
 

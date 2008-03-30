@@ -3,11 +3,18 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 3;
-
+use Prophet::Test tests => 4;
 as_alice {
-    ok(`bin/prophet-node-create --type Bug --status new` );
-}
+    run_ok('prophet-node-create', [qw(--type Bug --status new)], "Created a record as alice"); 
+    run_output_matches('prophet-node-search', [qw(--type Bug --regex .)], [qr/new/], " Found our record");
+};
+
+
+as_bob {
+    run_ok('prophet-node-create', [qw(--type Bug --status open)], "Created a record as bob" );
+    run_output_matches('prophet-node-search', [qw(--type Bug --regex .)], [qr/open/], " Found our record");
+
+};
 
 # create 1 node
 # update the node
