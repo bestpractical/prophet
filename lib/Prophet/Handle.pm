@@ -11,6 +11,7 @@ use SVN::Core;
 use SVN::Repos;
 use SVN::Fs;
 
+our $DEBUG = '0';
 __PACKAGE__->mk_accessors(qw(repo_path repo_handle db_root current_edit));
 
 
@@ -111,9 +112,14 @@ sub integrate_changeset {
     my $self      = shift;
     my $changeset = shift;
 
+    warn "==> attmping to integrate changeset $changeset";
     $self->begin_edit();
     $self->_integrate_change($_) for ($changeset->changes);
     $self->_set_original_source_metadata($changeset);
+    warn "to commit... " if ($DEBUG);
+    my $changed = $self->current_edit->root->paths_changed;
+    warn Dumper($changed) if ($DEBUG);
+    $self->record_changeset_integration($changeset);
     $self->commit_edit();
 }
 
@@ -133,7 +139,7 @@ sub _integrate_change {
     my $change = shift;
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
-
+ 
     if ( $change->change_type eq 'add_file' ) {
         $self->create_node(
             type  => $change->node_type,
@@ -153,6 +159,8 @@ sub _integrate_change {
             uuid => $change->node_uuid
         );
     }
+    my $changed = $self->current_edit->root->paths_changed;
+    
 }
 
 =head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}

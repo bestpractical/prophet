@@ -8,6 +8,7 @@ use File::Path 'rmtree';
 use File::Temp qw/tempdir/;
 use Path::Class 'dir';
 use Test::Exception;
+use IPC::Run3 'run3';
 
 
 our $REPO_BASE = File::Temp::tempdir();
@@ -37,9 +38,14 @@ Runs the script SCRIPT_NAME as a perl script, setting the @INC to the same as ou
 
 sub run_script {
     my $script = shift;
-    system($^X, (map { "-I$_" } @INC), 'bin/'.$script, @_);
+    my $args = shift;
+    my ($stdout, $stderr);
+    my @cmd = ($^X, (map { "-I$_" } @INC), 'bin/'.$script);
+
+    my $ret = run3 [@cmd, @$args], undef, \$stdout, \$stderr;
+
     Carp::croak $! if $?;
-    return;
+    return($ret, $stdout, $stderr);
 }
 
 =head2 run_ok SCRIPT_NAME [@ARGS] (<- optional hashref), optional message
@@ -55,7 +61,9 @@ sub run_ok {
    
    lives_and {
    
-      @_ = (run_script($script, @$args), $msg);
+      my ($ret, $stdout,$stderr) = (run_script($script, $args), $msg);
+      @_ = ($ret);
+      diag($stderr);
       goto &Test::More::ok;
 };
 }
@@ -78,7 +86,6 @@ sub _mk_cmp_closure {
     }
 }
 
-use IPC::Run3 'run3';
 
 =head2 is_script_output SCRIPTNAME \@ARGS, \@STDOUT_MATCH, \@STDERR_MATCH, $MSG
 
@@ -179,7 +186,7 @@ sub as_david(&) { as_user( david => shift) }
 
 END {
     for (qw(alice bob charlie david)) {
-        as_user( $_, sub { rmtree [ $ENV{'PROPHET_REPO'} ] } );
+   #     as_user( $_, sub { rmtree [ $ENV{'PROPHET_REPO'} ] } );
     }
 }
 

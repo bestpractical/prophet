@@ -3,7 +3,10 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 7;
+use Prophet::Test tests => 19;
+
+use_ok('Prophet::CLI');
+
 as_alice {
     run_ok('prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice"); 
     run_output_matches('prophet-node-search', [qw(--type Bug --regex .)], [qr/new/], " Found our record");
@@ -25,12 +28,46 @@ as_bob {
 as_alice {
     # sync from bob
     run_ok('prophet-merge', ['--from', Prophet::Test::repo_uri_for('bob'), '--to', Prophet::Test::repo_uri_for('alice')], "Sync ran ok!");
-    # check our local replica
-      my ($out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
-      like_ok($out, qr/open/) ;
-      like_ok($out, qr/new/) ;
+    # check our local replicas
+    my ($ret, $out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
+    like($out, qr/open/) ;
+    like($out, qr/new/) ;
+    my @out = split(/\n/,$out);
+    is (scalar @out, 2, "We found only two rows of output");
+    
+    my $cli = Prophet::CLI->new();
+    isa_ok($cli->handle, 'Prophet::Handle');
+
+    my $last_rev = $cli->handle->repo_handle->fs->youngest_rev;
+
+    diag("Rerun the exact same sync operation. we should still only end up with two records and NO new transactions");
+
+    # sync from bob
+    run_ok('prophet-merge', ['--from', Prophet::Test::repo_uri_for('bob'), '--to', Prophet::Test::repo_uri_for('alice')], "Sync ran ok!");
+    # check our local replicas
+    ($ret, $out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
+    like($out, qr/open/) ;
+    like($out, qr/new/) ;
+    @out = split(/\n/,$out);
+    is (scalar @out, 2, "We found only two rows of output");
+
+    is( $cli->handle->repo_handle->fs->youngest_rev, $last_rev, "We have not recorded another transaction");
+    
+};
 
 
+
+
+as_bob {
+    my ($ret, $out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
+    unlike($out, qr/new/, "bob doesn't have alice's yet") ;
+
+    # sync from bob
+    run_ok('prophet-merge', ['--to', Prophet::Test::repo_uri_for('bob'), '--from', Prophet::Test::repo_uri_for('alice')], "Sync ran ok!");
+    # check our local replicas
+    ($ret, $out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
+    like($out, qr/open/) ;
+    like($out, qr/new/) ;
 };
 
 

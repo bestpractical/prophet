@@ -179,7 +179,6 @@ sub changeset_will_conflict {
 
 }
 
-
 =head2 conflicts_from_changeset Prophet::ChangeSet
 
 Returns a L<Prophet::Conflict/> object if the supplied L<Prophet::ChangeSet/>
@@ -198,7 +197,7 @@ sub conflicts_from_changeset {
     $conflict->analyze_changeset($changeset);
     
 
-    return undef unless $#{$conflict->conflicting_changes()};
+    return undef unless @{$conflict->conflicting_changes};
 
     return $conflict;
 
