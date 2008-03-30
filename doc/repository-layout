@@ -1,0 +1,10 @@
+SVN REPO
+    _prophet
+        _merge_tickets
+           remote-source-uuid
+                last-changeset: 1234 (changeset sequence no) 
+        $record_type
+            uuid-1234
+                this file's svn props are the record properties
+            uuid-1235
+            uuid-1236
