@@ -16,6 +16,14 @@ use Prophet::ChangeSet;
 
 __PACKAGE__->mk_accessors(qw/url ra prophet_handle/);
 
+=head2 setup
+
+Open a connection to the SVN source identified by C<$self->url>.
+
+XXX TODO, make the _prophet/ directory in the replica configurable
+
+=cut
+
 sub setup {
     my $self = shift;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
@@ -27,6 +35,12 @@ sub setup {
     }
 
 }
+
+=head2 uuid
+
+Return the replica SVN repository's UUID
+
+=cut
 
 sub uuid {
     my $self = shift;
@@ -188,6 +202,14 @@ sub conflicts_from_changeset {
 
 }
 
+=head2 integrate_changeset L<Prophet::ChangeSet>
+
+If there are conflicts, generate a nullification change, figure out a conflict resolution and apply the nullification, original change and resolution all at once (as three separate changes).
+
+If there are no conflicts, just apply the change.
+
+
+=cut
 
 sub integrate_changeset {
     my $self = shift;
@@ -210,6 +232,12 @@ sub integrate_changeset {
 
 
 # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
+
+=head2 last_changeset_from_source $SOURCE_UUID
+
+Returns the last changeset id seen from the source identified by $SOURCE_UUID
+
+=cut
 
 sub last_changeset_from_source {
     my $self = shift;

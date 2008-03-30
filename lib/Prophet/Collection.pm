@@ -7,6 +7,25 @@ use base qw/Class::Accessor/;
 __PACKAGE__->mk_accessors(qw'handle type');
 use Prophet::Record;
 
+=head1 NAME
+
+Prophet::Collection
+
+=head1 DESCRIPTION
+
+This class allows the programmer to search for L<Prophet::Record>
+objects matching certain criteria and to operate on those records
+as a collection.
+
+=head1 METHODS
+
+
+=head2 new { handle => L<Prophet::Handle>, type => $TYPE }
+
+Instantiate a new, empty L<Prophet::Collection> object to find items of type C<$TYPE>
+
+
+=cut
 
 sub new {
     my $class = shift;
@@ -17,6 +36,11 @@ sub new {
     return $self;
 }
 
+=head2 matching $CODEREF
+
+Find all L<Prophet::Record>s of this collection's C<type> where $CODEREF returns true.
+
+=cut
 
 sub matching {
     my $self = shift;
@@ -40,6 +64,13 @@ sub matching {
 
 
 }
+
+=head2 as_array_ref
+
+Return the set of L<Prophet::Record>s we've found as an array reference or return an empty array ref if none were found.
+
+=cut
+
 
 sub as_array_ref {
     my $self = shift;

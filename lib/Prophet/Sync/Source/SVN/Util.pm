@@ -4,6 +4,16 @@ use strict;
 # XXX CARGO CULTED FROM SVK::Util;
 package Prophet::Sync::Source::SVN::Util;
 
+=head1 NAME
+
+Prophet::Sync::Source::SVN
+
+=head1 DESCRIPTION
+
+A library of utility functions for Subversion repository authentication. Ripped from SVK
+
+=cut
+
 use base 'Class::Data::Inheritable';
 
 __PACKAGE__->mk_classdata('_svnconfig');
@@ -39,17 +49,31 @@ __PACKAGE__->auth_providers(
 
 my $pool = SVN::Pool->new;
 
+
+=head2 svnconfig
+
+Returns a handle to the user's Subversion configuration.
+
+=cut
+
 sub svnconfig {
     my $class = shift;
     return $class->_svnconfig if $class->_svnconfig;
 
-    return undef if $ENV{SVKNOSVNCONFIG};
+    return undef if $ENV{PROPHET_NO_SVN_CONFIG};
 
     SVN::Core::config_ensure(undef);
     return $class->_svnconfig( SVN::Core::config_get_config(undef, $pool) );
 }
 
+=head2 get_auth_providers
+
+Returns an array of Subversion authentication providers
+
 # Note: Use a proper default pool when calling get_auth_providers
+
+=cut
+
 sub get_auth_providers {
     my $class = shift;
     return $class->auth_providers->();
