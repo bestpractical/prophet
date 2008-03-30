@@ -99,7 +99,7 @@ sub add_file {
     $self->{'paths'}->{$path}->{fs} = 'add_file';
 }
 
-=head2 add_file ($path, $parent_baton, $copy_path, $copy_revision, $dir_pool, $child_baton) 
+=head2 add_directory ($path, $parent_baton, $copy_path, $copy_revision, $dir_pool, $child_baton) 
 
 Called whenever a directory is added within an edit.
 
@@ -195,7 +195,7 @@ sub change_file_prop {
     };
 }
 
-=head2 change_file_prop ($baton, $name, $value,$pool)
+=head2 change_dir_prop ($baton, $name, $value,$pool)
 
 Called by Subversion when a directory property changes. All Subversion
 tells us is that 'the current node's property called $name has
