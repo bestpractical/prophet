@@ -60,7 +60,7 @@ Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 sub fetch_changesets {
     my $self = shift;
     my %args = validate( @_, { after => 1});
-
+warn "===> grabbing changesets after $args{after}";
     my @results;
     my $last_editor;
 
@@ -93,8 +93,8 @@ sub _recode_changeset {
     my $changeset = Prophet::ChangeSet->new(
         {   sequence_no          => $entry->{'revision'},
             source_uuid          => $self->uuid,
-            original_source_uuid => $revprops->{original_source_uuid},
-            original_sequence_no => $revprops->{original_sequence_no},
+            original_source_uuid => $revprops->{'prophet:original-source'},
+            original_sequence_no => $revprops->{'prophet:original-sequence-no'},
 
         });
 
@@ -155,8 +155,11 @@ sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
+    # If the changeset originated locally, we never want it
+    return 1 if $changeset->original_source_uuid eq $self->uuid;
+    # Otherwise, if the we have a merge ticket from the source, we don't want the changeset
     my $last = $self->last_changeset_from_source( $changeset->original_source_uuid || $changeset->source_uuid );
-
+        
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
     return 1 if ( $last >= $changeset->sequence_no );
 
@@ -210,12 +213,30 @@ If there are conflicts, generate a nullification change, figure out a conflict r
 
 If there are no conflicts, just apply the change.
 
-
 =cut
 
 sub integrate_changeset {
     my $self = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+
+=begin comment
+
+    # when we start to integrate a changeset, we need to do a bit of housekeeping
+    # We never want to merge in:
+        # merge tickets that describe merges from the local node
+        
+        
+    # When we integrate changes, sometimes we will get handed changes we already know about.
+    #   - changes from local
+    #   - changes from some other party we've merged from
+    #   - merge tickets for the same
+    # we'll want to skip or remove those changesets
+        
+        
+=cut        
+    return if $changeset->original_source_uuid eq $self->prophet_handle->uuid;
+    $self->remove_redundant_data($changeset); #Things we have already seen
+    return if ($changeset->is_empty or $changeset->is_nullification);
 
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
         #figure out our conflict resolution
@@ -230,6 +251,15 @@ sub integrate_changeset {
         $self->prophet_handle->integrate_changeset(@_);
 
     }
+}
+
+sub remove_redundant_data {
+    my ($self, $changeset) = @_;
+    # XXX: encapsulation
+    $changeset->{changes} = [ grep {
+        !($_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE &&
+          $_->node_uuid eq $self->prophet_handle->uuid)
+    } $changeset->changes ];
 }
 
 

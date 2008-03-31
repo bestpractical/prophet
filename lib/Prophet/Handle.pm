@@ -254,6 +254,17 @@ sub set_node_props {
 
 }
 
+=head2 uuid 
+
+Returns the uuid of the repilica
+
+=cut
+
+sub uuid {
+    my $self = shift;
+    return $self->repo_handle->fs->get_uuid;
+}
+
 =head2 get_node_props {uuid => $uuid, type => $type, root => $root }
 
 Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
@@ -273,7 +284,6 @@ sub get_node_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
     my $root = $args{'root'} || $self->current_root;
-    Carp::cluck unless $self->node_exists(%args);
     return $root->node_proplist( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 }
 

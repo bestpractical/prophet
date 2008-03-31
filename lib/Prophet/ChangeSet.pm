@@ -21,7 +21,7 @@ use Params::Validate;
 
 =cut
 
-__PACKAGE__->mk_accessors(qw/sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution/);
+__PACKAGE__->mk_accessors(qw/sequence_no source_uuid original_source_uuid original_sequence_no is_nullification  is_resolution/);
 
 =head2 new
 
@@ -77,6 +77,17 @@ Return an array of all the changes in the current changeset.
 sub changes {
     my $self = shift;
     return @{ $self->{'changes'} || [] };
+}
+
+=head2 is_empty
+
+Returns true if this changeset has no changes
+
+=cut
+
+sub is_empty {
+    my $self = shift;
+    return $self->changes ? 0 : 1;
 }
 
 1;

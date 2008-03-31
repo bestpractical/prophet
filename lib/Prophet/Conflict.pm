@@ -71,7 +71,7 @@ sub attempt_automatic_conflict_resolution {
     # for everything from the changeset that is the same as the old value of the target replica
         # we can skip applying 
 
-    Carp::cluck "have not implemented automatic conflict resolution yet";
+    warn "have not implemented automatic conflict resolution yet";
     $self->autoresolved(1);
 
 
