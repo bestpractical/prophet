@@ -72,7 +72,7 @@ Loads a Prophet record off disk by its uuid.
 =cut
 
 
-sub load {
+    sub load {
     my $self = shift;
     my %args = validate(@_, { uuid => 1});
     $self->uuid($args{uuid});

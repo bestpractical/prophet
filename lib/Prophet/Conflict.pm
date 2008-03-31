@@ -25,8 +25,6 @@ sub analyze_changeset {
     $self->generate_changeset_conflicts($changeset);
     return unless (@{$self->conflicting_changes});
 
-    use Data::Dumper;
-    warn Dumper($self->conflicting_changes) if @{$self->conflicting_changes};
     $self->generate_nullification_changeset;
     $self->attempt_automatic_conflict_resolution;
 

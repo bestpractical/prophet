@@ -53,10 +53,16 @@ as_bob {
     my $source = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
     my $target = Prophet::Sync::Source->new( { url => repo_uri_for('bob')} );
 
+    my $conflict_obj;
+
     eval {
-    $target->import_changesets( from => $source , conflict_callback=> sub { 
-    
-    my $conflict_obj = shift;
+        $target->import_changesets(
+            from              => $source,
+            conflict_callback => sub {
+                $conflict_obj = shift; die }
+        );
+    };
+
     isa_ok($conflict_obj, 'Prophet::Conflict');
 
     my @conflicting_changes = @{$conflict_obj->conflicting_changes};
@@ -72,10 +78,7 @@ as_bob {
     is($c->source_old_value, 'new');
     is($c->source_new_value,'stalled');
     is($c->target_value,'stalled');
-    die;
 
- });
-    }; 
     # Throw away the return. we wanted to inspect the conflict but not apply anything
 
 
