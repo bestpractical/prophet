@@ -74,12 +74,6 @@ as_bob {
         );
     };
 
-    my $repo = repo_uri_for('bob');
-
-    my $repo = repo_uri_for('alice');
-
-    diag `svn log -v $repo`;
-
     isa_ok( $conflict_obj, 'Prophet::Conflict' );
 
     my $conflicts = serialize_conflict($conflict_obj);
