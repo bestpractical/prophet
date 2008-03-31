@@ -219,9 +219,9 @@ sub as_user {
   my $coderef = shift;
 
   local $ENV{'PROPHET_REPO'} = repo_path_for($username);
- my (@ret)=  $coderef->();
+ my $ret=  $coderef->();
  $REPLICA_UUIDS{$username} = replica_uuid();
- return @ret;
+ return $ret;
 }
 
 

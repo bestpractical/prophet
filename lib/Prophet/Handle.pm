@@ -132,6 +132,8 @@ sub record_changeset {
     warn "==> to record $changeset / $inside_edit";
     $self->begin_edit() unless ($inside_edit);
     $self->_integrate_change($_) for ($changeset->changes);
+    $self->current_edit->change_prop( 'prophet:special-type'  => 'nullification') if ($changeset->is_nullification);
+    $self->current_edit->change_prop( 'prophet:special-type'  => 'resolution') if ($changeset->is_resolution);
     $self->commit_edit() unless ($inside_edit);
 
 }
