@@ -1,11 +1,63 @@
+alice: status: new
+bob: sync from alice
+bob: new->stalled
+alice: new->open
+bob: sync from alice
+bob: CONFLICT
+bob: resolve in favor of "open"
+bob: write resolution (as r3): OPEN IS BETTER
+bob: nullify stalled->new
+bob: record new->open
+alice: sync from bob
+alice: gets resolution
+alice: 
+    
+
+
+
+
+
+
+
+
+Serializing a conflict resolution
+
+we have a record in
+Data we must record:
+    * md5 of neutralized conflict
+    * each prop that might conflict
+        * possible resolutions
+        * chosen resolution
+
+
+/_prophet/conflict_resolutions/851bd6a627b419cfb815d008c8e7c3a8 (md5)
+    _meta: delete-file
+    or 
+    _meta: update-file
+    
+
+--- !!perl/hash:Prophet::ConflictingChange 
+change_type: update_file
+file_op_conflict: ''
+node_type: Bug
+node_uuid: 6B865DF2-FF6C-11DC-9FF9-6E0949FE7D50
+prop_conflicts: 
+  - !!perl/hash:Prophet::ConflictingPropChange 
+    choices: 
+      - open
+      - stalled
+    name: status
+    source_old_value: new
+target_node_exists: 1
+
+status: open
+status-options: new, open
+foo: bar
 
 
 Todo
 
-- implement merge of conflicts with: "local always wins"
 - prompt for resolution of conflicts
-- record conflict resolution data 
-- reuse conflict resolution data on repeated resolve
 - ability to 'pull' conflicting updates from a remote db
 - handle conflicting conflict resolutions
 
@@ -26,4 +78,7 @@ Done, I think.
 
 - naive support for large attachments
 - ability to pull non-conflicting updates from a remote db
+- implement merge of conflicts with: "local always wins"
+- record conflict resolution data 
+- reuse conflict resolution data on repeated resolve
 

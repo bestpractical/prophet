@@ -27,7 +27,6 @@ as_bob {
     if ( $out =~ /^(.*?)\s./ ) {
         $record_id = $1;
     }
-    diag($record_id);
 
     run_ok( 'prophet-node-update', [ '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
     run_output_matches(
@@ -134,10 +133,6 @@ as_bob {
     # these aren't available yet in the memory-version
     $applied_as_hash->{$_} = undef for qw(sequence_no source_uuid original_source_uuid original_sequence_no);
     is_deeply( $applied_as_hash, $null_as_hash );
-    warn YAML::Dump($applied_as_hash);
-    
-    warn YAML::Dump($null_as_hash);
-    
 
     # is the most recent change:
     my $from_alice = shift @changesets;
@@ -145,7 +140,6 @@ as_bob {
     my $from_alice_as_hash = $from_alice->as_hash;
 
     $from_alice_as_hash->{$_} = undef for qw(sequence_no source_uuid);
-    warn YAML::Dump($from_alice_as_hash);use YAML;
     is_deeply(
         $from_alice_as_hash,
         {   is_empty             => 0,

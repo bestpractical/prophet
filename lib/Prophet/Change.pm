@@ -40,7 +40,6 @@ Returns a list of L<Prophet::PropChange/> associated with this Change
 
 sub prop_changes {
     my $self = shift;
-    Carp::cluck unless $self->{prop_changes};
     return @{$self->{prop_changes} || []};
 }
 
