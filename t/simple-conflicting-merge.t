@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 20;
+use Prophet::Test tests => 28;
 
 as_alice {
     run_ok('prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice"); 
@@ -55,14 +55,18 @@ as_bob {
 
     my $conflict_obj;
 
+my $repo = repo_uri_for('bob');
+diag `svn log -v $repo`;
+
     eval {
         $target->import_changesets(
             from              => $source,
             conflict_callback => sub {
-                $conflict_obj = shift; die }
+                $conflict_obj = shift;
+            }
         );
     };
-
+#    warn $@;
     isa_ok($conflict_obj, 'Prophet::Conflict');
 
     my @conflicting_changes = @{$conflict_obj->conflicting_changes};
@@ -79,10 +83,27 @@ as_bob {
     is($c->source_new_value,'stalled');
     is($c->target_value,'stalled');
 
+    # Check to see if the nullification changeset worked out ok
+    my $nullification = $conflict_obj->nullification_changeset;
+
+    isa_ok($nullification, "Prophet::ChangeSet");
+    ok($nullification->is_nullification);
+    my @reverts = $nullification->changes;
+    is($#reverts, 0, "Found one change");
+    my $revert = shift @reverts;
+    is($revert->change_type, 'update_file');
+    my @prop_changes = $revert->prop_changes;
+    is ( $#prop_changes, 0, "Found one prop change");
+    is ($prop_changes[0]->name, 'status');
+    is($prop_changes[0]->old_value, 'stalled');
+    is($prop_changes[0]->new_value, 'new');
+    
+
     # Throw away the return. we wanted to inspect the conflict but not apply anything
 
 
-
+my $repo = repo_uri_for('bob');
+diag `svn log -v $repo`;
 
 
     # at the first sign of conflict, we're going to call back to a routine we inject to see if the conflict object is as we expect it

@@ -199,7 +199,6 @@ sub conflicts_from_changeset {
     my $conflict = Prophet::Conflict->new({ prophet_handle => $self->prophet_handle});
 
     $conflict->analyze_changeset($changeset);
-    
 
     return undef unless @{$conflict->conflicting_changes};
 
@@ -219,6 +218,7 @@ If there are no conflicts, just apply the change.
 sub integrate_changeset {
     my $self = shift;
     my %args = validate( @_, { changeset => {isa => 'Prophet::ChangeSet'}, 
+                               resolver => { optional => 1},
                              conflict_callback => { optional => 1 } 
                              } 
                             );
@@ -250,15 +250,22 @@ sub integrate_changeset {
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
 
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
+        $conflict->resolver(sub { $args{resolver}->(@_) }) if $args{resolver};
+        my $resolutions = $conflict->generate_resolution;
         Carp::cluck;
         #figure out our conflict resolution
         
     
 
         # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
-        #integrate the nullification change
-        #    integrate the original change
-        #    integrate the conflict resolution change
+        # integrate the nullification change
+        $self->prophet_handle->record_changeset($conflict->nullification_changeset);
+
+        # integrate the original change
+        $self->prophet_handle->integrate_changeset($changeset);
+        # integrate the conflict resolution change
+         $self->prophet_handle->record_changeset($conflict->resolution_changeset);
+
 
     } else {
         $self->prophet_handle->integrate_changeset($changeset);

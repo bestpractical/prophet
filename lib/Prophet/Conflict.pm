@@ -8,7 +8,7 @@ use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle   nullification_changeset resolution_changeset autoresolved/);
+__PACKAGE__->mk_accessors(qw/prophet_handle resolvers  nullification_changeset resolution_changeset autoresolved/);
 
 =head2 analyze_changeset Prophet::ChangeSet
 
@@ -26,10 +26,40 @@ sub analyze_changeset {
     return unless (@{$self->conflicting_changes});
 
     $self->generate_nullification_changeset;
-    $self->attempt_automatic_conflict_resolution;
-
+    
     return 1;
+}
 
+sub _resolution_failed {
+
+    return sub { die "conflict not resolved." };
+}
+
+
+sub generate_resolution {
+    my $self = shift;   
+    
+    my @resolvers = (
+    
+        sub { $self->attempt_automatic_conflict_resolution(@_) },
+         @{$self->resolvers || []},
+         $self->_resolution_failed);
+    
+    
+    my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
+    for my $conflict ( @{ $self->conflicting_changes } ) {
+        for (@resolvers) {
+            if (my $resolution = $_->($conflict)) {
+            warn $_;
+                $resolutions->add_change(change => $resolution);
+                last;
+            }
+        }
+    }
+
+    $self->resolution_changeset($resolutions);
+    
+    return 1;
 }
 
 =head2 attempt_automatic_conflict_resolution
@@ -64,13 +94,28 @@ have been automatically resolved.
 
 sub attempt_automatic_conflict_resolution {
     my $self = shift;
+    my $conflict = shift;
+  # for everything from the changeset that is the same as the old value of the target replica
+    # we can skip applying 
+warn "attempting to resolve conflict automatically";
+warn Dumper(@_);use Data::Dumper;
+    return 0 if $conflict->file_op_conflict;
+
+    my $resolution = Prophet::Change->new( { is_resolution => 1, 
+                                             node_type => $conflict->node_type,
+                                             node_uuid => $conflict->node_uuid });
 
 
-    # for everything from the changeset that is the same as the old value of the target replica
-        # we can skip applying 
+    for my $prop_change ( @{$conflict->prop_conflicts} ) {
+        return 0 unless $prop_change->target_value eq $prop_change->source_new_value
+    }
 
-    warn "have not implemented automatic conflict resolution yet";
+warn Dumper($resolution);
     $self->autoresolved(1);
+
+    return $resolution;
+
+
 
 
 
@@ -208,7 +253,7 @@ everything needed to nullify the conflicting state of the replica.
 
 sub generate_nullification_changeset {
     my $self = shift;
-    my $nullification = Prophet::ChangeSet->new();
+    my $nullification = Prophet::ChangeSet->new( {is_nullification => 1});
 
     for my $conflict ( @{ $self->conflicting_changes } ) {
         my $nullify_conflict = Prophet::Change->new( { node_type => $conflict->node_type, node_uuid => $conflict->node_uuid });
@@ -221,7 +266,11 @@ sub generate_nullification_changeset {
             $nullify_conflict->change_type('delete');
         } elsif ( $conflict->file_op_conflict ) {
             die "We don't know how to deal with a conflict of type " . $conflict->file_op_conflict;
+        } else {
+            $nullify_conflict->change_type('update_file');
         }
+        
+        
 
         # now that we've sorted out all the file-level conflicts, we need to get properties in order
         for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {

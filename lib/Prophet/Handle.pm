@@ -113,13 +113,27 @@ sub integrate_changeset {
     my $changeset = shift;
 
     $self->begin_edit();
-    $self->_integrate_change($_) for ($changeset->changes);
+    $self->record_changeset($changeset);
+    
     $self->_set_original_source_metadata($changeset);
     warn "to commit... " if ($DEBUG);
     my $changed = $self->current_edit->root->paths_changed;
     warn Dumper($changed) if ($DEBUG);
     $self->record_changeset_integration($changeset);
     $self->commit_edit();
+}
+
+sub record_changeset {
+    my $self = shift;
+    my $changeset = shift;
+
+    
+    my $inside_edit = $self->current_edit ? 1: 0;
+    warn "==> to record $changeset / $inside_edit";
+    $self->begin_edit() unless ($inside_edit);
+    $self->_integrate_change($_) for ($changeset->changes);
+    $self->commit_edit() unless ($inside_edit);
+
 }
 
 sub _set_original_source_metadata {
@@ -137,7 +151,7 @@ sub _integrate_change {
     my $change = shift;
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
- 
+
     if ( $change->change_type eq 'add_file' ) {
         $self->create_node(
             type  => $change->node_type,
@@ -294,7 +308,8 @@ Returns a file path within the repository (starting from the root)
 sub file_for {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
-    my $file = join( "/", $self->db_root, ,$args{'type'}, $args{'uuid'} );
+    Carp::cluck unless $args{uuid};
+    my $file = join( "/", $self->db_root ,$args{'type'}, $args{'uuid'} );
     return $file;
 
 }

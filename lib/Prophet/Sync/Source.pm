@@ -51,6 +51,7 @@ sub rebless_to_replica_type {
 sub import_changesets {
     my $self = shift;
     my %args   = validate( @_, { from => { isa => 'Prophet::Sync::Source'},
+                                 resolver => { optional => 1},
                                  conflict_callback => { optional => 1 } } );
     my $source = $args{'from'};
 
@@ -60,7 +61,7 @@ sub import_changesets {
     for my $changeset (@$changesets_to_integrate) {
     
        next if ( $self->has_seen_changeset($changeset) );
-        $self->integrate_changeset( changeset => $changeset, conflict_callback =>$args{conflict_callback});
+        $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver});
 
     }
 }
