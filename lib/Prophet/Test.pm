@@ -54,6 +54,7 @@ sub run_script {
     my @cmd = _get_perl_cmd($script);
     my $ret = run3 [@cmd, @$args], undef, \$stdout, \$stderr;
     Carp::croak $stderr if $?;
+    Test::More::diag $stderr;
     return($ret, $stdout, $stderr);
 }
 

@@ -167,7 +167,7 @@ sub _generate_prop_change_conflicts {
         my $s = {
             name             => $prop_change->name,
             source_old_value => $prop_change->old_value,
-            target_old_value => $current_state->{ $prop_change->name },
+            target_value => $current_state->{ $prop_change->name },
             source_new_value => $prop_change->new_value
         };
 

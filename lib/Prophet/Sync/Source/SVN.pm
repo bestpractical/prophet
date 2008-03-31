@@ -218,7 +218,14 @@ If there are no conflicts, just apply the change.
 
 sub integrate_changeset {
     my $self = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+    my %args = validate( @_, { changeset => {isa => 'Prophet::ChangeSet'}, 
+                             conflict_callback => { optional => 1 } 
+                             } 
+                            );
+
+
+    my $changeset = $args{'changeset'};
+
 
 =begin comment
 
@@ -234,22 +241,27 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
         
         
-=cut        
+=cut    
+    
     return if $changeset->original_source_uuid eq $self->prophet_handle->uuid;
     $self->remove_redundant_data($changeset); #Things we have already seen
     return if ($changeset->is_empty or $changeset->is_nullification);
 
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
+
+        $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
+        Carp::cluck;
         #figure out our conflict resolution
-        # generate a nullification change
-        # IMPORTANT: these should be an atomic unit. dying here would be poor.
-        # BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
+        
+    
+
+        # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
         #integrate the nullification change
         #    integrate the original change
         #    integrate the conflict resolution change
 
     } else {
-        $self->prophet_handle->integrate_changeset(@_);
+        $self->prophet_handle->integrate_changeset($changeset);
 
     }
 }
