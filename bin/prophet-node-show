@@ -6,7 +6,6 @@ use Prophet::CLI;
 my $cli = Prophet::CLI->new();
 $cli->parse_record_cmd_args();
 my $record = Prophet::Record->new(handle => $cli->handle, type => $cli->type);
-warn "Loading ".$cli->uuid;
 $record->load(uuid => $cli->uuid);
 print "id: ".$record->uuid."\n";
 my $props = $record->get_props();
