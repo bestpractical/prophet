@@ -93,8 +93,8 @@ sub _recode_changeset {
     my $changeset = Prophet::ChangeSet->new(
         {   sequence_no          => $entry->{'revision'},
             source_uuid          => $self->uuid,
-            original_source_uuid => $revprops->{'prophet:original-source'},
-            original_sequence_no => $revprops->{'prophet:original-sequence-no'},
+            original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
+            original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
 
         });
 
