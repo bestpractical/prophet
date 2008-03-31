@@ -112,7 +112,6 @@ sub integrate_changeset {
     my $self      = shift;
     my $changeset = shift;
 
-    warn "==> attmping to integrate changeset $changeset";
     $self->begin_edit();
     $self->_integrate_change($_) for ($changeset->changes);
     $self->_set_original_source_metadata($changeset);

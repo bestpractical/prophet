@@ -17,6 +17,8 @@ use Prophet::Conflict;
 
 __PACKAGE__->mk_accessors(qw/url ra prophet_handle/);
 
+our $DEBUG = $Prophet::Handle::DEBUG;
+
 =head2 setup
 
 Open a connection to the SVN source identified by C<$self->url>.
@@ -60,7 +62,6 @@ Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 sub fetch_changesets {
     my $self = shift;
     my %args = validate( @_, { after => 1});
-warn "===> grabbing changesets after $args{after}";
     my @results;
     my $last_editor;
 
@@ -119,7 +120,7 @@ sub _recode_changeset {
             $changeset->add_change( change => $change );
 
         } else {
-            warn "Discarding change to a non-record: $path";
+            warn "Discarding change to a non-record: $path" if $DEBUG;
         }
 
     }
