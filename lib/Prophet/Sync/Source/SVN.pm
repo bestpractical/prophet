@@ -96,8 +96,8 @@ sub _recode_changeset {
             source_uuid          => $self->uuid,
             original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
             original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
-            is_nullification     => (($revprops->{'prophet:special-type'} || '') eq 'nullification')?1:0,
-            is_resolution        => (($revprops->{'prophet:special-type'} || '') eq 'resolution')?1:0,
+            is_nullification     => (($revprops->{'prophet:special-type'} || '') eq 'nullification'),
+            is_resolution        => (($revprops->{'prophet:special-type'} || '') eq 'resolution'),
 
         });
 
