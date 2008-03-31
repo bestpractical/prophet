@@ -98,11 +98,11 @@ diag `svn log -v $repo`;
     is($prop_changes[0]->old_value, 'stalled');
     is($prop_changes[0]->new_value, 'new');
     
+    
+    # make sure 
 
     # Throw away the return. we wanted to inspect the conflict but not apply anything
 
-
-my $repo = repo_uri_for('bob');
 diag `svn log -v $repo`;
 
 
