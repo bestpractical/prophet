@@ -126,10 +126,9 @@ sub _set_original_source_metadata {
     my $self = shift;
     my $change = shift;
 
-    $self->current_edit->change_prop( 'prophet:original-source'  => $change->original_source_uuid  ||$change->source_uuid );
-    $self->current_edit->change_prop( 'prophet:original-sequence-no'  => $change->original_sequence_no  ||$change->sequence_no);
+    $self->current_edit->change_prop( 'prophet:original-source'  => $change->original_source_uuid   );
+    $self->current_edit->change_prop( 'prophet:original-sequence-no'  => $change->original_sequence_no);  
 }
-
 
 
 
@@ -318,19 +317,7 @@ sub node_exists{
 
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
-=head2 last_changeset_from_source L<Prophet::Sync::Source>
 
-Given a L<Prophet::Sync::Source>, returns the last changeset sequence number we've seen from that remote source's UUID.
-
-=cut
-
-sub last_changeset_from_source {
-    my $self = shift;
-    my ($source)  = validate_pos( @_, { isa => 'Prophet::Sync::Source' } );
-    my $props = eval {$self->get_node_props(uuid => $source->uuid, type => $MERGETICKET_METATYPE)};
-    return $props->{'last-changeset'};
-
-}
 
 =head2 record_changeset_integration L<Prophet::ChangeSet>
 

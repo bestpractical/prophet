@@ -264,25 +264,22 @@ sub remove_redundant_data {
 }
 
 
-# XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
 
 =head2 last_changeset_from_source $SOURCE_UUID
 
 Returns the last changeset id seen from the source identified by $SOURCE_UUID
 
-# XXX TODO, we need to move the code from handle here entirely
-
 =cut
 
 sub last_changeset_from_source {
     my $self = shift;
-    # XXX TODO should htis be an object rather than a uuid?
-    my ($source) = validate_pos(@_, {type => SCALAR } );
+        my ($source) = validate_pos(@_, {type => SCALAR } );
     my ( $stream, $pool );
 
-    # XXX HACK
     my $filename = join( "/", "_prophet", $Prophet::Handle::MERGETICKET_METATYPE, $source );
     my ( $rev_fetched, $props ) = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
+    # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
+    # because we want to be able to sync to a remote replica someday.
 
     return ( $props->{'last-changeset'} ||0 );
 

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/diag as_alice as_bob as_charlie as_david run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for/;
+our @EXPORT = qw/as_alice as_bob as_charlie as_david run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for/;
 
 use File::Path 'rmtree';
 use File::Temp qw/tempdir/;
@@ -32,12 +32,14 @@ sub import_extra {
 }
 
 
-*old_diag = \&Test::More::diag;
 { no warnings 'redefine';
 sub Test::More::diag { # bad bad bad # convenient convenient convenient
- old_diag(@_) if $ENV{'TEST_VERBOSE'};
+   # my $tb = Test::More->builder;
+
+Test::More->builder->diag(@_) if ( $Test::Harness::Verbose || $ENV{'TEST_VERBOSE'});
 }
 }
+
 =head2 run_script SCRIPT_NAME [@ARGS]
 
 Runs the script SCRIPT_NAME as a perl script, setting the @INC to the same as our caller
@@ -49,8 +51,7 @@ sub run_script {
     my $script = shift;
     my $args = shift;
     my ($stdout, $stderr);
-    my @cmd = ($^X, (map { "-I$_" } @INC), 'bin/'.$script);
-
+    my @cmd = _get_perl_cmd($script);
     my $ret = run3 [@cmd, @$args], undef, \$stdout, \$stderr;
     Carp::croak $stderr if $?;
     return($ret, $stdout, $stderr);
@@ -105,11 +106,19 @@ Runs the script, checking to see that its output matches
 
 =cut
 
+sub _get_perl_cmd {
+    my $script = shift;
+    my @cmd = ($^X, (map { "-I$_" } @INC));
+    push @cmd, '-MDevel::Cover' if $INC{'Devel/Cover.pm'};
+    push @cmd, 'bin/'.$script;
+    return @cmd;
+}
+
 sub is_script_output {
     my ($script, $arg, $exp_stdout, $exp_stderr, $msg) = @_;
     my $stdout_err = [];
     $exp_stderr ||= [];
-    my @cmd = ($^X, (map { "-I$_" } @INC), 'bin/'.$script);
+    my @cmd = _get_perl_cmd($script);
 
     my $ret = run3 [@cmd, @$arg], undef,
 	_mk_cmp_closure($exp_stdout, $stdout_err), # stdout
