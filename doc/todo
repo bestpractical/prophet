@@ -2,7 +2,6 @@
 
 Todo
 
-- ability to pull non-conflicting updates from a remote db
 - implement merge of conflicts with: "local always wins"
 - prompt for resolution of conflicts
 - record conflict resolution data 
@@ -24,4 +23,5 @@ Done, I think.
         - sequence_no from the original recording source
 
 - naive support for large attachments
+- ability to pull non-conflicting updates from a remote db
 

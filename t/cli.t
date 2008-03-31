@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 19;
+use Prophet::Test tests => 25;
 
 as_alice {
     run_ok('prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice"); 
@@ -61,15 +61,34 @@ as_bob {
     my ($ret, $out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
     unlike($out, qr/new/, "bob doesn't have alice's yet") ;
 
-    # sync from bob
+    # sync from alice
+    
     run_ok('prophet-merge', ['--to', repo_uri_for('bob'), '--from', repo_uri_for('alice')], "Sync ran ok!");
     # check our local replicas
     ($ret, $out, $err) = run_script('prophet-node-search', [qw(--type Bug --regex .)]);
     like($out, qr/open/) ;
     like($out, qr/new/) ;
-    system("svn log -v ".repo_uri_for("bob"));
     is( replica_last_rev, $last_rev + 1, "only one rev from alice is sycned" );
+    # last rev of alice is originated from bob (us), so not synced to bob, hence the merge ticket is at the previous rev.
+    is_deeply( replica_merge_tickets(), { replica_uuid_for('alice') => as_alice { replica_last_rev() - 1 }  } );
+     $last_rev = replica_last_rev();
+
+    
+    
+    diag('Sync from alice to bob again');
+    run_ok('prophet-merge', ['--to', repo_uri_for('bob'), '--from', repo_uri_for('alice')], "Sync ran ok!");
+
+    is_deeply( replica_merge_tickets(), { replica_uuid_for('alice') => as_alice { replica_last_rev() - 1 }  });
+    is(replica_last_rev() , $last_rev, "We have not recorded another transaction after a second sync");
+
 };
+
+as_alice {
+    my $last_rev = replica_last_rev();
+    run_ok('prophet-merge', ['--to', repo_uri_for('alice'), '--from', repo_uri_for('bob')], "Sync ran ok!");
+    is(replica_last_rev() , $last_rev, "We have not recorded another transaction after bob had fully synced from alice");
+
+}
 
 
 # create 1 node

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for/;
+our @EXPORT = qw/diag as_alice as_bob as_charlie as_david run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for/;
 
 use File::Path 'rmtree';
 use File::Temp qw/tempdir/;
@@ -31,6 +31,13 @@ sub import_extra {
     }
 }
 
+
+*old_diag = \&Test::More::diag;
+{ no warnings 'redefine';
+sub Test::More::diag { # bad bad bad # convenient convenient convenient
+ old_diag(@_) if $ENV{'TEST_VERBOSE'};
+}
+}
 =head2 run_script SCRIPT_NAME [@ARGS]
 
 Runs the script SCRIPT_NAME as a perl script, setting the @INC to the same as our caller
