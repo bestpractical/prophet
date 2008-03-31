@@ -71,7 +71,7 @@ sub fetch_changesets {
         return $last_editor;
     };
 
-    my $first_rev = $args{'after'} || 1;
+    my $first_rev = ( $args{'after'}+1) || 1;
 
     # XXX TODO we should  be using a svn get_log call here rather than simple iteration
     # clkao explains that this won't deal cleanly with cases where there are revision "holes"
@@ -250,12 +250,10 @@ sub integrate_changeset {
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
 
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
-        $conflict->resolver(sub { $args{resolver}->(@_) }) if $args{resolver};
+        $conflict->resolvers([sub { $args{resolver}->(@_) }]) if $args{resolver};
         my $resolutions = $conflict->generate_resolution;
         Carp::cluck;
         #figure out our conflict resolution
-        
-    
 
         # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
         # integrate the nullification change
@@ -264,7 +262,7 @@ sub integrate_changeset {
         # integrate the original change
         $self->prophet_handle->integrate_changeset($changeset);
         # integrate the conflict resolution change
-         $self->prophet_handle->record_changeset($conflict->resolution_changeset);
+        $self->prophet_handle->record_changeset($conflict->resolution_changeset);
 
 
     } else {

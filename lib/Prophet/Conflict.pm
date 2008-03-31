@@ -32,7 +32,7 @@ sub analyze_changeset {
 
 sub _resolution_failed {
 
-    return sub { die "conflict not resolved." };
+    return sub { die "conflict not resolved.\n" };
 }
 
 
