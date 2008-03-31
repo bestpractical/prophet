@@ -2,13 +2,16 @@ use strict;
 use warnings;
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for/;
+our @EXPORT = qw/as_alice as_bob as_charlie as_david run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions
+serialize_conflict serialize_changeset
+/;
 
 use File::Path 'rmtree';
 use File::Temp qw/tempdir/;
 use Path::Class 'dir';
 use Test::Exception;
 use IPC::Run3 'run3';
+use Params::Validate ':all';
 
 use Prophet::CLI;
 
@@ -217,8 +220,9 @@ our %REPLICA_UUIDS;
 sub as_user {
   my $username = shift;
   my $coderef = shift;
-
+  local $ENV{'PROPHET_USER'} = $username;
   local $ENV{'PROPHET_REPO'} = repo_path_for($username);
+  diag("I am $username. My replica id is ".replica_uuid());
  my $ret=  $coderef->();
  $REPLICA_UUIDS{$username} = replica_uuid();
  return $ret;
@@ -230,6 +234,70 @@ sub replica_uuid_for {
     return $REPLICA_UUIDS{$user};
 
 }
+
+=head2 fetch_newest_changesets COUNT
+
+Returns C<COUNT> newest L<Prophet::ChangeSet> objects in the current user's replica.
+
+=cut
+
+sub fetch_newest_changesets {
+    my $count = shift;
+    my $source = Prophet::Sync::Source->new( { url => repo_uri_for($ENV{'PROPHET_USER'})} );
+    return @{$source->fetch_changesets( after => (replica_last_rev() - $count))};
+
+
+}
+
+
+=head2 ensure_new_revisions { CODE }, $numbers_of_new_revisions, $msg
+
+=cut
+
+sub ok_added_revisions (&$$) {
+    my ($code, $num, $msg) = @_;
+    my $last_rev = replica_last_rev();
+    $code->();    
+    is( replica_last_rev(), $last_rev + $num, $msg );
+}
+
+
+
+=head2 serialize_conflict Prophet::Conflict
+
+returns a simple, serialized version of a Prophet::Conflict object suitable for comparison in tests
+
+=cut
+
+sub serialize_conflict {
+    my ($conflict_obj) = validate_pos(@_, { isa => 'Prophet::Conflict'});    
+    my $conflicts;
+    for my $change ( @{$conflict_obj->conflicting_changes} ) {
+        $conflicts->{meta} = { original_source_uuid => $conflict_obj->changeset->original_source_uuid};
+        $conflicts->{records}->{$change->node_uuid} =  {
+                change_type => $change->change_type,
+                };
+
+        for my $propchange (@{$change->prop_conflicts}) {
+             $conflicts->{records}->{$change->node_uuid}->{props}->{$propchange->name} = { source_old => $propchange->source_old_value,
+                source_new => $propchange->source_new_value,
+                target_old => $propchange->target_value    
+        }
+
+            
+    }
+}
+return $conflicts;
+}
+
+
+sub serialize_changeset {
+    my $cs = shift;
+    
+    return $cs->as_hash;
+    }
+    
+    
 
 =head2 as_alice CODE, as_bob CODE, as_charlie CODE, as_david CODE
 

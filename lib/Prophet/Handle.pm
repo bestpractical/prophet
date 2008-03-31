@@ -92,7 +92,7 @@ Finalizes L</current_edit> and sets the 'svn:author' change-prop to the current 
 sub commit_edit {
     my $self = shift;
     my $txn  = shift;
-    $self->current_edit->change_prop( 'svn:author', $ENV{'USER'} );
+    $self->current_edit->change_prop( 'svn:author', ($ENV{'PROPHET_USER'} ||$ENV{'USER'} ));
     $self->current_edit->commit;
     $self->current_edit(undef);
 
@@ -123,13 +123,41 @@ sub integrate_changeset {
     $self->commit_edit();
 }
 
+sub record_resolutions {
+    my $self      = shift;
+    my $changeset = shift;
+
+    return unless $changeset->changes;
+
+    $self->begin_edit();
+    $self->record_changeset($changeset);
+    
+    warn "to commit... " if ($DEBUG);
+    my $changed = $self->current_edit->root->paths_changed;
+    warn Dumper($changed) if ($DEBUG);
+
+use Data::Dumper;
+    warn Dumper($changeset);
+    $self->record_resolution($_) for $changeset->changes;
+    $self->commit_edit();
+}
+
+sub record_resolution {
+    my ($self, $change) = @_;
+    
+    # XXX for now, ignore if there's existing stored resolution on this conflict
+    return if $self->node_exists( uuid => $change->resolution_cas, type => '_prophet_resolution' );
+    $self->create_node( uuid => $change->resolution_cas, type => '_prophet_resolution',
+                        props => { _meta => $change->change_type,
+                                    map { $_->name => $_->new_value } $change->prop_changes } );
+}
+
 sub record_changeset {
     my $self = shift;
     my $changeset = shift;
 
     
     my $inside_edit = $self->current_edit ? 1: 0;
-    warn "==> to record $changeset / $inside_edit";
     $self->begin_edit() unless ($inside_edit);
     $self->_integrate_change($_) for ($changeset->changes);
     $self->current_edit->change_prop( 'prophet:special-type'  => 'nullification') if ($changeset->is_nullification);

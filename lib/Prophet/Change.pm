@@ -5,9 +5,8 @@ package Prophet::Change;
 use base qw/Class::Accessor/;
 
 use Prophet::PropChange;
-
 use Params::Validate;
-__PACKAGE__->mk_accessors(qw/node_type node_uuid change_type/);
+__PACKAGE__->mk_accessors(qw/node_type node_uuid change_type resolution_cas/);
 
 =head1 NAME
 
@@ -41,7 +40,23 @@ Returns a list of L<Prophet::PropChange/> associated with this Change
 
 sub prop_changes {
     my $self = shift;
-    return @{$self->{prop_changes}};
+    Carp::cluck unless $self->{prop_changes};
+    return @{$self->{prop_changes} || []};
+}
+
+=head2 new_from_conflict( $conflict )
+
+=cut
+
+sub new_from_conflict {
+    my ($class, $conflict) = @_;
+    my $self = $class->new
+        ( { is_resolution => 1,
+            resolution_cas => $conflict->cas_key,
+            change_type => $conflict->change_type,
+            node_type   => $conflict->node_type,
+            node_uuid   => $conflict->node_uuid } );
+    return $self;
 }
 
 
@@ -65,6 +80,23 @@ sub add_prop_change {
 
 
 }
+
+
+sub as_hash {
+ my $self = shift;
+        my $props = {};
+        for my $pc ($self->prop_changes) {
+                $props->{$pc->name} = { old_value => $pc->old_value, new_value => $pc->new_value};
+        }
+ 
+  return      { node_type => $self->node_type, 
+                        change_type => $self->change_type,
+                        prop_changes => $props
+
+        };
+    }
+
+
 
 
 1;

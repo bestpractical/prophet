@@ -61,12 +61,25 @@ sub import_changesets {
     for my $changeset (@$changesets_to_integrate) {
     
        next if ( $self->has_seen_changeset($changeset) );
+       next if $changeset->is_nullification || $changeset->is_resolution;
+       
         $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver});
 
     }
 }
 
+sub fetch_resolutions {
+    my $self = shift;
+    my %args   = validate( @_, { from => { isa => 'Prophet::Sync::Source'},
+                                 resolver => { optional => 1},
+                                 conflict_callback => { optional => 1 } } );
+    my $source = $args{'from'};
+    
+    my $changesets
+        = $source->fetch_changesets( after => $self->last_changeset_from_source( $source->uuid ) );
 
+    return grep { $_->is_resolution && !$self->has_seen_changeset($_) } @$changesets;
+}
 
 
 

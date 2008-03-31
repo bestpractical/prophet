@@ -90,4 +90,18 @@ sub is_empty {
     return $self->changes ? 0 : 1;
 }
 
+
+sub as_hash {
+    my $self = shift;
+    my $as_hash = { map { $_ => $self->$_() } qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty)};
+    
+    
+    for my $change ($self->changes){
+        
+ 
+        $as_hash->{changes}->{$change->node_uuid} = $change->as_hash;
+    }
+    return $as_hash;
+}
+
 1;

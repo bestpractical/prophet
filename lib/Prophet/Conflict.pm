@@ -8,7 +8,7 @@ use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle resolvers  nullification_changeset resolution_changeset autoresolved/);
+__PACKAGE__->mk_accessors(qw/prophet_handle resolvers changeset nullification_changeset resolution_changeset autoresolved/);
 
 =head2 analyze_changeset Prophet::ChangeSet
 
@@ -20,9 +20,9 @@ L<Prophet::ConflictingChange> objects.
 
 sub analyze_changeset {
     my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+    #my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    $self->generate_changeset_conflicts($changeset);
+    $self->generate_changeset_conflicts();
     return unless (@{$self->conflicting_changes});
 
     $self->generate_nullification_changeset;
@@ -50,15 +50,13 @@ sub generate_resolution {
     for my $conflict ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {
             if (my $resolution = $_->($conflict)) {
-            warn $_;
-                $resolutions->add_change(change => $resolution);
+                $resolutions->add_change(change => $resolution) if $resolution->prop_changes;
                 last;
             }
         }
     }
 
     $self->resolution_changeset($resolutions);
-    
     return 1;
 }
 
@@ -97,20 +95,14 @@ sub attempt_automatic_conflict_resolution {
     my $conflict = shift;
   # for everything from the changeset that is the same as the old value of the target replica
     # we can skip applying 
-warn "attempting to resolve conflict automatically";
-warn Dumper(@_);use Data::Dumper;
     return 0 if $conflict->file_op_conflict;
 
-    my $resolution = Prophet::Change->new( { is_resolution => 1, 
-                                             node_type => $conflict->node_type,
-                                             node_uuid => $conflict->node_uuid });
-
+    my $resolution = Prophet::Change->new_from_conflict( $conflict );
 
     for my $prop_change ( @{$conflict->prop_conflicts} ) {
         return 0 unless $prop_change->target_value eq $prop_change->source_new_value
     }
 
-warn Dumper($resolution);
     $self->autoresolved(1);
 
     return $resolution;
@@ -123,7 +115,7 @@ warn Dumper($resolution);
 }
 
 
-=head2 generate_changeset_conflicts Prophet::ChangeSet
+=head2 generate_changeset_conflicts 
 
 Given a changeset, populates $self->conflicting_changes with all the conflicts that applying that changeset to the target replica would result in.
 
@@ -132,8 +124,7 @@ Given a changeset, populates $self->conflicting_changes with all the conflicts t
 
 sub generate_changeset_conflicts {
     my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-    for my $change ( $changeset->changes ) {
+    for my $change ( $self->changeset->changes ) {
         if ( my $change_conflicts = $self->_generate_change_conflicts($change) ) {
             push @{ $self->conflicting_changes }, $change_conflicts;
         }

@@ -90,17 +90,18 @@ sub _recode_changeset {
     my $self  = shift;
     my $entry = shift;
     my $revprops = shift;
-
     my $changeset = Prophet::ChangeSet->new(
         {   sequence_no          => $entry->{'revision'},
             source_uuid          => $self->uuid,
-            original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
+            original_source_uuid => $revprops->{'prophet:original-source'}|| $self->uuid,
             original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
-            is_nullification     => (($revprops->{'prophet:special-type'} || '') eq 'nullification'),
-            is_resolution        => (($revprops->{'prophet:special-type'} || '') eq 'resolution'),
+            is_nullification     => (($revprops->{'prophet:special-type'} || '') eq 'nullification') ? 1 : undef ,
+            is_resolution        => (($revprops->{'prophet:special-type'} || '') eq 'resolution') ? 1: undef ,
 
         });
 
+
+    
     # add each node's changes to the changeset
     for my $path ( keys %{ $entry->{'paths'} } ) {
         if ( $path =~ qr|^(.+)/(.*?)/(.*?)$| ) {
@@ -198,9 +199,9 @@ sub conflicts_from_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    my $conflict = Prophet::Conflict->new({ prophet_handle => $self->prophet_handle});
+    my $conflict = Prophet::Conflict->new({ changeset => $changeset, prophet_handle => $self->prophet_handle});
 
-    $conflict->analyze_changeset($changeset);
+    $conflict->analyze_changeset();
 
     return undef unless @{$conflict->conflicting_changes};
 
@@ -254,7 +255,6 @@ sub integrate_changeset {
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers([sub { $args{resolver}->(@_) }]) if $args{resolver};
         my $resolutions = $conflict->generate_resolution;
-        Carp::cluck;
         #figure out our conflict resolution
 
         # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
@@ -264,9 +264,7 @@ sub integrate_changeset {
         # integrate the original change
         $self->prophet_handle->integrate_changeset($changeset);
         # integrate the conflict resolution change
-        $self->prophet_handle->record_changeset($conflict->resolution_changeset);
-
-
+        $self->prophet_handle->record_resolutions($conflict->resolution_changeset);
     } else {
         $self->prophet_handle->integrate_changeset($changeset);
 
@@ -276,7 +274,7 @@ sub integrate_changeset {
 sub remove_redundant_data {
     my ($self, $changeset) = @_;
     # XXX: encapsulation
-    $changeset->{changes} = [ grep {
+    $changeset->{changes} = [ grep { $_->node_type ne '_prophet_resolution' } grep {
         !($_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE &&
           $_->node_uuid eq $self->prophet_handle->uuid)
     } $changeset->changes ];
@@ -304,5 +302,26 @@ sub last_changeset_from_source {
 
 }
 
+=head2 always_mine_resolver
+
+=cut
+
+sub always_mine_resolver {
+    return
+       sub { my $conflict = shift;
+            return 0 if $conflict->file_op_conflict;
+
+            my $resolution = Prophet::Change->new_from_conflict( $conflict );
+
+            for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
+                $resolution->add_prop_change(
+                    name => $prop_conflict->name,
+                    old  => $prop_conflict->source_old_value,
+                    new  => $prop_conflict->target_value
+                );
+            }
+            return $resolution;
+    };
+}
 
 1;
