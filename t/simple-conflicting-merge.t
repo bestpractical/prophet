@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 28;
+use Prophet::Test tests => 45;
 
 as_alice {
     run_ok('prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice"); 
@@ -99,11 +99,63 @@ diag `svn log -v $repo`;
     is($prop_changes[0]->new_value, 'new');
     
     
-    # make sure 
+    # replay the last two changesets for bob's replica
+    my @changesets = @{$target->fetch_changesets( after => ($target->prophet_handle->repo_handle->fs->youngest_rev - 2))};
+    {
+       # is the second most recent change:
+       my $null_candidate  = shift @changesets;
+        # - a nullification changeset
 
-    # Throw away the return. we wanted to inspect the conflict but not apply anything
+       ok($null_candidate->is_nullification, "It was marked as a nullification");
+       my @changes = $null_candidate->changes;
+        # - with one update-file
+        is ($#changes,0, "The nullification only changed one prop");
+        my $null_change = shift @changes;
+        my @prop_changes =  $null_change->prop_changes;
+        is($#prop_changes, 0, "one prop change");
+        my $prop_change = shift @prop_changes;
+        #  status: stalled->new
+        is($prop_change->name, 'status');
+        is($prop_change->old_value, 'stalled');
+        is($prop_change->new_value, 'new');
+    }
+    
+    
+    # is the most recent change:
+    {
+        my $from_alice = shift @changesets;
+        my @changes = $from_alice->changes;
+        is ($#changes, 1, "Found 2 changes");
+        
+        
+            my ($data_change) = grep { $_->node_type eq 'Bug'} @changes;
+        is($data_change->change_type , 'update_file');
+        my @prop_changes = $data_change->prop_changes;
+        is($#prop_changes, 0, "only one prop changed");
+        
+        my $prop_change = shift @prop_changes;
+        is($prop_change->name, 'status');
+        is($prop_change->old_value, 'new');
+        is($prop_change->new_value, 'stalled');
 
-diag `svn log -v $repo`;
+     #   update-file
+    #      status new->stalled
+    
+    #  update-file
+    my($mergeticket_change) = grep { $_->node_type ne 'Bug'} @changes;
+           is($mergeticket_change->change_type , 'update_file');
+        is($mergeticket_change->node_uuid, replica_uuid_for('alice'));
+        my @mergeticket_prop_changes = $mergeticket_change->prop_changes;
+        is($#mergeticket_prop_changes, 0, "Only updated one merge ticket");
+        my $propchange = shift @mergeticket_prop_changes;
+        is ($propchange->name, 'last-changeset');
+        is($propchange->new_value, as_alice { replica_last_rev() } ); 
+       
+   }  
+    
+    
+    
+#diag `svn log -v $repo`;
 
 
     # at the first sign of conflict, we're going to call back to a routine we inject to see if the conflict object is as we expect it
