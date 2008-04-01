@@ -34,7 +34,6 @@ my @CHICKEN_DO = qw(create_record create_record delete_record  update_record upd
 sub take_one_step {
     my $self = shift;
     my $action = shift || (shuffle(@CHICKEN_DO))[0];
-    diag("We're taking a step: $action");
     $self->$action();
 
 
@@ -80,7 +79,7 @@ sub delete_record {
 }
 sub create_record {
     my $self = shift;
-    run_ok('prophet-node-create', [qw(--type Scratch),   _random_props()    ], "Created a record");
+    run_ok('prophet-node-create', [qw(--type Scratch),   _random_props()    ], $self->name ." created a record");
 }
 
 sub update_record {
@@ -88,26 +87,23 @@ sub update_record {
     my $update_record = get_random_local_record();
     
     my ($ok, $stdout, $stderr) = run_script('prophet-node-show', [qw(--type Scratch --uuid), $update_record]);
-    diag($stdout);
     
     my %props = map { split(/: /,$_,2) } split(/\n/,$stdout);
     delete $props{id};
     
     %props =      _permute_props(%props); 
     
-    run_ok('prophet-node-update', [qw(--type Scratch --uuid), $update_record,        map { '--'.$_ => $props{$_} } keys %props  ], "Updated a record");
+    run_ok('prophet-node-update', [qw(--type Scratch --uuid), $update_record,        map { '--'.$_ => $props{$_} } keys %props  ], $self->name. " updated a record");
 
 
-    diag($self->name, ' - update a record');
 
 }
 sub sync_from_peer {
     my $self = shift;
-    my $lucky = (shuffle(@{$self->arena->chickens}))[0];
+    my $lucky = shift || (shuffle(grep { $_->name ne $self->name} @{$self->arena->chickens}))[0];
   
 #    my $lucky = shift @peers;
-    diag($self->name, ' - sync from a random peer - ' . $lucky->name);
-    run_ok('prophet-merge', ['--from', repo_uri_for($lucky->name), '--to', repo_uri_for($self->name)], "Sync ran ok!");
+    run_ok('prophet-merge', ['--prefer','to','--from', repo_uri_for($lucky->name), '--to', repo_uri_for($self->name)],  $self->name. " sync from " .$lucky->name." ran ok!");
 
 
 

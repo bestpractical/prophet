@@ -8,5 +8,3 @@ $cli->parse_record_cmd_args();
 my $record = Prophet::Record->new(handle => $cli->handle, type => $cli->type);
 $record->load(uuid => $cli->uuid);
 $record->set_props(props => $cli->args);
-   
-warn "We want more feedback here";

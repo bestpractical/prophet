@@ -331,4 +331,15 @@ sub always_mine_resolver {
     };
 }
 
+
+sub always_theirs_resolver {
+    return
+       sub { my $conflict = shift;
+            return 0 if $conflict->file_op_conflict;
+
+            my $resolution = Prophet::Change->new_from_conflict( $conflict );
+            return $resolution;
+    };
+}
+
 1;

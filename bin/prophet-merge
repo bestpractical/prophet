@@ -11,7 +11,7 @@ Prophet::CLI->new; # to get res handle;
 
 my $opts = {};
 
-GetOptions( $opts, 'from=s', 'to=s' );
+GetOptions( $opts, 'from=s', 'to=s', 'prefer=s');
 validate_options($opts);
 
 my $source = Prophet::Sync::Source->new( { url => $opts->{'from'} } );
@@ -27,7 +27,11 @@ if ( !$target->accepts_changesets ) {
 fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
 }
 
-$target->import_changesets( from => $source );
+$target->import_changesets( from => $source, 
+                            use_resdb => 1,
+                            ($opts->{'prefer'} eq 'to' ? (resolver => $target->always_mine_resolver) : ()),
+                            ($opts->{'prefer'} eq 'from' ? (resolver => $target->always_theirs_resolver) : ())
+);
 
 exit(0);
 

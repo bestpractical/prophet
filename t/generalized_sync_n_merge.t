@@ -18,7 +18,7 @@ for(1..10) {
     $arena->step();
 }
 
-#$arena->sync_all_pairs;
+$arena->sync_all_pairs;
 
 for (@{$arena->chickens}) {
     warn $_->name;
@@ -36,7 +36,6 @@ for (@{$arena->chickens}) {
                  }
              });
 }
-
 
 exit;
 ;
