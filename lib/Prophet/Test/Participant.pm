@@ -74,39 +74,44 @@ sub noop {
 }
 sub delete_record {
     my $self = shift;
-    my $record = get_random_local_record();
-    $self->record_action('delete_record', $record);
-    run_ok('prophet-node-delete', [qw(--type Scratch --uuid), $record]);
+    my $args = shift;
+    $args->{record} ||= get_random_local_record();
+
+    $self->record_action('delete_record', $args);
+    run_ok('prophet-node-delete', [qw(--type Scratch --uuid),  $args->{record}]);
 
 }
 sub create_record {
     my $self = shift;
-    my @props = @_ || _random_props();
+    my $args = shift;
+    @{$args->{props}} = _random_props() unless $args->{props};
 
-    
-    my($ret,$out,$err) = run_script('prophet-node-create', [qw(--type Scratch),   @props    ]);
+    my ($ret, $out, $err) = run_script('prophet-node-create', [qw(--type Scratch),   @{$args->{props}} ]);
+
     ok($ret, $self->name . " created a record");
     if ($out =~ /Created\s+(.*?)\s+(.*)$/i) {
-       my $id =  $2;
- 
-    $self->record_action('create_record', $id, @props);
+       $args->{result} = $2;
     }
+    $self->record_action('create_record', $args);
 }
 
 sub update_record {
     my $self = shift;
-    my $update_record = get_random_local_record();
-    
-    my ($ok, $stdout, $stderr) = run_script('prophet-node-show', [qw(--type Scratch --uuid), $update_record]);
+    my $args = shift;
+
+    $args->{record} ||= get_random_local_record();
+    my ($ok, $stdout, $stderr) = run_script('prophet-node-show', [qw(--type Scratch --uuid), $args->{record}]);
     
     my %props = map { split(/: /,$_,2) } split(/\n/,$stdout);
     delete $props{id};
-    
-    %props =      _permute_props(%props); 
 
-    $self->record_action('update_record', $update_record, %props);
+    %{$args->{props}} =_permute_props(%props) unless $args->{props};
+    %props = %{ $args->{props} };
 
-    run_ok('prophet-node-update', [qw(--type Scratch --uuid), $update_record,        map { '--'.$_ => $props{$_} } keys %props  ], $self->name. " updated a record");
+    $self->record_action('update_record', $args);
+
+    run_ok('prophet-node-update', [qw(--type Scratch --uuid), $args->{record},
+                                   map { '--'.$_ => $props{$_} } keys %props  ], $self->name. " updated a record");
 
 
 
