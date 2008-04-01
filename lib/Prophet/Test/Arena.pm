@@ -6,8 +6,10 @@ package Prophet::Test::Arena;
 use base qw/Class::Accessor/;
 __PACKAGE__->mk_accessors(qw/chickens record_callback history/);
 
+use Prophet::Test::Participant;
 use Acme::MetaSyntactic;
 use Prophet::Test;
+use YAML::Syck ();
 
 sub setup {
     my $self  = shift;
@@ -16,6 +18,54 @@ sub setup {
 
     my @chickens = map { Prophet::Test::Participant->new( { name => $_, arena => $self } ) } @names;
     $self->chickens(@chickens);
+}
+
+sub run_from_yaml {
+    my $self = shift;
+    my @c = caller(0);
+    no strict 'refs';
+    my $fh = *{$c[0].'::DATA'};
+
+    return $self->run_from_yamlfile(@ARGV) unless fileno($fh);
+
+    local $/;
+    $self->run_from_data(YAML::Syck::Load( <$fh> ));
+}
+
+sub run_from_yamlfile {
+    my ($self, $file) = @_;
+    $self->run_from_data(YAML::Syck::LoadFile( $file ));
+}
+
+sub run_from_data {
+    my ($self, $data) = @_;
+
+    Test::More::plan( tests => scalar @{ $data->{recipe}} );
+    my $arena = Prophet::Test::Arena->new(
+        { record_callback => sub {
+                my ( $name, $action, $args ) = @_;
+                return;
+            },
+        }
+    );
+    $arena->setup($data->{chickens});
+
+    my $record_map;
+
+    for (@{$data->{recipe}}) {
+        my ($name, $action, $args) = @$_;
+        my ($chicken) = grep { $_->name eq $name } @{ $arena->chickens };
+        if ($args->{record}) {
+            $args->{record} = $record_map->{ $args->{record} };
+    }
+        my $next_result = $args->{result};
+
+        as_user($chicken->name, sub { $chicken->take_one_step($action, $args ) });
+
+        if ($args->{result}) {
+            $record_map->{ $next_result } = $args->{result};
+        }
+    }
 }
 
 sub step {
