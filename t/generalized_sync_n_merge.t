@@ -14,12 +14,12 @@ for(1..3) {
     $arena->step('create_record');
 }
 
-for(1..10) {
+for(1..5) {
     $arena->step();
 }
 
 $arena->sync_all_pairs;
-
+exit;
 for (@{$arena->chickens}) {
     warn $_->name;
     as_user( $_->name, sub {

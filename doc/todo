@@ -4,6 +4,7 @@ Todo
 - test byzantine sync behaviour
 
 - prompt for resolution of conflicts
+- handle file_conflict
 - handle conflicting conflict resolutions
 
 
