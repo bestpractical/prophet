@@ -15,7 +15,7 @@ use Prophet::Sync::Source::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url ra prophet_handle ressource/);
+__PACKAGE__->mk_accessors(qw/url ra prophet_handle ressource is_resdb/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -38,12 +38,13 @@ eval {
         $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' }));
     }
     if ($self->url =~ m/_res$/) {
+        # XXX: should probably just point to self
         return;
     }
 
     my $res_url = $self->url;
     $res_url =~ s/(\_res|)$/_res/;
-    $self->ressource( __PACKAGE__->new( { url => $res_url } ) );
+    $self->ressource( __PACKAGE__->new( { url => $res_url, is_resdb => 1 } ) );
 }
 
 =head2 uuid
@@ -248,7 +249,9 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
 
     return if $changeset->original_source_uuid eq $self->prophet_handle->uuid;
+
     $self->remove_redundant_data($changeset); #Things we have already seen
+
     return if ($changeset->is_empty or $changeset->is_nullification);
 
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
@@ -265,7 +268,10 @@ sub integrate_changeset {
         # integrate the original change
         $self->prophet_handle->integrate_changeset($changeset);
         # integrate the conflict resolution change
-        $self->prophet_handle->record_resolutions($conflict->resolution_changeset);
+        $self->prophet_handle->record_resolutions
+            ( $conflict->resolution_changeset,
+            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle
+            );
     } else {
         $self->prophet_handle->integrate_changeset($changeset);
 
@@ -275,7 +281,7 @@ sub integrate_changeset {
 sub remove_redundant_data {
     my ($self, $changeset) = @_;
     # XXX: encapsulation
-    $changeset->{changes} = [ grep { $_->node_type ne '_prophet_resolution' } grep {
+    $changeset->{changes} = [ grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' } grep {
         !($_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE &&
           $_->node_uuid eq $self->prophet_handle->uuid)
     } $changeset->changes ];

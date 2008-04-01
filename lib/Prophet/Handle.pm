@@ -126,6 +126,7 @@ sub integrate_changeset {
 sub record_resolutions {
     my $self      = shift;
     my $changeset = shift;
+    my $res_handle = shift;
 
     return unless $changeset->changes;
 
@@ -136,9 +137,7 @@ sub record_resolutions {
     my $changed = $self->current_edit->root->paths_changed;
     warn Dumper($changed) if ($DEBUG);
 
-use Data::Dumper;
-    warn Dumper($changeset);
-    $self->record_resolution($_) for $changeset->changes;
+    $res_handle->record_resolution($_) for $changeset->changes;
     $self->commit_edit();
 }
 

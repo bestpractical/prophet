@@ -87,29 +87,22 @@ as_alice {
     my $source = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
     my $target = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
 
-    my @res = $target->fetch_resolutions( from => $source );
-
-    # asssuming reoslutions nodes are added
-    my @resolutions = grep { $_->node_type eq '_prophet_resolution' } map { $_->changes } @res;
-
-    # fake records
-    my @res_records = map { { conflict => $_->node_uuid,
-            resolutions => { map { $_->name => $_->new_value } $_->prop_changes } } }
-        @resolutions;
+    my $res = $target->fetch_resolutions( from => $source );
 
     $target->import_changesets(
         from => $source,
-        resolver => sub { my $conflict = shift;
-
-            # find the resolution for the matchign conflict
-            my ($res) = grep { $_->{conflict} eq $conflict->cas_key } @res_records or return;
+        resolver => sub {
+            my $conflict = shift;
+            # XXX: turn this into an explicit load?
+            $res->matching( sub { $_[0]->uuid eq $conflict->cas_key });
+            my $answer = $res->as_array_ref->[0] or return;
 
             my $resolution = Prophet::Change->new_from_conflict($conflict);
             for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
                 $resolution->add_prop_change(
                     name => $prop_conflict->name,
                     old  => $prop_conflict->source_old_value,
-                    new  => $res->{resolutions}{ $prop_conflict->name },
+                    new  => $answer->prop( $prop_conflict->name ),
                 );
             }
             return $resolution;

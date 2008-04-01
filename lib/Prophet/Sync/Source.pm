@@ -62,7 +62,6 @@ sub import_changesets {
     
        next if ( $self->has_seen_changeset($changeset) );
        next if $changeset->is_nullification || $changeset->is_resolution;
-       
         $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver});
 
     }
@@ -74,11 +73,14 @@ sub fetch_resolutions {
                                  resolver => { optional => 1},
                                  conflict_callback => { optional => 1 } } );
     my $source = $args{'from'};
-    
-    my $changesets
-        = $source->fetch_changesets( after => $self->last_changeset_from_source( $source->uuid ) );
 
-    return grep { $_->is_resolution && !$self->has_seen_changeset($_) } @$changesets;
+    return unless $self->ressource;
+
+    $self->ressource->import_changesets( from => $source->ressource,
+                                             resolver => sub { die "nono not yet" } );
+
+    my $records = Prophet::Collection->new(handle => $self->ressource->prophet_handle, type => '_prophet_resolution');
+    return $records;
 }
 
 
