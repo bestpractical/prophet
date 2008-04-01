@@ -228,12 +228,13 @@ If there are no conflicts, just apply the change.
 
 sub integrate_changeset {
     my $self = shift;
-    my %args = validate( @_, { changeset => {isa => 'Prophet::ChangeSet'}, 
-                               resolver => { optional => 1},
-                             conflict_callback => { optional => 1 } 
-                             } 
-                            );
-
+    my %args = validate( @_,
+        { changeset => { isa => 'Prophet::ChangeSet' },
+            resolver          => { optional => 1 },
+            resdb             => { optional => 1 },
+            conflict_callback => { optional => 1 }
+        }
+    );
 
     my $changeset = $args{'changeset'};
 
@@ -255,10 +256,9 @@ sub integrate_changeset {
     return if ($changeset->is_empty or $changeset->is_nullification);
 
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
-
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers([sub { $args{resolver}->(@_) }]) if $args{resolver};
-        my $resolutions = $conflict->generate_resolution;
+        my $resolutions = $conflict->generate_resolution($args{resdb});
         #figure out our conflict resolution
 
         # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS

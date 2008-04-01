@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use Test::Exception;
 
-use Prophet::Test tests => 16;
+use Prophet::Test tests => 17;
 
 as_alice {
     run_ok( 'prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice" );
@@ -87,26 +87,15 @@ as_alice {
     my $source = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
     my $target = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
 
-    my $res = $target->fetch_resolutions( from => $source );
+    throws_ok {
+        $target->import_changesets(
+            from      => $source,
+        );
+    } qr/not resolved/;
 
     $target->import_changesets(
         from => $source,
-        resolver => sub {
-            my $conflict = shift;
-            # XXX: turn this into an explicit load?
-            $res->matching( sub { $_[0]->uuid eq $conflict->cas_key });
-            my $answer = $res->as_array_ref->[0] or return;
-
-            my $resolution = Prophet::Change->new_from_conflict($conflict);
-            for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
-                $resolution->add_prop_change(
-                    name => $prop_conflict->name,
-                    old  => $prop_conflict->source_old_value,
-                    new  => $answer->prop( $prop_conflict->name ),
-                );
-            }
-            return $resolution;
-        },
+        use_resdb => 1,
     );
 
     lives_and {

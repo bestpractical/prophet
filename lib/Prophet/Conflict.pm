@@ -35,17 +35,33 @@ sub _resolution_failed {
     return sub { die "conflict not resolved.\n" };
 }
 
+sub resolution_from_resdb {
+    my ($self, $resdb, $conflict) = @_;
+    # XXX: turn this into an explicit load?
+    $resdb->matching( sub { $_[0]->uuid eq $conflict->cas_key });
+    my $answer = $resdb->as_array_ref->[0] or return;
+
+    my $resolution = Prophet::Change->new_from_conflict($conflict);
+    for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
+        $resolution->add_prop_change(
+            name => $prop_conflict->name,
+            old  => $prop_conflict->source_old_value,
+            new  => $answer->prop( $prop_conflict->name ),
+        );
+    }
+    return $resolution;
+}
 
 sub generate_resolution {
-    my $self = shift;   
-    
+    my $self = shift;
+    my $resdb = shift;
     my @resolvers = (
-    
         sub { $self->attempt_automatic_conflict_resolution(@_) },
-         @{$self->resolvers || []},
-         $self->_resolution_failed);
-    
-    
+        $resdb ? sub { $self->resolution_from_resdb( $resdb, @_ ) } : (),
+        @{ $self->resolvers || [] },
+        $self->_resolution_failed
+    );
+
     my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
     for my $conflict ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {

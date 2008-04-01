@@ -50,10 +50,15 @@ sub rebless_to_replica_type {
 
 sub import_changesets {
     my $self = shift;
-    my %args   = validate( @_, { from => { isa => 'Prophet::Sync::Source'},
-                                 resolver => { optional => 1},
-                                 conflict_callback => { optional => 1 } } );
+    my %args = validate( @_, { from => { isa => 'Prophet::Sync::Source' },
+            use_resdb => { optional => 1 },
+            resolver          => { optional => 1 },
+            conflict_callback => { optional => 1 } } );
+
     my $source = $args{'from'};
+
+    my $resdb = $args{use_resdb} ?
+        $self->fetch_resolutions( from => $source ) : undef;
 
     my $changesets_to_integrate
         = $source->fetch_changesets( after => $self->last_changeset_from_source( $source->uuid ) );
@@ -62,16 +67,17 @@ sub import_changesets {
     
        next if ( $self->has_seen_changeset($changeset) );
        next if $changeset->is_nullification || $changeset->is_resolution;
-        $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver});
+        $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver}, resdb => $resdb);
 
     }
 }
 
 sub fetch_resolutions {
     my $self = shift;
-    my %args   = validate( @_, { from => { isa => 'Prophet::Sync::Source'},
-                                 resolver => { optional => 1},
-                                 conflict_callback => { optional => 1 } } );
+    my %args = validate( @_,
+        { from => { isa => 'Prophet::Sync::Source' },
+            resolver          => { optional => 1 },
+            conflict_callback => { optional => 1 } } );
     my $source = $args{'from'};
 
     return unless $self->ressource;
