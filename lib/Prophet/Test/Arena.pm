@@ -40,7 +40,7 @@ sub run_from_yamlfile {
 sub run_from_data {
     my ($self, $data) = @_;
 
-    Test::More::plan( tests => scalar @{ $data->{recipe}} );
+    Test::More::plan( tests => scalar @{ $data->{recipe}} + scalar @{ $data->{chickens}} );
     my $arena = Prophet::Test::Arena->new(
         { record_callback => sub {
                 my ( $name, $action, $args ) = @_;
