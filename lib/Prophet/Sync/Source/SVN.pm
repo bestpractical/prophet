@@ -15,7 +15,7 @@ use Prophet::Sync::Source::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url ra prophet_handle/);
+__PACKAGE__->mk_accessors(qw/url ra prophet_handle ressource/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -31,12 +31,19 @@ sub setup {
     my $self = shift;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
     my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
+eval {
     $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton ));
-
+}; Carp::confess $@ if $@;
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
         $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' }));
     }
+    if ($self->url =~ m/_res$/) {
+        return;
+    }
 
+    my $res_url = $self->url;
+    $res_url =~ s/(\_res|)$/_res/;
+    $self->ressource( __PACKAGE__->new( { url => $res_url } ) );
 }
 
 =head2 uuid
@@ -229,9 +236,6 @@ sub integrate_changeset {
 
     my $changeset = $args{'changeset'};
 
-
-=begin comment
-
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
         # merge tickets that describe merges from the local node
@@ -242,10 +246,7 @@ sub integrate_changeset {
     #   - changes from some other party we've merged from
     #   - merge tickets for the same
     # we'll want to skip or remove those changesets
-        
-        
-=cut    
-    
+
     return if $changeset->original_source_uuid eq $self->prophet_handle->uuid;
     $self->remove_redundant_data($changeset); #Things we have already seen
     return if ($changeset->is_empty or $changeset->is_nullification);

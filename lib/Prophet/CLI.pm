@@ -3,7 +3,7 @@ use strict;
 
 package Prophet::CLI;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/type uuid _handle/);
+__PACKAGE__->mk_accessors(qw/type uuid _handle _resdb_handle/);
 
 use Path::Class;
 use Prophet;
@@ -11,6 +11,12 @@ use Prophet::Handle;
 use Prophet::Record;
 use Prophet::Collection;
 
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->handle; $self->resdb_handle;
+    return $self;
+}
 
 =head2 handle
 
@@ -20,12 +26,22 @@ use Prophet::Collection;
 sub handle {
     my $self = shift;
     unless ($self->_handle) {
-    my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'},'.prophet');
-    my $path = $ENV{'PROPHET_REPO_PATH'} ||'_prophet';
-    $self->_handle( Prophet::Handle->new( repository => $root, db_root => $path ));
-
+        my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'},'.prophet');
+        my $path = $ENV{'PROPHET_REPO_PATH'} ||'_prophet';
+        $self->_handle( Prophet::Handle->new( repository => $root, db_root => $path ));
     }
     return $self->_handle();
+}
+
+
+sub resdb_handle {
+    my $self = shift;
+    unless ($self->_resdb_handle) {
+        my $root = ($ENV{'PROPHET_REPO'} || dir($ENV{'HOME'},'.prophet'))."_res";
+        my $path = $ENV{'PROPHET_REPO_PATH'} ||'_prophet';
+        $self->_resdb_handle( Prophet::Handle->new( repository => $root, db_root => $path ));
+    }
+    return $self->_resdb_handle();
 }
 
 

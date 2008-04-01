@@ -6,6 +6,8 @@ use strict;
 use Prophet::Sync::Source::SVN;
 use Params::Validate;
 use Getopt::Long;
+use Prophet::CLI;
+Prophet::CLI->new; # to get res handle;
 
 my $opts = {};
 
