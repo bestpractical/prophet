@@ -16,7 +16,7 @@ This class represents a base class for any record in a Prophet database
 
 use base qw'Class::Accessor';
 
-__PACKAGE__->mk_accessors(qw'handle props uuid type');
+__PACKAGE__->mk_accessors(qw'handle uuid type');
 
 use Params::Validate;
 use Prophet::HistoryEntry;
