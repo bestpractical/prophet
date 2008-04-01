@@ -18,7 +18,25 @@ for(1..10) {
     $arena->step();
 }
 
-$arena;
+#$arena->sync_all_pairs;
+
+for (@{$arena->chickens}) {
+    warn $_->name;
+    as_user( $_->name, sub {
+                 warn "==> hi";
+                 my $cli = Prophet::CLI->new();
+                 my $handle = $cli->handle;
+                 my $records = Prophet::Collection->new
+                     (handle => $handle,
+                      type => 'Scratch');
+                 $records->matching(sub { 1 });
+                 use Data::Dumper;
+                 for (@{$records->as_array_ref}) {
+                     warn $_->uuid.' : '.Dumper($_->get_props);
+                 }
+             });
+}
+
 
 exit;
 ;
