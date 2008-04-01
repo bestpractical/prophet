@@ -18,20 +18,7 @@ for(1..10) {
     $arena->step();
 }
 
-$arena->
+$arena;
 
 exit;
-
-
-# helper routines
-
-sub as_user {}
-
-
-
-
-
-
-
-
-1;
+;
