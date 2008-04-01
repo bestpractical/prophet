@@ -32,11 +32,10 @@ use List::Util qw(shuffle);
 my @CHICKEN_DO = qw(create_record create_record delete_record  update_record update_record update_record update_record update_record sync_from_peer sync_from_peer noop);
 
 sub take_one_step {
-    my $self = shift;
-    my $action = shift || (shuffle(@CHICKEN_DO))[0];
-    $self->$action();
-
-
+    my $self   = shift;
+    my $action = shift || ( shuffle(@CHICKEN_DO) )[0];
+    my $args   = shift;
+    $self->$action($args);
 }
 
 
@@ -108,25 +107,24 @@ sub update_record {
     %{$args->{props}} =_permute_props(%props) unless $args->{props};
     %props = %{ $args->{props} };
 
+    run_ok( 'prophet-node-update',
+        [ qw(--type Scratch --uuid), $args->{record},
+            map { '--' . $_ => $props{$_} } keys %props ], $self->name . " updated a record" );
+
     $self->record_action('update_record', $args);
-
-    run_ok('prophet-node-update', [qw(--type Scratch --uuid), $args->{record},
-                                   map { '--'.$_ => $props{$_} } keys %props  ], $self->name. " updated a record");
-
-
 
 }
 sub sync_from_peer {
     my $self = shift;
-    my $lucky = shift || (shuffle(grep { $_->name ne $self->name} @{$self->arena->chickens}))[0];
+    my $args = shift;
 
-    $self->record_action('sync_from_peer', { from => $lucky->name } );
+    my $from = $args->{from} ||= (shuffle(grep { $_->name ne $self->name} @{$self->arena->chickens}))[0]->name;
 
-  
-#    my $lucky = shift @peers;
-    eval { run_ok('prophet-merge', ['--prefer','to','--from', repo_uri_for($lucky->name), '--to', repo_uri_for($self->name)],  $self->name. " sync from " .$lucky->name." ran ok!"); };
+    $self->record_action('sync_from_peer', $args);
 
-
+    eval { run_ok( 'prophet-merge',
+            [ '--prefer', 'to', '--from', repo_uri_for($from),
+                '--to', repo_uri_for($self->name) ], $self->name . " sync from " . $from . " ran ok!" ); };
 
 }
 
