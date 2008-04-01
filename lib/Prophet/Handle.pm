@@ -339,10 +339,20 @@ sub file_for {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
     Carp::cluck unless $args{uuid};
-    my $file = join( "/", $self->db_root ,$args{'type'}, $args{'uuid'} );
+    my $file = join( "/", $self->directory_for_type(type => $args{'type'}), $args{'uuid'} );
     return $file;
 
 }
+
+
+sub directory_for_type {
+    my $self = shift;
+    my %args = validate( @_, { type => 1 } );
+    return join( "/", $self->db_root ,$args{'type'});
+
+}
+
+
 
 =head2 node_exists {uuid => $uuid, type => $type, root => $root }
 
@@ -350,12 +360,22 @@ Returns true if the node in question exists. False otherwise
 
 =cut
 
-sub node_exists{
+sub node_exists {
  my $self = shift;
      my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
 
      my $root = $args{'root'} || $self->current_root;
     return $root->check_path( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
+
+}
+
+
+sub type_exists {
+ my $self = shift;
+     my %args = validate( @_, { type => 1, root => undef } );
+
+     my $root = $args{'root'} || $self->current_root;
+    return $root->check_path( $self->directory_for_type(  type => $args{'type'},  ) );
 
 }
 

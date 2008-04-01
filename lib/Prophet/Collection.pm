@@ -46,6 +46,9 @@ sub matching {
     my $self = shift;
     my $coderef = shift;
 
+
+    return undef unless $self->handle->type_exists( type => $self->type);
+    
     # find all items,
     my $nodes = $self->handle->current_root->dir_entries($self->handle->db_root.'/'.$self->type.'/');
     # run coderef against each item;
