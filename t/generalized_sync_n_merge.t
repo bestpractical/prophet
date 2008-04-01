@@ -8,7 +8,7 @@ use_ok('Prophet::Test::Arena');
 use_ok('Prophet::Test::Participant');
 
 my $arena = Prophet::Test::Arena->new();
-$arena->setup(5);
+$arena->setup(3);
 
 for(1..3) {
     $arena->step('create_record');
@@ -25,7 +25,16 @@ diag("now every txn has gotten to every peer. we could probably do more optimal 
 $arena->sync_all_pairs;
 # dump all chickens to a datastructure and compare to the previous rev
 
-
+my $Test = Test::Builder->new;
+if (grep { !$_ } $Test->summary) {
+    my $fname = join('-', sort map { $_->name } @{$arena->chickens}).'.yml';
+    diag "test failed... dumping recipe to $fname";
+    use YAML;
+    YAML::DumpFile( $fname,
+        { chickens => [ map { $_->name } @{ $arena->chickens } ],
+            recipe => $arena->{history}
+        } );
+}
 
 exit;
 for (@{$arena->chickens}) {

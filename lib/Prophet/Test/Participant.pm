@@ -79,7 +79,10 @@ sub delete_record {
 }
 sub create_record {
     my $self = shift;
-    run_ok('prophet-node-create', [qw(--type Scratch),   _random_props()    ], $self->name ." created a record");
+    my @props = @_ || _random_props();
+
+    $self->record_action('create_record', @props);
+    run_ok('prophet-node-create', [qw(--type Scratch),   @props    ], $self->name ." created a record");
 }
 
 sub update_record {
@@ -92,7 +95,9 @@ sub update_record {
     delete $props{id};
     
     %props =      _permute_props(%props); 
-    
+
+    $self->record_action('update_record', %props);
+
     run_ok('prophet-node-update', [qw(--type Scratch --uuid), $update_record,        map { '--'.$_ => $props{$_} } keys %props  ], $self->name. " updated a record");
 
 
@@ -101,6 +106,9 @@ sub update_record {
 sub sync_from_peer {
     my $self = shift;
     my $lucky = shift || (shuffle(grep { $_->name ne $self->name} @{$self->arena->chickens}))[0];
+
+    $self->record_action('sync_from_peer', $lucky->name);
+
   
 #    my $lucky = shift @peers;
     eval { run_ok('prophet-merge', ['--prefer','to','--from', repo_uri_for($lucky->name), '--to', repo_uri_for($self->name)],  $self->name. " sync from " .$lucky->name." ran ok!"); };
@@ -119,5 +127,11 @@ sub get_random_local_record {
 sub sync_from_all_peers {}
 sub dump_state {}
 sub dump_history {}
+
+sub record_action {
+    my ($self, $action, @arg) = @_;
+    $self->arena->record($self->name, $action, @arg);
+}
+
 
 1;

@@ -9,7 +9,6 @@ __PACKAGE__->mk_accessors(qw/chickens/);
 use Acme::MetaSyntactic;
 use Prophet::Test;
 
-
 sub setup {
     my $self  = shift;
     my $count = shift;
@@ -62,4 +61,10 @@ sub sync_all_pairs {
     
 
 }
+
+sub record {
+    my ($self, $name, $action, @args) = @_;
+    push @{$self->{history} ||= []}, [$name, $action, @args];
+}
+
 1;
