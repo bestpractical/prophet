@@ -37,6 +37,16 @@ sub step {
     # for x rounds, have each participant execute a random action
 }
 
+sub dump_state {
+    my $self = shift;
+    my %state;
+    for my $chicken ( @{ $self->chickens } ) {
+        $state{ $chicken->name } = as_user( $chicken->name, sub { $chicken->dump_state } );
+    }
+    return \%state;
+}
+
+
 use List::Util qw/shuffle/;
 sub sync_all_pairs {
     my $self = shift;
@@ -53,7 +63,7 @@ sub sync_all_pairs {
         next if $a->name eq $b->name;
         next if ($seen_pairs{$b->name."-".$a->name});
         diag($a->name, $b->name);
-        $a->sync_from_peer($b);
+           as_user($a->name, sub {$a->sync_from_peer($b) });
         $seen_pairs{$a->name."-".$b->name} =1;
     }
 

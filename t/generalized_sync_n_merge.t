@@ -20,11 +20,14 @@ for(1..5) {
 
 $arena->sync_all_pairs;
 $arena->sync_all_pairs;
+my $third = $arena->dump_state;
 diag("now every txn has gotten to every peer. we could probably do more optimal routing, but that's not what we're testing");
 # dump all chickens to a datastructure;
 $arena->sync_all_pairs;
 # dump all chickens to a datastructure and compare to the previous rev
+my $fourth = $arena->dump_state;
 
+is_deeply($third,$fourth);
 my $Test = Test::Builder->new;
 if (grep { !$_ } $Test->summary) {
     my $fname = join('-', sort map { $_->name } @{$arena->chickens}).'.yml';

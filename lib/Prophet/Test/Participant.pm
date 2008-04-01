@@ -125,7 +125,34 @@ sub get_random_local_record {
 
 
 sub sync_from_all_peers {}
-sub dump_state {}
+sub dump_state {
+    my $self = shift;
+    my $cli = Prophet::CLI->new();
+
+    my $state;
+
+    my $nodes = Prophet::Collection->new(handle => $cli->handle, type => 'Scratch');
+    my $merges = Prophet::Collection->new(handle => $cli->handle, type => $Prophet::Handle::MERGETICKET_METATYPE);
+    my $resolutions = Prophet::Collection->new(handle => $cli->resdb_handle, type => '_prophet_resolution');
+
+    $nodes->matching(sub {1});
+    $resolutions->matching(sub {1});
+    $merges->matching(sub {1});
+    
+    %{$state->{nodes}}= map { $_->uuid =>  $_->get_props} @{$nodes->as_array_ref};
+    %{$state->{merges}} =map { $_->uuid => $_->get_props} @{ $merges->as_array_ref};
+    %{$state->{resolutions}} = map { $_->uuid => $_->get_props} @{$resolutions->as_array_ref};
+
+
+
+
+
+    return $state;
+
+}
+
+
+
 sub dump_history {}
 
 sub record_action {
