@@ -58,7 +58,7 @@ sub run_script {
 #    diag(join(' ', @cmd, @$args));
     my $ret = run3 [@cmd, @$args], undef, \$stdout, \$stderr;
     Carp::croak $stderr if $?;
-    Test::More::diag $stderr;
+    #Test::More::diag $stderr;
     return($ret, $stdout, $stderr);
 }
 

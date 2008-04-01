@@ -29,7 +29,7 @@ sub _setup {
 
 use List::Util qw(shuffle);
 
-my @CHICKEN_DO = qw(create_record create_record delete_record  update_record update_record update_record update_record update_record update_record update_record update_record sync_from_peer sync_from_peer noop);
+my @CHICKEN_DO = qw(create_record create_record delete_record  update_record update_record update_record update_record update_record sync_from_peer sync_from_peer noop);
 
 sub take_one_step {
     my $self = shift;
@@ -70,7 +70,7 @@ sub _permute_props {
 
 sub noop {
     my $self = shift;
-    diag($self->name, ' - NOOP');
+    ok(1, $self->name. ' - NOOP');
 }
 sub delete_record {
     my $self = shift;
