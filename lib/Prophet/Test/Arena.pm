@@ -38,20 +38,27 @@ sub step {
     # for x rounds, have each participant execute a random action
 }
 
-use List::MoreUtils qw/pairwise/;
 use List::Util qw/shuffle/;
 sub sync_all_pairs {
     my $self = shift;
 
+    diag("now syncing all pairs");
 
     my @chickens_a = shuffle @{$self->chickens};
     my @chickens_b = shuffle @{$self->chickens};
-    
-    pairwise {
-        return if $a->name eq $b->name;
+ 
+    my %seen_pairs;
+
+    foreach my $a (@chickens_a) {
+        foreach my $b (@chickens_b) { 
+        next if $a->name eq $b->name;
+        next if ($seen_pairs{$b->name."-".$a->name});
+        diag($a->name, $b->name);
         $a->sync_from_peer($b);
-    } @chickens_a, @chickens_b;
-    
+        $seen_pairs{$a->name."-".$b->name} =1;
+    }
+
+    }
     
 
 }

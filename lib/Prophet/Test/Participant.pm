@@ -103,7 +103,7 @@ sub sync_from_peer {
     my $lucky = shift || (shuffle(grep { $_->name ne $self->name} @{$self->arena->chickens}))[0];
   
 #    my $lucky = shift @peers;
-    run_ok('prophet-merge', ['--prefer','to','--from', repo_uri_for($lucky->name), '--to', repo_uri_for($self->name)],  $self->name. " sync from " .$lucky->name." ran ok!");
+    eval { run_ok('prophet-merge', ['--prefer','to','--from', repo_uri_for($lucky->name), '--to', repo_uri_for($self->name)],  $self->name. " sync from " .$lucky->name." ran ok!"); };
 
 
 
