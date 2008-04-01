@@ -1,8 +1,9 @@
 
 Todo
 
+- test byzantine sync behaviour
+
 - prompt for resolution of conflicts
-- ability to 'pull' conflicting updates from a remote db
 - handle conflicting conflict resolutions
 
 
@@ -25,3 +26,4 @@ Done, I think.
 - implement merge of conflicts with: "local always wins"
 - record conflict resolution data 
 - reuse conflict resolution data on repeated resolve
+- ability to 'pull' conflicting updates from a remote db

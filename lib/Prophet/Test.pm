@@ -55,6 +55,7 @@ sub run_script {
     my $args = shift || [];
     my ($stdout, $stderr);
     my @cmd = _get_perl_cmd($script);
+#    diag(join(' ', @cmd, @$args));
     my $ret = run3 [@cmd, @$args], undef, \$stdout, \$stderr;
     Carp::croak $stderr if $?;
     Test::More::diag $stderr;

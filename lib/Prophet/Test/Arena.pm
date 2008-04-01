@@ -30,8 +30,9 @@ sub setup {
 
 sub step {
     my $self = shift;
+    my $step_name = shift || undef;
     for my $chicken (@{$self->chickens}) {
-        as_user($chicken->name, sub {$chicken->take_one_step()});
+        as_user($chicken->name, sub {$chicken->take_one_step($step_name)});
     }
 
     # for x rounds, have each participant execute a random action
