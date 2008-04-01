@@ -74,7 +74,9 @@ sub noop {
 }
 sub delete_record {
     my $self = shift;
-    run_ok('prophet-node-delete', [qw(--type Scratch --uuid),  get_random_local_record()]);
+    my $record = get_random_local_record();
+    $self->record_action('delete_record', $record);
+    run_ok('prophet-node-delete', [qw(--type Scratch --uuid), $record]);
 
 }
 sub create_record {
