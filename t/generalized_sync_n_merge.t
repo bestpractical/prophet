@@ -19,6 +19,14 @@ for(1..5) {
 }
 
 $arena->sync_all_pairs;
+$arena->sync_all_pairs;
+diag("now every txn has gotten to every peer. we could probably do more optimal routing, but that's not what we're testing");
+# dump all chickens to a datastructure;
+$arena->sync_all_pairs;
+# dump all chickens to a datastructure and compare to the previous rev
+
+
+
 exit;
 for (@{$arena->chickens}) {
     warn $_->name;
