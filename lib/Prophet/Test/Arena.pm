@@ -73,8 +73,16 @@ sub sync_all_pairs {
 }
 
 sub record {
-    my ($self, $name, $action, @args) = @_;
-    push @{$self->{history} ||= []}, [$name, $action, @args];
+    my ($self, $name, $action, $args) = @_;
+    my $stored = { %$args };
+    if ( my $record = $stored->{record} ) {
+        $stored->{record} = $self->{record_map}{ $record };
+    }
+    elsif (my $result = $stored->{result}) {
+        $stored->{result} = $self->{record_map}{ $result } =
+            ++$self->{record_cnt};
+    }
+    push @{$self->{history} ||= []}, [$name, $action, $stored];
 }
 
 1;

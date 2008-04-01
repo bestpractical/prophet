@@ -120,7 +120,7 @@ sub sync_from_peer {
     my $self = shift;
     my $lucky = shift || (shuffle(grep { $_->name ne $self->name} @{$self->arena->chickens}))[0];
 
-    $self->record_action('sync_from_peer', $lucky->name);
+    $self->record_action('sync_from_peer', { from => $lucky->name } );
 
   
 #    my $lucky = shift @peers;
