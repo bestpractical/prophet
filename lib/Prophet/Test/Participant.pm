@@ -83,8 +83,14 @@ sub create_record {
     my $self = shift;
     my @props = @_ || _random_props();
 
-    $self->record_action('create_record', @props);
-    run_ok('prophet-node-create', [qw(--type Scratch),   @props    ], $self->name ." created a record");
+    
+    my($ret,$out,$err) = run_script('prophet-node-create', [qw(--type Scratch),   @props    ]);
+    ok($ret, $self->name . " created a record");
+    if ($out =~ /Created\s+(.*?)\s+(.*)$/i) {
+       my $id =  $2;
+ 
+    $self->record_action('create_record', $id, @props);
+    }
 }
 
 sub update_record {
@@ -98,7 +104,7 @@ sub update_record {
     
     %props =      _permute_props(%props); 
 
-    $self->record_action('update_record', %props);
+    $self->record_action('update_record', $update_record, %props);
 
     run_ok('prophet-node-update', [qw(--type Scratch --uuid), $update_record,        map { '--'.$_ => $props{$_} } keys %props  ], $self->name. " updated a record");
 
