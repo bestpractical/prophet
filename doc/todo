@@ -13,6 +13,28 @@ Todo
 - elegant support for large attachments
 - RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
 
+- define a value for a property that is a reference to another record or set of records
+
+
+
+Bug tracker:
+
+    subject
+    status
+    severity
+    custom fields
+    owner
+    keywords/tags
+    reported by
+    
+    attachments / patches
+    
+    milestones?
+    custom fields with possible values - loaded from some other record/table
+    
+    comments
+        seperate records referring to the ticket uuid
+        
 
 Done, I think.
 

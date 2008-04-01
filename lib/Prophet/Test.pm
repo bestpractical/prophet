@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions
+our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid
 serialize_conflict serialize_changeset
 /;
 
