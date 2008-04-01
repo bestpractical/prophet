@@ -4,11 +4,10 @@ use strict;
 
 package Prophet::Test::Arena;
 use base qw/Class::Accessor/;
-
+__PACKAGE__->mk_accessors(qw/chickens/);
 
 use Acme::MetaSyntactic;
 use Prophet::Test;
-__PACKAGE__->mk_accessors(qw/chickens/);
 
 
 sub setup {
@@ -22,15 +21,19 @@ sub setup {
     my $meta = Acme::MetaSyntactic->new();
     
     for my $name ($meta->name(pause_id => $count)) {
-        push @chickens,Prophet::Test::Participant->new( { name => $name } );
+        push @chickens,Prophet::Test::Participant->new( { name => $name, arena => $self } );
 
     }
-
-    $self->chickens(\@chickens);
+    $self->chickens(@chickens);
         
 }
 
-sub act_like_chickens {
+sub step {
+    my $self = shift;
+    for my $chicken (@{$self->chickens}) {
+        as_user($chicken->name, sub {$chicken->take_one_step()});
+    }
+
     # for x rounds, have each participant execute a random action
 }
 

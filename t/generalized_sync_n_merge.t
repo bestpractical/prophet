@@ -8,7 +8,12 @@ use_ok('Prophet::Test::Arena');
 use_ok('Prophet::Test::Participant');
 
 my $arena = Prophet::Test::Arena->new();
-$arena->setup(30);
+$arena->setup(5);
+
+
+for(1..10) {
+    $arena->step();
+}
 
 exit;
 

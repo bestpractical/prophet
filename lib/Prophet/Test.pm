@@ -222,7 +222,7 @@ sub as_user {
   my $coderef = shift;
   local $ENV{'PROPHET_USER'} = $username;
   local $ENV{'PROPHET_REPO'} = repo_path_for($username);
-  diag("I am $username. My replica id is ".replica_uuid());
+#  diag("I am $username. My replica id is ".replica_uuid());
  my $ret=  $coderef->();
  $REPLICA_UUIDS{$username} = replica_uuid();
  return $ret;
