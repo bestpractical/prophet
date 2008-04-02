@@ -144,14 +144,23 @@ sub record_resolutions {
     $self->commit_edit();
 }
 
+=head2 record_resolution
+
+Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
+
+=cut
+
+
 sub record_resolution {
-    my ($self, $change) = @_;
-    
-    # XXX for now, ignore if there's existing stored resolution on this conflict
-    return if $self->node_exists( uuid => $change->resolution_cas, type => '_prophet_resolution' );
-    $self->create_node( uuid => $change->resolution_cas, type => '_prophet_resolution',
-                        props => { _meta => $change->change_type,
-                                    map { $_->name => $_->new_value } $change->prop_changes } );
+    my ( $self, $change ) = @_;
+
+    return 1 if $self->node_exists( uuid => $self->uuid,
+        type => '_prophet_resolution-' . $change->resolution_cas );
+
+    $self->create_node( uuid => $self->uuid,
+        type => '_prophet_resolution-' . $change->resolution_cas,
+        props => { _meta => $change->change_type,
+            map { $_->name => $_->new_value } $change->prop_changes } );
 }
 
 sub record_changeset {
