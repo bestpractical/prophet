@@ -3,7 +3,7 @@ use warnings;
 package Prophet::Test;
 use base qw/Test::More Exporter/;
 our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid
-serialize_conflict serialize_changeset
+serialize_conflict serialize_changeset in_gladiator
 /;
 
 use File::Path 'rmtree';
@@ -41,6 +41,25 @@ sub Test::More::diag { # bad bad bad # convenient convenient convenient
 
 Test::More->builder->diag(@_) if ( $Test::Harness::Verbose || $ENV{'TEST_VERBOSE'});
 }
+}
+
+use Devel::Gladiator;
+
+sub in_gladiator (&) {
+    my $code = shift;
+
+    my $types;
+    for (@{ Devel::Gladiator::walk_arena() }) {
+        $types->{ref($_)}--; 
+    }
+
+    $code->();
+    for (@{ Devel::Gladiator::walk_arena() }) {
+        $types->{ref($_)}++;
+        }
+    map {$types->{$_} || delete $types->{$_} } keys %$types;
+        warn YAML::Dump($types);
+
 }
 
 =head2 run_script SCRIPT_NAME [@ARGS]
