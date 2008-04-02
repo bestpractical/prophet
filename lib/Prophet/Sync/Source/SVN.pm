@@ -88,12 +88,14 @@ sub fetch_changesets {
     # XXX TODO we should  be using a svn get_log call here rather than simple iteration
     # clkao explains that this won't deal cleanly with cases where there are revision "holes"
     for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
+        my $pool = SVN::Pool->new_default;
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
         $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
         $self->ra->replay( $rev, 0, 1, $handle_replayed_txn->() );
         push @results, $self->_recode_changeset( $last_editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
     }
+    
     return \@results;
 }
 
