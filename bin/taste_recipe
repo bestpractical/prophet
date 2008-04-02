@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+use strict;
+
+my $script = 'bin/run_test_yml.pl';
+my $file = shift;
+use YAML::Syck;
+
+my $d = YAML::Syck::LoadFile( $file );
+
+use Storable 'dclone';
+use Data::Dumper;
+use File::Temp;
+
+for (reverse 0..$#{ $d->{recipe}} ) {
+    warn "==> removing $_ ".Dumper($d->{recipe}->[$_]);
+    next if $d->[1] eq 'create_record';
+    
+    my $foo = dclone $d;
+
+    splice(@{$foo->{recipe}}, $_, 1);
+
+    my $tmpf = File::Temp->new;
+    YAML::Syck::DumpFile($tmpf, $foo);
+    system('perl', '-Ilib', $script, $tmpf);
+    if ($?) {
+        $d = $foo;
+    }
+    warn "result : $?";
+    
+}
+
+warn "streamlined recipe at $file.new";
+
+YAML::Syck::DumpFile( "$file.new", $d);
+
+
