@@ -404,12 +404,8 @@ sub record_changeset_integration {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    # Record a merge ticket for the changeset's "direct" source
-    $self->_record_merge_ticket( $changeset->source_uuid, $changeset->sequence_no );
-
     # Record a merge ticket for the changeset's "original" source
-    $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no )
-        if ( $changeset->original_source_uuid && $changeset->original_source_uuid ne $changeset->source_uuid );
+    $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no );
 
 }
 

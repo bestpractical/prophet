@@ -171,11 +171,10 @@ sub has_seen_changeset {
     # If the changeset originated locally, we never want it
     return 1 if $changeset->original_source_uuid eq $self->uuid;
     # Otherwise, if the we have a merge ticket from the source, we don't want the changeset
-    my $last = $self->last_changeset_from_source( $changeset->original_source_uuid || $changeset->source_uuid );
-        
+    my $last = $self->last_changeset_from_source( $changeset->original_source_uuid);
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
     return 1 if ( $last >= $changeset->original_sequence_no );
-
+    return undef;
 }
 
 
