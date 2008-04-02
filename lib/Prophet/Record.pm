@@ -19,6 +19,7 @@ __PACKAGE__->mk_accessors(qw'handle uuid type');
 
 use Params::Validate;
 use Prophet::HistoryEntry;
+use Data::UUID;
 
 my $UUIDGEN = Data::UUID->new();
 
