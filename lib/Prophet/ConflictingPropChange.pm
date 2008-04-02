@@ -1,6 +1,7 @@
 
 use warnings;
 use strict;
+
 package Prophet::ConflictingPropChange;
 use base qw/Class::Accessor/;
 

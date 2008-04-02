@@ -21,7 +21,8 @@ use Params::Validate;
 
 =cut
 
-__PACKAGE__->mk_accessors(qw/sequence_no source_uuid original_source_uuid original_sequence_no is_nullification  is_resolution/);
+__PACKAGE__->mk_accessors(
+    qw/sequence_no source_uuid original_source_uuid original_sequence_no is_nullification  is_resolution/);
 
 =head2 new
 
@@ -63,7 +64,7 @@ Add a new change, L<$args{'change'}> to this changeset.
 
 sub add_change {
     my $self = shift;
-    my %args = validate( @_, { change => { isa => 'Prophet::Change'} } );
+    my %args = validate( @_, { change => { isa => 'Prophet::Change' } } );
     push @{ $self->{changes} }, $args{change};
 
 }
@@ -90,16 +91,16 @@ sub is_empty {
     return $self->changes ? 0 : 1;
 }
 
-
 sub as_hash {
     my $self = shift;
-    my $as_hash = { map { $_ => $self->$_() } qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty)};
-    
-    
-    for my $change ($self->changes){
-        
- 
-        $as_hash->{changes}->{$change->node_uuid} = $change->as_hash;
+    my $as_hash
+        = { map { $_ => $self->$_() }
+            qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty)
+        };
+
+    for my $change ( $self->changes ) {
+
+        $as_hash->{changes}->{ $change->node_uuid } = $change->as_hash;
     }
     return $as_hash;
 }

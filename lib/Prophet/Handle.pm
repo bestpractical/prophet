@@ -14,7 +14,6 @@ use SVN::Fs;
 our $DEBUG = '0';
 __PACKAGE__->mk_accessors(qw(repo_path repo_handle db_root current_edit _pool));
 
-
 =head2 new { repository => $FILESYSTEM_PATH, db_root => $REPOS_PATH }
  
 Create a new subversion filesystem backend repository handle. If the repository/path don't exist, create it.
@@ -29,7 +28,7 @@ sub new {
     $self->db_root( $args{'db_root'} );
     $self->repo_path( $args{'repository'} );
     $self->_connect();
-    $self->_pool(SVN::Pool->new);
+    $self->_pool( SVN::Pool->new );
 
     return $self;
 }
@@ -50,7 +49,7 @@ sub _connect {
     my $repos = eval { SVN::Repos::open( $self->repo_path ); };
 
     # If we couldn't open the repository handle, we should create it
-    if ( $@ && ! -d $self->repo_path ) {
+    if ( $@ && !-d $self->repo_path ) {
         $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef, $self->_pool );
     }
 
@@ -63,9 +62,9 @@ sub _create_nonexistent_dir {
     my $dir  = shift;
     my $pool = SVN::Pool->new_default;
     my $root = $self->current_edit ? $self->current_edit->root : $self->current_root;
-    
+
     unless ( $root->is_dir($dir) ) {
-        my $inside_edit = $self->current_edit ? 1: 0;
+        my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit() unless ($inside_edit);
         $self->current_edit->root->make_dir($dir);
         $self->commit_edit() unless ($inside_edit);
@@ -83,7 +82,7 @@ Returns $self->current_edit.
 sub begin_edit {
     my $self = shift;
     my $fs   = $self->repo_handle->fs;
-    $self->current_edit( $fs->begin_txn( $fs->youngest_rev ));
+    $self->current_edit( $fs->begin_txn( $fs->youngest_rev ) );
     return $self->current_edit;
 }
 
@@ -96,12 +95,11 @@ Finalizes L</current_edit> and sets the 'svn:author' change-prop to the current 
 sub commit_edit {
     my $self = shift;
     my $txn  = shift;
-    $self->current_edit->change_prop( 'svn:author', ($ENV{'PROPHET_USER'} ||$ENV{'USER'} ));
+    $self->current_edit->change_prop( 'svn:author', ( $ENV{'PROPHET_USER'} || $ENV{'USER'} ) );
     $self->current_edit->commit;
     $self->current_edit(undef);
 
 }
-
 
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
@@ -118,7 +116,7 @@ sub integrate_changeset {
 
     $self->begin_edit();
     $self->record_changeset($changeset);
-    
+
     $self->_set_original_source_metadata($changeset);
     warn "to commit... " if ($DEBUG);
     my $changed = $self->current_edit->root->paths_changed;
@@ -128,15 +126,15 @@ sub integrate_changeset {
 }
 
 sub record_resolutions {
-    my $self      = shift;
-    my $changeset = shift;
+    my $self       = shift;
+    my $changeset  = shift;
     my $res_handle = shift;
 
     return unless $changeset->changes;
 
     $self->begin_edit();
     $self->record_changeset($changeset);
-    
+
     warn "to commit... " if ($DEBUG);
     my $changed = $self->current_edit->root->paths_changed;
     warn Dumper($changed) if ($DEBUG);
@@ -151,44 +149,48 @@ Called ONLY on local resolution creation. (Synced resolutions are just synced as
 
 =cut
 
-
 sub record_resolution {
     my ( $self, $change ) = @_;
 
-    return 1 if $self->node_exists( uuid => $self->uuid,
-        type => '_prophet_resolution-' . $change->resolution_cas );
+    return 1 if $self->node_exists(
+        uuid => $self->uuid,
+        type => '_prophet_resolution-' . $change->resolution_cas
+    );
 
-    $self->create_node( uuid => $self->uuid,
-        type => '_prophet_resolution-' . $change->resolution_cas,
-        props => { _meta => $change->change_type,
-            map { $_->name => $_->new_value } $change->prop_changes } );
+    $self->create_node(
+        uuid  => $self->uuid,
+        type  => '_prophet_resolution-' . $change->resolution_cas,
+        props => {
+            _meta => $change->change_type,
+            map { $_->name => $_->new_value } $change->prop_changes
+        }
+    );
 }
 
 sub record_changeset {
-    my $self = shift;
+    my $self      = shift;
     my $changeset = shift;
 
-    eval { 
-    
-    my $inside_edit = $self->current_edit ? 1: 0;
-    $self->begin_edit() unless ($inside_edit);
-    $self->_integrate_change($_) for ($changeset->changes);
-    $self->current_edit->change_prop( 'prophet:special-type'  => 'nullification') if ($changeset->is_nullification);
-    $self->current_edit->change_prop( 'prophet:special-type'  => 'resolution') if ($changeset->is_resolution);
-    $self->commit_edit() unless ($inside_edit);
-    }; 
-    die ($@) if ($@);
+    eval {
+
+        my $inside_edit = $self->current_edit ? 1 : 0;
+        $self->begin_edit() unless ($inside_edit);
+        $self->_integrate_change($_) for ( $changeset->changes );
+        $self->current_edit->change_prop( 'prophet:special-type' => 'nullification' )
+            if ( $changeset->is_nullification );
+        $self->current_edit->change_prop( 'prophet:special-type' => 'resolution' ) if ( $changeset->is_resolution );
+        $self->commit_edit() unless ($inside_edit);
+    };
+    die($@) if ($@);
 }
 
 sub _set_original_source_metadata {
-    my $self = shift;
+    my $self   = shift;
     my $change = shift;
 
-    $self->current_edit->change_prop( 'prophet:original-source'  => $change->original_source_uuid   );
-    $self->current_edit->change_prop( 'prophet:original-sequence-no'  => $change->original_sequence_no);  
+    $self->current_edit->change_prop( 'prophet:original-source'      => $change->original_source_uuid );
+    $self->current_edit->change_prop( 'prophet:original-sequence-no' => $change->original_sequence_no );
 }
-
-
 
 sub _integrate_change {
     my $self   = shift;
@@ -215,10 +217,10 @@ sub _integrate_change {
             uuid => $change->node_uuid
         );
     } else {
-        Carp::confess(" I have never heard of the change type: ".$change->change_type);
+        Carp::confess( " I have never heard of the change type: " . $change->change_type );
     }
     my $changed = $self->current_edit->root->paths_changed;
-    
+
 }
 
 =head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
@@ -237,13 +239,14 @@ sub create_node {
 
     $self->_create_nonexistent_dir( join( '/', $self->db_root, $args{'type'} ) );
 
-    my $inside_edit = $self->current_edit ? 1: 0;
+    my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
     my $file = $self->file_for( uuid => $args{uuid}, type => $args{'type'} );
     $self->current_edit->root->make_file($file);
     {
         my $stream = $self->current_edit->root->apply_text( $file, undef );
+
         # print $stream Dumper( $args{'props'} );
         close $stream;
     }
@@ -262,7 +265,7 @@ sub _set_node_props {
 
     my $file = $self->file_for( uuid => $args{uuid}, type => $args{type} );
     foreach my $prop ( keys %{ $args{'props'} } ) {
-        eval { $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef )};
+        eval { $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef ) };
         Carp::confess($@) if ($@);
     }
 }
@@ -279,10 +282,10 @@ sub delete_node {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
 
-    my $inside_edit = $self->current_edit ? 1: 0;
+    my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-     $self->current_edit->root->delete( $self->file_for( uuid => $args{uuid}, type => $args{type} ) );
+    $self->current_edit->root->delete( $self->file_for( uuid => $args{uuid}, type => $args{type} ) );
     $self->commit_edit() unless ($inside_edit);
     return 1;
 }
@@ -300,9 +303,9 @@ sub set_node_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
-    my $inside_edit = $self->current_edit ? 1: 0;
+    my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
-    
+
     my $file = $self->file_for( uuid => $args{uuid}, type => $args{'type'} );
     $self->_set_node_props(
         uuid  => $args{uuid},
@@ -356,20 +359,17 @@ sub file_for {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
     Carp::cluck unless $args{uuid};
-    my $file = join( "/", $self->directory_for_type(type => $args{'type'}), $args{'uuid'} );
+    my $file = join( "/", $self->directory_for_type( type => $args{'type'} ), $args{'uuid'} );
     return $file;
 
 }
 
-
 sub directory_for_type {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
-    return join( "/", $self->db_root ,$args{'type'});
+    return join( "/", $self->db_root, $args{'type'} );
 
 }
-
-
 
 =head2 node_exists {uuid => $uuid, type => $type, root => $root }
 
@@ -378,28 +378,24 @@ Returns true if the node in question exists. False otherwise
 =cut
 
 sub node_exists {
- my $self = shift;
-     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
 
-     my $root = $args{'root'} || $self->current_root;
+    my $root = $args{'root'} || $self->current_root;
     return $root->check_path( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 
 }
 
-
 sub type_exists {
- my $self = shift;
-     my %args = validate( @_, { type => 1, root => undef } );
+    my $self = shift;
+    my %args = validate( @_, { type => 1, root => undef } );
 
-     my $root = $args{'root'} || $self->current_root;
-    return $root->check_path( $self->directory_for_type(  type => $args{'type'},  ) );
+    my $root = $args{'root'} || $self->current_root;
+    return $root->check_path( $self->directory_for_type( type => $args{'type'}, ) );
 
 }
 
-
 our $MERGETICKET_METATYPE = '_merge_tickets';
-
-
 
 =head2 record_changeset_integration L<Prophet::ChangeSet>
 
@@ -421,7 +417,7 @@ sub record_changeset_integration {
 
 sub _record_merge_ticket {
     my $self = shift;
-    my ($source_uuid, $sequence_no) = validate_pos(@_, 1,1);
+    my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
 
     my $props = eval { $self->get_node_props( uuid => $source_uuid, type => $MERGETICKET_METATYPE ) };
     unless ( $props->{'last-changeset'} ) {
@@ -429,15 +425,16 @@ sub _record_merge_ticket {
     }
 
     $self->set_node_props(
-        uuid  => $source_uuid,
-        type  => $MERGETICKET_METATYPE,
+        uuid => $source_uuid,
+        type => $MERGETICKET_METATYPE,
         props => { 'last-changeset' => $sequence_no }
     );
 
 }
 
 use YAML::Syck;
+
 package YAML;
-*Dump     = *YAML::Syck::Dump;
+*Dump = *YAML::Syck::Dump;
 
 1;

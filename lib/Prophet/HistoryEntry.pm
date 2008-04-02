@@ -30,15 +30,14 @@ Create a new, empty history entry.
 =cut
 
 sub new {
-   my $class = shift;
-   my $self = {};
-   bless $self, $class;
+    my $class = shift;
+    my $self  = {};
+    bless $self, $class;
 
-
-    my   %args = validate( @_, {handle => 1});
-    $self->handle($args{'handle'});
-    $self->prop_changes({});
-   return $self;
+    my %args = validate( @_, { handle => 1 } );
+    $self->handle( $args{'handle'} );
+    $self->prop_changes( {} );
+    return $self;
 
 }
 

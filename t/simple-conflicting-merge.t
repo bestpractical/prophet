@@ -38,7 +38,7 @@ as_bob {
 };
 
 as_alice {
-    run_ok( 'prophet-node-update', [ '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled'] );
+    run_ok( 'prophet-node-update', [ '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
     run_output_matches(
         'prophet-node-show',
         [ '--type',            'Bug',             '--uuid', $record_id ],
@@ -146,16 +146,18 @@ as_bob {
             is_nullification     => undef,
             is_resolution        => undef,
             source_uuid          => undef,
-            sequence_no         => undef,
-            original_sequence_no => as_alice { replica_last_rev()   }, 
-                        original_source_uuid => replica_uuid_for('alice'),
+            sequence_no          => undef,
+            original_sequence_no => as_alice { replica_last_rev() },
+            original_source_uuid => replica_uuid_for('alice'),
             changes              => {
-               $record_id   =>    {   node_type    => 'Bug',
+                $record_id => {
+                    node_type    => 'Bug',
                     change_type  => 'update_file',
                     prop_changes => { status => { old_value => 'new', new_value => 'stalled' } }
                 },
 
-                replica_uuid_for('alice') => {   change_type  => 'update_file',
+                replica_uuid_for('alice') => {
+                    change_type  => 'update_file',
                     node_type    => '_merge_tickets',
                     prop_changes => {
                         'last-changeset' => {
@@ -164,11 +166,12 @@ as_bob {
                         }
                         }
 
-                }
+                    }
 
                 }
 
-        }, "yay. the last rev from alice synced right"
+        },
+        "yay. the last rev from alice synced right"
     );
 
 };

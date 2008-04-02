@@ -8,7 +8,8 @@ use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle resolvers changeset nullification_changeset resolution_changeset autoresolved/);
+__PACKAGE__->mk_accessors(
+    qw/prophet_handle resolvers changeset nullification_changeset resolution_changeset autoresolved/);
 
 =head2 analyze_changeset Prophet::ChangeSet
 
@@ -20,13 +21,14 @@ L<Prophet::ConflictingChange> objects.
 
 sub analyze_changeset {
     my $self = shift;
+
     #my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     $self->generate_changeset_conflicts();
-    return unless (@{$self->conflicting_changes});
+    return unless ( @{ $self->conflicting_changes } );
 
     $self->generate_nullification_changeset;
-    
+
     return 1;
 }
 
@@ -35,8 +37,8 @@ use Prophet::Resolver::FromResolutionDB;
 use Prophet::Resolver::Failed;
 
 sub generate_resolution {
-    my $self = shift;
-    my $resdb = shift;
+    my $self      = shift;
+    my $resdb     = shift;
     my @resolvers = (
         sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
         $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
@@ -46,8 +48,8 @@ sub generate_resolution {
     my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
     for my $conflicting_change ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {
-            if (my $resolution = $_->($conflicting_change, $self, $resdb)) {
-                $resolutions->add_change(change => $resolution) if $resolution->prop_changes;
+            if ( my $resolution = $_->( $conflicting_change, $self, $resdb ) ) {
+                $resolutions->add_change( change => $resolution ) if $resolution->prop_changes;
                 last;
             }
         }
@@ -57,13 +59,11 @@ sub generate_resolution {
     return 1;
 }
 
-
 =head2 generate_changeset_conflicts 
 
 Given a changeset, populates $self->conflicting_changes with all the conflicts that applying that changeset to the target replica would result in.
 
 =cut
-
 
 sub generate_changeset_conflicts {
     my $self = shift;
@@ -73,7 +73,6 @@ sub generate_changeset_conflicts {
         }
     }
 }
-
 
 =head2 _generate_change_conflicts Prophet::Change
 
@@ -85,22 +84,21 @@ sub _generate_change_conflicts {
     my $self = shift;
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
     my $file_op_conflict = '';
-    
-    my $file_exists = $self->prophet_handle->node_exists(uuid => $change->node_uuid, type => $change->node_type);
+
+    my $file_exists = $self->prophet_handle->node_exists( uuid => $change->node_uuid, type => $change->node_type );
 
     # It's ok to delete a node that exists
     if ( $change->change_type eq 'delete' && !$file_exists ) {
         $file_op_conflict = "delete_missing_file";
-    } elsif ( $change->change_type eq 'update_file' && !$file_exists) {
+    } elsif ( $change->change_type eq 'update_file' && !$file_exists ) {
         $file_op_conflict = "update_missing_file";
-    } elsif ( $change->change_type eq 'add_file' && $file_exists) {
+    } elsif ( $change->change_type eq 'add_file' && $file_exists ) {
         $file_op_conflict = "create_existing_file";
-    } elsif ( $change->change_type eq 'add_dir' && $file_exists) {
+    } elsif ( $change->change_type eq 'add_dir' && $file_exists ) {
+
         # XXX TODO: this isn't right
         $file_op_conflict = "create_existing_dir";
     }
-
-
 
     my $change_conflict = Prophet::ConflictingChange->new(
         {   node_type          => $change->node_type,
@@ -112,14 +110,14 @@ sub _generate_change_conflicts {
     );
 
     if ($file_exists) {
-        my $current_state = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
+        my $current_state
+            = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
 
         push @{ $change_conflict->prop_conflicts }, $self->_generate_prop_change_conflicts( $change, $current_state );
     }
-    
-     return ( @{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
-}
 
+    return ( @{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
+}
 
 =head2 _generate_prop_change_conflicts Prophet::Change %hash_of_current_properties
 
@@ -142,7 +140,7 @@ sub _generate_prop_change_conflicts {
         my $s = {
             name             => $prop_change->name,
             source_old_value => $prop_change->old_value,
-            target_value => $current_state->{ $prop_change->name },
+            target_value     => $current_state->{ $prop_change->name },
             source_new_value => $prop_change->new_value
         };
 
@@ -170,7 +168,6 @@ sub conflicting_changes {
     return $self->{'conflicting_changes'};
 }
 
-
 =head2 generate_nullification_changeset
 
 In order to record a changeset which might not apply cleanly to the
@@ -185,10 +182,11 @@ everything needed to nullify the conflicting state of the replica.
 
 sub generate_nullification_changeset {
     my $self = shift;
-    my $nullification = Prophet::ChangeSet->new( {is_nullification => 1});
+    my $nullification = Prophet::ChangeSet->new( { is_nullification => 1 } );
 
     for my $conflict ( @{ $self->conflicting_changes } ) {
-        my $nullify_conflict = Prophet::Change->new( { node_type => $conflict->node_type, node_uuid => $conflict->node_uuid });
+        my $nullify_conflict
+            = Prophet::Change->new( { node_type => $conflict->node_type, node_uuid => $conflict->node_uuid } );
 
         if ( $conflict->file_op_conflict eq "delete_missing_file" ) {
             $nullify_conflict->change_type('add_file');
@@ -201,8 +199,6 @@ sub generate_nullification_changeset {
         } else {
             $nullify_conflict->change_type('update_file');
         }
-        
-        
 
         # now that we've sorted out all the file-level conflicts, we need to get properties in order
         for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {

@@ -1,11 +1,11 @@
 use warnings;
 use strict;
+
 package Prophet::Collection;
 use Params::Validate;
 use base qw/Class::Accessor/;
 
 use overload '@{}' => \&as_array_ref, fallback => 1;
-
 
 __PACKAGE__->mk_accessors(qw'handle type');
 use Prophet::Record;
@@ -32,10 +32,10 @@ Instantiate a new, empty L<Prophet::Collection> object to find items of type C<$
 
 sub new {
     my $class = shift;
-    my $self = {};
+    my $self  = {};
     bless $self, $class;
-    my %args = validate(@_, { handle => 1, type => 1});
-    $self->$_($args{$_}) for (keys %args);
+    my %args = validate( @_, { handle => 1, type => 1 } );
+    $self->$_( $args{$_} ) for ( keys %args );
     return $self;
 }
 
@@ -46,28 +46,26 @@ Find all L<Prophet::Record>s of this collection's C<type> where $CODEREF returns
 =cut
 
 sub matching {
-    my $self = shift;
+    my $self    = shift;
     my $coderef = shift;
 
+    return undef unless $self->handle->type_exists( type => $self->type );
 
-    return undef unless $self->handle->type_exists( type => $self->type);
-    
     # find all items,
-    my $nodes = $self->handle->current_root->dir_entries($self->handle->db_root.'/'.$self->type.'/');
+    my $nodes = $self->handle->current_root->dir_entries( $self->handle->db_root . '/' . $self->type . '/' );
+
     # run coderef against each item;
     # if it matches, add it to _items
-    foreach my $key (keys %$nodes) {
-        my $record = Prophet::Record->new(handle => $self->handle, type => $self->type);
-        $record->load(uuid => $key);
-        if($coderef->($record)) {
-            push @{$self->{_items}}, $record;
+    foreach my $key ( keys %$nodes ) {
+        my $record = Prophet::Record->new( handle => $self->handle, type => $self->type );
+        $record->load( uuid => $key );
+        if ( $coderef->($record) ) {
+            push @{ $self->{_items} }, $record;
         }
-    
+
     }
 
-
     #return a count of items found
-
 
 }
 
@@ -77,12 +75,10 @@ Return the set of L<Prophet::Record>s we've found as an array reference or retur
 
 =cut
 
-
 sub as_array_ref {
     my $self = shift;
-    return $self->{_items}||[];
+    return $self->{_items} || [];
 
 }
-
 
 1;

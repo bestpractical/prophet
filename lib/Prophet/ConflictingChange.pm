@@ -32,10 +32,10 @@ Returns the clone of the changeset, except hte propchanges will have target_valu
 =cut
 
 sub neutralize {
-    my $self = shift;
+    my $self   = shift;
     my $struct = dclone($self);
-    for (@{$struct->{prop_conflicts}}) {
-        $_->{choices} = [ sort (delete $_->{source_new_value}, delete $_->{target_value}) ];
+    for ( @{ $struct->{prop_conflicts} } ) {
+        $_->{choices} = [ sort ( delete $_->{source_new_value}, delete $_->{target_value} ) ];
     }
     return $struct;
 }
@@ -51,7 +51,7 @@ use Digest::MD5 'md5_hex';
 
 sub cas_key {
     my $self = shift;
-    return md5_hex(YAML::Syck::Dump($self->neutralize));
+    return md5_hex( YAML::Syck::Dump( $self->neutralize ) );
 }
 
 1;

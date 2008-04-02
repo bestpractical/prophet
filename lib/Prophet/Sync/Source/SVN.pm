@@ -32,16 +32,16 @@ sub setup {
     my $self = shift;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
     my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
-    my $pool = SVN::Pool->new;
-    
+    my $pool   = SVN::Pool->new;
+
     $self->pool($pool);
-eval {
-    $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool ));
-}; Carp::confess $@ if $@;
+    eval { $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool ) ); };
+    Carp::confess $@ if $@;
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
-        $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' }));
+        $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' } ) );
     }
-    if ($self->url =~ m/_res$/) {
+    if ( $self->url =~ m/_res$/ ) {
+
         # XXX: should probably just point to self
         return;
     }
@@ -73,7 +73,7 @@ Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 
 sub fetch_changesets {
     my $self = shift;
-    my %args = validate( @_, { after => 1});
+    my %args = validate( @_, { after => 1 } );
     my @results;
     my $last_editor;
 
@@ -83,39 +83,38 @@ sub fetch_changesets {
         return $last_editor;
     };
 
-    my $first_rev = ( $args{'after'}+1) || 1;
+    my $first_rev = ( $args{'after'} + 1 ) || 1;
 
     # XXX TODO we should  be using a svn get_log call here rather than simple iteration
     # clkao explains that this won't deal cleanly with cases where there are revision "holes"
     for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
         my $pool = SVN::Pool->new_default;
+
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
         $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
         $self->ra->replay( $rev, 0, 1, $handle_replayed_txn->() );
         push @results, $self->_recode_changeset( $last_editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
     }
-    
+
     return \@results;
 }
 
-
 sub _recode_changeset {
-    my $self  = shift;
-    my $entry = shift;
-    my $revprops = shift;
+    my $self      = shift;
+    my $entry     = shift;
+    my $revprops  = shift;
     my $changeset = Prophet::ChangeSet->new(
         {   sequence_no          => $entry->{'revision'},
             source_uuid          => $self->uuid,
-            original_source_uuid => $revprops->{'prophet:original-source'}|| $self->uuid,
+            original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
             original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
-            is_nullification     => (($revprops->{'prophet:special-type'} || '') eq 'nullification') ? 1 : undef ,
-            is_resolution        => (($revprops->{'prophet:special-type'} || '') eq 'resolution') ? 1: undef ,
+            is_nullification     => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'nullification' ) ? 1 : undef,
+            is_resolution        => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'resolution' ) ? 1 : undef,
 
-        });
+        }
+    );
 
-
-    
     # add each node's changes to the changeset
     for my $path ( keys %{ $entry->{'paths'} } ) {
         if ( $path =~ qr|^(.+)/(.*?)/(.*?)$| ) {
@@ -144,8 +143,6 @@ sub _recode_changeset {
     return $changeset;
 }
 
-
-
 =head2 accepts_changesets
 
 Returns true if this source is one we know how to write to (and have permission to write to)
@@ -161,13 +158,11 @@ sub accepts_changesets {
     return undef;
 }
 
-
 =head2 has_seen_changeset Prophet::ChangeSet
 
 Returns true if we've previously integrated this changeset, even if we originally recieved it from a different peer
 
 =cut
-
 
 sub has_seen_changeset {
     my $self = shift;
@@ -175,13 +170,14 @@ sub has_seen_changeset {
 
     # If the changeset originated locally, we never want it
     return 1 if $changeset->original_source_uuid eq $self->uuid;
+
     # Otherwise, if the we have a merge ticket from the source, we don't want the changeset
-    my $last = $self->last_changeset_from_source( $changeset->original_source_uuid);
+    my $last = $self->last_changeset_from_source( $changeset->original_source_uuid );
+
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
     return 1 if ( $last >= $changeset->original_sequence_no );
     return undef;
 }
-
 
 =head2 changeset_will_conflict Prophet::ChangeSet
 
@@ -193,8 +189,8 @@ sub changeset_will_conflict {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    return 1 if ( $self->conflicts_from_changeset($changeset));
-    
+    return 1 if ( $self->conflicts_from_changeset($changeset) );
+
     return undef;
 
 }
@@ -212,14 +208,13 @@ sub conflicts_from_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    my $conflict = Prophet::Conflict->new({ changeset => $changeset, prophet_handle => $self->prophet_handle});
+    my $conflict = Prophet::Conflict->new( { changeset => $changeset, prophet_handle => $self->prophet_handle } );
 
     $conflict->analyze_changeset();
 
-    return undef unless @{$conflict->conflicting_changes};
+    return undef unless @{ $conflict->conflicting_changes };
 
     return $conflict;
-
 
 }
 
@@ -233,10 +228,11 @@ If there are no conflicts, just apply the change.
 
 sub integrate_changeset {
     my $self = shift;
-    my %args = validate( @_,
-        { changeset => { isa => 'Prophet::ChangeSet' },
+    my %args = validate(
+        @_,
+        {   changeset         => { isa      => 'Prophet::ChangeSet' },
             resolver          => { optional => 1 },
-            resolver_class          => { optional => 1 },
+            resolver_class    => { optional => 1 },
             resdb             => { optional => 1 },
             conflict_callback => { optional => 1 }
         }
@@ -246,9 +242,8 @@ sub integrate_changeset {
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
-        # merge tickets that describe merges from the local node
-        
-        
+    # merge tickets that describe merges from the local node
+
     # When we integrate changes, sometimes we will get handed changes we already know about.
     #   - changes from local
     #   - changes from some other party we've merged from
@@ -257,32 +252,32 @@ sub integrate_changeset {
 
     return if $changeset->original_source_uuid eq $self->prophet_handle->uuid;
 
-    $self->remove_redundant_data($changeset); #Things we have already seen
+    $self->remove_redundant_data($changeset);    #Things we have already seen
 
-    return if ($changeset->is_empty or $changeset->is_nullification);
+    return if ( $changeset->is_empty or $changeset->is_nullification );
 
-    if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
+    if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
-        $conflict->resolvers([sub { $args{resolver}->(@_) }]) if $args{resolver};
-        if  ($args{resolver_class} ) {
-            $args{resolver_class}->require|| die $@;
-            $conflict->resolvers([sub { $args{resolver_class}->run(@_); }]) 
+        $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
+        if ( $args{resolver_class} ) {
+            $args{resolver_class}->require || die $@;
+            $conflict->resolvers( [ sub { $args{resolver_class}->run(@_); } ] )
 
-         }
-        my $resolutions = $conflict->generate_resolution($args{resdb});
+        }
+        my $resolutions = $conflict->generate_resolution( $args{resdb} );
+
         #figure out our conflict resolution
 
-        # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
-        # integrate the nullification change
-        $self->prophet_handle->record_changeset($conflict->nullification_changeset);
-        
+     # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
+     # integrate the nullification change
+        $self->prophet_handle->record_changeset( $conflict->nullification_changeset );
+
         # integrate the original change
         $self->prophet_handle->integrate_changeset($changeset);
+
         # integrate the conflict resolution change
-        $self->prophet_handle->record_resolutions
-            ( $conflict->resolution_changeset,
-            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle
-            );
+        $self->prophet_handle->record_resolutions( $conflict->resolution_changeset,
+            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
     } else {
         $self->prophet_handle->integrate_changeset($changeset);
 
@@ -290,15 +285,15 @@ sub integrate_changeset {
 }
 
 sub remove_redundant_data {
-    my ($self, $changeset) = @_;
+    my ( $self, $changeset ) = @_;
+
     # XXX: encapsulation
-    $changeset->{changes} = [ grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' } grep {
-        !($_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE &&
-          $_->node_uuid eq $self->prophet_handle->uuid)
-    } $changeset->changes ];
+    $changeset->{changes} = [
+        grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' } grep {
+            !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->prophet_handle->uuid )
+            } $changeset->changes
+    ];
 }
-
-
 
 =head2 last_changeset_from_source $SOURCE_UUID
 
@@ -308,15 +303,17 @@ Returns the last changeset id seen from the source identified by $SOURCE_UUID
 
 sub last_changeset_from_source {
     my $self = shift;
-        my ($source) = validate_pos(@_, {type => SCALAR } );
+    my ($source) = validate_pos( @_, { type => SCALAR } );
     my ( $stream, $pool );
 
     my $filename = join( "/", "_prophet", $Prophet::Handle::MERGETICKET_METATYPE, $source );
-    my ( $rev_fetched, $props ) = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
+    my ( $rev_fetched, $props )
+        = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
+
     # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
     # because we want to be able to sync to a remote replica someday.
 
-    return ( $props->{'last-changeset'} ||0 );
+    return ( $props->{'last-changeset'} || 0 );
 
 }
 

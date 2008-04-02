@@ -187,7 +187,6 @@ sub do_merge {
         )
     );
 
-
     sub fatal_error {
         my $reason = shift;
         die $reason . "\n";

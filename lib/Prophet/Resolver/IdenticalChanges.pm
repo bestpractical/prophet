@@ -35,26 +35,24 @@ have been automatically resolved.
 
 =cut
 
-
 sub run {
     my $self = shift;
-    my ($conflicting_change, $conflict, $resdb) = validate_pos(@_, { isa => 'Prophet::ConflictingChange'}, { isa => 'Prophet::Conflict'} , 0);
-  # for everything from the changeset that is the same as the old value of the target replica
-    # we can skip applying 
+    my ( $conflicting_change, $conflict, $resdb )
+        = validate_pos( @_, { isa => 'Prophet::ConflictingChange' }, { isa => 'Prophet::Conflict' }, 0 );
+
+    # for everything from the changeset that is the same as the old value of the target replica
+    # we can skip applying
     return 0 if $conflicting_change->file_op_conflict;
 
-    my $resolution = Prophet::Change->new_from_conflict( $conflicting_change );
+    my $resolution = Prophet::Change->new_from_conflict($conflicting_change);
 
-    for my $prop_change ( @{$conflicting_change->prop_conflicts} ) {
-        return 0 unless $prop_change->target_value eq $prop_change->source_new_value
+    for my $prop_change ( @{ $conflicting_change->prop_conflicts } ) {
+        return 0 unless $prop_change->target_value eq $prop_change->source_new_value;
     }
 
     $conflict->autoresolved(1);
 
     return $resolution;
-
-
-
 
 }
 

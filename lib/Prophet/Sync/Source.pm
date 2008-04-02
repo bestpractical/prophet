@@ -40,62 +40,69 @@ TODO: currently knows that we only have SVN replicas
 
 =cut
 
-
 sub rebless_to_replica_type {
-   my $self = shift;
-   my $class = 'Prophet::Sync::Source::SVN';
-   $class->require;
-   bless $self, $class;
+    my $self  = shift;
+    my $class = 'Prophet::Sync::Source::SVN';
+    $class->require;
+    bless $self, $class;
 }
-
-
 
 sub import_changesets {
     my $self = shift;
-    my %args = validate( @_, { from => { isa => 'Prophet::Sync::Source' },
-            use_resdb => { optional => 1 },
+    my %args = validate(
+        @_,
+        {   from              => { isa      => 'Prophet::Sync::Source' },
+            use_resdb         => { optional => 1 },
             resolver          => { optional => 1 },
-            resolver_class          => { optional => 1 },
-            conflict_callback => { optional => 1 } } );
-
+            resolver_class    => { optional => 1 },
+            conflict_callback => { optional => 1 }
+        }
+    );
 
     my $source = $args{'from'};
 
-    my $resdb = $args{use_resdb} ?
-        $self->fetch_resolutions( from => $source ) : undef;
+    my $resdb = $args{use_resdb} ? $self->fetch_resolutions( from => $source ) : undef;
 
     my $changesets_to_integrate
         = $source->fetch_changesets( after => $self->last_changeset_from_source( $source->uuid ) );
 
     for my $changeset (@$changesets_to_integrate) {
-    
-       next if ( $self->has_seen_changeset($changeset) );
-       next if $changeset->is_nullification || $changeset->is_resolution;
-        $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver}, resolver_class => $args{'resolver_class'}, resdb => $resdb);
+
+        next if ( $self->has_seen_changeset($changeset) );
+        next if $changeset->is_nullification || $changeset->is_resolution;
+        $self->integrate_changeset(
+            changeset         => $changeset,
+            conflict_callback => $args{conflict_callback},
+            resolver          => $args{resolver},
+            resolver_class    => $args{'resolver_class'},
+            resdb             => $resdb
+        );
 
     }
 }
 
 sub fetch_resolutions {
     my $self = shift;
-    my %args = validate( @_,
-        { from => { isa => 'Prophet::Sync::Source' },
+    my %args = validate(
+        @_,
+        {   from              => { isa      => 'Prophet::Sync::Source' },
             resolver          => { optional => 1 },
-            resolver_class          => { optional => 1 },
-            conflict_callback => { optional => 1 } } );
+            resolver_class    => { optional => 1 },
+            conflict_callback => { optional => 1 }
+        }
+    );
     my $source = $args{'from'};
 
     return unless $self->ressource;
 
-    $self->ressource->import_changesets( from => $source->ressource,
-                                         resolver => sub { die "nono not yet" } 
-                                         
-                                         );
+    $self->ressource->import_changesets(
+        from     => $source->ressource,
+        resolver => sub { die "nono not yet" }
 
-    my $records = Prophet::Collection->new(handle => $self->ressource->prophet_handle, type => '_prophet_resolution');
+    );
+
+    my $records = Prophet::Collection->new( handle => $self->ressource->prophet_handle, type => '_prophet_resolution' );
     return $records;
 }
-
-
 
 1;
