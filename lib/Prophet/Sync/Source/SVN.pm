@@ -16,7 +16,7 @@ use Prophet::Sync::Source::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url ra prophet_handle ressource is_resdb/);
+__PACKAGE__->mk_accessors(qw/url ra prophet_handle ressource is_resdb pool/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -32,8 +32,11 @@ sub setup {
     my $self = shift;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
     my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
+    my $pool = SVN::Pool->new;
+    
+    $self->pool($pool);
 eval {
-    $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton ));
+    $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool ));
 }; Carp::confess $@ if $@;
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
         $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' }));
