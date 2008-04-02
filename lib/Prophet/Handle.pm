@@ -245,7 +245,8 @@ sub _set_node_props {
 
     my $file = $self->file_for( uuid => $args{uuid}, type => $args{type} );
     foreach my $prop ( keys %{ $args{'props'} } ) {
-        $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef );
+        eval { $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef )};
+        Carp::confess($@) if ($@);
     }
 }
 

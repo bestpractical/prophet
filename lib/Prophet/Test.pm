@@ -76,6 +76,7 @@ sub run_ok {
    @_ = sub {
       my ($ret, $stdout,$stderr) = (run_script($script, $args), $msg);
       @_ = ($ret,$msg);
+      diag($stderr);
       goto &Test::More::ok;
 };
     goto \&lives_and;
