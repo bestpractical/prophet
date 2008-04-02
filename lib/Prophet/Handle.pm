@@ -60,7 +60,10 @@ sub _connect {
 sub _create_nonexistent_dir {
     my $self = shift;
     my $dir  = shift;
-    unless ( $self->current_root->is_dir($dir) ) {
+    
+    my $root = $self->current_edit ? $self->current_edit->root : $self->current_root;
+    
+    unless ( $root->is_dir($dir) ) {
         my $inside_edit = $self->current_edit ? 1: 0;
         $self->begin_edit() unless ($inside_edit);
         $self->current_edit->root->make_dir($dir);
