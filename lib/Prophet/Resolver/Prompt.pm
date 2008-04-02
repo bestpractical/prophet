@@ -16,10 +16,10 @@ sub  run {
 
             for my $prop_conflict ( @{ $conflicting_change->prop_conflicts } ) {
 
-                print $prop_conflict->name.": "\n;
-                print "(T)ARGET     ".$prop_conflicts->target_value ."\n";
-                print "SOURCE (O)LD ".$prop_conflicts->source_old_value ."\n";
-                print "SOURCE (N)EW ".$prop_conflicts->source_new_value ."\n";
+                print $prop_conflict->name.": \n";
+                print "(T)ARGET     ".$prop_conflict->target_value ."\n";
+                print "SOURCE (O)LD ".$prop_conflict->source_old_value ."\n";
+                print "SOURCE (N)EW ".$prop_conflict->source_new_value ."\n";
    
 
               
@@ -45,7 +45,6 @@ sub  run {
 
                 } elsif ($choice eq 'n') {
                     last;
-                );
 
 
                 }

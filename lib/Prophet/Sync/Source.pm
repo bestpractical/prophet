@@ -85,7 +85,9 @@ sub fetch_resolutions {
     return unless $self->ressource;
 
     $self->ressource->import_changesets( from => $source->ressource,
-                                             resolver => sub { die "nono not yet" } );
+                                         resolver => sub { die "nono not yet" } 
+                                         
+                                         );
 
     my $records = Prophet::Collection->new(handle => $self->ressource->prophet_handle, type => '_prophet_resolution');
     return $records;

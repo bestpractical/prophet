@@ -30,42 +30,23 @@ sub analyze_changeset {
     return 1;
 }
 
-sub _resolution_failed {
-
-    return sub { die "conflict not resolved.\n" };
-}
-
-sub resolution_from_resdb {
-    my ($self, $resdb, $conflict) = @_;
-    # XXX: turn this into an explicit load?
-    $resdb->matching( sub { $_[0]->uuid eq $conflict->cas_key });
-    my $answer = $resdb->as_array_ref->[0] or return;
-
-    my $resolution = Prophet::Change->new_from_conflict($conflict);
-    for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
-        $resolution->add_prop_change(
-            name => $prop_conflict->name,
-            old  => $prop_conflict->source_old_value,
-            new  => $answer->prop( $prop_conflict->name ),
-        );
-    }
-    return $resolution;
-}
+use Prophet::Resolver::IdenticalChanges;
+use Prophet::Resolver::FromResolutionDB;
+use Prophet::Resolver::Failed;
 
 sub generate_resolution {
     my $self = shift;
     my $resdb = shift;
     my @resolvers = (
-        sub { $self->attempt_automatic_conflict_resolution(@_) },
-        $resdb ? sub { $self->resolution_from_resdb( $resdb, @_ ) } : (),
+        sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
+        $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
         @{ $self->resolvers || [] },
-        $self->_resolution_failed
+        sub { Prophet::Resolver::Failed->new->run(@_) },
     );
-
     my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
-    for my $conflict ( @{ $self->conflicting_changes } ) {
+    for my $conflicting_change ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {
-            if (my $resolution = $_->($conflict)) {
+            if (my $resolution = $_->($conflicting_change, $self, $resdb)) {
                 $resolutions->add_change(change => $resolution) if $resolution->prop_changes;
                 last;
             }
@@ -74,60 +55,6 @@ sub generate_resolution {
 
     $self->resolution_changeset($resolutions);
     return 1;
-}
-
-=head2 attempt_automatic_conflict_resolution
-
-Given a L<Prophet::Conflict> which can not be cleanly applied to a
-replica, it is sometimes possible to automatically determine a sane
-resolution to the conflict.
-
-=over
-
-=item When the new-state of the conflicting change matches the
-previous head of the replica.
-
-=item When someone else has previously done the resolution and we
-have a copy of that hanging aroun
-
-** This bit seems hard
-
-=back
-
-
-In those cases, this routine will generate a L<Prophet::ChangeSet> which resolves 
-as many conflicts as possible.
-
-It will then update $self->conflicting_changes to mark which
-L<Prophet::ConflictingChange>s and L<Prophet::ConflictingPropChanges>
-have been automatically resolved.
-
-
-=cut
-
-
-sub attempt_automatic_conflict_resolution {
-    my $self = shift;
-    my ($conflicting_change) = validate_pos(@_, { isa => 'Prophet::ConflictingChange'});
-  # for everything from the changeset that is the same as the old value of the target replica
-    # we can skip applying 
-    return 0 if $conflicting_change->file_op_conflict;
-
-    my $resolution = Prophet::Change->new_from_conflict( $conflicting_change );
-
-    for my $prop_change ( @{$conflicting_change->prop_conflicts} ) {
-        return 0 unless $prop_change->target_value eq $prop_change->source_new_value
-    }
-
-    $self->autoresolved(1);
-
-    return $resolution;
-
-
-
-
-
-
 }
 
 

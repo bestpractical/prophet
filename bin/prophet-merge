@@ -29,9 +29,12 @@ fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritabl
 
 $target->import_changesets( from => $source, 
                             use_resdb => 1,
-                            ($opts->{'prefer'} eq 'to' ? (resolver_class => 'Prophet::Resolver::AlwaysTarget') : ()),
-                            ($opts->{'prefer'} eq 'from' ? (resolver_class => 'Prophet::Resolver::AlwaysSource') : ())
-);
+                            $ENV{'PROPHET_RESOLVER'} ? 
+                            (resolver_class => 'Prophet::Resolver::'.$ENV{'PROPHET_RESOLVER'}) :
+	                            (
+	                            ($opts->{'prefer'} eq 'to' ? (resolver_class => 'Prophet::Resolver::AlwaysTarget') : ()),
+	                            ($opts->{'prefer'} eq 'from' ? (resolver_class => 'Prophet::Resolver::AlwaysSource') : ()))
+	);
 
 exit(0);
 
