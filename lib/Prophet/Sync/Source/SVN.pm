@@ -174,7 +174,7 @@ sub has_seen_changeset {
     my $last = $self->last_changeset_from_source( $changeset->original_source_uuid || $changeset->source_uuid );
         
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
-    return 1 if ( $last >= $changeset->sequence_no );
+    return 1 if ( $last >= $changeset->original_sequence_no );
 
 }
 
