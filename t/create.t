@@ -1,6 +1,7 @@
 use warnings;
 use strict;
-use Test::More 'no_plan';
+use Test::More tests => 25;
+
 use File::Temp qw'tempdir';
 
 use_ok('Prophet::Handle');

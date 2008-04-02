@@ -91,7 +91,7 @@ sub create_record {
 
     my ($ret, $out, $err) = call_func_ok( [qw(create --type Scratch),   @{$args->{props}} ]);
 
-    ok($ret, $self->name . " created a record");
+#    ok($ret, $self->name . " created a record");
     if ($out =~ /Created\s+(.*?)\s+(.*)$/i) {
        $args->{result} = $2;
     }
@@ -105,7 +105,7 @@ sub update_record {
     $args->{record} ||= get_random_local_record();
     return undef unless($args->{'record'});
 
-    my ($ok, $stdout, $stderr) = call_func_ok([qw(update --type Scratch --uuid), $args->{record}]);
+    my ($ok, $stdout, $stderr) = call_func([qw(show --type Scratch --uuid), $args->{record}]);
    
     my %props = map { split(/: /,$_,2) } split(/\n/,$stdout);
     delete $props{id};
@@ -135,7 +135,7 @@ sub sync_from_peer {
 }
 
 sub get_random_local_record {
-    my ($ok, $stdout, $stderr) = call_func_ok([qw(search --type Scratch --regex .)]);
+    my ($ok, $stdout, $stderr) = call_func([qw(search --type Scratch --regex .)]);
     my $update_record = (shuffle( map { $_ =~ /^(\S*)/ } split(/\n/,$stdout)))[0];
     return $update_record;
 }
@@ -176,9 +176,21 @@ sub record_action {
     $self->arena->record($self->name, $action, @arg);
 }
 
-use IO::String;
+use Test::Exception;
 
 sub call_func_ok {
+    my @args = @_;
+    my @ret;
+    lives_and {
+        @ret = call_func(@args);
+        ok(1, join(" ", $ENV{'PROPHET_USER'}, @{$args[0]}));
+    };
+    return @ret;
+}
+
+sub call_func {
+    Carp::cluck unless ref$_[0];
+    
     my @args = @{ shift @_ };
     my $cmd  = shift @args;
     local (@ARGV) = (@args);
@@ -197,7 +209,6 @@ sub call_func_ok {
         die "I don't know how to do the $cmd";
     }
     select($old_fh) if defined $old_fh;
-    ok(1, join(" ", $ENV{'PROPHET_USER'}, $cmd, @ARGV));
 
     return ( $ret, $str, undef);
 }

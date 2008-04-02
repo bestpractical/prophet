@@ -30,6 +30,7 @@ sub run_from_yaml {
 
     local $/;
     $self->run_from_data(YAML::Syck::Load( <$fh> ));
+
 }
 
 sub run_from_yamlfile {
@@ -57,7 +58,7 @@ sub run_from_data {
         my ($chicken) = grep { $_->name eq $name } @{ $arena->chickens };
         if ($args->{record}) {
             $args->{record} = $record_map->{ $args->{record} };
-    }
+        }
         my $next_result = $args->{result};
 
         as_user($chicken->name, sub {
@@ -69,6 +70,12 @@ sub run_from_data {
             $record_map->{ $next_result } = $args->{result};
         }
     }
+
+#    my $third = $arena->dump_state;
+#    $arena->sync_all_pairs;
+#    my $fourth = $arena->dump_state;
+#    is_deeply($third,$fourth);
+
 }
 
     my $TB = Test::Builder->new();
