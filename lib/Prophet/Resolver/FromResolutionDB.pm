@@ -14,7 +14,7 @@ sub run {
     my $res = Prophet::Collection->new( handle => $resdb->handle,
                                         type => '_prophet_resolution-'.$conflicting_change->cas_key );
     $res->matching(sub { 1 } );
-    my $answer = $res->as_array_ref->[0];
+    my $answer = $res->as_array_ref->[0] or return;
 #    for my $answer (@{$res->as_array_ref}) {
         
 #    }
