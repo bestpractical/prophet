@@ -31,7 +31,7 @@ use_ok('Prophet::Collection');
 my $people = Prophet::Collection->new( handle => $cxn, type => 'Person');
 $people->matching(sub { (shift->prop( 'species')||'') ne 'cat'});
 is($#{$people->as_array_ref}, 1);
-my @people= @{$people->as_array_ref};
+my @people= @$people;
 is_deeply([ sort map {$_->prop('name')} @people], [qw(Jesse Kaia)]);
 
 my $cats = Prophet::Collection->new( handle => $cxn, type => 'Person');

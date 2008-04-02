@@ -1,9 +1,12 @@
 use warnings;
 use strict;
-
 package Prophet::Collection;
 use Params::Validate;
 use base qw/Class::Accessor/;
+
+use overload '@{}' => \&as_array_ref, fallback => 1;
+
+
 __PACKAGE__->mk_accessors(qw'handle type');
 use Prophet::Record;
 
