@@ -422,6 +422,8 @@ sub _record_merge_ticket {
 
 }
 
-
+use YAML::Syck;
+package YAML;
+*Dump     = *YAML::Syck::Dump;
 
 1;

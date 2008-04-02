@@ -32,8 +32,7 @@ my $Test = Test::Builder->new;
 if (grep { !$_ } $Test->summary) {
     my $fname = join('-', sort map { $_->name } @{$arena->chickens}).'.yml';
     diag "test failed... dumping recipe to $fname";
-    use YAML;
-    YAML::DumpFile( $fname,
+    YAML::Syck::DumpFile( $fname,
         { chickens => [ map { $_->name } @{ $arena->chickens } ],
             recipe => $arena->{history}
         } );
