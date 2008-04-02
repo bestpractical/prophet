@@ -13,7 +13,7 @@ use File::Temp;
 
 for (reverse 0..$#{ $d->{recipe}} ) {
     warn "==> removing $_ ".Dumper($d->{recipe}->[$_]);
-    next if $d->[1] eq 'create_record';
+    next if $d->{recipe}->[$_][1] eq 'create_record';
     
     my $foo = dclone $d;
 
