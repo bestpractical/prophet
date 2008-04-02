@@ -8,7 +8,7 @@ use_ok('Prophet::Test::Arena');
 use_ok('Prophet::Test::Participant');
 
 my $arena = Prophet::Test::Arena->new();
-$arena->setup(3);
+$arena->setup(shift || 5);
 
 for(1..3) {
     $arena->step('create_record');
