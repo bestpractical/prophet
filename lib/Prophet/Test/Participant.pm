@@ -197,7 +197,7 @@ sub call_func_ok {
         die "I don't know how to do the $cmd";
     }
     select($old_fh) if defined $old_fh;
-    ok(1, join(" ", $cmd, @ARGV));
+    ok(1, join(" ", $ENV{'PROPHET_USER'}, $cmd, @ARGV));
 
     return ( $ret, $str, undef);
 }
