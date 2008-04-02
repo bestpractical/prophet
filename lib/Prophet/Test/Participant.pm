@@ -185,8 +185,8 @@ sub call_func_ok {
     my $cli = Prophet::CLI->new();
     $cli->parse_record_cmd_args();
 
-    my $str;
-    my $str_fh = IO::String->new($str);
+    my $str = '';
+    open my $str_fh, '>', \$str;
 
     my $old_fh = select($str_fh);
 
