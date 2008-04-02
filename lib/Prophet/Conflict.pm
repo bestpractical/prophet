@@ -87,11 +87,11 @@ sub _generate_change_conflicts {
     my $file_op_conflict = '';
     
     my $file_exists = $self->prophet_handle->node_exists(uuid => $change->node_uuid, type => $change->node_type);
-    
+
     # It's ok to delete a node that exists
     if ( $change->change_type eq 'delete' && !$file_exists ) {
         $file_op_conflict = "delete_missing_file";
-    } elsif ( $change->change_type eq 'update' && !$file_exists) {
+    } elsif ( $change->change_type eq 'update_file' && !$file_exists) {
         $file_op_conflict = "update_missing_file";
     } elsif ( $change->change_type eq 'add_file' && $file_exists) {
         $file_op_conflict = "create_existing_file";
@@ -99,8 +99,6 @@ sub _generate_change_conflicts {
         # XXX TODO: this isn't right
         $file_op_conflict = "create_existing_dir";
     }
-
-    
 
 
 
