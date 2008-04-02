@@ -74,7 +74,6 @@ sub run_ok {
    my $msg = shift if (@_);
    
    @_ = sub {
-   
       my ($ret, $stdout,$stderr) = (run_script($script, $args), $msg);
       @_ = ($ret,$msg);
       goto &Test::More::ok;
@@ -224,8 +223,11 @@ sub as_user {
   local $ENV{'PROPHET_USER'} = $username;
   local $ENV{'PROPHET_REPO'} = repo_path_for($username);
 #  diag("I am $username. My replica id is ".replica_uuid());
- my $ret=  $coderef->();
- $REPLICA_UUIDS{$username} = replica_uuid();
+
+  $REPLICA_UUIDS{$username} = replica_uuid();
+
+  my $ret=  $coderef->();
+
  return $ret;
 }
 

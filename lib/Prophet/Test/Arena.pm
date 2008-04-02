@@ -60,7 +60,10 @@ sub run_from_data {
     }
         my $next_result = $args->{result};
 
-        as_user($chicken->name, sub { $chicken->take_one_step($action, $args ) });
+        as_user($chicken->name, sub {
+                    @_ = ($chicken, $action, $args);
+                    goto $chicken->can('take_one_step');
+                });
 
         if ($args->{result}) {
             $record_map->{ $next_result } = $args->{result};

@@ -35,7 +35,8 @@ sub take_one_step {
     my $self   = shift;
     my $action = shift || ( shuffle(@CHICKEN_DO) )[0];
     my $args   = shift;
-    $self->$action($args);
+    @_ = ($self, $args);
+    goto $self->can($action);
 }
 
 
@@ -122,9 +123,10 @@ sub sync_from_peer {
 
     $self->record_action('sync_from_peer', $args);
 
-    eval { run_ok( 'prophet-merge',
+    @_ = ( 'prophet-merge',
             [ '--prefer', 'to', '--from', repo_uri_for($from),
-                '--to', repo_uri_for($self->name) ], $self->name . " sync from " . $from . " ran ok!" ); };
+                '--to', repo_uri_for($self->name) ], $self->name . " sync from " . $from . " ran ok!" );
+    goto \&run_ok;
 
 }
 
