@@ -52,6 +52,8 @@ sub matching {
     return undef unless $self->handle->type_exists( type => $self->type );
 
     # find all items,
+    Carp::cluck unless defined $self->type;
+    
     my $nodes = $self->handle->current_root->dir_entries( $self->handle->db_root . '/' . $self->type . '/' );
 
     # run coderef against each item;

@@ -45,6 +45,35 @@ sub resdb_handle {
     return $self->_resdb_handle();
 }
 
+=head2 record_cmd
+
+Returns a closure that handles the subcommand for a particular type
+
+=cut
+
+
+our %CMD_MAP = (
+    ls   => 'search',
+    new  => 'create',
+    edit => 'update',
+    rm   => 'delete',
+    del  => 'delete',
+    list => 'search'
+);
+
+sub record_cmd {
+    my ($self, $type) = @_;
+    return sub {
+        my $cmd = shift @ARGV or die "record subcommand required";
+        $cmd =~ s/^--//g;
+        $cmd = $CMD_MAP{$cmd} if exists $CMD_MAP{$cmd};
+        my $func = $self->can("do_$cmd") or die "no such crecord ommand $cmd";
+        $self->type($type);
+        $self->parse_record_cmd_args();
+        $func->($self);
+    };
+}
+
 =head2 parse_args
 
 This routine pulls arguments passed on the command line out of ARGV and sticks them in L</args>. The keys have leading "--" stripped.
