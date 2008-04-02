@@ -15,7 +15,7 @@ sub  run {
             for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
                 $resolution->add_prop_change(
                     name => $prop_conflict->name,
-                    old  => $prop_conflict->source_old_value,
+                    old  => $prop_conflict->source_new_value,
                     new  => $prop_conflict->target_value
                 );
             }

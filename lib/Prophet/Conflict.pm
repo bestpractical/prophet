@@ -108,14 +108,14 @@ have been automatically resolved.
 
 sub attempt_automatic_conflict_resolution {
     my $self = shift;
-    my $conflict = shift;
+    my ($conflicting_change) = validate_pos(@_, { isa => 'Prophet::ConflictingChange'});
   # for everything from the changeset that is the same as the old value of the target replica
     # we can skip applying 
-    return 0 if $conflict->file_op_conflict;
+    return 0 if $conflicting_change->file_op_conflict;
 
-    my $resolution = Prophet::Change->new_from_conflict( $conflict );
+    my $resolution = Prophet::Change->new_from_conflict( $conflicting_change );
 
-    for my $prop_change ( @{$conflict->prop_conflicts} ) {
+    for my $prop_change ( @{$conflicting_change->prop_conflicts} ) {
         return 0 unless $prop_change->target_value eq $prop_change->source_new_value
     }
 
