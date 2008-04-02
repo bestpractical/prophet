@@ -155,6 +155,7 @@ sub record_changeset {
     my $self = shift;
     my $changeset = shift;
 
+    eval { 
     
     my $inside_edit = $self->current_edit ? 1: 0;
     $self->begin_edit() unless ($inside_edit);
@@ -162,7 +163,8 @@ sub record_changeset {
     $self->current_edit->change_prop( 'prophet:special-type'  => 'nullification') if ($changeset->is_nullification);
     $self->current_edit->change_prop( 'prophet:special-type'  => 'resolution') if ($changeset->is_resolution);
     $self->commit_edit() unless ($inside_edit);
-
+    }; 
+    die ($@) if ($@);
 }
 
 sub _set_original_source_metadata {
@@ -199,6 +201,8 @@ sub _integrate_change {
             type => $change->node_type,
             uuid => $change->node_uuid
         );
+    } else {
+        Carp::confess(" I have never heard of the change type: ".$change->change_type);
     }
     my $changed = $self->current_edit->root->paths_changed;
     

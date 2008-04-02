@@ -191,9 +191,9 @@ sub generate_nullification_changeset {
         my $nullify_conflict = Prophet::Change->new( { node_type => $conflict->node_type, node_uuid => $conflict->node_uuid });
 
         if ( $conflict->file_op_conflict eq "delete_missing_file" ) {
-            $nullify_conflict->change_type('create_file');
+            $nullify_conflict->change_type('add_file');
         } elsif ( $conflict->file_op_conflict eq "update_missing_file" ) {
-            $nullify_conflict->change_type('create_file');
+            $nullify_conflict->change_type('add_file');
         } elsif ( $conflict->file_op_conflict eq "create_existing_file" ) {
             $nullify_conflict->change_type('delete');
         } elsif ( $conflict->file_op_conflict ) {

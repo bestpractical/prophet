@@ -271,7 +271,7 @@ sub integrate_changeset {
         # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
         # integrate the nullification change
         $self->prophet_handle->record_changeset($conflict->nullification_changeset);
-
+        
         # integrate the original change
         $self->prophet_handle->integrate_changeset($changeset);
         # integrate the conflict resolution change
