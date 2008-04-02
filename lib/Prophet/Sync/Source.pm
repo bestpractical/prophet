@@ -4,7 +4,7 @@ use strict;
 package Prophet::Sync::Source;
 use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
-
+use UNIVERSAL::require;
 
 =head1 NAME
 
@@ -43,7 +43,9 @@ TODO: currently knows that we only have SVN replicas
 
 sub rebless_to_replica_type {
    my $self = shift;
-   bless $self, 'Prophet::Sync::Source::SVN';
+   my $class = 'Prophet::Sync::Source::SVN';
+   $class->require;
+   bless $self, $class;
 }
 
 

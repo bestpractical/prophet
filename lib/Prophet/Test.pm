@@ -109,10 +109,16 @@ Runs the script, checking to see that its output matches
 
 =cut
 
+our $RUNCNT;
+
 sub _get_perl_cmd {
     my $script = shift;
     my @cmd = ($^X, (map { "-I$_" } @INC));
     push @cmd, '-MDevel::Cover' if $INC{'Devel/Cover.pm'};
+    if ($INC{'Devel/DProf.pm'}) {
+        push @cmd, '-d:DProf';
+        $ENV{'PERL_DPROF_OUT_FILE_NAME'} = 'tmon.out.'.$$.'.'.$RUNCNT++;
+    }
     push @cmd, 'bin/'.$script;
     return @cmd;
 }

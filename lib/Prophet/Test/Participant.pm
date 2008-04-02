@@ -22,7 +22,7 @@ sub new {
 
 sub _setup {
     my $self = shift;
-    as_user($self->name, sub { run_ok('prophet-node-search', [qw(--type Bug --regex .)])});
+    as_user($self->name, sub { call_func_ok( [qw(search --type Bug --regex .)])});
 
 
 }
@@ -79,7 +79,9 @@ sub delete_record {
 
     return undef unless ($args->{record});
     $self->record_action('delete_record', $args);
-    run_ok('prophet-node-delete', [qw(--type Scratch --uuid),  $args->{record}]);
+    call_func_ok( [qw(delete --type Scratch --uuid),  $args->{record}]);
+
+
 
 }
 sub create_record {
@@ -87,7 +89,7 @@ sub create_record {
     my $args = shift;
     @{$args->{props}} = _random_props() unless $args->{props};
 
-    my ($ret, $out, $err) = run_script('prophet-node-create', [qw(--type Scratch),   @{$args->{props}} ]);
+    my ($ret, $out, $err) = call_func_ok( [qw(create --type Scratch),   @{$args->{props}} ]);
 
     ok($ret, $self->name . " created a record");
     if ($out =~ /Created\s+(.*?)\s+(.*)$/i) {
@@ -103,16 +105,15 @@ sub update_record {
     $args->{record} ||= get_random_local_record();
     return undef unless($args->{'record'});
 
-    my ($ok, $stdout, $stderr) = run_script('prophet-node-show', [qw(--type Scratch --uuid), $args->{record}]);
-    
+    my ($ok, $stdout, $stderr) = call_func_ok([qw(update --type Scratch --uuid), $args->{record}]);
+   
     my %props = map { split(/: /,$_,2) } split(/\n/,$stdout);
     delete $props{id};
 
     %{$args->{props}} =_permute_props(%props) unless $args->{props};
     %props = %{ $args->{props} };
 
-    run_ok( 'prophet-node-update',
-        [ qw(--type Scratch --uuid), $args->{record},
+   call_func_ok( [ qw(update --type Scratch --uuid), $args->{record},
             map { '--' . $_ => $props{$_} } keys %props ], $self->name . " updated a record" );
 
     $self->record_action('update_record', $args);
@@ -126,21 +127,20 @@ sub sync_from_peer {
 
     $self->record_action('sync_from_peer', $args);
 
-    @_ = ( 'prophet-merge',
-            [ '--prefer', 'to', '--from', repo_uri_for($from),
+    @_ = ( 
+            ['merge', '--prefer', 'to', '--from', repo_uri_for($from),
                 '--to', repo_uri_for($self->name) ], $self->name . " sync from " . $from . " ran ok!" );
-    goto \&run_ok;
+    goto \&call_func_ok;
 
 }
 
 sub get_random_local_record {
-    my ($ok, $stdout, $stderr) = run_script('prophet-node-search', [qw(--type Scratch --regex .)]);
+    my ($ok, $stdout, $stderr) = call_func_ok([qw(search --type Scratch --regex .)]);
     my $update_record = (shuffle( map { $_ =~ /^(\S*)/ } split(/\n/,$stdout)))[0];
     return $update_record;
 }
 
 
-sub sync_from_all_peers {}
 sub dump_state {
     my $self = shift;
     my $cli = Prophet::CLI->new();
@@ -174,6 +174,32 @@ sub dump_history {}
 sub record_action {
     my ($self, $action, @arg) = @_;
     $self->arena->record($self->name, $action, @arg);
+}
+
+use IO::String;
+
+sub call_func_ok {
+    my @args = @{ shift @_ };
+    my $cmd  = shift @args;
+    local (@ARGV) = (@args);
+    my $cli = Prophet::CLI->new();
+    $cli->parse_record_cmd_args();
+
+    my $str;
+    my $str_fh = IO::String->new($str);
+
+    my $old_fh = select($str_fh);
+
+    my $ret;
+    if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
+        $ret = $sub->($cli);
+    } else {
+        die "I don't know how to do the $cmd";
+    }
+    select($old_fh) if defined $old_fh;
+    ok(1, join(" ", $cmd, @ARGV));
+
+    return ( $ret, $str, undef);
 }
 
 
