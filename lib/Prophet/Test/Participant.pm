@@ -77,6 +77,7 @@ sub delete_record {
     my $args = shift;
     $args->{record} ||= get_random_local_record();
 
+    return undef unless ($args->{record});
     $self->record_action('delete_record', $args);
     run_ok('prophet-node-delete', [qw(--type Scratch --uuid),  $args->{record}]);
 
@@ -100,10 +101,8 @@ sub update_record {
     my $args = shift;
 
     $args->{record} ||= get_random_local_record();
-    unless($args->{'record'}) {
-    ok(0,"The user didn't have a record in their db - ".$ENV{'PROPHET_USER'}) ;
-    return;
-    }
+    return undef unless($args->{'record'});
+
     my ($ok, $stdout, $stderr) = run_script('prophet-node-show', [qw(--type Scratch --uuid), $args->{record}]);
     
     my %props = map { split(/: /,$_,2) } split(/\n/,$stdout);
