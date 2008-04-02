@@ -66,11 +66,13 @@ as_bob {
         );
     } qr/my way of death/, 'our resolver is actually called';
 
+
     ok_added_revisions( sub {
 
             $target->import_changesets(
                 from     => $source,
-                resolver => $target->always_mine_resolver )
+                resolver_class => 'Prophet::Resolver::AlwaysTarget'
+            )
     }, 3, '3 revisions since the merge' );
 
     my @changesets = fetch_newest_changesets(3);

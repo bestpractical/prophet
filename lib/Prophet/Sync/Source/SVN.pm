@@ -4,6 +4,7 @@ use strict;
 package Prophet::Sync::Source::SVN;
 use base qw/Prophet::Sync::Source/;
 use Params::Validate qw(:all);
+use UNIVERSAL::require;
 
 use SVN::Core;
 use SVN::Ra;
@@ -231,6 +232,7 @@ sub integrate_changeset {
     my %args = validate( @_,
         { changeset => { isa => 'Prophet::ChangeSet' },
             resolver          => { optional => 1 },
+            resolver_class          => { optional => 1 },
             resdb             => { optional => 1 },
             conflict_callback => { optional => 1 }
         }
@@ -258,6 +260,11 @@ sub integrate_changeset {
     if (my $conflict = $self->conflicts_from_changeset($changeset ) ) {
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers([sub { $args{resolver}->(@_) }]) if $args{resolver};
+        if  ($args{resolver_class} ) {
+            $args{resolver_class}->require|| die $@;
+            $conflict->resolvers([sub { $args{resolver_class}->run(@_); }]) 
+
+         }
         my $resolutions = $conflict->generate_resolution($args{resdb});
         #figure out our conflict resolution
 
@@ -307,39 +314,6 @@ sub last_changeset_from_source {
 
     return ( $props->{'last-changeset'} ||0 );
 
-}
-
-=head2 always_mine_resolver
-
-=cut
-
-sub always_mine_resolver {
-    return
-       sub { my $conflict = shift;
-            return 0 if $conflict->file_op_conflict;
-
-            my $resolution = Prophet::Change->new_from_conflict( $conflict );
-
-            for my $prop_conflict ( @{ $conflict->prop_conflicts } ) {
-                $resolution->add_prop_change(
-                    name => $prop_conflict->name,
-                    old  => $prop_conflict->source_old_value,
-                    new  => $prop_conflict->target_value
-                );
-            }
-            return $resolution;
-    };
-}
-
-
-sub always_theirs_resolver {
-    return
-       sub { my $conflict = shift;
-            return 0 if $conflict->file_op_conflict;
-
-            my $resolution = Prophet::Change->new_from_conflict( $conflict );
-            return $resolution;
-    };
 }
 
 1;

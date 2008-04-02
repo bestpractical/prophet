@@ -53,6 +53,7 @@ sub import_changesets {
     my %args = validate( @_, { from => { isa => 'Prophet::Sync::Source' },
             use_resdb => { optional => 1 },
             resolver          => { optional => 1 },
+            resolver_class          => { optional => 1 },
             conflict_callback => { optional => 1 } } );
 
     my $source = $args{'from'};
@@ -67,7 +68,7 @@ sub import_changesets {
     
        next if ( $self->has_seen_changeset($changeset) );
        next if $changeset->is_nullification || $changeset->is_resolution;
-        $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver}, resdb => $resdb);
+        $self->integrate_changeset( changeset => $changeset, conflict_callback => $args{conflict_callback}, resolver => $args{resolver}, resolver_class => $args{'resolver_class'}, resdb => $resdb);
 
     }
 }
@@ -77,6 +78,7 @@ sub fetch_resolutions {
     my %args = validate( @_,
         { from => { isa => 'Prophet::Sync::Source' },
             resolver          => { optional => 1 },
+            resolver_class          => { optional => 1 },
             conflict_callback => { optional => 1 } } );
     my $source = $args{'from'};
 
