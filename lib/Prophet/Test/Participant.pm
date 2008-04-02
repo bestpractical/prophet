@@ -203,6 +203,7 @@ sub call_func {
     my $old_fh = select($str_fh);
 
     my $ret;
+    my $pool = SVN::Pool->new_default;
     if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
         $ret = $sub->($cli);
     } else {

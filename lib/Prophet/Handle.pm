@@ -12,7 +12,7 @@ use SVN::Repos;
 use SVN::Fs;
 
 our $DEBUG = '0';
-__PACKAGE__->mk_accessors(qw(repo_path repo_handle db_root current_edit));
+__PACKAGE__->mk_accessors(qw(repo_path repo_handle db_root current_edit _pool));
 
 
 =head2 new { repository => $FILESYSTEM_PATH, db_root => $REPOS_PATH }
@@ -29,6 +29,7 @@ sub new {
     $self->db_root( $args{'db_root'} );
     $self->repo_path( $args{'repository'} );
     $self->_connect();
+    $self->_pool(SVN::Pool->new);
 
     return $self;
 }
@@ -50,7 +51,7 @@ sub _connect {
 
     # If we couldn't open the repository handle, we should create it
     if ( $@ && ! -d $self->repo_path ) {
-        $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef );
+        $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef, $self->_pool );
     }
 
     $self->repo_handle($repos);
@@ -60,7 +61,7 @@ sub _connect {
 sub _create_nonexistent_dir {
     my $self = shift;
     my $dir  = shift;
-    
+    my $pool = SVN::Pool->new_default;
     my $root = $self->current_edit ? $self->current_edit->root : $self->current_root;
     
     unless ( $root->is_dir($dir) ) {
