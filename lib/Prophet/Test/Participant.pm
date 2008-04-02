@@ -100,6 +100,10 @@ sub update_record {
     my $args = shift;
 
     $args->{record} ||= get_random_local_record();
+    unless($args->{'record'}) {
+    ok(0,"The user didn't have a record in their db - ".$ENV{'PROPHET_USER'}) ;
+    return;
+    }
     my ($ok, $stdout, $stderr) = run_script('prophet-node-show', [qw(--type Scratch --uuid), $args->{record}]);
     
     my %props = map { split(/: /,$_,2) } split(/\n/,$stdout);

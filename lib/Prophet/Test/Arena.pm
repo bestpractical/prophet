@@ -71,11 +71,15 @@ sub run_from_data {
     }
 }
 
+    my $TB = Test::Builder->new();
 sub step {
     my $self = shift;
     my $step_name = shift || undef;
    for my $chicken (@{$self->chickens}) {
         as_user($chicken->name, sub {$chicken->take_one_step($step_name)});
+        die  if (grep { !$_ } $TB->summary);
+            
+            
     }
 
     # for x rounds, have each participant execute a random action
@@ -97,23 +101,19 @@ sub sync_all_pairs {
 
     diag("now syncing all pairs");
 
-    my @chickens_a = shuffle @{$self->chickens};
-    my @chickens_b = shuffle @{$self->chickens};
- 
-    my %seen_pairs;
+    my @chickens_a = shuffle @{ $self->chickens };
+    my @chickens_b = shuffle @{ $self->chickens };
 
     foreach my $a (@chickens_a) {
-        foreach my $b (@chickens_b) { 
-        next if $a->name eq $b->name;
-        next if ($seen_pairs{$b->name."-".$a->name});
-        diag($a->name, $b->name);
-           as_user($a->name, sub {$a->sync_from_peer({ from => $b->name }) });
-        $seen_pairs{$a->name."-".$b->name} =1;
-    }
+        foreach my $b (@chickens_b) {
+            next if $a->name eq $b->name;
+            diag( $a->name, $b->name );
+            as_user( $a->name, sub { $a->sync_from_peer( { from => $b->name } ) } );
+            die if (grep { !$_ } $TB->summary);
+        }
 
     }
-    
-
+    return 1;
 }
 
 sub record {
