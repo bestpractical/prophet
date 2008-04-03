@@ -23,6 +23,8 @@ use Data::UUID;
 
 my $UUIDGEN = Data::UUID->new();
 
+use constant collection_class => 'Prophet::Collection';
+
 =head1 METHODS
 
 =head2 new  { handle => Prophet::Handle, type => $type }
@@ -38,6 +40,8 @@ sub new {
     $self->$_( $args{$_} ) for keys(%args);
     return $self;
 }
+
+sub record_type { $_[0]->type }
 
 =head2 create { props => { %hash_of_kv_pairs } }
 
@@ -130,9 +134,11 @@ Returns the current value of the property C<$name> for this record.
 
 =cut
 
+
+
 sub prop {
     my $self = shift;
-    my $prop = shift;
+    my $prop = shift; 
     return $self->get_props->{$prop};
 }
 

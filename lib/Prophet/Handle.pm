@@ -368,6 +368,7 @@ sub file_for {
 sub directory_for_type {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
+    Carp::cluck unless defined $args{type};
     return join( "/", $self->db_root, $args{'type'} );
 
 }

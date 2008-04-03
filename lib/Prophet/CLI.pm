@@ -3,7 +3,7 @@ use strict;
 
 package Prophet::CLI;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/type uuid _handle _resdb_handle/);
+__PACKAGE__->mk_accessors(qw/record_class type uuid _handle _resdb_handle/);
 
 use Path::Class;
 use Prophet;
@@ -15,6 +15,7 @@ use Prophet::Sync::Source;
 sub new {
     my $class = shift;
     my $self  = $class->SUPER::new(@_);
+    $self->record_class('Prophet::Record') unless $self->record_class;
     $self->handle;
     $self->resdb_handle;
     return $self;
@@ -60,13 +61,19 @@ our %CMD_MAP = (
 );
 
 sub record_cmd {
-    my ($self, $type) = @_;
+    my ($self, $type, $record_class) = @_;
     return sub {
         my $cmd = shift @ARGV or die "record subcommand required";
         $cmd =~ s/^--//g;
         $cmd = $CMD_MAP{$cmd} if exists $CMD_MAP{$cmd};
-        my $func = $self->can("do_$cmd") or die "no such crecord ommand $cmd";
-        $self->type($type);
+        my $func = $self->can("do_$cmd") or die "no such record command $cmd";
+        if ($record_class) {
+        	$self->record_class($record_class);
+        }
+        else {
+        	$self->record_class('Prophet::Record');
+	        $self->type($type);
+	    }
         $self->parse_record_cmd_args();
         $func->($self);
     };
@@ -78,14 +85,17 @@ Register cmd_C<type> methods if the calling namespace that handles the cli comma
 
 =cut
 
+
 sub register_types {
     my $self = shift;
+    my $model_base = shift;
     my @types = (@_);
     
     my $calling_package = (caller)[0];
     for my $type (@types) {
         no strict 'refs';
-         *{$calling_package."::cmd_".$type} = $self->record_cmd($type);
+        my $class = $model_base.'::'.ucfirst($type);
+         *{$calling_package."::cmd_".$type} = $self->record_cmd($type => $class);
         }
 }
 
@@ -142,11 +152,16 @@ sub args {
 
 }
 
+sub _get_record {
+	my $self = shift;
+	return $self->record_class->new( { handle => $self->handle, type => $self->type } );
+}
+
 sub do_create {
     my $cli = shift;
-    my $record = Prophet::Record->new( handle => $cli->handle, type => $cli->type );
+    my $record = $cli->_get_record;
     my ( $id, $results ) = $record->create( props => $cli->args );
-    print "Created " . $cli->type . " " . $record->uuid . "\n";
+    print "Created " . $record->record_type . " " . $record->uuid . "\n";
 
 }
 
@@ -158,7 +173,8 @@ sub do_search {
         die "Specify a regular expression and we'll search for records matching that regex";
     }
 
-    my $records = Prophet::Collection->new( handle => $cli->handle, type => $cli->type );
+	my $record = $cli->_get_record;
+    my $records = $record->collection_class->new( handle => $cli->handle, type => $record->record_type );
     $records->matching(
         sub {
             my $item  = shift;
@@ -176,7 +192,7 @@ sub do_search {
 sub do_update {
     my $cli = shift;
 
-    my $record = Prophet::Record->new( handle => $cli->handle, type => $cli->type );
+    my $record = $cli->_get_record;
     $record->load( uuid => $cli->uuid );
     $record->set_props( props => $cli->args );
 
@@ -185,7 +201,7 @@ sub do_update {
 sub do_delete {
     my $cli = shift;
 
-    my $record = Prophet::Record->new( handle => $cli->handle, type => $cli->type );
+    my $record = $cli->_get_record;
     $record->load( uuid => $cli->uuid );
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
@@ -198,7 +214,7 @@ sub do_delete {
 sub do_show {
     my $cli = shift;
 
-    my $record = Prophet::Record->new( handle => $cli->handle, type => $cli->type );
+    my $record = $cli->_get_record;
     $record->load( uuid => $cli->uuid );
     print "id: " . $record->uuid . "\n";
     my $props = $record->get_props();
@@ -212,9 +228,6 @@ sub do_merge {
     my $cli = shift;
 
     my $opts = $cli->args();
-
-    warn $opts->{from};
-    warn $opts->{to};
     
     my $source = Prophet::Sync::Source->new( { url => $opts->{'from'} } );
     my $target = Prophet::Sync::Source->new( { url => $opts->{'to'} } );
