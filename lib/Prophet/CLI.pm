@@ -74,6 +74,24 @@ sub record_cmd {
     };
 }
 
+=head2 register_types TYPES
+
+Register cmd_C<type> methods if the calling namespace that handles the cli command for each of the record type C<type>.
+
+=cut
+
+sub register_types {
+    my $self = shift;
+    my @types = (@_);
+    
+    my $calling_package = (caller)[0];
+    for my $type (@types) {
+        no strict 'refs';
+         *{$calling_package."::cmd_".$type} = $self->record_cmd($type);
+        }
+}
+
+
 =head2 parse_args
 
 This routine pulls arguments passed on the command line out of ARGV and sticks them in L</args>. The keys have leading "--" stripped.
@@ -110,14 +128,18 @@ sub parse_record_cmd_args {
     }
 }
 
-=head2 args
+=head2 args [$ARGS]
 
 Returns a reference to the key-value pairs passed in on the command line
+
+If passed a hashref, sets the args to taht;
 
 =cut
 
 sub args {
     my $self = shift;
+    
+    $self->{'args'} = shift if $_[0]; 
     return $self->{'args'};
 
 }
@@ -193,6 +215,9 @@ sub do_merge {
 
     my $opts = $cli->args();
 
+    warn $opts->{from};
+    warn $opts->{to};
+    
     my $source = Prophet::Sync::Source->new( { url => $opts->{'from'} } );
     my $target = Prophet::Sync::Source->new( { url => $opts->{'to'} } );
 

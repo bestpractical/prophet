@@ -12,11 +12,13 @@ use SVN::Repos;
 use SVN::Fs;
 
 our $DEBUG = '0';
-__PACKAGE__->mk_accessors(qw(repo_path repo_handle db_root current_edit _pool));
+__PACKAGE__->mk_accessors(qw(repo_path repo_handle current_edit _pool));
 
-=head2 new { repository => $FILESYSTEM_PATH, db_root => $REPOS_PATH }
+use constant db_root => '_prophet';
+
+=head2 new { repository => $FILESYSTEM_PATH}
  
-Create a new subversion filesystem backend repository handle. If the repository/path don't exist, create it.
+Create a new subversion filesystem backend repository handle. If the repository don't exist, create it.
 
 =cut
 
@@ -24,8 +26,7 @@ sub new {
     my $class = shift;
     my $self  = {};
     bless $self, $class;
-    my %args = validate( @_, { repository => 1, db_root => 1 } );
-    $self->db_root( $args{'db_root'} );
+    my %args = validate( @_, { repository => 1, db_root => 0 } );
     $self->repo_path( $args{'repository'} );
     $self->_connect();
     $self->_pool( SVN::Pool->new );

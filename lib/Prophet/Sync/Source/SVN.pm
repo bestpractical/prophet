@@ -28,17 +28,22 @@ XXX TODO, make the _prophet/ directory in the replica configurable
 
 =cut
 
-sub setup {
+sub _get_ra {
     my $self = shift;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
     my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
+    return SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool ) ;
+}
+
+sub setup {
+    my $self = shift;
     my $pool   = SVN::Pool->new;
 
     $self->pool($pool);
-    eval { $self->ra( SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool ) ); };
-    Carp::confess $@ if $@;
+
+    $self->ra( $self->_get_ra );
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
-        $self->prophet_handle( Prophet::Handle->new( { repository => $1, db_root => '_prophet' } ) );
+        $self->prophet_handle( Prophet::Handle->new( { repository => $1 } ) );
     }
     if ( $self->url =~ m/_res$/ ) {
 
@@ -75,25 +80,20 @@ sub fetch_changesets {
     my $self = shift;
     my %args = validate( @_, { after => 1 } );
     my @results;
-    my $last_editor;
-
-    my $handle_replayed_txn = sub {
-        $last_editor = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
-        $last_editor->ra( $self->ra );
-        return $last_editor;
-    };
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
     # XXX TODO we should  be using a svn get_log call here rather than simple iteration
     # clkao explains that this won't deal cleanly with cases where there are revision "holes"
     for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
+        my $editor = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
+        $editor->ra( $self->_get_ra );
         my $pool = SVN::Pool->new_default;
 
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
         $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
-        $self->ra->replay( $rev, 0, 1, $handle_replayed_txn->() );
-        push @results, $self->_recode_changeset( $last_editor->dump_deltas, $self->ra->rev_proplist($rev) );
+        $self->ra->replay( $rev, 0, 1, $editor );
+        push @results, $self->_recode_changeset( $editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
     }
 
@@ -306,7 +306,7 @@ sub last_changeset_from_source {
     my ($source) = validate_pos( @_, { type => SCALAR } );
     my ( $stream, $pool );
 
-    my $filename = join( "/", "_prophet", $Prophet::Handle::MERGETICKET_METATYPE, $source );
+    my $filename = join( "/", $self->prophet_handle->db_root, $Prophet::Handle::MERGETICKET_METATYPE, $source );
     my ( $rev_fetched, $props )
         = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
 
