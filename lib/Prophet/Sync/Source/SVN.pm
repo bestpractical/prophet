@@ -179,8 +179,13 @@ sub new_changesets_for {
     my ($self, $other) = @_;
 
     my $since = $other->last_changeset_from_source( $self->uuid );
-    warn $since;
-    $self->fetch_changesets( after => $since );
+
+    return [
+        grep { !( $_->is_nullification || $_->is_resolution )
+                && !$other->has_seen_changeset($_)
+            } @{ $self->fetch_changesets( after => $since ) }
+    ];
+
 }
 
 

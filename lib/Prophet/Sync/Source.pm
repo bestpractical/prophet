@@ -69,8 +69,8 @@ sub import_changesets {
 
     for my $changeset (@$changesets_to_integrate) {
 
-        next if ( $self->has_seen_changeset($changeset) );
         next if $changeset->is_nullification || $changeset->is_resolution;
+        next if ( $self->has_seen_changeset($changeset) );
         $self->integrate_changeset(
             changeset         => $changeset,
             conflict_callback => $args{conflict_callback},
@@ -246,10 +246,6 @@ sub remove_redundant_data {
             } $changeset->changes
     ];
 }
-
-
-
-
 
 sub fetch_resolutions {
     my $self = shift;
