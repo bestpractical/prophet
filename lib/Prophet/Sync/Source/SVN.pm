@@ -45,7 +45,7 @@ sub setup {
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
         $self->prophet_handle( Prophet::Handle->new( { repository => $1 } ) );
     }
-    if ( $self->url =~ m/_res$/ ) {
+    if ( $self->is_resdb ) {
 
         # XXX: should probably just point to self
         return;

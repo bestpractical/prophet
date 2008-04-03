@@ -5,7 +5,7 @@ package Prophet::Sync::Source::RT;
 use base qw/Prophet::Sync::Source/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
-use RT::Client::REST;
+use RT::Client::REST ();
 
 use Prophet::Handle;
 use Prophet::ChangeSet;
@@ -23,10 +23,16 @@ XXX TODO, make the _prophet/ directory in the replica configurable
 
 =cut
 
+use File::Temp 'tempdir';
+
 sub setup {
     my $self = shift;
     $self->rt(RT::Client::REST->new(server => 'http://rt3.fsck.com' ));
     $self->rt->login(username => 'guest', password => 'guest');
+    my $orz = tempdir();
+    $self->{___Orz} = $orz;
+    SVN::Repos::create($orz, undef, undef, undef, undef);
+    $self->ressource( __PACKAGE__->new( { url => "file://$orz", is_resdb => 1 } ) );
 }
 
 sub fetch_resolutions { warn 'no resdb'}
@@ -70,6 +76,12 @@ sub fetch_changesets {
     return \@results;
 }
 
+sub _find_matching_txns {
+    my $self = shift;
+    my $id = shift;
+    warn "looking for matching txn for $id";
+    return;
+}
 
 sub _find_matching_tickets {
     my $self = shift;
