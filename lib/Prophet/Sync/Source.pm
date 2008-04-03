@@ -6,6 +6,7 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
+
 =head1 NAME
 
 Prophet::Sync::Source
@@ -26,7 +27,7 @@ Instantiates a new sync source
 
 sub new {
     my $self = shift->SUPER::new(@_);
-    $self->rebless_to_replica_type();
+    $self->rebless_to_replica_type(@_);
     $self->setup();
     return $self;
 }
@@ -42,7 +43,17 @@ TODO: currently knows that we only have SVN replicas
 
 sub rebless_to_replica_type {
     my $self  = shift;
-    my $class = 'Prophet::Sync::Source::SVN';
+    my $args = shift;
+
+    my $class;
+    
+    # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
+    if ($args->{url} =~ /^http/) {
+            $class    = 'Prophet::Sync::Source::RT';
+        } 
+        else { 
+            $class    = 'Prophet::Sync::Source::SVN';
+        }
     $class->require;
     bless $self, $class;
 }
@@ -266,5 +277,20 @@ sub fetch_resolutions {
     my $records = Prophet::Collection->new( handle => $self->ressource->prophet_handle, type => '_prophet_resolution' );
     return $records;
 }
+
+=head2 news_changesets_for
+
+Returns the local changesets that are new to the replica $other.
+
+=cut
+
+sub new_changesets_for {
+    my ($self, $other) = @_;
+
+    my $since = $other->last_changeset_from_source( $self->uuid );
+    $self->fetch_changesets( after => $since );
+}
+
+
 
 1;
