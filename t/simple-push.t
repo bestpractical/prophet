@@ -30,7 +30,64 @@ my $alice = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
 my $bob = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
 
 my $changesets = $bob->new_changesets_for($alice);
-warn Dumper($changesets); use Data::Dumper;
+
+my $openbug = '';
+as_bob {
+    my ($ret,$stdout,$stderr) = run_script('prophet-node-search' ,[qw(--type Bug --regex open)]);
+    if ($stdout =~ /^(.*?)\s/) {
+        $openbug= $1;
+    }
+};
+
+
+is_deeply( [map { $_->as_hash} @$changesets],
+[
+          {
+            'sequence_no' => 1,
+            'original_sequence_no' => 1,
+            'is_empty' => 1,
+            'is_nullification' => undef,
+            'original_source_uuid' => replica_uuid_for('bob'),
+            'is_resolution' => undef,
+            'source_uuid' => replica_uuid_for('bob')
+          },
+          {
+            'sequence_no' => 2,
+            'original_sequence_no' => 2,
+            'is_empty' => 1,
+            'is_nullification' => undef,
+            'original_source_uuid' => replica_uuid_for('bob'),
+            'is_resolution' => undef,
+            'source_uuid' => replica_uuid_for('bob')
+          },
+          {
+            'sequence_no' => 3,
+            'original_sequence_no' => 3,
+            'original_source_uuid' => replica_uuid_for('bob'),
+            'is_resolution' => undef,
+            'source_uuid' => replica_uuid_for('bob'),
+            'changes' => {
+                           $openbug => {
+                                                                       'change_type' => 'add_file',
+                                                                       'prop_changes' => {
+                                                                                           'from' => {
+                                                                                                       'new_value' => 'bob',
+                                                                                                       'old_value' => undef
+                                                                                                     },
+                                                                                           'status' => {
+                                                                                                         'new_value' => 'open',
+                                                                                                         'old_value' => undef
+                                                                                                       }
+                                                                                         },
+                                                                       'node_type' => 'Bug'
+                                                                     }
+                         },
+            'is_nullification' => undef,
+            'is_empty' => 0
+          }
+        ]);
+# Alice syncs
+
 
 as_alice {
 
