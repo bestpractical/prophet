@@ -1,0 +1,89 @@
+#!/usr/bin/perl 
+use warnings;
+use strict;
+package SVB;
+
+#use base 'Prophet::App';
+
+
+package SVB::Record; # should probably be Prophet::App::Record
+use base qw/Prophet::Record/;
+
+sub new {
+    my $class = shift;
+    my $args = shift;
+    Carp::cluck unless ref($args);
+    return $class->SUPER::new({ %$args, type => $class->record_type });
+}
+
+package SVB::Model::Ticket;
+use base qw/SVB::Record/;
+
+use constant record_type => 'ticket';
+
+
+#has many SVK::Model::Comment
+#has status
+#has owner
+
+
+package SVB::Model::Comment;
+use base qw/SVB::Record/;
+
+use constant record_type => 'comment';
+
+#has SVK::Model::Ticket;
+
+package main;
+use Prophet::CLI;
+
+$ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} || $ENV{'HOME'}.'/.svb';
+
+my $CLI = Prophet::CLI->new( {  } );
+$CLI->register_types('SVB::Model' => qw(ticket));
+
+my $command = shift @ARGV;
+
+my $func = main->can('cmd_'.$command) or die "unknown command $command";
+$func->();
+
+
+sub cmd_push {
+
+    # Trivial first pass:
+#    only support pull
+    
+
+}
+
+sub cmd_pull {
+    my $url = shift @ARGV;
+    local $ENV{PROPHET_RESOLVER} = 'Prompt';
+    my %args =  ( from => $url, to => "file://".$CLI->handle->repo_path );
+
+    $CLI->args(\%args);
+    $CLI->do_merge();
+        
+#         [ 'merge', '--prefer', 'to', '--from', repo_uri_for($from), '--to', repo_uri_for( $self->name ) ],
+}
+=begin comment
+    # Trivial first pass:
+    
+    # Give a SVN URL to the remote replica? do we need two svn urls (for res db?)
+    
+    
+    
+=end comment
+
+
+
+# svb ticket --create --owner foo@bar --subject hate --status new --comment "wtf svb!"
+# svb ticket --update <id> --status resolved
+# svb ticket --list <regex>
+# svb ticket --show <id>
+
+# svb pull <url>
+# svb push <url>
+# svb pull http://<rt url>
+# svb push http://<rt url>
+
