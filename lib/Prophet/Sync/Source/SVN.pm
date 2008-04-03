@@ -169,4 +169,20 @@ sub last_changeset_from_source {
 
 }
 
+=head2 news_changesets_for
+
+Returns the local changesets that are new to the replica $other.
+
+=cut
+
+sub new_changesets_for {
+    my ($self, $other) = @_;
+
+    my $since = $other->last_changeset_from_source( $self->uuid );
+    warn $since;
+    
+}
+
+
+
 1;
