@@ -48,13 +48,13 @@ sub rebless_to_replica_type {
     my $class;
     
     # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
-    if ($args->{url} =~ /^http/) {
+    if ($args->{url} =~ /^rt:/) {
             $class    = 'Prophet::Sync::Source::RT';
         } 
         else { 
             $class    = 'Prophet::Sync::Source::SVN';
         }
-    $class->require;
+    $class->require or die $@;
     bless $self, $class;
 }
 

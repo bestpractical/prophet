@@ -12,7 +12,7 @@ use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url prophet_handle ressource is_resdb rt/);
+__PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_query/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -28,7 +28,11 @@ use File::Temp 'tempdir';
 
 sub setup {
     my $self = shift;
-    $self->rt(RT::Client::REST->new(server => 'http://rt3.fsck.com' ));
+    my ($server, $type, $query) = $self->{url} =~ m/^rt:(.*?):(tickets):(.*)$/
+        or die "Can't parse rt server spec";
+    $self->rt_url( $server );
+    $self->rt_query( $query );
+    $self->rt( RT::Client::REST->new(server => $server) );
     $self->rt->login(username => 'guest', password => 'guest');
     my $orz = tempdir();
     $self->{___Orz} = $orz;
@@ -102,7 +106,7 @@ sub _recode_transactions {
         if ( $txn->{'Type'} eq 'Set' ) {
             my $change = Prophet::Change->new(
                 {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    node_uuid   => $self->rt_url . "/Ticket/" . $create_state->{'id'},
                     change_type => 'update_file'
                 }
             );
@@ -122,7 +126,7 @@ sub _recode_transactions {
         } elsif ( $txn->{'Type'} eq 'Create' ) {
             my $change = Prophet::Change->new(
                 {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    node_uuid   => $self->rt_url . "/Ticket/" . $create_state->{'id'},
                     change_type => 'create_file'
                 }
             );
@@ -140,7 +144,7 @@ sub _recode_transactions {
         } elsif ( $txn->{'Type'} eq 'AddLink' ) {
             my $change = Prophet::Change->new(
                 {   node_type   => 'RT_Link',
-                    node_uuid   => $self->url . "/Link/" . $txn->{'id'},
+                    node_uuid   => $self->rt_url . "/Link/" . $txn->{'id'},
                     change_type => 'create_file'
                 }
             );
@@ -150,7 +154,7 @@ sub _recode_transactions {
         } elsif ( $txn->{'Type'} eq 'Correspond' ) {
             my $change = Prophet::Change->new(
                 {   node_type   => 'RT_Comment',
-                    node_uuid   => $self->url . "/Transaction/" . $txn->{'id'},
+                    node_uuid   => $self->rt_url . "/Transaction/" . $txn->{'id'},
                     change_type => 'create_file'
                 }
             );
@@ -177,7 +181,7 @@ sub _recode_transactions {
 
             my $change = Prophet::Change->new(
                 {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    node_uuid   => $self->rt_url . "/Ticket/" . $create_state->{'id'},
                     change_type => 'update_file'
                 }
             );
@@ -215,13 +219,13 @@ memoize 'resolve_user_id_to_email';
 
 sub _find_matching_tickets {
     my $self = shift;
-    
-             # Find all stalled tickets
-             my @tix = $self->rt->search(
-               type => 'ticket',
-               query => "id > 6000 AND id < 6010",
-             );
-return @tix;
+
+    # Find all stalled tickets
+    my @tix = $self->rt->search(
+        type  => 'ticket',
+        query => $self->rt_query,
+    );
+    return @tix;
 
 }
 
