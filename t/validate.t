@@ -3,6 +3,7 @@ use strict;
 use Test::More 'no_plan';
 use File::Temp qw'tempdir';
 use lib 't/lib';
+use Test::Exception;
 
 use_ok('Prophet::Handle');
 my $REPO = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
@@ -21,5 +22,6 @@ isa_ok( $record, 'Prophet::Record' );
 my $uuid = $record->create( props => { name => 'Jesse', age => 31 } );
 ok($uuid);
 
-my $kuuid = $record->create( props => { name => 'Bob', age => 31 } );
-ok( !$kuuid );
+throws_ok {
+    $record->create( props => { name => 'Bob', age => 31 } );
+} qr/validation error/;

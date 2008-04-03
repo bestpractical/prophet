@@ -21,6 +21,17 @@ use base qw/SVB::Record/;
 
 use constant record_type => 'ticket';
 
+sub validate_status {
+    my ($self, %args) = @_;
+
+    return 1 if scalar grep { $args{props}{status} eq $_ }
+        qw(new open closed stalled);
+
+    $args{errors}{status} = 'hate';
+    return 0;
+
+    
+}
 
 #has many SVK::Model::Comment
 #has status

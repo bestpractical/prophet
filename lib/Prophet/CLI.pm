@@ -160,7 +160,9 @@ sub _get_record {
 sub do_create {
     my $cli = shift;
     my $record = $cli->_get_record;
-    my ( $id, $results ) = $record->create( props => $cli->args );
+
+    $record->create( props => $cli->args );
+
     print "Created " . $record->record_type . " " . $record->uuid . "\n";
 
 }

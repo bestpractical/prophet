@@ -59,11 +59,16 @@ sub create {
     my %args = validate( @_, { props => 1 } );
     my $uuid = $UUIDGEN->create_str;
 
+    $self->_canonicalize_props( $args{'props'} );
+    $self->_validate_props( $args{'props'} ) or return undef;
+
     $self->uuid($uuid);
 
-    $self->_canonicalize_props( $args{'props'} );
-    $self->_validate_props( $args{'props'} ) || return undef;
-    $self->handle->create_node( props => $args{'props'}, uuid => $self->uuid, type => $self->type );
+    $self->handle->create_node(
+        props => $args{'props'},
+        uuid  => $self->uuid,
+        type  => $self->type );
+
     return $self->uuid;
 }
 
@@ -112,7 +117,7 @@ sub set_props {
     my %args = validate( @_, { props => 1 } );
 
     $self->_canonicalize_props( $args{'props'} );
-    $self->_validate_props( $args{'props'} ) || return undef;
+    $self->_validate_props( $args{'props'} );
     $self->handle->set_node_props( type => $self->type, uuid => $self->uuid, props => $args{'props'} );
 }
 
@@ -175,7 +180,7 @@ sub _validate_props {
     for my $key ( keys %$props ) {
         return undef unless ( $self->_validate_prop_name($key) );
         if ( my $sub = $self->can( 'validate_' . $key ) ) {
-            $sub->( $self, props => $props, errors => $errors ) || return undef;
+            $sub->( $self, props => $props, errors => $errors ) or die "validation error on $key: $errors->{$key}\n";
         }
     }
     return 1;
