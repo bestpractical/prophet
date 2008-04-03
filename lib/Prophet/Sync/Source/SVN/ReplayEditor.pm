@@ -3,7 +3,6 @@ use strict;
 
 package Prophet::Sync::Source::SVN::ReplayEditor;
 use base qw/SVN::Delta::Editor/;
-our $CURRENT_REMOTE_REVNO;
 
 =head1 NAME
 
@@ -30,7 +29,6 @@ Instantiates a new subversion "editor" to track a single remote revision
 
 sub new {
     my $self = shift->SUPER::new(@_);
-    $self->{'revision'} = $CURRENT_REMOTE_REVNO;
     return $self;
 }
 
@@ -127,6 +125,7 @@ sub open_file {
     $self->{'current_file_base_rev'} = $base_rev;
 
     my ( $stream, $pool );
+
     my ( $rev_fetched, $prev_props ) = $self->ra->get_file( $path, $self->{'revision'} - 1, $stream, $pool );
 
     $self->{'paths'}->{$path}->{fs_operation}    = 'update_file';

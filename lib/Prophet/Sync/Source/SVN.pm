@@ -91,7 +91,8 @@ sub fetch_changesets {
         my $pool = SVN::Pool->new_default;
 
         # This horrible hack is here because I have no idea how to pass custom variables into the editor
-        $Prophet::Sync::Source::SVN::ReplayEditor::CURRENT_REMOTE_REVNO = $rev;
+        $editor->{revision} = $rev;
+
         $self->ra->replay( $rev, 0, 1, $editor );
         push @results, $self->_recode_changeset( $editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
