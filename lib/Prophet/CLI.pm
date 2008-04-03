@@ -29,8 +29,7 @@ sub handle {
     my $self = shift;
     unless ( $self->_handle ) {
         my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' );
-        my $path = $ENV{'PROPHET_REPO_PATH'} || '_prophet';
-        $self->_handle( Prophet::Handle->new( repository => $root, db_root => $path ) );
+        $self->_handle( Prophet::Handle->new( repository => $root ) );
     }
     return $self->_handle();
 }
@@ -39,8 +38,7 @@ sub resdb_handle {
     my $self = shift;
     unless ( $self->_resdb_handle ) {
         my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
-        my $path = $ENV{'PROPHET_REPO_PATH'} || '_prophet';
-        $self->_resdb_handle( Prophet::Handle->new( repository => $root, db_root => $path ) );
+        $self->_resdb_handle( Prophet::Handle->new( repository => $root ) );
     }
     return $self->_resdb_handle();
 }
