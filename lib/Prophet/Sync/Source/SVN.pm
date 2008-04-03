@@ -180,7 +180,7 @@ sub new_changesets_for {
 
     my $since = $other->last_changeset_from_source( $self->uuid );
     warn $since;
-    
+    $self->fetch_changesets( after => $since );
 }
 
 

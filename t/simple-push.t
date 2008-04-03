@@ -30,19 +30,23 @@ my $alice = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
 my $bob = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
 
 my $changesets = $bob->new_changesets_for($alice);
-
+warn Dumper($changesets); use Data::Dumper;
 
 as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
     run_ok( 'prophet-merge', [ '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
+};
 
-    run_ok( 'prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice" );
+as_bob {
+    run_ok( 'prophet-node-create', [qw(--type Bug --status new --from bob )], "Created a record as alice" );
 };
 
 
-my $changesets = $bob->new_changesets_for($alice);
+$changesets = $bob->new_changesets_for($alice);
+warn Dumper($changesets);
+
 __END__
 as_alice {
 
