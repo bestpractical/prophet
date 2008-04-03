@@ -128,7 +128,7 @@ sub integrate_changeset {
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
             $args{resolver_class}->require || die $@;
-            $conflict->resolvers( [ sub { warn "CAlling ".$args{resolver_class};
+            $conflict->resolvers( [ sub { 
                 $args{resolver_class}->new->run(@_); } ] )
 
         }

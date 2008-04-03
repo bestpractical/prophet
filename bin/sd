@@ -44,8 +44,28 @@ $CLI->register_types('SVB::Model' => qw(ticket));
 
 my $command = shift @ARGV;
 
-my $func = main->can('cmd_'.$command) or die "unknown command $command";
+my $func = main->can('cmd_'.$command) || main->can('cmd_help');
+
 $func->();
+
+
+sub cmd_help {
+
+print <<EOF
+
+$0 ticket create --summary "This is a summary" --status new --somekey value
+$0 ticket update --uuid <uuid> --status resolved
+$0 ticket search --regex .
+$0 ticket delete --uuid <uuid>
+$0 ticket show --uuid <uuid>
+$0 pull remote-url
+
+$0 help  
+    Show this file
+
+EOF
+
+}
 
 
 sub cmd_push {
