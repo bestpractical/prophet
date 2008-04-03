@@ -64,13 +64,9 @@ sub import_changesets {
 
     my $resdb = $args{use_resdb} ? $self->fetch_resolutions( from => $source ) : undef;
 
-    my $changesets_to_integrate
-        = $source->fetch_changesets( after => $self->last_changeset_from_source( $source->uuid ) );
+    my $changesets_to_integrate = $source->new_changesets_for( $self );
 
     for my $changeset (@$changesets_to_integrate) {
-
-        next if $changeset->is_nullification || $changeset->is_resolution;
-        next if ( $self->has_seen_changeset($changeset) );
         $self->integrate_changeset(
             changeset         => $changeset,
             conflict_callback => $args{conflict_callback},
