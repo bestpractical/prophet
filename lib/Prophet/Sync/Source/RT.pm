@@ -6,7 +6,8 @@ use base qw/Prophet::Sync::Source/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use RT::Client::REST ();
-
+use RT::Client::REST::User ();
+use Memoize;
 use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
@@ -64,24 +65,153 @@ sub fetch_changesets {
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
-    my @txns;
+      my   @changesets;
     my %tix;
     for my $id ($self->_find_matching_tickets) {
-        $tix{$id} = $self->rt->show(type => 'ticket', id => $id);
-        push @txns, $self->_find_matching_txns($id);
+        my @changesets = $self->_recode_transactions( ticket => $self->rt->show(type => 'ticket', id => $id), transactions => $self->_find_matching_transactions($id));  
     }
 
-
-    my @results = map { $self->_recode_changeset($_) } sort { $a->id <=> $b->id } @txns;
+    my @results =  sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
     return \@results;
 }
 
-sub _find_matching_txns {
+sub _recode_transactions {
     my $self = shift;
-    my $id = shift;
-    warn "looking for matching txn for $id";
-    return;
+    my %args = validate( @_, { ticket => 1, transactions => 1 } );
+
+    my $ticket = $args{'ticket'};
+
+    $ticket->{'uuid'} = "NEED A UUID HERE";
+
+    my $create_state = $ticket;
+    my @changesets;
+    for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
+        warn "HANDLING " . $txn->{id} . " " . $txn->{Type};
+
+        if ( $txn->{'Type'} eq 'Status' ) {
+            $txn->{'Type'} = 'Set';
+        }
+
+        my $changeset = Prophet::ChangeSet->new(
+            {   original_source_uuid => $self->uuid,
+                original_sequence_no => $txn->{'id'},
+
+            }
+        );
+
+        if ( $txn->{'Type'} eq 'Set' ) {
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    change_type => 'update_file'
+                }
+            );
+            $changeset->add_change( { change => $change } );
+            if ( $create_state->{ $txn->{Field} } eq $txn->{'NewValue'} ) {
+                $create_state->{ $txn->{Field} } = $txn->{'OldValue'};
+            } else {
+                die $create_state->{ $txn->{Field} } . " != " . $txn->{'NewValue'};
+            }
+            $change->add_prop_change(
+                name => $txn->{'Field'},
+                old  => $txn->{'OldValue'},
+                new  => $txn->{'NewValue'}
+
+            );
+
+        } elsif ( $txn->{'Type'} eq 'Create' ) {
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    change_type => 'create_file'
+                }
+            );
+            $changeset->add_change( { change => $change } );
+            for my $name ( keys %$create_state ) {
+
+                $change->add_prop_change(
+                    name => $name,
+                    old  => undef,
+                    new  => $create_state->{$name},
+                );
+
+            }
+
+        } elsif ( $txn->{'Type'} eq 'AddLink' ) {
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Link',
+                    node_uuid   => $self->url . "/Link/" . $txn->{'id'},
+                    change_type => 'create_file'
+                }
+            );
+            $change->add_prop_change( name => 'url',    old => undef, new => $txn->{'NewValue'} );
+            $change->add_prop_change( name => 'type',   old => undef, new => $txn->{'Field'} );
+            $change->add_prop_change( name => 'ticket', old => undef, new => $ticket->{uuid} );
+        } elsif ( $txn->{'Type'} eq 'Correspond' ) {
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Comment',
+                    node_uuid   => $self->url . "/Transaction/" . $txn->{'id'},
+                    change_type => 'create_file'
+                }
+            );
+            $change->add_prop_change(
+                name => 'content',
+                old  => undef,
+                new  => $txn->{'Content'}
+            );
+            $change->add_prop_change(
+                name => 'ticket',
+                old  => undef,
+                new  => $ticket->{uuid},
+            );
+
+        } elsif ( $txn->{'Type'} eq 'AddWatcher' || $txn->{'Type'} eq 'DelWatcher' ) {
+            my $watcher_type = $txn->{'Field'};
+
+            my $add = $self->resolve_user_id_to_email( $txn->{'NewValue'} );
+            my $del = $self->resolve_user_id_to_email( $txn->{'OldValue'} );
+
+            my @watchers = split( /\s*,\s*/, $create_state->{$watcher_type} );
+            my @old_watchers = grep { $_ ne $add } @watchers, $del;
+            $create_state->{$watcher_type} = join( ", ", @old_watchers );
+
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    change_type => 'update_file'
+                }
+            );
+            $changeset->add_change( { change => $change } );
+            $change->add_prop_change(
+                name => $txn->{'Field'},
+                old  => join( ', ', @old_watchers ),
+                new  => join( ', ', @watchers )
+            );
+
+        } else {
+            die "Don't know how to ahndle a " . YAML::Dump($txn);
+        }
+
+        unshift @changesets, $changeset;
+    }
+
+    return \@changesets;
+
 }
+
+
+sub resolve_user_id_to_email {
+    my $self  = shift;
+    my $id = shift;
+    return undef unless ($id);
+     
+     my $user = RT::Client::REST::User->new(rt => $self->rt, id =>  $id)->retrieve;
+     return $user->email_address;
+
+}
+
+memoize 'resolve_user_id_to_email';
+
 
 sub _find_matching_tickets {
     my $self = shift;
@@ -89,7 +219,7 @@ sub _find_matching_tickets {
              # Find all stalled tickets
              my @tix = $self->rt->search(
                type => 'ticket',
-               query => "Status = 'stalled'",
+               query => "id > 6000 AND id < 6010",
              );
 return @tix;
 
@@ -100,9 +230,9 @@ sub _find_matching_transactions {
     my $ticket = shift;
     my @txns;
     for my $txn ($self->rt->get_transaction_ids (parent_id => $ticket ) ) {
-           push @txns, get_transaction (parent_id => $ticket, id => $txn, type => 'ticket');
+           push @txns, $self->rt->get_transaction (parent_id => $ticket, id => $txn, type => 'ticket');
     }
-    return @txns;
+    return \@txns;
 }
 
 
