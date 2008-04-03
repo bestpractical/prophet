@@ -1,12 +1,21 @@
 
 Todo
 
-- test byzantine sync behaviour
 
-- handle conflicting conflict resolutions
+-  ::CLI should automatically discover an app's model class based on the type name
+
+- Creation of bug tracking model classes
 
 
-- base bug tracking schema
+
+- validation on bug tracker fields (status/severity)
+
+- ability to add comments to a bug (visible history entries)
+
+- push to a remote prophet
+- pull from a remote RT by url and query
+- push to a remote RT
+
 - Replace this todo list with a svb database
 - elegant support for large attachments
 - RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
@@ -50,4 +59,8 @@ Done, I think.
 - ability to 'pull' conflicting updates from a remote db
 - prompt for resolution of conflicts
 - handle file_conflict
+
+- test byzantine sync behaviour
+- handle conflicting conflict resolutions
+- base bug tracking schema
 
