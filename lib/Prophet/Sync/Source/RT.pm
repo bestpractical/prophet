@@ -30,10 +30,31 @@ sub setup {
     my $self = shift;
     my ($server, $type, $query) = $self->{url} =~ m/^rt:(.*?):(tickets):(.*)$/
         or die "Can't parse rt server spec";
-    $self->rt_url( $server );
+    my $uri = URI->new($server);
+    my ($username, $password);
+    if (my $auth = $uri->userinfo) {
+        ($username, $password) = split /:/, $auth, 2;
+        $uri->userinfo(undef);
+    }
+    $self->rt_url( "$uri" );
     $self->rt_query( $query );
     $self->rt( RT::Client::REST->new(server => $server) );
-    $self->rt->login(username => 'guest', password => 'guest');
+    unless ($username) {
+        # XXX belongs to some CLI callback
+        use Term::ReadKey;
+        local $| = 1;
+        print "Username for $uri: ";
+        ReadMode 1;
+        $username = ReadLine 0;
+        chomp $username;
+        print "Password for $username @ $uri: ";
+        ReadMode 2;
+        $password = ReadLine 0;
+        chomp $password;
+        ReadMode 1;
+        print "\n";
+    }
+    $self->rt->login(username => $username, password => $password);
     my $orz = tempdir();
     $self->{___Orz} = $orz;
     SVN::Repos::create($orz, undef, undef, undef, undef);
