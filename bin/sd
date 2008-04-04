@@ -39,9 +39,8 @@ sub validate_status {
 #has owner
 
 __PACKAGE__->register_reference( comments => 'SVB::Collection::Comment',
-                              by => 'ticket'
-                            );
-                            
+                                 by => 'ticket'
+                               );
 package SVB::Model::Comment;
 use base qw/SVB::Record/;
 

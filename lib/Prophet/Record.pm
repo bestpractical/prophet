@@ -52,7 +52,26 @@ sub new {
 
 sub record_type { $_[0]->type }
 
-=head2 register_reference $accessor, $collection_class, by => $key_in_model
+=head2 register_reference
+
+=cut
+
+sub register_reference {
+    my ($class, $accessor, $foreign_class, @args) = @_;
+    if ($foreign_class->isa('Prophet::Collection')) {
+        return $class->register_collection_reference($accessor => $foreign_class,
+                                              @args);
+    }
+    elsif ($foreign_class->isa('Prophet::Record')) {
+        warn "not yet";
+    }
+    else {
+        die "wtf";
+    }
+
+}
+
+=head2 register_collection_reference $accessor, $collection_class, by => $key_in_model
 
 Registers and create accessor in current class the associated
 collection C<$collection_class>, which refers to the current class by
@@ -60,7 +79,7 @@ $key_in_model in the model class of $collection_class.
 
 =cut
 
-sub register_reference {
+sub register_collection_reference {
     my ($class, $accessor, $collection_class, @args) = @_;
     my %args = validate( @args, { by => 1 });
     no strict 'refs';
