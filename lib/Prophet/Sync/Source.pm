@@ -91,6 +91,7 @@ sub import_changesets {
     }
 }
 
+
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
 If there are conflicts, generate a nullification change, figure out a conflict resolution and apply the nullification, original change and resolution all at once (as three separate changes).
@@ -145,26 +146,38 @@ sub integrate_changeset {
 
      # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
      # integrate the nullification change
-        $self->prophet_handle->record_changeset( $conflict->nullification_changeset );
+        $self->record_changeset( $conflict->nullification_changeset );
 
         # integrate the original change
-        $self->prophet_handle->integrate_changeset($changeset);
+        $self->record_integration_changeset($changeset);
 
         # integrate the conflict resolution change
-        $self->prophet_handle->record_resolutions( $conflict->resolution_changeset,
-            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
+        $self->record_resolutions( $conflict->resolution_changeset );
+#            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
 		$args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict   ) 		if ($args{'reporting_callback'}) ;
 
 
     } else {
-        $self->prophet_handle->integrate_changeset($changeset);
+        $self->record_integration_changeset($changeset);
 		$args{'reporting_callback'}->( changeset => $changeset   ) 		if ($args{'reporting_callback'}) ;
 
 
     }
+}
 
+=head2 record_changeset
+=cut
 
+sub record_changeset {
+	die ref($_[0]).' must implement record_changeset';
+}
 
+=head2 record_integration_changeset
+
+=cut
+
+sub record_integration_changeset {
+	die ref($_[0]).' must implement record_changeset';
 }
 
 

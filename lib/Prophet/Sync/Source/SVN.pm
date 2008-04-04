@@ -170,4 +170,20 @@ sub last_changeset_from_source {
 }
 
 
+sub record_integration_changeset {
+	my $self = shift;
+	$self->prophet_handle->integrate_changeset(@_);
+}
+
+sub record_changeset {
+	my $self = shift;
+	$self->prophet_handle->record_changeset(@_);
+}
+
+sub record_resolutions {
+	my $self = shift;
+	$self->prophet_handle->record_resolutions(@_,
+	            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
+}
+
 1;
