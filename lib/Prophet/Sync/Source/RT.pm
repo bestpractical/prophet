@@ -480,7 +480,7 @@ sub last_changeset_from_source {
 
     use App::Cache;
     my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
-    return $cache->get($self->uuid.'-'.$source) || 0;
+    return $cache->get($self->uuid.'-'.$source_uuid) || 0;
 }
 
 sub record_changeset_integration {
