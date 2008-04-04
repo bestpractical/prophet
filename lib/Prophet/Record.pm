@@ -17,7 +17,11 @@ use base qw'Class::Accessor Class::Data::Inheritable';
 
 __PACKAGE__->mk_accessors(qw'handle uuid type');
 __PACKAGE__->mk_classdata(REFERENCES => {});
-__PACKAGE__->mk_classdata(declared_props => {});
+__PACKAGE__->mk_classdata(PROPERTIES => {});
+
+sub declared_props {
+    return sort keys %{ $_[0]->PROPERTIES };
+}
 
 use Params::Validate;
 use Prophet::HistoryEntry;
