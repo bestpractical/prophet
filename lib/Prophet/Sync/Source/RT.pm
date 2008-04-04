@@ -94,6 +94,9 @@ sub _store_changeset_metadata {
     my $self = shift;
     my ($txn_ids, $uuid, $seq) = (@_);
     my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+#    warn "storing changeset metadata ".$self->uuid. " $uuid $seq / for ".join(',',@$txn_ids);
+#    warn "===> ? ".$self->uuid,'-txn-....';
+
     $cache->set( $self->uuid,'-txn-'.$_, join(':', $uuid, $seq))    for @$txn_ids;
 }
 
@@ -106,11 +109,16 @@ sub get_remote_id_for {
 }
 
 sub has_seen_changeset {
+    # XXXX: this is actually not right, because new_changesets_for
+    # is calling has_seen_changeset on $other, rather than us
     my ($self, $changeset) = @_;
     my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
     my $txn_id = $changeset->original_sequence_no;
     # XXX: extract the original txn id from $changeset
-    return $cache->get( $self->uuid,'-txn-'.$txn_id );
+#    warn "===> ? ".$self->uuid,'-txn-'.$txn_id;
+    my $ret = $cache->get( $self->uuid,'-txn-'.$txn_id );
+#    warn "==> $ret";
+    return $ret;
 }
 
 
@@ -127,12 +135,10 @@ sub _integrate_change {
 eval {
 
     if ($change->node_type eq 'ticket' and $change->change_type eq 'add_file') {
-    warn "==> create";
     $id =     $self->integrate_ticket_create($change, $changeset); # ALSO WANT CHANGESET
     } elsif ($change->node_type eq 'comment') {
         $self->integrate_comment($change, $changeset);
     } elsif ($change->node_type eq 'ticket') {
-    warn "==> wtf ".$change->change_type;
         $self->integrate_ticket_update($change, $changeset);
     
     } else {
@@ -165,15 +171,13 @@ sub integrate_ticket_create {
    my $self = shift;
    my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'});
    # Build up a ticket object out of all the record's attributes
-   warn $self->rt_queue;
    my $ticket = RT::Client::REST::Ticket->new(
         rt => $self->rt,
         queue => $self->rt_queue(),
         %{ $self->_recode_props_for_integrate($change)},
     )->store(text => "Not yet pulling in ticket creation comment");   
-    
-    my @txn_ids = $ticket->transactions;
-    $self->_store_changeset_metadata(\@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no);
+   my @txn_ids = map { $_->id } $ticket->transactions->get_iterator->();
+   $self->_store_changeset_metadata(\@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no);
         
    # Grab the related comment
    # Create the ticket
@@ -287,7 +291,7 @@ sub setup {
     $self->ressource( __PACKAGE__->new( { url => "file://$orz", is_resdb => 1 } ) );
 }
 
-sub fetch_resolutions { warn 'no resdb' }
+sub fetch_resolutions { warn 'no resdb'; return }
 
 =head2 uuid
 
