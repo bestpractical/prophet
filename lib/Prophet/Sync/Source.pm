@@ -6,7 +6,6 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
-
 =head1 NAME
 
 Prophet::Sync::Source
@@ -42,18 +41,17 @@ TODO: currently knows that we only have SVN replicas
 =cut
 
 sub rebless_to_replica_type {
-    my $self  = shift;
+    my $self = shift;
     my $args = shift;
 
     my $class;
-    
+
     # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
-    if ($args->{url} =~ /^rt:/) {
-            $class    = 'Prophet::Sync::Source::RT';
-        } 
-        else { 
-            $class    = 'Prophet::Sync::Source::SVN';
-        }
+    if ( $args->{url} =~ /^rt:/ ) {
+        $class = 'Prophet::Sync::Source::RT';
+    } else {
+        $class = 'Prophet::Sync::Source::SVN';
+    }
     $class->require or die $@;
     bless $self, $class;
 }
@@ -62,12 +60,12 @@ sub import_changesets {
     my $self = shift;
     my %args = validate(
         @_,
-        {   from              => { isa      => 'Prophet::Sync::Source' },
-            use_resdb         => { optional => 1 },
-            resolver          => { optional => 1 },
-            resolver_class    => { optional => 1 },
-            conflict_callback => { optional => 1 },
-			reporting_callback => { optional => 1 }
+        {   from               => { isa      => 'Prophet::Sync::Source' },
+            use_resdb          => { optional => 1 },
+            resolver           => { optional => 1 },
+            resolver_class     => { optional => 1 },
+            conflict_callback  => { optional => 1 },
+            reporting_callback => { optional => 1 }
         }
     );
 
@@ -75,22 +73,20 @@ sub import_changesets {
 
     my $resdb = $args{use_resdb} ? $self->fetch_resolutions( from => $source ) : undef;
 
-    my $changesets_to_integrate = $source->new_changesets_for( $self );
+    my $changesets_to_integrate = $source->new_changesets_for($self);
 
     for my $changeset (@$changesets_to_integrate) {
         $self->integrate_changeset(
-            changeset         => $changeset,
-            conflict_callback => $args{conflict_callback},
- 			reporting_callback => $args{'reporting_callback'},
-            resolver          => $args{resolver},
-            resolver_class    => $args{'resolver_class'},
-            resdb             => $resdb
+            changeset          => $changeset,
+            conflict_callback  => $args{conflict_callback},
+            reporting_callback => $args{'reporting_callback'},
+            resolver           => $args{resolver},
+            resolver_class     => $args{'resolver_class'},
+            resdb              => $resdb
         );
-
 
     }
 }
-
 
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
@@ -104,12 +100,12 @@ sub integrate_changeset {
     my $self = shift;
     my %args = validate(
         @_,
-        {   changeset         => { isa      => 'Prophet::ChangeSet' },
-            resolver          => { optional => 1 },
-            resolver_class    => { optional => 1 },
-            resdb             => { optional => 1 },
-            conflict_callback => { optional => 1 },
-            reporting_callback => {optional =>1}
+        {   changeset          => { isa      => 'Prophet::ChangeSet' },
+            resolver           => { optional => 1 },
+            resolver_class     => { optional => 1 },
+            resdb              => { optional => 1 },
+            conflict_callback  => { optional => 1 },
+            reporting_callback => { optional => 1 }
         }
     );
 
@@ -136,8 +132,12 @@ sub integrate_changeset {
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
             $args{resolver_class}->require || die $@;
-            $conflict->resolvers( [ sub { 
-                $args{resolver_class}->new->run(@_); } ] )
+            $conflict->resolvers(
+                [   sub {
+                        $args{resolver_class}->new->run(@_);
+                        }
+                ]
+                )
 
         }
         my $resolutions = $conflict->generate_resolution( $args{resdb} );
@@ -153,14 +153,14 @@ sub integrate_changeset {
 
         # integrate the conflict resolution change
         $self->record_resolutions( $conflict->resolution_changeset );
-#            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
-		$args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict   ) 		if ($args{'reporting_callback'}) ;
 
+        #            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
+        $args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict )
+            if ( $args{'reporting_callback'} );
 
     } else {
         $self->record_integration_changeset($changeset);
-		$args{'reporting_callback'}->( changeset => $changeset   ) 		if ($args{'reporting_callback'}) ;
-
+        $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
 
     }
 }
@@ -169,7 +169,7 @@ sub integrate_changeset {
 =cut
 
 sub record_changeset {
-	die ref($_[0]).' must implement record_changeset';
+    die ref( $_[0] ) . ' must implement record_changeset';
 }
 
 =head2 record_integration_changeset
@@ -177,9 +177,8 @@ sub record_changeset {
 =cut
 
 sub record_integration_changeset {
-	die ref($_[0]).' must implement record_changeset';
+    die ref( $_[0] ) . ' must implement record_changeset';
 }
-
 
 =head2 accepts_changesets
 
@@ -298,15 +297,12 @@ Returns the local changesets that are new to the replica $other.
 =cut
 
 sub new_changesets_for {
-    my ($self, $other) = @_;
+    my ( $self, $other ) = @_;
 
     my $since = $other->last_changeset_from_source( $self->uuid );
 
-    return [
-        grep { !( $_->is_nullification || $_->is_resolution )
-                && !$other->has_seen_changeset($_)
-            } @{ $self->fetch_changesets( after => $since ) }
-    ];
+    return [ grep { !( $_->is_nullification || $_->is_resolution ) && !$other->has_seen_changeset($_) }
+            @{ $self->fetch_changesets( after => $since ) } ];
 
 }
 

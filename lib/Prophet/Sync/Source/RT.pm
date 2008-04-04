@@ -7,7 +7,7 @@ use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use RT::Client::REST       ();
 use RT::Client::REST::User ();
-   use RT::Client::REST::Ticket;
+use RT::Client::REST::Ticket;
 
 use Memoize;
 use Prophet::Handle;
@@ -17,7 +17,6 @@ use Prophet::Conflict;
 __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
-
 
 =head1 NOTES ON PUSH
 
@@ -50,16 +49,14 @@ SD::Source::RT->recode_ticket
 =cut
 
 sub record_changeset_integration {
-    my ($self, $source_uuid, $source_seq) = @_;
-    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
-    return $cache->set($self->uuid.'-'.$source_uuid, $source_seq);
+    my ( $self, $source_uuid, $source_seq ) = @_;
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+    return $cache->set( $self->uuid . '-' . $source_uuid, $source_seq );
 }
-
-
 
 sub record_integration_changeset {
     warn "record_integration_changeset should be renamed to 'record_original_change";
-    my ($self, $changeset) = @_;
+    my ( $self, $changeset ) = @_;
     $self->record_changeset($changeset);
 
     # does the merge ticket recording & _source_metadata (book keeping for what txns in rt we just created)
@@ -69,143 +66,150 @@ sub record_integration_changeset {
 }
 
 sub record_txn_just_created {
-    my ($self, $changeset) = @_;
+    my ( $self, $changeset ) = @_;
+
     # XXX: go discover the txn_ids corresponds to $changeset;
     my @txn_ids;
-    for my $change ($changeset->changes) {
+    for my $change ( $changeset->changes ) {
         next unless $change->node_type eq 'ticket';
-        next if $change->change_type eq 'add_file'; # XXX: handled separately when calling rt::client create-ticket
-        my $ticket_id = $self->get_remote_id_for( $change->node_uuid) ;
-        
-    
-        Carp::confess "No ticket id for Changeset " .YAML::Dump($change) unless ($ticket_id);
-        for my $txn  ( reverse RT::Client::REST::Ticket->new(rt => $self->rt, id => $ticket_id)->transactions) {
+        next if $change->change_type eq 'add_file';    # XXX: handled separately when calling rt::client create-ticket
+        my $ticket_id = $self->get_remote_id_for( $change->node_uuid );
+
+        Carp::confess "No ticket id for Changeset " . YAML::Dump($change) unless ($ticket_id);
+        for my $txn ( reverse RT::Client::REST::Ticket->new( rt => $self->rt, id => $ticket_id )->transactions ) {
             last if $txn->id <= $self->last_changeset_from_source();
             push @txn_ids, $txn->id;
-            
+
         }
     }
-    
-    $self->_store_changeset_metadata(\@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no);
+
+    $self->_store_changeset_metadata( \@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no );
 
 }
-    
+
 sub _store_changeset_metadata {
     my $self = shift;
-    my ($txn_ids, $uuid, $seq) = (@_);
-    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
-#    warn "storing changeset metadata ".$self->uuid. " $uuid $seq / for ".join(',',@$txn_ids);
-#    warn "===> ? ".$self->uuid,'-txn-....';
+    my ( $txn_ids, $uuid, $seq ) = (@_);
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
 
-    $cache->set( $self->uuid,'-txn-'.$_, join(':', $uuid, $seq))    for @$txn_ids;
+    #    warn "storing changeset metadata ".$self->uuid. " $uuid $seq / for ".join(',',@$txn_ids);
+    #    warn "===> ? ".$self->uuid,'-txn-....';
+
+    $cache->set( $self->uuid, '-txn-' . $_, join( ':', $uuid, $seq ) ) for @$txn_ids;
 }
 
 sub get_remote_id_for {
-    my ($self, $ticket_uuid) = @_;
+    my ( $self, $ticket_uuid ) = @_;
+
     # XXX: should not access CLI handle
-    my $ticket = Prophet::Record->new(handle => Prophet::CLI->new->handle, type => 'ticket' );
+    my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
     $ticket->load( uuid => $ticket_uuid );
-    return $ticket->prop($self->uuid.'-id');
+    return $ticket->prop( $self->uuid . '-id' );
 }
 
 sub has_seen_changeset {
+
     # XXXX: this is actually not right, because new_changesets_for
     # is calling has_seen_changeset on $other, rather than us
-    my ($self, $changeset) = @_;
-    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+    my ( $self, $changeset ) = @_;
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
     my $txn_id = $changeset->original_sequence_no;
+
     # XXX: extract the original txn id from $changeset
-#    warn "===> ? ".$self->uuid,'-txn-'.$txn_id;
-    my $ret = $cache->get( $self->uuid,'-txn-'.$txn_id );
-#    warn "==> $ret";
+    #    warn "===> ? ".$self->uuid,'-txn-'.$txn_id;
+    my $ret = $cache->get( $self->uuid, '-txn-' . $txn_id );
+
+    #    warn "==> $ret";
     return $ret;
 }
 
-
 sub record_changeset {
     my $self = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-    $self->_integrate_change($_, $changeset) for $changeset->changes;
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+    $self->_integrate_change( $_, $changeset ) for $changeset->changes;
 }
 
 sub _integrate_change {
     my $self = shift;
-    my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, {isa => 'Prophet::ChangeSet' });
+    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
     my $id;
-eval {
+    eval {
 
-    if ($change->node_type eq 'ticket' and $change->change_type eq 'add_file') {
-    $id =     $self->integrate_ticket_create($change, $changeset); # ALSO WANT CHANGESET
-    } elsif ($change->node_type eq 'comment') {
-        $self->integrate_comment($change, $changeset);
-    } elsif ($change->node_type eq 'ticket') {
-        $self->integrate_ticket_update($change, $changeset);
-    
-    } else {
-        die "AAAAAH I DO NOT KNOW HOW TO PUSH ".YAML::Dump($change);
-    }
-    
-    }; warn $@ if $@;
-    return $id 
+        if ( $change->node_type eq 'ticket' and $change->change_type eq 'add_file' ) {
+            $id = $self->integrate_ticket_create( $change, $changeset );    # ALSO WANT CHANGESET
+        } elsif ( $change->node_type eq 'comment' ) {
+            $self->integrate_comment( $change, $changeset );
+        } elsif ( $change->node_type eq 'ticket' ) {
+            $self->integrate_ticket_update( $change, $changeset );
+
+        } else {
+            die "AAAAAH I DO NOT KNOW HOW TO PUSH " . YAML::Dump($change);
+        }
+
+    };
+    warn $@ if $@;
+    return $id;
 }
-
 
 sub integrate_ticket_update {
     my $self = shift;
-   my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'});
-    # Figure out the remote site's ticket ID for this change's record
-    my $remote_ticket_id = $self->get_remote_id_for($change->node_uuid);
-    my $ticket = RT::Client::REST::Ticket->new(rt => $self->rt,
-                id => $remote_ticket_id,
-                %{ $self->_recode_props_for_integrate($change)})->store();
+    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
 
-    # for each propchange in this change 
-        # apply the change to the remote RT server
-        # fetch transactions on this ticket from the remote RT
-        # make sure our change has been applied to remote
-        # record our propchange as having been applied
-    
+    # Figure out the remote site's ticket ID for this change's record
+    my $remote_ticket_id = $self->get_remote_id_for( $change->node_uuid );
+    my $ticket           = RT::Client::REST::Ticket->new(
+        rt => $self->rt,
+        id => $remote_ticket_id,
+        %{ $self->_recode_props_for_integrate($change) }
+    )->store();
+
+    # for each propchange in this change
+    # apply the change to the remote RT server
+    # fetch transactions on this ticket from the remote RT
+    # make sure our change has been applied to remote
+    # record our propchange as having been applied
+
 }
 
 sub integrate_ticket_create {
-   my $self = shift;
-   my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'});
-   # Build up a ticket object out of all the record's attributes
-   my $ticket = RT::Client::REST::Ticket->new(
-        rt => $self->rt,
-        queue => $self->rt_queue(),
-        %{ $self->_recode_props_for_integrate($change)},
-    )->store(text => "Not yet pulling in ticket creation comment");   
-   my @txn_ids = map { $_->id } $ticket->transactions->get_iterator->();
-   $self->_store_changeset_metadata(\@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no);
-        
-   # Grab the related comment
-   # Create the ticket
-   # fetch the ticket ID
-   # record a push ticket for the RT ticket and for the 'create' comment
+    my $self = shift;
+    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
 
+    # Build up a ticket object out of all the record's attributes
+    my $ticket = RT::Client::REST::Ticket->new(
+        rt    => $self->rt,
+        queue => $self->rt_queue(),
+        %{ $self->_recode_props_for_integrate($change) },
+    )->store( text => "Not yet pulling in ticket creation comment" );
+    my @txn_ids = map { $_->id } $ticket->transactions->get_iterator->();
+    $self->_store_changeset_metadata( \@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no );
+
+    # Grab the related comment
+    # Create the ticket
+    # fetch the ticket ID
+    # record a push ticket for the RT ticket and for the 'create' comment
 
 }
 
 sub conflicts_from_changeset { return; }
 
-sub accepts_changesets { 1 }
+sub accepts_changesets {1}
 
 sub _recode_props_for_integrate {
     my $self = shift;
-    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
-   
-   my %props = map { $_->name => $_->new_value } $change->prop_changes;
-   
+    my ($change) = validate_pos( @_, { isa => 'Prophet::Change' } );
+
+    my %props = map { $_->name => $_->new_value } $change->prop_changes;
+
     my %attr;
     my %cf;
-    for my $key (keys %props) {
-        next unless ($key =~ /^(summary|queue|status|owner|custom)/);
-        if ($key =~ /^custom-(.*)/) {
+    for my $key ( keys %props ) {
+        next unless ( $key =~ /^(summary|queue|status|owner|custom)/ );
+        if ( $key =~ /^custom-(.*)/ ) {
             $cf{$1} = $props{$key};
-        } elsif ($key eq 'summary') { 
+        } elsif ( $key eq 'summary' ) {
             $attr{'subject'} = $props{summary};
-        
+
         } else {
 
             $attr{$key} = $props{$key};
@@ -215,34 +219,32 @@ sub _recode_props_for_integrate {
     return \%attr;
 }
 
-
-
 sub integrate_comment {
     my $self = shift;
-    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+    my ($change) = validate_pos( @_, { isa => 'Prophet::Change' } );
+
     # Figure out the remote site's ticket ID for this change's record
 
     my %props = map { $_->name => $_->new_value } $change->prop_changes;
 
+    my $ticket = RT::Client::REST::Ticket->new(
+        rt => $self->rt,
+        id => $self->get_remote_id_for( $props{'ticket'} )
+    );
+    if ( $props{'type'} eq 'comment' ) {
+        $ticket->comment( message => $props{'content'} );
+    } else {
+        $ticket->correspond( message => $props{'content'} );
 
-    my $ticket =RT::Client::REST::Ticket->new(rt => $self->rt,
-        id => $self->get_remote_id_for($props{'ticket'}));
-        if ($props{'type'} eq 'comment') {
-            $ticket->comment(message => $props{'content'});
-        } else {
-            $ticket->correspond(message => $props{'content'});
+    }
 
-        }
-        
-    
     # Build a comment or correspondence object
-        # apply the change to the remote RT server
-        # fetch transactions on this ticket from the remote RT
-        # make sure our change has been applied to remote
-        # record our propchange as having been applied
-    
-  }
-    
+    # apply the change to the remote RT server
+    # fetch transactions on this ticket from the remote RT
+    # make sure our change has been applied to remote
+    # record our propchange as having been applied
+
+}
 
 =head2 setup
 
@@ -266,7 +268,7 @@ sub setup {
     }
     $self->rt_url("$uri");
     $self->rt_queue($type);
-    $self->rt_query($query. " AND Queue = '$type'");
+    $self->rt_query( $query . " AND Queue = '$type'" );
     $self->rt( RT::Client::REST->new( server => $server ) );
     unless ($username) {
 
@@ -330,6 +332,7 @@ sub fetch_changesets {
     my @changesets;
     my %tix;
     for my $id ( $self->_find_matching_tickets ) {
+
         # XXX: _recode_transactions should ignore txn-id <= $first_rev
         push @changesets,
             @{
@@ -339,7 +342,8 @@ sub fetch_changesets {
             )
             };
     }
-    my @results = map { $self->translate_prop_names($_) } sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
+    my @results = map { $self->translate_prop_names($_) }
+        sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
 
     return \@results;
 }
@@ -388,7 +392,7 @@ sub _recode_transactions {
     return \@changesets;
 
 }
-sub _recode_txn_CommentEmailRecord     { return; }
+sub _recode_txn_CommentEmailRecord { return; }
 
 sub _recode_txn_EmailRecord     { return; }
 sub _recode_txn_AddReminder     { return; }
@@ -471,7 +475,7 @@ sub _recode_txn_Create {
     );
 
     $args{'create_state'}->{'id'} =~ s/^ticket\///g;
-    $args{'create_state'}->{$self->uuid.'-id'} = delete $args{'create_state'}->{'id'};
+    $args{'create_state'}->{ $self->uuid . '-id' } = delete $args{'create_state'}->{'id'};
 
     $args{'changeset'}->add_change( { change => $change } );
     for my $name ( keys %{ $args{'create_state'} } ) {
@@ -489,11 +493,14 @@ sub _recode_txn_Create {
 }
 
 sub _recode_txn_AddLink {
-    my $self = shift;
-    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1 } );
+    my $self      = shift;
+    my %args      = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1 } );
     my $new_state = $args{'create_state'}->{ $args{'txn'}->{'Field'} };
-    $args{'create_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(  $args{'create_state'}->{ $args{'txn'}->{'Field'} },
-                 $args{'txn'}->{'NewValue'},    $args{'txn'}->{'OldValue'});
+    $args{'create_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(
+        $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+        $args{'txn'}->{'NewValue'},
+        $args{'txn'}->{'OldValue'}
+    );
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
@@ -508,12 +515,6 @@ sub _recode_txn_AddLink {
         new  => $new_state
     );
 
-    
-    
-    
-    
-    
-    
 }
 
 sub _recode_content_update {
@@ -669,22 +670,23 @@ sub last_changeset_from_source {
     my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
 
     use App::Cache;
-    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
-#$cache->delete($self->uuid.'-'.$source_uuid) || 0;
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
 
-    return $cache->get($self->uuid.'-'.$source_uuid) || 0;
+    #$cache->delete($self->uuid.'-'.$source_uuid) || 0;
+
+    return $cache->get( $self->uuid . '-' . $source_uuid ) || 0;
 }
 
 sub _integration {
-    my ($self, $source_uuid, $source_seq) = @_;
+    my ( $self, $source_uuid, $source_seq ) = @_;
 
-    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
-    return $cache->set($self->uuid.'-'.$source_uuid, $source_seq);
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+    return $cache->set( $self->uuid . '-' . $source_uuid, $source_seq );
 }
 
 sub warp_list_to_old_value {
     my $self         = shift;
-    my $ticket_value = shift ||'';
+    my $ticket_value = shift || '';
     my $add          = shift;
     my $del          = shift;
 
@@ -719,7 +721,6 @@ sub date_to_iso {
     return $t->ymd . " " . $t->hms;
 }
 
-
 our %PROP_MAP = (
     subject         => 'summary',
     status          => 'status',
@@ -736,13 +737,13 @@ our %PROP_MAP = (
     hasmember       => 'members',
     memberof        => 'member_of',
     priority        => 'priority_integer',
-    resolved    => 'completed',
-    due         => 'due',
-    creator     => 'creator',
-    timeworked => 'time_worked',
-    timeleft  => 'time_left',
-    lastupdated => '_delete',
-    created     => '_delete',     # we should be porting the create date as a metaproperty
+    resolved        => 'completed',
+    due             => 'due',
+    creator         => 'creator',
+    timeworked      => 'time_worked',
+    timeleft        => 'time_left',
+    lastupdated     => '_delete',
+    created         => '_delete',            # we should be porting the create date as a metaproperty
 
 );
 
@@ -755,19 +756,19 @@ sub translate_prop_names {
 
         my @new_props;
         for my $prop ( $change->prop_changes ) {
-            next if (( $PROP_MAP{ lc ( $prop->name ) } ||'') eq '_delete');
+            next if ( ( $PROP_MAP{ lc( $prop->name ) } || '' ) eq '_delete' );
             $prop->name( $PROP_MAP{ lc( $prop->name ) } ) if $PROP_MAP{ lc( $prop->name ) };
 
             if ( $prop->name eq 'id' ) {
-                    $prop->old_value( $prop->old_value . '@' . $changeset->original_source_uuid )
-                        if ($prop->old_value||'') =~ /^\d+$/;
-                    $prop->old_value( $prop->new_value . '@' . $changeset->original_source_uuid )
-                        if ($prop->new_value||'') =~ /^\d+$/;
+                $prop->old_value( $prop->old_value . '@' . $changeset->original_source_uuid )
+                    if ( $prop->old_value || '' ) =~ /^\d+$/;
+                $prop->old_value( $prop->new_value . '@' . $changeset->original_source_uuid )
+                    if ( $prop->new_value || '' ) =~ /^\d+$/;
 
             }
 
             if ( $prop->name =~ /^cf-(.*)$/ ) {
-                    $prop->name( 'custom-' . $1 );
+                $prop->name( 'custom-' . $1 );
             }
 
             push @new_props, $prop;
@@ -778,6 +779,5 @@ sub translate_prop_names {
     }
     return $changeset;
 }
-
 
 1;

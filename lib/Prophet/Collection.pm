@@ -35,9 +35,9 @@ sub new {
     my $class = shift;
     my $self  = {};
     bless $self, $class;
-    my $args  = ref($_[0]) ? $_[0] : { @_ };
+    my $args = ref( $_[0] ) ? $_[0] : {@_};
     $args->{type} ||= $class->record_class->record_type;
-    my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
+    my %args = validate( @{ [%$args] }, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for ( keys %args );
     return $self;
 }
@@ -56,13 +56,13 @@ sub matching {
 
     # find all items,
     Carp::cluck unless defined $self->type;
-    
+
     my $nodes = $self->handle->current_root->dir_entries( $self->handle->db_root . '/' . $self->type . '/' );
 
     # run coderef against each item;
     # if it matches, add it to _items
     foreach my $key ( keys %$nodes ) {
-        my $record = $self->record_class->new({ handle => $self->handle, type => $self->type });
+        my $record = $self->record_class->new( { handle => $self->handle, type => $self->type } );
         $record->load( uuid => $key );
         if ( $coderef->($record) ) {
             push @{ $self->{_items} }, $record;

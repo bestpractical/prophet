@@ -16,8 +16,8 @@ This class represents a base class for any record in a Prophet database
 use base qw'Class::Accessor Class::Data::Inheritable';
 
 __PACKAGE__->mk_accessors(qw'handle uuid type');
-__PACKAGE__->mk_classdata(REFERENCES => {});
-__PACKAGE__->mk_classdata(PROPERTIES => {});
+__PACKAGE__->mk_classdata( REFERENCES => {} );
+__PACKAGE__->mk_classdata( PROPERTIES => {} );
 
 sub declared_props {
     return sort keys %{ $_[0]->PROPERTIES };
@@ -31,7 +31,6 @@ my $UUIDGEN = Data::UUID->new();
 
 use constant collection_class => 'Prophet::Collection';
 
-
 =head1 METHODS
 
 =head2 new  { handle => Prophet::Handle, type => $type }
@@ -43,9 +42,9 @@ Instantiates a new, empty L<Prophet::Record/> of type $type.
 sub new {
     my $class = shift;
     my $self  = bless {}, $class;
-    my $args  = ref($_[0]) ? $_[0] : { @_ };
+    my $args  = ref( $_[0] ) ? $_[0] : {@_};
     $args->{type} ||= $class->record_type;
-    my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
+    my %args = validate( @{ [%$args] }, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for keys(%args);
     return $self;
 }
@@ -57,15 +56,15 @@ sub record_type { $_[0]->type }
 =cut
 
 sub register_reference {
-    my ($class, $accessor, $foreign_class, @args) = @_;
-    if ($foreign_class->isa('Prophet::Collection')) {
-        return $class->register_collection_reference($accessor => $foreign_class,
-                                              @args);
-    }
-    elsif ($foreign_class->isa('Prophet::Record')) {
+    my ( $class, $accessor, $foreign_class, @args ) = @_;
+    if ( $foreign_class->isa('Prophet::Collection') ) {
+        return $class->register_collection_reference(
+            $accessor => $foreign_class,
+            @args
+        );
+    } elsif ( $foreign_class->isa('Prophet::Record') ) {
         warn "not yet";
-    }
-    else {
+    } else {
         die "wtf";
     }
 
@@ -80,22 +79,20 @@ $key_in_model in the model class of $collection_class.
 =cut
 
 sub register_collection_reference {
-    my ($class, $accessor, $collection_class, @args) = @_;
-    my %args = validate( @args, { by => 1 });
+    my ( $class, $accessor, $collection_class, @args ) = @_;
+    my %args = validate( @args, { by => 1 } );
     no strict 'refs';
-    *{$class."::$accessor"} = sub {
+    *{ $class . "::$accessor" } = sub {
         my $self = shift;
         my $collection = $collection_class->new( handle => $self->handle, type => $collection_class->record_class );
-        $collection->matching( sub { $_[0]->prop($args{by}) eq $self->uuid } );
+        $collection->matching( sub { $_[0]->prop( $args{by} ) eq $self->uuid } );
         return $collection;
     };
-    # XXX: add validater for $args{by} in $model->record_class
 
+    # XXX: add validater for $args{by} in $model->record_class
 
     $class->REFERENCES->{$accessor} = { %args, type => $collection_class->record_class };
 }
-
-
 
 =head2 create { props => { %hash_of_kv_pairs } }
 
@@ -121,7 +118,8 @@ sub create {
     $self->handle->create_node(
         props => $args{'props'},
         uuid  => $self->uuid,
-        type  => $self->type );
+        type  => $self->type
+    );
 
     return $self->uuid;
 }
@@ -193,11 +191,9 @@ Returns the current value of the property C<$name> for this record.
 
 =cut
 
-
-
 sub prop {
     my $self = shift;
-    my $prop = shift; 
+    my $prop = shift;
     return $self->get_props->{$prop};
 }
 
@@ -227,12 +223,11 @@ sub delete {
 
 }
 
-
 sub validate_props {
     my $self   = shift;
     my $props  = shift;
     my $errors = {};
-    for my $key ( uniq(keys %$props, $self->declared_props) ) {
+    for my $key ( uniq( keys %$props, $self->declared_props ) ) {
         return undef unless ( $self->_validate_prop_name($key) );
         if ( my $sub = $self->can( 'validate_prop_' . $key ) ) {
             $sub->( $self, props => $props, errors => $errors ) or die "validation error on $key: $errors->{$key}\n";
@@ -247,7 +242,7 @@ sub canonicalize_props {
     my $self   = shift;
     my $props  = shift;
     my $errors = {};
-    for my $key ( uniq(keys %$props, $self->declared_props) ) {
+    for my $key ( uniq( keys %$props, $self->declared_props ) ) {
         if ( my $sub = $self->can( 'canonicalize_prop_' . $key ) ) {
             $sub->( $self, props => $props, errors => $errors );
         }
@@ -344,12 +339,12 @@ returns a formated string that is the summary for the record.
 =cut
 
 use constant summary_format => '%u';
-use constant summary_props => ();
+use constant summary_props  => ();
 
 sub format_summary {
-    my $self = shift;
+    my $self   = shift;
     my $format = $self->summary_format;
-    my $uuid = $self->uuid;
+    my $uuid   = $self->uuid;
     $format =~ s/%u/$uuid/g;
 
     return sprintf( $format, map { $self->prop($_) || "(no $_)" } $self->summary_props );

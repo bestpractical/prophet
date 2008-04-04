@@ -6,7 +6,7 @@ use base qw/Prophet::Resolver/;
 use Prophet::Change;
 
 sub run {
-    my $self     = shift;
+    my $self               = shift;
     my $conflicting_change = shift;
     return 0 if $conflicting_change->file_op_conflict;
 

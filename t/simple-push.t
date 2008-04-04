@@ -27,67 +27,64 @@ as_bob {
 use_ok('Prophet::Sync::Source::SVN');
 
 my $alice = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
-my $bob = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
+my $bob   = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
 
 my $changesets = $bob->new_changesets_for($alice);
 
 my $openbug = '';
 as_bob {
-    my ($ret,$stdout,$stderr) = run_script('prophet-node-search' ,[qw(--type Bug --regex open)]);
-    if ($stdout =~ /^(.*?)\s/) {
-        $openbug= $1;
+    my ( $ret, $stdout, $stderr ) = run_script( 'prophet-node-search', [qw(--type Bug --regex open)] );
+    if ( $stdout =~ /^(.*?)\s/ ) {
+        $openbug = $1;
     }
 };
 
-
-is_deeply( [map { $_->as_hash} @$changesets],
-[
-          {
-            'sequence_no' => 1,
+is_deeply(
+    [ map { $_->as_hash } @$changesets ],
+    [   {   'sequence_no'          => 1,
             'original_sequence_no' => 1,
-            'is_empty' => 1,
-            'is_nullification' => undef,
+            'is_empty'             => 1,
+            'is_nullification'     => undef,
             'original_source_uuid' => replica_uuid_for('bob'),
-            'is_resolution' => undef,
-            'source_uuid' => replica_uuid_for('bob')
-          },
-          {
-            'sequence_no' => 2,
+            'is_resolution'        => undef,
+            'source_uuid'          => replica_uuid_for('bob')
+        },
+        {   'sequence_no'          => 2,
             'original_sequence_no' => 2,
-            'is_empty' => 1,
-            'is_nullification' => undef,
+            'is_empty'             => 1,
+            'is_nullification'     => undef,
             'original_source_uuid' => replica_uuid_for('bob'),
-            'is_resolution' => undef,
-            'source_uuid' => replica_uuid_for('bob')
-          },
-          {
-            'sequence_no' => 3,
+            'is_resolution'        => undef,
+            'source_uuid'          => replica_uuid_for('bob')
+        },
+        {   'sequence_no'          => 3,
             'original_sequence_no' => 3,
             'original_source_uuid' => replica_uuid_for('bob'),
-            'is_resolution' => undef,
-            'source_uuid' => replica_uuid_for('bob'),
-            'changes' => {
-                           $openbug => {
-                                                                       'change_type' => 'add_file',
-                                                                       'prop_changes' => {
-                                                                                           'from' => {
-                                                                                                       'new_value' => 'bob',
-                                                                                                       'old_value' => undef
-                                                                                                     },
-                                                                                           'status' => {
-                                                                                                         'new_value' => 'open',
-                                                                                                         'old_value' => undef
-                                                                                                       }
-                                                                                         },
-                                                                       'node_type' => 'Bug'
-                                                                     }
-                         },
+            'is_resolution'        => undef,
+            'source_uuid'          => replica_uuid_for('bob'),
+            'changes'              => {
+                $openbug => {
+                    'change_type'  => 'add_file',
+                    'prop_changes' => {
+                        'from' => {
+                            'new_value' => 'bob',
+                            'old_value' => undef
+                        },
+                        'status' => {
+                            'new_value' => 'open',
+                            'old_value' => undef
+                        }
+                    },
+                    'node_type' => 'Bug'
+                }
+            },
             'is_nullification' => undef,
-            'is_empty' => 0
-          }
-        ]);
-# Alice syncs
+            'is_empty'         => 0
+        }
+    ]
+);
 
+# Alice syncs
 
 as_alice {
 
@@ -100,43 +97,42 @@ my $last_id;
 
 as_bob {
     run_ok( 'prophet-node-create', [qw(--type Bug --status new --from bob )], "Created a record as bob" );
-    my ($ret,$stdout,$stderr) = run_script('prophet-node-search' ,[qw(--type Bug --regex new)]);
-    if ($stdout =~ /^(.*?)\s/) {
+    my ( $ret, $stdout, $stderr ) = run_script( 'prophet-node-search', [qw(--type Bug --regex new)] );
+    if ( $stdout =~ /^(.*?)\s/ ) {
         $last_id = $1;
     }
 };
 
-
 $changesets = $bob->new_changesets_for($alice);
 
-my @changes = map {$_->as_hash} @$changesets;
-         
-is_deeply(\@changes, [{
-            'sequence_no' => 4,
+my @changes = map { $_->as_hash } @$changesets;
+
+is_deeply(
+    \@changes,
+    [   {   'sequence_no'          => 4,
             'original_sequence_no' => 4,
-            'original_source_uuid' =>  replica_uuid_for('bob'),
-            'is_resolution' => undef,
-            'source_uuid' => replica_uuid_for('bob'),
-            'changes' => {
-                           $last_id => {
-                                                                       'change_type' => 'add_file',
-                                                                       'prop_changes' => {
-                                                                                           'from' => {
-                                                                                                       'new_value' => 'bob',
-                                                                                                       'old_value' => undef
-                                                                                                     },
-                                                                                           'status' => {
-                                                                                                         'new_value' => 'new',
-                                                                                                         'old_value' => undef
-                                                                                                       }
-                                                                                         },
-                                                                       'node_type' => 'Bug'
-                                                                     }
-                         },
+            'original_source_uuid' => replica_uuid_for('bob'),
+            'is_resolution'        => undef,
+            'source_uuid'          => replica_uuid_for('bob'),
+            'changes'              => {
+                $last_id => {
+                    'change_type'  => 'add_file',
+                    'prop_changes' => {
+                        'from' => {
+                            'new_value' => 'bob',
+                            'old_value' => undef
+                        },
+                        'status' => {
+                            'new_value' => 'new',
+                            'old_value' => undef
+                        }
+                    },
+                    'node_type' => 'Bug'
+                }
+            },
             'is_nullification' => undef,
-            'is_empty' => 0
-          }
-        ]);
-
-
+            'is_empty'         => 0
+        }
+    ]
+);
 

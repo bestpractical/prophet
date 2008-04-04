@@ -192,8 +192,9 @@ sub call_func {
     my $ret;
     my $pool = SVN::Pool->new_default;
     if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
+
         # in_gladiator
-         { $ret = $sub->($cli) }
+        { $ret = $sub->($cli) }
     } else {
         die "I don't know how to do the $cmd";
     }

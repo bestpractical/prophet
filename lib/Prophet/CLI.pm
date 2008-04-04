@@ -50,7 +50,6 @@ handles the subcommand for a particular type
 
 =cut
 
-
 our %CMD_MAP = (
     ls   => 'search',
     new  => 'create',
@@ -61,12 +60,13 @@ our %CMD_MAP = (
 );
 
 sub _handle_reference_command {
-    my ($self, $class, $ref_spec) = @_;
+    my ( $self, $class, $ref_spec ) = @_;
+
     # turn uuid arg into a prop at ref'ed class
     my $by_type = $ref_spec->{by};
     @ARGV = map { s/--uuid/--$by_type/; $_ } @ARGV;
-    unshift @ARGV, '--search', '--regex', '.'; # list only for now
-    $self->_record_cmd($ref_spec->{type}->record_type, $ref_spec->{type});
+    unshift @ARGV, '--search', '--regex', '.';    # list only for now
+    $self->_record_cmd( $ref_spec->{type}->record_type, $ref_spec->{type} );
 }
 
 sub _record_cmd {
@@ -82,8 +82,7 @@ sub _record_cmd {
     my $func = $self->can("do_$cmd") or Carp::confess "no such record command $cmd";
     if ($record_class) {
         $self->record_class($record_class);
-    }
-    else {
+    } else {
         $self->record_class('Prophet::Record');
         $self->type($type);
     }
@@ -97,7 +96,6 @@ Register cmd_C<type> methods if the calling namespace that handles the cli comma
 
 =cut
 
-
 sub register_types {
     my $self       = shift;
     my $model_base = shift;
@@ -107,13 +105,11 @@ sub register_types {
     for my $type (@types) {
         no strict 'refs';
         my $class = $model_base . '::' . ucfirst($type);
-        *{ $calling_package . "::cmd_" . $type } =
-            sub {
-                $self->_record_cmd( $type => $class )
-            };
+        *{ $calling_package . "::cmd_" . $type } = sub {
+            $self->_record_cmd( $type => $class );
+        };
     }
 }
-
 
 =head2 parse_args
 
@@ -161,21 +157,23 @@ If passed a hashref, sets the args to taht;
 
 sub args {
     my $self = shift;
-    
-    $self->{'args'} = shift if $_[0]; 
+
+    $self->{'args'} = shift if $_[0];
     return $self->{'args'};
 
 }
 
 sub _get_record {
     my $self = shift;
-    return $self->record_class->new( { handle => $self->handle,
-                                       type => $self->type,
- } );
+    return $self->record_class->new(
+        {   handle => $self->handle,
+            type   => $self->type,
+        }
+    );
 }
 
 sub do_create {
-    my $cli = shift;
+    my $cli    = shift;
     my $record = $cli->_get_record;
 
     $record->create( props => $cli->args );
@@ -203,7 +201,7 @@ sub do_search {
     );
 
     for ( @{ $records->as_array_ref } ) {
-        print $_->format_summary."\n";
+        print $_->format_summary . "\n";
     }
 }
 
@@ -246,7 +244,7 @@ sub do_merge {
     my $cli = shift;
 
     my $opts = $cli->args();
-    
+
     my $source = Prophet::Sync::Source->new( { url => $opts->{'from'} } );
     my $target = Prophet::Sync::Source->new( { url => $opts->{'to'} } );
 

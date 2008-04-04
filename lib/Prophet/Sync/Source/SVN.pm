@@ -32,12 +32,12 @@ sub _get_ra {
     my $self = shift;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
     my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
-    return SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool ) ;
+    return SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool );
 }
 
 sub setup {
     my $self = shift;
-    my $pool   = SVN::Pool->new;
+    my $pool = SVN::Pool->new;
 
     $self->pool($pool);
 
@@ -144,7 +144,6 @@ sub _recode_changeset {
     return $changeset;
 }
 
-
 =head2 last_changeset_from_source $SOURCE_UUID
 
 Returns the last changeset id seen from the source identified by $SOURCE_UUID
@@ -163,27 +162,24 @@ sub last_changeset_from_source {
     # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
     # because we want to be able to sync to a remote replica someday.
 
-    
-
     return ( $props->{'last-changeset'} || 0 );
 
 }
 
-
 sub record_integration_changeset {
-	my $self = shift;
-	$self->prophet_handle->integrate_changeset(@_);
+    my $self = shift;
+    $self->prophet_handle->integrate_changeset(@_);
 }
 
 sub record_changeset {
-	my $self = shift;
-	$self->prophet_handle->record_changeset(@_);
+    my $self = shift;
+    $self->prophet_handle->record_changeset(@_);
 }
 
 sub record_resolutions {
-	my $self = shift;
-	$self->prophet_handle->record_resolutions(@_,
-	            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
+    my $self = shift;
+    $self->prophet_handle->record_resolutions( @_,
+        $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
 }
 
 1;
