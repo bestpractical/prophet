@@ -30,13 +30,32 @@ sub validate_status {
     $args{errors}{status} = 'hate';
     return 0;
 
-    
 }
 
 #has many SVK::Model::Comment
 #has status
 #has owner
 
+__PACKAGE__->register_refers( comments => 'SVB::Collection::Comment',
+                              by => 'ticket'
+                            );
+use Params::Validate;
+
+sub register_refers {
+    my ($class, $accessor, $model, @args) = @_;
+    my %args = validate( @args, { by => 1 });
+    no strict 'refs';
+    *{$class."::$accessor"} = sub {
+        my $self = shift;
+        my $collection = $model->new( handle => $self->handle, type => $model->record_class );
+        $collection->matching( sub { $_[0]->prop($args{by}) eq $self->uuid } );
+        return $collection;
+    };
+    # XXX: add validater for $args{by} in $model->record_class
+
+    # XXX: register in a hash so Prophet::CLI can create subcommand
+    # for listing and add new $model associated with $class
+}
 
 package SVB::Model::Comment;
 use base qw/SVB::Record/;
@@ -45,13 +64,25 @@ use constant record_type => 'comment';
 
 #has SVK::Model::Ticket;
 
+package SVB::Collection::Comment;
+use base 'Prophet::Collection';
+
+use constant record_class => 'SVB::Model::Comment';
+
+sub new {
+    my $class = shift;
+    my %args = @_;
+    return $class->SUPER::new({ %args, type => $class->record_class->record_type });
+}
+
+
 package main;
 use Prophet::CLI;
 
 $ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} || $ENV{'HOME'}.'/.svb';
 
 my $CLI = Prophet::CLI->new( {  } );
-$CLI->register_types('SVB::Model' => qw(ticket));
+$CLI->register_types('SVB::Model' => qw(ticket comment));
 
 my $command = shift @ARGV;
 
@@ -78,6 +109,23 @@ EOF
 
 }
 
+
+sub cmd_comments {
+    my ($ticket) = @ARGV;
+    my $record = SVB::Model::Ticket->new( { handle => $CLI->handle } );
+    $record->load( uuid => $ticket );
+    print "id: " . $record->uuid . "\n";
+    unless (@{$record->comments}) {
+        print "No commnets found\n";
+    }
+
+    for (@{$record->comments}) {
+        print "comment id: ".$_->uuid."\n";
+        print "Content:\n".$_->prop('content');
+        print "\n\n";
+    }
+
+}
 
 sub cmd_push {
 
