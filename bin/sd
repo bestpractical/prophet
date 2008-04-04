@@ -7,7 +7,8 @@ package SVB;
 
 
 package SVB::Record; # should probably be Prophet::App::Record
-use base qw/Prophet::Record/;
+use base qw/Prophet::Record Class::Data::Inheritable/;
+__PACKAGE__->mk_classdata(REFERENCES => {});
 
 sub new {
     my $class = shift;
@@ -53,8 +54,8 @@ sub register_refers {
     };
     # XXX: add validater for $args{by} in $model->record_class
 
-    # XXX: register in a hash so Prophet::CLI can create subcommand
-    # for listing and add new $model associated with $class
+
+    $class->REFERENCES->{$accessor} = { %args, type => $model->record_class };
 }
 
 package SVB::Model::Comment;

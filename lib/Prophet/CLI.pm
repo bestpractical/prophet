@@ -44,9 +44,9 @@ sub resdb_handle {
     return $self->_resdb_handle();
 }
 
-=head2 record_cmd
+=head2 _record_cmd
 
-Returns a closure that handles the subcommand for a particular type
+handles the subcommand for a particular type
 
 =cut
 
@@ -60,23 +60,35 @@ our %CMD_MAP = (
     list => 'search'
 );
 
-sub record_cmd {
-    my ($self, $type, $record_class) = @_;
-    return sub {
-        my $cmd = shift @ARGV or die "record subcommand required";
-        $cmd =~ s/^--//g;
-        $cmd = $CMD_MAP{$cmd} if exists $CMD_MAP{$cmd};
-        my $func = $self->can("do_$cmd") or die "no such record command $cmd";
-        if ($record_class) {
-        	$self->record_class($record_class);
-        }
-        else {
-        	$self->record_class('Prophet::Record');
-	        $self->type($type);
-	    }
-        $self->parse_record_cmd_args();
-        $func->($self);
-    };
+sub _handle_reference_command {
+    my ($self, $class, $ref_spec) = @_;
+    # turn uuid arg into a prop at ref'ed class
+    my $by_type = $ref_spec->{by};
+    @ARGV = map { s/--uuid/--$by_type/; $_ } @ARGV;
+    unshift @ARGV, '--search', '--regex', '.'; # list only for now
+    $self->_record_cmd($ref_spec->{type}->record_type, $ref_spec->{type});
+}
+
+sub _record_cmd {
+    my ( $self, $type, $record_class ) = @_;
+    my $cmd = shift @ARGV or die "record subcommand required";
+    $cmd =~ s/^--//g;
+
+    if ( $record_class->REFERENCES->{$cmd} ) {
+        return $self->_handle_reference_command( $record_class, $record_class->REFERENCES->{$cmd} );
+    }
+
+    $cmd = $CMD_MAP{$cmd} if exists $CMD_MAP{$cmd};
+    my $func = $self->can("do_$cmd") or Carp::confess "no such record command $cmd";
+    if ($record_class) {
+        $self->record_class($record_class);
+    }
+    else {
+        $self->record_class('Prophet::Record');
+        $self->type($type);
+    }
+    $self->parse_record_cmd_args();
+    $func->($self);
 }
 
 =head2 register_types TYPES
@@ -87,16 +99,19 @@ Register cmd_C<type> methods if the calling namespace that handles the cli comma
 
 
 sub register_types {
-    my $self = shift;
+    my $self       = shift;
     my $model_base = shift;
-    my @types = (@_);
-    
+    my @types      = (@_);
+
     my $calling_package = (caller)[0];
     for my $type (@types) {
         no strict 'refs';
-        my $class = $model_base.'::'.ucfirst($type);
-         *{$calling_package."::cmd_".$type} = $self->record_cmd($type => $class);
-        }
+        my $class = $model_base . '::' . ucfirst($type);
+        *{ $calling_package . "::cmd_" . $type } =
+            sub {
+                $self->_record_cmd( $type => $class )
+            };
+    }
 }
 
 
