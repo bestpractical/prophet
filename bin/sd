@@ -21,7 +21,8 @@ use constant summary_props => qw(summary status);
 
 sub validate_status {
     my ($self, %args) = @_;
-
+    # XXX: validater not called when a value is unset, so can't do
+    # mandatory check here
     return 1 if scalar grep { $args{props}{status} eq $_ }
         qw(new open closed stalled);
 
@@ -55,18 +56,10 @@ use base 'Prophet::Collection';
 
 use constant record_class => 'SVB::Model::Ticket';
 
-
 package SVB::Collection::Comment;
 use base 'Prophet::Collection';
 
 use constant record_class => 'SVB::Model::Comment';
-
-sub new {
-    my $class = shift;
-    my %args = @_;
-    return $class->SUPER::new({ %args, type => $class->record_class->record_type });
-}
-
 
 package main;
 use Prophet::CLI;

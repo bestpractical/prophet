@@ -37,6 +37,7 @@ sub new {
     my $class = shift;
     my $self  = bless {}, $class;
     my $args  = ref($_[0]) ? $_[0] : { @_ };
+    Carp::cluck unless $args->{type};
     $args->{type} ||= $class->record_type;
     my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for keys(%args);
