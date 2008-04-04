@@ -169,7 +169,7 @@ sub args {
 
 sub _get_record {
 	my $self = shift;
-	return $self->record_class->new( { handle => $self->handle, type => $self->type } );
+	return $self->record_class->new( { handle => $self->handle } );
 }
 
 sub do_create {
@@ -191,8 +191,7 @@ sub do_search {
     }
 
     my $record = $cli->_get_record;
-    my $records = $record->collection_class->new( handle => $cli->handle, type => $record->record_type );
-    warn $records;
+    my $records = $record->collection_class->new( handle => $cli->handle );
     $records->matching(
         sub {
             my $item  = shift;

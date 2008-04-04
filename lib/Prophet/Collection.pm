@@ -35,7 +35,9 @@ sub new {
     my $class = shift;
     my $self  = {};
     bless $self, $class;
-    my %args = validate( @_, { handle => 1, type => 1 } );
+    my $args  = ref($_[0]) ? $_[0] : { @_ };
+    $args->{type} ||= $class->record_class->record_type;
+    my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for ( keys %args );
     return $self;
 }

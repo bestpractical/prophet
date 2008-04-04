@@ -37,12 +37,35 @@ sub new {
     my $class = shift;
     my $self  = bless {}, $class;
     my $args  = ref($_[0]) ? $_[0] : { @_ };
+    $args->{type} ||= $class->record_type;
     my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for keys(%args);
     return $self;
 }
 
 sub record_type { $_[0]->type }
+
+=head2 register_refers
+
+=cut
+
+sub register_refers {
+    my ($class, $accessor, $model, @args) = @_;
+    my %args = validate( @args, { by => 1 });
+    no strict 'refs';
+    *{$class."::$accessor"} = sub {
+        my $self = shift;
+        my $collection = $model->new( handle => $self->handle, type => $model->record_class );
+        $collection->matching( sub { $_[0]->prop($args{by}) eq $self->uuid } );
+        return $collection;
+    };
+    # XXX: add validater for $args{by} in $model->record_class
+
+
+    $class->REFERENCES->{$accessor} = { %args, type => $model->record_class };
+}
+
+
 
 =head2 create { props => { %hash_of_kv_pairs } }
 
