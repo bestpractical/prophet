@@ -16,6 +16,136 @@ __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_quer
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
+
+=head1 NOTES ON PUSH
+
+Push to rt algorithm
+
+apply a single changeset that's part of the push:
+    - for each record in that changeset:
+        - pull the record's txn list from the server
+        - for each txn we don't know we've already seen, look at it
+            - if it is from the changeset we just pushed, then
+                store the id of the new transaction and originating uuid in the push-ticket store.
+                    - does that let us specify individual txns? or is it a high-water mark?
+             - if it is _not_ from the changeset we just pushed, then 
+                do we just ignore it?
+                how do we mark an out-of-order transaction as not-pulled?
+                
+
+
+Changesets we want to push from SD to RT and how they map
+
+    
+what do we do with cfs rt doesn't know about?
+
+
+
+SD::Source::RT->recode_ticket
+
+
+
+=cut
+
+
+
+sub integrate_changeset {
+    my $self = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+    $self->_integrate_change($_) for $changeset->changes;
+}
+
+sub _integrate_change {
+    my $self = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+    
+    if ($change->node_type eq 'ticket' and $change->file_system_op eq 'add_file') {
+        $slef->integrate_ticket_create($change); # ALSO WANT CHANGESET
+    } elsif ($change->node_type eq 'comment') {
+        $self->integrate_comment($change);
+    } elsif ($change->node_type eq 'ticket') {
+        $self->integrate_ticket_update($change);
+    
+    } else {
+        die "AAAAAH I DO NOT KNOW HOW TO PUSH ".YAML::Dump($change);
+    }
+}
+
+
+sub integrate_ticket_update {
+    my $self = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+    # Figure out the remote site's ticket ID for this change's record
+    my $ticket = RT::Client::REST::Ticket->new(rt => $self->rt);
+    $ticket->retrieve($remote_ticket_id);
+
+#        %{ $self->_recode_props_for_integrate($change)},
+
+    # for each propchange in this change 
+        # apply the change to the remote RT server
+        # fetch transactions on this ticket from the remote RT
+        # make sure our change has been applied to remote
+        # record our propchange as having been applied
+    
+}
+
+sub integrate_ticket_create {
+   my $self = shift;
+   my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+   # Build up a ticket object out of all the record's attributes
+   
+   
+   
+   my $ticket = RT::Client::REST::Ticket->new(
+        rt => $self->rt,
+        %{ $self->_recode_props_for_integrate($change)},
+    );
+    
+    $ticket->store("Not yet pulling in ticket creation comment");   
+   
+   # Grab the related comment
+   # Create the ticket
+   # fetch the ticket ID
+   # record a push ticket for the RT ticket and for the 'create' comment
+
+
+}
+
+
+sub _recode_props_for_integrate {
+    my $self = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+   
+   my %props = map { $_->name => $_->new_value } $change->prop_changes;
+   
+    my %attr;
+    my %cf;
+    for my $key (keys %props) {
+    
+        if ($key =~ /^custom-(.*)/) {
+            $cf{$1} = $props{$key};
+        } else {
+            $attr{$key} = $props{$key};
+        }
+    }
+    $attr{cf} = \%cf;
+    return \%attr;
+    }
+
+
+sub integrate_comment {
+    my $self = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+    # Figure out the remote site's ticket ID for this change's record
+    # Build a comment or correspondence object
+        # apply the change to the remote RT server
+        # fetch transactions on this ticket from the remote RT
+        # make sure our change has been applied to remote
+        # record our propchange as having been applied
+    
+  }
+    
+
 =head2 setup
 
 Open a connection to the SVN source identified by C<$self->url>.
