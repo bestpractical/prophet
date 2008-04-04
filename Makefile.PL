@@ -3,18 +3,35 @@
 use inc::Module::Install;
 name('Prophet');
 author('clkao and jesse');
-license('Death and Repudiation');
+license('DeathandRepudiation');
 requires('Params::Validate');
+requires('List::MoreUtils');
 requires('Class::Accessor');
 requires('IPC::Run3');
 requires('Test::Exception');
 requires('Data::UUID');
 requires('Path::Class');
 requires('YAML::Syck');
+requires('Test::Exception');
 requires('Acme::MetaSyntactic');
 requires('UNIVERSAL::require');
-
+requires('App::Cache');
+requires('Class::Data::Inheritable');
+requires('DateTime::Format::HTTP');
+requires('Devel::Gladiator');
+requires('RT::Client::REST');
+requires('RT::Client::REST::Ticket');
+requires('RT::Client::REST::User');
+requires('SVB::Record');
+requires('Term::ReadKey');
 requires('SVN::Core'); # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
+features(
+        'Crazy debugging tools' => [
+            -default => 1,
+            recommends => 'Devel::Gladiator'
+        ]
+    );
+
 all_from('lib/Prophet.pm');
 
 WriteAll();

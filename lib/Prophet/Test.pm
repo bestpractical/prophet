@@ -45,12 +45,12 @@ sub import_extra {
     }
 }
 
-use Devel::Gladiator;
 
 sub in_gladiator (&) {
     my $code = shift;
 
     my $types;
+    require "Devel::Gladiator" or die 'Get Devel::Gladiator from http://code.sixapart.com/svn/Devel-Gladiator/trunk/ and harass sky@crucially.net to CPAN it';
     for ( @{ Devel::Gladiator::walk_arena() } ) {
         $types->{ ref($_) }--;
     }
