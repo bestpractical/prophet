@@ -115,6 +115,8 @@ sub _recode_transactions {
 
     warn "Working on ".$ticket->{id};
     my $create_state = $ticket;
+    map { $create_state->{$_} = $self->date_to_iso($create_state->{$_})} qw(Created Resolved Told LastUpdated Starts Started); 
+
     map { $create_state->{$_} =~ s/ minutes$// }  qw(TimeWorked TimeLeft TimeEstimated);
     my @changesets;
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
@@ -203,7 +205,8 @@ sub _recode_txn_Set {
             if ( $args{'create_state'}->{ $args{txn}->{Field} } eq $args{txn}->{'NewValue'} ) {
                 $args{'create_state'}->{ $args{txn}->{Field} } = $args{txn}->{'OldValue'};
             } else {
-                die $args{'create_state'}->{ $args{txn}->{Field} } . " != " . $args{txn}->{'NewValue'}."\n\n".YAML::Dump(\%args);
+                $args{'create_state'}->{ $args{txn}->{Field} } = $args{txn}->{'OldValue'};
+                warn $args{'create_state'}->{ $args{txn}->{Field} } . " != " . $args{txn}->{'NewValue'}."\n\n".YAML::Dump(\%args);
             }
             $change->add_prop_change(
                 name => $args{txn}->{'Field'},
@@ -229,6 +232,8 @@ sub _recode_txn_Create {
                     change_type => 'add_file'
                 }
             );
+
+            $args{'create_state'}->{'id'} =~ s/^ticket\///g;
             $args{'changeset'}->add_change( { change => $change } );
             for my $name ( keys %{$args{'create_state'}} ) {
 
@@ -239,6 +244,9 @@ sub _recode_txn_Create {
                 );
 
             }
+            
+            $self->_recode_content_update(%args); # add the create content txn as a seperate change in this changeset
+
         }
 
 sub _recode_txn_AddLink {
@@ -251,6 +259,7 @@ sub _recode_txn_AddLink {
                     change_type => 'add_file'
                 }
             );
+            $args{'changeset'}->add_change( { change => $change } );
             $change->add_prop_change( name => 'url',    old => undef, new => $args{'txn'}->{'NewValue'} );
             $change->add_prop_change( name => 'type',   old => undef, new => $args{'txn'}->{'Field'} );
             $change->add_prop_change( name => 'ticket', old => undef, new => $args{ticket}->{uuid} );
@@ -266,6 +275,11 @@ sub _recode_content_update {
                 }
             );
             $change->add_prop_change(
+                name => 'creator',
+                old  => undef,
+                new  => $args{'txn'}->{'Creator'}
+            );
+            $change->add_prop_change(
                 name => 'content',
                 old  => undef,
                 new  => $args{'txn'}->{'Content'}
@@ -275,6 +289,7 @@ sub _recode_content_update {
                 old  => undef,
                 new  => $args{ticket}->{uuid},
             );
+            $args{'changeset'}->add_change( { change => $change } );
         }
 
 
@@ -455,6 +470,18 @@ sub warp_list_to_old_value {
             my @new = split( /\s*,\s*/, $ticket_value );
             my @old = grep { $_ ne $add } @new, $del;
             return join( ", ", @old );
+}
+
+our $MONNUM = { Jan => 1, Feb => 2, Mar => 3, Apr => 4, May => 5, Jun => 6, Jul => 7, Aug => 8, Sep => 9, Oct => 10, Nov => 11, Dec => 12};
+
+use DateTime::Format::HTTP;
+sub date_to_iso {
+    my $self =shift;
+    my $date = shift;
+    
+    return '' if $date eq 'Not set';
+    my $t =DateTime::Format::HTTP->parse_datetime($date); 
+    return $t->ymd . " ".$t->hms;
 }
 
 1;
