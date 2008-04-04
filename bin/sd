@@ -123,6 +123,18 @@ sub cmd_push {
     # Trivial first pass:
 #    only support pull
     my $url = shift @ARGV;
+
+
+
+    local $ENV{PROPHET_RESOLVER} = 'Prompt';
+    my %args =  ( to => $url, from => "file://".$CLI->handle->repo_path );
+
+    $CLI->args(\%args);
+    $CLI->do_merge();
+
+
+
+return;
     my $source = Prophet::Sync::Source->new( { url => 'file://'.$CLI->handle->repo_path } );
     my $target = Prophet::Sync::Source->new( { url => $url });
 #    my $changesets = $source->new_changesets_for($target);

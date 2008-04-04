@@ -7,12 +7,14 @@ use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use RT::Client::REST       ();
 use RT::Client::REST::User ();
+   use RT::Client::REST::Ticket;
+
 use Memoize;
 use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_query/);
+__PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -47,20 +49,40 @@ SD::Source::RT->recode_ticket
 
 =cut
 
+sub record_changeset_integration {
+    my ($self, $source_uuid, $source_seq) = @_;
+warn "H";
+    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+    return $cache->set($self->uuid.'-'.$source_uuid, $source_seq);
+}
 
 
-sub integrate_changeset {
+
+sub record_integration_changeset {
+    warn "record_integration_changeset should be renamed to 'record_original_change";
+    my ($self, $changeset) = @_;
+    $self->record_changeset($changeset);
+
+    # does the merge ticket recording & _source_metadata (book keeping for what
+
+    $self->record_changeset_integration( $changeset->original_source_uuid, $changeset->original_sequence_no );
+}
+
+
+sub record_changeset {
     my $self = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
     $self->_integrate_change($_) for $changeset->changes;
+warn "J";
+
 }
 
 sub _integrate_change {
     my $self = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
-    
-    if ($change->node_type eq 'ticket' and $change->file_system_op eq 'add_file') {
-        $slef->integrate_ticket_create($change); # ALSO WANT CHANGESET
+
+    if ($change->node_type eq 'ticket' and $change->change_type eq 'add_file') {
+        $self->integrate_ticket_create($change); # ALSO WANT CHANGESET
     } elsif ($change->node_type eq 'comment') {
         $self->integrate_comment($change);
     } elsif ($change->node_type eq 'ticket') {
@@ -76,10 +98,10 @@ sub integrate_ticket_update {
     my $self = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
     # Figure out the remote site's ticket ID for this change's record
-    my $ticket = RT::Client::REST::Ticket->new(rt => $self->rt);
-    $ticket->retrieve($remote_ticket_id);
-
-#        %{ $self->_recode_props_for_integrate($change)},
+    my $remote_ticket_id = ' AAAAAAH need to look up ';
+    my $ticket = RT::Client::REST::Ticket->new(rt => $self->rt,
+                id => $remote_ticket_id,
+                %{ $self->_recode_props_for_integrate($change)})->store();
 
     # for each propchange in this change 
         # apply the change to the remote RT server
@@ -93,16 +115,13 @@ sub integrate_ticket_create {
    my $self = shift;
    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
    # Build up a ticket object out of all the record's attributes
-   
-   
-   
+   warn "fooo";   
    my $ticket = RT::Client::REST::Ticket->new(
         rt => $self->rt,
+        queue => $self->rt_queue(),
         %{ $self->_recode_props_for_integrate($change)},
-    );
-    
-    $ticket->store("Not yet pulling in ticket creation comment");   
-   
+    )->store(text => "Not yet pulling in ticket creation comment");   
+   warn "Bar";
    # Grab the related comment
    # Create the ticket
    # fetch the ticket ID
@@ -111,6 +130,9 @@ sub integrate_ticket_create {
 
 }
 
+sub conflicts_from_changeset { return; }
+
+sub accepts_changesets { 1 }
 
 sub _recode_props_for_integrate {
     my $self = shift;
@@ -121,16 +143,20 @@ sub _recode_props_for_integrate {
     my %attr;
     my %cf;
     for my $key (keys %props) {
-    
+        next unless ($key =~ /^(summary|queue|status|owner|custom)/);
         if ($key =~ /^custom-(.*)/) {
             $cf{$1} = $props{$key};
+        } elsif ($key eq 'summary') { 
+            $attr{'subject'} = $props{summary};
+        
         } else {
+
             $attr{$key} = $props{$key};
         }
     }
     $attr{cf} = \%cf;
     return \%attr;
-    }
+}
 
 
 sub integrate_comment {
@@ -167,6 +193,7 @@ sub setup {
         $uri->userinfo(undef);
     }
     $self->rt_url("$uri");
+    $self->rt_queue($type);
     $self->rt_query($query. " AND Queue = '$type'");
     $self->rt( RT::Client::REST->new( server => $server ) );
     unless ($username) {
@@ -288,6 +315,7 @@ sub _recode_transactions {
     return \@changesets;
 
 }
+sub _recode_txn_CommentEmailRecord     { return; }
 
 sub _recode_txn_EmailRecord     { return; }
 sub _recode_txn_AddReminder     { return; }
@@ -570,7 +598,7 @@ sub last_changeset_from_source {
     return $cache->get($self->uuid.'-'.$source_uuid) || 0;
 }
 
-sub record_changeset_integration {
+sub _integration {
     my ($self, $source_uuid, $source_seq) = @_;
 
     my $cache = App::Cache->new({ ttl => 60*60 }); # la la la

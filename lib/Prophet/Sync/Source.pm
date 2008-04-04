@@ -125,7 +125,7 @@ sub integrate_changeset {
     #   - merge tickets for the same
     # we'll want to skip or remove those changesets
 
-    return if $changeset->original_source_uuid eq $self->prophet_handle->uuid;
+    return if $changeset->original_source_uuid eq $self->uuid;
 
     $self->remove_redundant_data($changeset);    #Things we have already seen
 
