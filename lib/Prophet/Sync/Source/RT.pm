@@ -51,7 +51,6 @@ SD::Source::RT->recode_ticket
 
 sub record_changeset_integration {
     my ($self, $source_uuid, $source_seq) = @_;
-warn "H";
     my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
     return $cache->set($self->uuid.'-'.$source_uuid, $source_seq);
 }
@@ -63,42 +62,93 @@ sub record_integration_changeset {
     my ($self, $changeset) = @_;
     $self->record_changeset($changeset);
 
-    # does the merge ticket recording & _source_metadata (book keeping for what
+    # does the merge ticket recording & _source_metadata (book keeping for what txns in rt we just created)
+    $self->record_txn_just_created($changeset);
 
     $self->record_changeset_integration( $changeset->original_source_uuid, $changeset->original_sequence_no );
+}
+
+sub record_txn_just_created {
+    my ($self, $changeset) = @_;
+    # XXX: go discover the txn_ids corresponds to $changeset;
+    my @txn_ids;
+    for my $change ($changeset->changes) {
+        next unless $change->node_type eq 'ticket';
+        next if $change->change_type eq 'add_file'; # XXX: handled separately when calling rt::client create-ticket
+        my $ticket_id = $self->get_remote_id_for( $change->node_uuid) ;
+        
+    
+        Carp::confess "No ticket id for Changeset " .YAML::Dump($change) unless ($ticket_id);
+        for my $txn  ( reverse RT::Client::REST::Ticket->new(rt => $self->rt, id => $ticket_id)->transactions) {
+            last if $txn->id <= $self->last_changeset_from_source();
+            push @txn_ids, $txn->id;
+            
+        }
+    }
+    
+    $self->_store_changeset_metadata(\@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no);
+
+}
+    
+sub _store_changeset_metadata {
+    my $self = shift;
+    my ($txn_ids, $uuid, $seq) = (@_);
+    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+    $cache->set( $self->uuid,'-txn-'.$_, join(':', $uuid, $seq))    for @$txn_ids;
+}
+
+sub get_remote_id_for {
+    my ($self, $ticket_uuid) = @_;
+    # XXX: should not access CLI handle
+    my $ticket = Prophet::Record->new(handle => Prophet::CLI->new->handle, type => 'ticket' );
+    $ticket->load( uuid => $ticket_uuid );
+    return $ticket->prop($self->uuid.'-id');
+}
+
+sub has_seen_changeset {
+    my ($self, $changeset) = @_;
+    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+    my $txn_id = $changeset->original_sequence_no;
+    # XXX: extract the original txn id from $changeset
+    return $cache->get( $self->uuid,'-txn-'.$txn_id );
 }
 
 
 sub record_changeset {
     my $self = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-    $self->_integrate_change($_) for $changeset->changes;
-warn "J";
-
+    $self->_integrate_change($_, $changeset) for $changeset->changes;
 }
 
 sub _integrate_change {
     my $self = shift;
-    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+    my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, {isa => 'Prophet::ChangeSet' });
+    my $id;
+eval {
 
     if ($change->node_type eq 'ticket' and $change->change_type eq 'add_file') {
-        $self->integrate_ticket_create($change); # ALSO WANT CHANGESET
+    warn "==> create";
+    $id =     $self->integrate_ticket_create($change, $changeset); # ALSO WANT CHANGESET
     } elsif ($change->node_type eq 'comment') {
-        $self->integrate_comment($change);
+        $self->integrate_comment($change, $changeset);
     } elsif ($change->node_type eq 'ticket') {
-        $self->integrate_ticket_update($change);
+    warn "==> wtf ".$change->change_type;
+        $self->integrate_ticket_update($change, $changeset);
     
     } else {
         die "AAAAAH I DO NOT KNOW HOW TO PUSH ".YAML::Dump($change);
     }
+    
+    }; warn $@ if $@;
+    return $id 
 }
 
 
 sub integrate_ticket_update {
     my $self = shift;
-    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+   my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'});
     # Figure out the remote site's ticket ID for this change's record
-    my $remote_ticket_id = ' AAAAAAH need to look up ';
+    my $remote_ticket_id = $self->get_remote_id_for($change->node_uuid);
     my $ticket = RT::Client::REST::Ticket->new(rt => $self->rt,
                 id => $remote_ticket_id,
                 %{ $self->_recode_props_for_integrate($change)})->store();
@@ -113,15 +163,18 @@ sub integrate_ticket_update {
 
 sub integrate_ticket_create {
    my $self = shift;
-   my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+   my ($change, $changeset) = validate_pos(@_, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'});
    # Build up a ticket object out of all the record's attributes
-   warn "fooo";   
+   warn $self->rt_queue;
    my $ticket = RT::Client::REST::Ticket->new(
         rt => $self->rt,
         queue => $self->rt_queue(),
         %{ $self->_recode_props_for_integrate($change)},
     )->store(text => "Not yet pulling in ticket creation comment");   
-   warn "Bar";
+    
+    my @txn_ids = $ticket->transactions;
+    $self->_store_changeset_metadata(\@txn_ids, $changeset->original_source_uuid, $changeset->original_sequence_no);
+        
    # Grab the related comment
    # Create the ticket
    # fetch the ticket ID
@@ -159,10 +212,25 @@ sub _recode_props_for_integrate {
 }
 
 
+
 sub integrate_comment {
     my $self = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
     # Figure out the remote site's ticket ID for this change's record
+
+    my %props = map { $_->name => $_->new_value } $change->prop_changes;
+
+
+    my $ticket =RT::Client::REST::Ticket->new(rt => $self->rt,
+        id => $self->get_remote_id_for($props{'ticket'}));
+        if ($props{'type'} eq 'comment') {
+            $ticket->comment(message => $props{'content'});
+        } else {
+            $ticket->correspond(message => $props{'content'});
+
+        }
+        
+    
     # Build a comment or correspondence object
         # apply the change to the remote RT server
         # fetch transactions on this ticket from the remote RT
@@ -258,6 +326,7 @@ sub fetch_changesets {
     my @changesets;
     my %tix;
     for my $id ( $self->_find_matching_tickets ) {
+        # XXX: _recode_transactions should ignore txn-id <= $first_rev
         push @changesets,
             @{
             $self->_recode_transactions(
@@ -398,6 +467,8 @@ sub _recode_txn_Create {
     );
 
     $args{'create_state'}->{'id'} =~ s/^ticket\///g;
+    $args{'create_state'}->{$self->uuid.'-id'} = delete $args{'create_state'}->{'id'};
+
     $args{'changeset'}->add_change( { change => $change } );
     for my $name ( keys %{ $args{'create_state'} } ) {
 
@@ -535,7 +606,7 @@ sub _recode_txn_CustomField {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->uuid_for_url( $self->url . "/Ticket/" . $args{'create_state'}->{'id'} ),
+            node_uuid   => $self->uuid_for_url( $self->url . "/ticket/" . $args{'create_state'}->{'id'} ),
             change_type => 'update_file'
         }
     );
@@ -595,6 +666,8 @@ sub last_changeset_from_source {
 
     use App::Cache;
     my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+#$cache->delete($self->uuid.'-'.$source_uuid) || 0;
+
     return $cache->get($self->uuid.'-'.$source_uuid) || 0;
 }
 
