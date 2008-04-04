@@ -113,7 +113,10 @@ sub _recode_transactions {
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
         warn "HANDLING " . $txn->{id} . " " . $txn->{Type};
 
-        if ( $txn->{'Type'} eq 'Status' ) {
+        if ($txn->{'Type'}  =~ /^(?:EmailRecord)/) {
+            next;
+        }
+        elsif ( $txn->{'Type'} eq 'Status' ) {
             $txn->{'Type'} = 'Set';
         }
 
@@ -191,14 +194,16 @@ sub _recode_transactions {
             );
 
         } elsif ( $txn->{'Type'} eq 'AddWatcher' || $txn->{'Type'} eq 'DelWatcher' ) {
-            my $watcher_type = $txn->{'Field'};
 
-            my $add = $self->resolve_user_id_to_email( $txn->{'NewValue'} );
-            my $del = $self->resolve_user_id_to_email( $txn->{'OldValue'} );
+            my $new_state = $create_state->{ $txn->{'Field'} };
 
-            my @watchers = split( /\s*,\s*/, $create_state->{$watcher_type} );
-            my @old_watchers = grep { $_ ne $add } @watchers, $del;
-            $create_state->{$watcher_type} = join( ", ", @old_watchers );
+            $create_state->{ $txn->{'Field'} } = $self->warp_list_to_old_value(
+                $create_state->{ $txn->{'Field'} },
+
+                $self->resolve_user_id_to_email( $txn->{'NewValue'} ),
+                $self->resolve_user_id_to_email( $txn->{'OldValue'} )
+
+            );
 
             my $change = Prophet::Change->new(
                 {   node_type   => 'RT_Ticket',
@@ -209,9 +214,43 @@ sub _recode_transactions {
             $changeset->add_change( { change => $change } );
             $change->add_prop_change(
                 name => $txn->{'Field'},
-                old  => join( ', ', @old_watchers ),
-                new  => join( ', ', @watchers )
+                old  => $create_state->{ $txn->{'Field'} },
+                new  => $new_state
             );
+
+        } elsif ( $txn->{'Type'} eq 'CustomField' ) {
+            my $new = $txn->{'NewValue'};
+            my $old = $txn->{'OldValue'};
+            my $name;
+            if ( $txn->{'Description'} =~ /^(.*) $new added by/ ) {
+                $name = $1;
+
+            } elsif ( $txn->{'Description'} =~ /^(.*) $old delete by/ ) {
+                $name = $1;
+            } else {
+                die "Uh. what to do with txn descriotion " . $txn->{'Description'};
+            }
+
+            $txn->{'Field'} = "CF-" . $name;
+
+            my $new_state = $create_state->{ $txn->{'Field'} };
+            $create_state->{ $txn->{'Field'} } = $self->warp_list_to_old_value( $create_state->{ $txn->{'Field'} },
+                $txn->{'NewValue'}, $txn->{'OldValue'} );
+
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
+                    change_type => 'update_file'
+                }
+            );
+
+            $changeset->add_change( { change => $change } );
+            $change->add_prop_change(
+                name => $txn->{'Field'},
+                old  => $create_state->{ $txn->{'Field'} },
+                new  => $new_state
+            );
+
 
         } else {
             die "Don't know how to ahndle a " . YAML::Dump($txn);
@@ -322,5 +361,15 @@ sub last_changeset_from_source {
 
 }
 
+sub warp_list_to_old_value {
+    my $self = shift;
+    my $ticket_value = shift;
+    my $add = shift;
+    my $del = shift;
+
+            my @new = split( /\s*,\s*/, $ticket_value );
+            my @old = grep { $_ ne $add } @new, $del;
+            return join( ", ", @old );
+}
 
 1;
