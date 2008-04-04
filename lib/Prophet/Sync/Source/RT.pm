@@ -28,7 +28,7 @@ use File::Temp 'tempdir';
 
 sub setup {
     my $self = shift;
-    my ( $server, $type, $query ) = $self->{url} =~ m/^rt:(.*?):(tickets):(.*)$/
+    my ( $server, $type, $query ) = $self->{url} =~ m/^rt:(.*?)\|(.*?)\|(.*)$/
         or die "Can't parse rt server spec";
     my $uri = URI->new($server);
     my ( $username, $password );
@@ -37,7 +37,7 @@ sub setup {
         $uri->userinfo(undef);
     }
     $self->rt_url("$uri");
-    $self->rt_query($query);
+    $self->rt_query($query. " AND Queue = '$type'");
     $self->rt( RT::Client::REST->new( server => $server ) );
     unless ($username) {
 
@@ -109,8 +109,8 @@ sub fetch_changesets {
             )
             };
     }
-#    die 'not yet';
     my @results = map { $self->translate_prop_names($_) } sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
+
     return \@results;
 }
 
@@ -425,49 +425,6 @@ sub _find_matching_transactions {
     return \@txns;
 }
 
-sub _recode_changeset {
-    my $self      = shift;
-    my $entry     = shift;
-    my $revprops  = shift;
-    my $changeset = Prophet::ChangeSet->new(
-        {   sequence_no          => $entry->{'revision'},
-            source_uuid          => $self->uuid,
-            original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
-            original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
-            is_nullification     => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'nullification' ) ? 1 : undef,
-            is_resolution        => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'resolution' ) ? 1 : undef,
-
-        }
-    );
-
-    # add each node's changes to the changeset
-    for my $path ( keys %{ $entry->{'paths'} } ) {
-        if ( $path =~ qr|^(.+)/(.*?)/(.*?)$| ) {
-            my ( $prefix, $type, $record ) = ( $1, $2, $3 );
-            my $change = Prophet::Change->new(
-                {   node_type   => $type,
-                    node_uuid   => $record,
-                    change_type => $entry->{'paths'}->{$path}->{fs_operation}
-                }
-            );
-            for my $name ( keys %{ $entry->{'paths'}->{$path}->{prop_deltas} } ) {
-                $change->add_prop_change(
-                    name => $name,
-                    old  => $entry->{paths}->{$path}->{prop_deltas}->{$name}->{'old'},
-                    new  => $entry->{paths}->{$path}->{prop_deltas}->{$name}->{'new'},
-                );
-            }
-
-            $changeset->add_change( change => $change );
-
-        } else {
-            warn "Discarding change to a non-record: $path" if $DEBUG;
-        }
-
-    }
-    return $changeset;
-}
-
 =head2 last_changeset_from_source $SOURCE_UUID
 
 Returns the last changeset id seen from the source identified by $SOURCE_UUID
@@ -492,7 +449,7 @@ sub record_changeset_integration {
 
 sub warp_list_to_old_value {
     my $self         = shift;
-    my $ticket_value = shift;
+    my $ticket_value = shift ||'';
     my $add          = shift;
     my $del          = shift;
 
@@ -529,63 +486,62 @@ sub date_to_iso {
 
 
 our %PROP_MAP = (
-    subject => 'summary',
-    status => 'status',
-    owner => 'owner',
+    subject         => 'summary',
+    status          => 'status',
+    owner           => 'owner',
     initialpriority => '_delete',
-    finalpriority => '_delete',
-    told => '_delete',
-    requestors => 'reported_by',
-    admincc => 'admin_cc',
-    refersto => 'refers_to',
-    referredtoby => 'referred_to_by',
-    dependson => 'depends_on',
-    dependedonby => 'depended_on_by',
-    hasmember => 'members',
-    memberof => 'member_of',
-    priority => 'priority_integer',
-    
-    resolved => 'completed',
+    finalpriority   => '_delete',
+    told            => '_delete',
+    requestors      => 'reported_by',
+    admincc         => 'admin_cc',
+    refersto        => 'refers_to',
+    referredtoby    => 'referred_to_by',
+    dependson       => 'depends_on',
+    dependedonby    => 'depended_on_by',
+    hasmember       => 'members',
+    memberof        => 'member_of',
+    priority        => 'priority_integer',
+    resolved    => 'completed',
+    due         => 'due',
+    creator     => 'creator',
+    timeworked => 'time_worked',
+    timeleft  => 'time_left',
     lastupdated => '_delete',
-    created => '_delete', # we should be porting the create date as a metaproperty
-    
+    created     => '_delete',     # we should be porting the create date as a metaproperty
+
 );
 
 sub translate_prop_names {
-    my $self = shift;
+    my $self      = shift;
     my $changeset = shift;
-    
-    for my $change (@{$changeset->changes}) {
+
+    for my $change ( $changeset->changes ) {
         next unless $change->node_type eq 'ticket';
-        
-    
+
         my @new_props;
+        for my $prop ( $change->prop_changes ) {
+            next if (( $PROP_MAP{ lc ( $prop->name ) } ||'') eq '_delete');
+            $prop->name( $PROP_MAP{ lc( $prop->name ) } ) if $PROP_MAP{ lc( $prop->name ) };
 
-        for my $prop (@$change->prop_changes) {
-            next if $PROP_MAP{lc{$prop->name}} eq '_delete';
-            $prop->name($PROP_MAP{lc($prop->name)}) if $PROP_MAP{lc($prop->name)};
+            if ( $prop->name eq 'id' ) {
+                    $prop->old_value( $prop->old_value . '@' . $changeset->original_source_uuid )
+                        if ($prop->old_value||'') =~ /^\d+$/;
+                    $prop->old_value( $prop->new_value . '@' . $changeset->original_source_uuid )
+                        if ($prop->new_value||'') =~ /^\d+$/;
 
-        if ($prop->name eq 'id') {
-                $prop->old_value($prop->old_value.'@'.$self->changeset->original_source_uuid) if $prop->old_value =~ /^\d+$/;
-                $prop->old_value($prop->new_value.'@'.$self->changeset->original_source_uuid) if $prop->new_value =~ /^\d+$/;
+            }
 
-                
-                }
-
-
-        if ($prop->name =~ /^cf-(.*)$/) {
-                    $prop->name('custom-'.$1);
-        };
+            if ( $prop->name =~ /^cf-(.*)$/ ) {
+                    $prop->name( 'custom-' . $1 );
+            }
 
             push @new_props, $prop;
-            
-            
+
         }
-        $change->prop_changes(\@new_props);
+        $change->prop_changes( \@new_props );
 
-        
     }
-
+    return $changeset;
 }
 
 
