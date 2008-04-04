@@ -71,8 +71,15 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    return 1234;
-    return Carp::cluck "need a uuid";
+    return $self->uuid_for_url( join('/', $self->rt_url, $self->rt_query ) );
+
+}
+
+use Data::UUID 'NameSpace_DNS';
+
+sub uuid_for_url {
+    my ($self, $url) = @_;
+    return Data::UUID->new->create_from_name_str( NameSpace_DNS, $url);
 }
 
 =head2 fetch_changesets { after => SEQUENCE_NO } 
@@ -93,9 +100,10 @@ sub fetch_changesets {
       my   @changesets;
     my %tix;
     for my $id ($self->_find_matching_tickets) {
-        my @changesets = $self->_recode_transactions( ticket => $self->rt->show(type => 'ticket', id => $id), transactions => $self->_find_matching_transactions($id));  
+        push @changesets, @{ $self->_recode_transactions( ticket => $self->rt->show(type => 'ticket', id => $id), transactions => $self->_find_matching_transactions($id)) };
     }
-
+    warn Dumper(\@changesets); use Data::Dumper;
+    die 'not yet';
     my @results =  sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
     return \@results;
 }
