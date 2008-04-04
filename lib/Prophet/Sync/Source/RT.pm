@@ -102,7 +102,6 @@ sub fetch_changesets {
     for my $id ($self->_find_matching_tickets) {
         push @changesets, @{ $self->_recode_transactions( ticket => $self->rt->show(type => 'ticket', id => $id), transactions => $self->_find_matching_transactions($id)) };
     }
-    warn Dumper(\@changesets); use Data::Dumper;
     die 'not yet';
     my @results =  sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
     return \@results;
@@ -114,7 +113,7 @@ sub _recode_transactions {
 
     my $ticket = $args{'ticket'};
 
-
+    warn "Working on ".$ticket->{id};
     my $create_state = $ticket;
     map { $create_state->{$_} =~ s/ minutes$// }  qw(TimeWorked TimeLeft TimeEstimated);
     my @changesets;
@@ -126,6 +125,12 @@ sub _recode_transactions {
                     original_sequence_no => $txn->{'id'},
                 }
             );
+
+           if (("ticket/".$txn->{'Ticket'} ne  $ticket->{id} )&& $txn->{'Type'} !~ /^(?:Comment|Correspond)$/) {
+                warn "Skipping a data change from a merged ticket" . $txn->{'Ticket'} . ' vs '. $ticket->{id};
+                next;
+           }
+
             $sub->( $self,
                 ticket       => $ticket,
                 create_state => $create_state,
@@ -161,7 +166,12 @@ sub _recode_txn_Status {
 
 
 
-
+sub _recode_txn_Told  {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1});
+            $args{txn}->{'Type'} = 'Set';
+        return $self->_recode_txn_Set(%args);
+}  
 
 sub _recode_txn_Set {
     my $self = shift;
@@ -245,11 +255,12 @@ sub _recode_txn_AddLink {
             $change->add_prop_change( name => 'type',   old => undef, new => $args{'txn'}->{'Field'} );
             $change->add_prop_change( name => 'ticket', old => undef, new => $args{ticket}->{uuid} );
         }
-sub _recode_txn_Correspond {
+
+sub _recode_content_update {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
             my $change = Prophet::Change->new(
-                {   node_type   => 'rt_comment',
+                {   node_type   => 'rt_'.$args{'txn'}->{'Type'},
                     node_uuid   => $self->uuid_for_url($self->rt_url . "/transaction/" . $args{'txn'}->{'id'}),
                     change_type => 'add_file'
                 }
@@ -265,6 +276,10 @@ sub _recode_txn_Correspond {
                 new  => $args{ticket}->{uuid},
             );
         }
+
+
+*_recode_txn_Comment = \&_recode_content_update;
+*_recode_txn_Correspond = \&_recode_content_update;
 
 sub _recode_txn_AddWatcher {
     my $self = shift;
