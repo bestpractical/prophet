@@ -57,14 +57,42 @@ Todo
 
 Bug tracker:
 
-    subject
-    status
-    severity
-    custom fields
-    owner
-    keywords/tags
-    reported by
-    
+     summary  		RT: subject
+     status			RT: status(new,open,stalled,resolved, rejected)
+     severity		
+     custom fields	RT: cf-*
+     owner			RT: owner
+     keywords/tags	 
+[csv]reported by		RT: requestors
+     comments		RT: comment/correspond
+   					RT: Queue
+   					RT: priority
+   					RT: initial_priority
+   					RT: final_priority
+   					RT: time_estimated
+   					RT: time_worked
+   					RT: time_left
+[dt]				RT: created
+[dt]    			RT: starts
+   					RT: started
+   					RT: lastupdated
+   					RT: resolved
+   					RT: told (last user contact)
+[csv] 				RT: links * many
+[csv]   				DependsOn
+[csv]   				DependedOnBy
+[csv]   				RefersTo
+[csv]   				ReferredToBy
+[csv]					MemberOf
+[csv]					HasMember
+   					
+[csv]  				RT: admin_ccs
+[csv]				RT: ccs
+   		
+   		
+				
+   		
+   					
     attachments / patches
     
     milestones?
