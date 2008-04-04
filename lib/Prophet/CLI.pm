@@ -190,8 +190,9 @@ sub do_search {
         die "Specify a regular expression and we'll search for records matching that regex";
     }
 
-	my $record = $cli->_get_record;
+    my $record = $cli->_get_record;
     my $records = $record->collection_class->new( handle => $cli->handle, type => $record->record_type );
+    warn $records;
     $records->matching(
         sub {
             my $item  = shift;
@@ -202,7 +203,7 @@ sub do_search {
     );
 
     for ( @{ $records->as_array_ref } ) {
-        printf( "%s %s %s \n", $_->uuid, $_->prop('summary') || "(no summary)", $_->prop('status') || '(no status)' );
+        print $_->format_summary."\n";
     }
 }
 

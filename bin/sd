@@ -20,7 +20,12 @@ sub new {
 package SVB::Model::Ticket;
 use base qw/SVB::Record/;
 
+use constant collection_class => 'SVB::Collection::Ticket';
 use constant record_type => 'ticket';
+
+use constant summary_format => '%u %s %s';
+use constant summary_props => qw(summary status);
+
 
 sub validate_status {
     my ($self, %args) = @_;
@@ -61,9 +66,19 @@ sub register_refers {
 package SVB::Model::Comment;
 use base qw/SVB::Record/;
 
+use constant collection_class => 'SVB::Collection::Comment';
 use constant record_type => 'comment';
 
+use constant summary_format => '%u %s';
+use constant summary_props => qw(content);
+
 #has SVK::Model::Ticket;
+
+package SVB::Collection::Ticket;
+use base 'Prophet::Collection';
+
+use constant record_class => 'SVB::Model::Ticket';
+
 
 package SVB::Collection::Comment;
 use base 'Prophet::Collection';

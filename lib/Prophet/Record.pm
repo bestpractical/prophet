@@ -36,7 +36,8 @@ Instantiates a new, empty L<Prophet::Record/> of type $type.
 sub new {
     my $class = shift;
     my $self  = bless {}, $class;
-    my %args  = validate( @_, { handle => 1, type => 1 } );
+    my $args  = ref($_[0]) ? $_[0] : { @_ };
+    my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for keys(%args);
     return $self;
 }
@@ -281,4 +282,24 @@ sub _compute_history_deltas {
     return $log_ref;
 
 }
+
+=head2 format_summary
+
+returns a formated string that is the summary for the record.
+
+=cut
+
+use constant summary_format => '%u';
+use constant summary_props => ();
+
+sub format_summary {
+    my $self = shift;
+    my $format = $self->summary_format;
+    my $uuid = $self->uuid;
+    $format =~ s/%u/$uuid/g;
+
+    return sprintf( $format, map { $self->prop($_) || "(no $_)" } $self->summary_props );
+
+}
+
 1;

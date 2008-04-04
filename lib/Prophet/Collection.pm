@@ -8,6 +8,7 @@ use base qw/Class::Accessor/;
 use overload '@{}' => \&as_array_ref, fallback => 1;
 
 __PACKAGE__->mk_accessors(qw'handle type');
+use constant record_class => 'Prophet::Record';
 use Prophet::Record;
 
 =head1 NAME
@@ -59,7 +60,7 @@ sub matching {
     # run coderef against each item;
     # if it matches, add it to _items
     foreach my $key ( keys %$nodes ) {
-        my $record = Prophet::Record->new( handle => $self->handle, type => $self->type );
+        my $record = $self->record_class->new({ handle => $self->handle, type => $self->type });
         $record->load( uuid => $key );
         if ( $coderef->($record) ) {
             push @{ $self->{_items} }, $record;
