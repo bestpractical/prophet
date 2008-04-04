@@ -7,8 +7,7 @@ package SVB;
 
 
 package SVB::Record; # should probably be Prophet::App::Record
-use base qw/Prophet::Record Class::Data::Inheritable/;
-__PACKAGE__->mk_classdata(REFERENCES => {});
+use base qw/Prophet::Record/;
 
 package SVB::Model::Ticket;
 use base qw/SVB::Record/;

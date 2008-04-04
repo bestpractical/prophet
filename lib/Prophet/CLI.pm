@@ -191,7 +191,6 @@ sub do_search {
     unless ( $regex = $cli->args->{regex} ) {
         die "Specify a regular expression and we'll search for records matching that regex";
     }
-
     my $record = $cli->_get_record;
     my $records = $record->collection_class->new( handle => $cli->handle, type => $cli->type );
     $records->matching(

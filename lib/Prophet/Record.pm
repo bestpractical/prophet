@@ -13,9 +13,10 @@ This class represents a base class for any record in a Prophet database
 
 =cut
 
-use base qw'Class::Accessor';
+use base qw'Class::Accessor Class::Data::Inheritable';
 
 __PACKAGE__->mk_accessors(qw'handle uuid type');
+__PACKAGE__->mk_classdata(REFERENCES => {});
 
 use Params::Validate;
 use Prophet::HistoryEntry;
@@ -37,7 +38,6 @@ sub new {
     my $class = shift;
     my $self  = bless {}, $class;
     my $args  = ref($_[0]) ? $_[0] : { @_ };
-    Carp::cluck unless $args->{type};
     $args->{type} ||= $class->record_type;
     my %args  = validate( @{[%$args]}, { handle => 1, type => 1 } );
     $self->$_( $args{$_} ) for keys(%args);
@@ -46,24 +46,28 @@ sub new {
 
 sub record_type { $_[0]->type }
 
-=head2 register_refers
+=head2 register_refers $accessor, $collection_class, by => $key_in_model
+
+Registers and create accessor in current class the associated
+collection C<$collection_class>, which refers to the current class by
+$key_in_model in the model class of $collection_class.
 
 =cut
 
 sub register_refers {
-    my ($class, $accessor, $model, @args) = @_;
+    my ($class, $accessor, $collection_class, @args) = @_;
     my %args = validate( @args, { by => 1 });
     no strict 'refs';
     *{$class."::$accessor"} = sub {
         my $self = shift;
-        my $collection = $model->new( handle => $self->handle, type => $model->record_class );
+        my $collection = $collection_class->new( handle => $self->handle, type => $collection_class->record_class );
         $collection->matching( sub { $_[0]->prop($args{by}) eq $self->uuid } );
         return $collection;
     };
     # XXX: add validater for $args{by} in $model->record_class
 
 
-    $class->REFERENCES->{$accessor} = { %args, type => $model->record_class };
+    $class->REFERENCES->{$accessor} = { %args, type => $collection_class->record_class };
 }
 
 
