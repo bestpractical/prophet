@@ -120,18 +120,22 @@ sub _recode_transactions {
     map { $create_state->{$_} =~ s/ minutes$// }  qw(TimeWorked TimeLeft TimeEstimated);
     my @changesets;
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
-        warn "HANDLING " . $txn->{id} . " " . $txn->{Type};
-
-
-        if (my $sub = $self->can('_recode_txn_'.$txn->{'Type'})) {
-        my $changeset = Prophet::ChangeSet->new(
-            {   original_source_uuid => $self->uuid,
-                original_sequence_no => $txn->{'id'},
-
-            }
-        );
-              $sub->($self, ticket => $ticket, create_state => $create_state, txn => $txn, changeset => $changeset);
+        if ( my $sub = $self->can( '_recode_txn_' . $txn->{'Type'} ) ) {
+            my $changeset = Prophet::ChangeSet->new(
+                {
+                    original_source_uuid => $self->uuid,
+                    original_sequence_no => $txn->{'id'},
+                }
+            );
+            $sub->( $self,
+                ticket       => $ticket,
+                create_state => $create_state,
+                txn          => $txn,
+                changeset    => $changeset );
             unshift @changesets, $changeset unless $changeset->is_empty;
+        }
+        else {
+            warn "not handling txn type $txn->{Type} for $txn->{id} (Ticket $args{ticket}{id}) yet";
         }
 
     }
