@@ -109,154 +109,23 @@ sub _recode_transactions {
     $ticket->{'uuid'} = "NEED A UUID HERE";
 
     my $create_state = $ticket;
+    map { $create_state->{$_} =~ s/ minutes$// }  qw(TimeWorked TimeLeft TimeEstimated);
     my @changesets;
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
         warn "HANDLING " . $txn->{id} . " " . $txn->{Type};
 
-        if ($txn->{'Type'}  =~ /^(?:EmailRecord)/) {
-            next;
-        }
-        elsif ( $txn->{'Type'} eq 'Status' ) {
-            $txn->{'Type'} = 'Set';
-        }
 
+        if (my $sub = $self->can('_recode_txn_'.$txn->{'Type'})) {
         my $changeset = Prophet::ChangeSet->new(
             {   original_source_uuid => $self->uuid,
                 original_sequence_no => $txn->{'id'},
 
             }
         );
-
-        if ( $txn->{'Type'} eq 'Set' ) {
-            my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->rt_url . "/Ticket/" . $create_state->{'id'},
-                    change_type => 'update_file'
-                }
-            );
-            $changeset->add_change( { change => $change } );
-            if ( $create_state->{ $txn->{Field} } eq $txn->{'NewValue'} ) {
-                $create_state->{ $txn->{Field} } = $txn->{'OldValue'};
-            } else {
-                die $create_state->{ $txn->{Field} } . " != " . $txn->{'NewValue'};
-            }
-            $change->add_prop_change(
-                name => $txn->{'Field'},
-                old  => $txn->{'OldValue'},
-                new  => $txn->{'NewValue'}
-
-            );
-
-        } elsif ( $txn->{'Type'} eq 'Create' ) {
-            my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->rt_url . "/Ticket/" . $create_state->{'id'},
-                    change_type => 'create_file'
-                }
-            );
-            $changeset->add_change( { change => $change } );
-            for my $name ( keys %$create_state ) {
-
-                $change->add_prop_change(
-                    name => $name,
-                    old  => undef,
-                    new  => $create_state->{$name},
-                );
-
-            }
-
-        } elsif ( $txn->{'Type'} eq 'AddLink' ) {
-            my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Link',
-                    node_uuid   => $self->rt_url . "/Link/" . $txn->{'id'},
-                    change_type => 'create_file'
-                }
-            );
-            $change->add_prop_change( name => 'url',    old => undef, new => $txn->{'NewValue'} );
-            $change->add_prop_change( name => 'type',   old => undef, new => $txn->{'Field'} );
-            $change->add_prop_change( name => 'ticket', old => undef, new => $ticket->{uuid} );
-        } elsif ( $txn->{'Type'} eq 'Correspond' ) {
-            my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Comment',
-                    node_uuid   => $self->rt_url . "/Transaction/" . $txn->{'id'},
-                    change_type => 'create_file'
-                }
-            );
-            $change->add_prop_change(
-                name => 'content',
-                old  => undef,
-                new  => $txn->{'Content'}
-            );
-            $change->add_prop_change(
-                name => 'ticket',
-                old  => undef,
-                new  => $ticket->{uuid},
-            );
-
-        } elsif ( $txn->{'Type'} eq 'AddWatcher' || $txn->{'Type'} eq 'DelWatcher' ) {
-
-            my $new_state = $create_state->{ $txn->{'Field'} };
-
-            $create_state->{ $txn->{'Field'} } = $self->warp_list_to_old_value(
-                $create_state->{ $txn->{'Field'} },
-
-                $self->resolve_user_id_to_email( $txn->{'NewValue'} ),
-                $self->resolve_user_id_to_email( $txn->{'OldValue'} )
-
-            );
-
-            my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->rt_url . "/Ticket/" . $create_state->{'id'},
-                    change_type => 'update_file'
-                }
-            );
-            $changeset->add_change( { change => $change } );
-            $change->add_prop_change(
-                name => $txn->{'Field'},
-                old  => $create_state->{ $txn->{'Field'} },
-                new  => $new_state
-            );
-
-        } elsif ( $txn->{'Type'} eq 'CustomField' ) {
-            my $new = $txn->{'NewValue'};
-            my $old = $txn->{'OldValue'};
-            my $name;
-            if ( $txn->{'Description'} =~ /^(.*) $new added by/ ) {
-                $name = $1;
-
-            } elsif ( $txn->{'Description'} =~ /^(.*) $old delete by/ ) {
-                $name = $1;
-            } else {
-                die "Uh. what to do with txn descriotion " . $txn->{'Description'};
-            }
-
-            $txn->{'Field'} = "CF-" . $name;
-
-            my $new_state = $create_state->{ $txn->{'Field'} };
-            $create_state->{ $txn->{'Field'} } = $self->warp_list_to_old_value( $create_state->{ $txn->{'Field'} },
-                $txn->{'NewValue'}, $txn->{'OldValue'} );
-
-            my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->url . "/Ticket/" . $create_state->{'id'},
-                    change_type => 'update_file'
-                }
-            );
-
-            $changeset->add_change( { change => $change } );
-            $change->add_prop_change(
-                name => $txn->{'Field'},
-                old  => $create_state->{ $txn->{'Field'} },
-                new  => $new_state
-            );
-
-
-        } else {
-            die "Don't know how to ahndle a " . YAML::Dump($txn);
+              $sub->($self, ticket => $ticket, create_state => $create_state, txn => $txn, changeset => $changeset);
+            unshift @changesets, $changeset unless $changeset->is_empty;
         }
 
-        unshift @changesets, $changeset;
     }
 
     return \@changesets;
@@ -264,6 +133,172 @@ sub _recode_transactions {
 }
 
 
+
+sub _recode_txn_EmailRecord {
+    return;
+}
+
+sub _recode_txn_Status {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1});
+
+            $args{txn}->{'Type'} = 'Set';
+
+        return $self->_recode_txn_Set(%args);
+    }
+
+
+
+
+
+sub _recode_txn_Set {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->rt_url . "/Ticket/" . $args{'create_state'}->{'id'},
+                    change_type => 'update_file'
+                }
+            );
+            $args{'changeset'}->add_change( { change => $change } );
+            if ( $args{'create_state'}->{ $args{txn}->{Field} } eq $args{txn}->{'NewValue'} ) {
+                $args{'create_state'}->{ $args{txn}->{Field} } = $args{txn}->{'OldValue'};
+            } else {
+                die $args{'create_state'}->{ $args{txn}->{Field} } . " != " . $args{txn}->{'NewValue'};
+            }
+            $change->add_prop_change(
+                name => $args{txn}->{'Field'},
+                old  => $args{txn}->{'OldValue'},
+                new  => $args{txn}->{'NewValue'}
+
+            );
+
+        }
+        
+sub _recode_txn_Create {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+        
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->rt_url . "/Ticket/" . $args{'create_state'}->{'id'},
+                    change_type => 'add_file'
+                }
+            );
+            $args{'changeset'}->add_change( { change => $change } );
+            for my $name ( keys %{$args{'create_state'}} ) {
+
+                $change->add_prop_change(
+                    name => $name,
+                    old  => undef,
+                    new  => $args{'create_state'}->{$name},
+                );
+
+            }
+        }
+
+sub _recode_txn_AddLink {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Link',
+                    node_uuid   => $self->rt_url . "/Link/" . $args{'txn'}->{'id'},
+                    change_type => 'add_file'
+                }
+            );
+            $change->add_prop_change( name => 'url',    old => undef, new => $args{'txn'}->{'NewValue'} );
+            $change->add_prop_change( name => 'type',   old => undef, new => $args{'txn'}->{'Field'} );
+            $change->add_prop_change( name => 'ticket', old => undef, new => $args{ticket}->{uuid} );
+        }
+sub _recode_txn_Correspond {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Comment',
+                    node_uuid   => $self->rt_url . "/Transaction/" . $args{'txn'}->{'id'},
+                    change_type => 'add_file'
+                }
+            );
+            $change->add_prop_change(
+                name => 'content',
+                old  => undef,
+                new  => $args{'txn'}->{'Content'}
+            );
+            $change->add_prop_change(
+                name => 'ticket',
+                old  => undef,
+                new  => $args{ticket}->{uuid},
+            );
+        }
+
+sub _recode_txn_AddWatcher {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+        
+
+            my $new_state = $args{'create_state'}->{ $args{'txn'}->{'Field'} };
+
+            $args{'create_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(
+                $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+
+                $self->resolve_user_id_to_email( $args{'txn'}->{'NewValue'} ),
+                $self->resolve_user_id_to_email( $args{'txn'}->{'OldValue'} )
+
+            );
+
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->rt_url . "/Ticket/" . $args{'create_state'}->{'id'},
+                    change_type => 'update_file'
+                }
+            );
+            $args{'changeset'}->add_change( { change => $change } );
+            $change->add_prop_change(
+                name => $args{'txn'}->{'Field'},
+                old  => $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+                new  => $new_state
+            );
+
+        }
+        
+*_recode_txn_DelWatcher  = \&_recode_txn_AddWatcher;
+sub _recode_txn_CustomField {
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+        
+            my $new = $args{'txn'}->{'NewValue'};
+            my $old = $args{'txn'}->{'OldValue'};
+            my $name;
+            if ( $args{'txn'}->{'Description'} =~ /^(.*) $new added by/ ) {
+                $name = $1;
+
+            } elsif ( $args{'txn'}->{'Description'} =~ /^(.*) $old delete by/ ) {
+                $name = $1;
+            } else {
+                die "Uh. what to do with txn descriotion " . $args{'txn'}->{'Description'};
+            }
+
+            $args{'txn'}->{'Field'} = "CF-" . $name;
+
+            my $new_state = $args{'create_state'}->{ $args{'txn'}->{'Field'} };
+            $args{'create_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value( $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+                $args{'txn'}->{'NewValue'}, $args{'txn'}->{'OldValue'} );
+
+            my $change = Prophet::Change->new(
+                {   node_type   => 'RT_Ticket',
+                    node_uuid   => $self->url . "/Ticket/" . $args{'create_state'}->{'id'},
+                    change_type => 'update_file'
+                }
+            );
+
+            $args{'changeset'}->add_change( { change => $change } );
+            $change->add_prop_change(
+                name => $args{'txn'}->{'Field'},
+                old  => $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+                new  => $new_state
+            );
+        }
 sub resolve_user_id_to_email {
     my $self  = shift;
     my $id = shift;
