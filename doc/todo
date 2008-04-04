@@ -1,6 +1,9 @@
 
 Todo
 
+- refactor Source::integrate_changeset to get the merge ticket and let the source(dst) decide how to record them, rather than having handle does the job
+- also need to send along all merge tickets we have
+
 
 -  ::CLI should automatically discover an app's model class based on the type name @done
 - Creation of bug tracking model classes @done
@@ -67,8 +70,8 @@ Bug tracker:
      comments		RT: comment/correspond
    					RT: Queue
    					RT: priority
-   					RT: initial_priority
-   					RT: final_priority
+   NO					RT: initial_priority
+   NO					RT: final_priority
    					RT: time_estimated
    					RT: time_worked
    					RT: time_left
@@ -77,7 +80,7 @@ Bug tracker:
    					RT: started
    					RT: lastupdated
    					RT: resolved
-   					RT: told (last user contact)
+    NO				RT: told (last user contact)
 [csv] 				RT: links * many
 [csv]   				DependsOn
 [csv]   				DependedOnBy

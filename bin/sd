@@ -122,9 +122,20 @@ sub cmd_push {
 
     # Trivial first pass:
 #    only support pull
-    
+    my $url = shift @ARGV;
+    my $source = Prophet::Sync::Source->new( { url => 'file://'.$CLI->handle->repo_path } );
+    my $target = Prophet::Sync::Source->new( { url => $url });
+#    my $changesets = $source->new_changesets_for($target);
+    my $changesets = $source->new_changesets_for($target);
+    warn Dumper($changesets); use Data::Dumper;
+
+# handle: record_changeset_integration
+#    $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no );
+
+    $target->record_changeset_integration( $_->original_source_uuid, $_->original_sequence_no) for @$changesets;
 
 }
+
 
 sub cmd_pull {
     my $url = shift @ARGV;

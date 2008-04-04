@@ -109,7 +109,7 @@ sub fetch_changesets {
             )
             };
     }
-    die 'not yet';
+#    die 'not yet';
     my @results = map { $self->translate_prop_names($_) } sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets;
     return \@results;
 }
@@ -464,14 +464,18 @@ Returns the last changeset id seen from the source identified by $SOURCE_UUID
 
 sub last_changeset_from_source {
     my $self = shift;
-    my ($source) = validate_pos( @_, { type => SCALAR } );
-    my ( $stream, $pool );
+    my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
 
-    my $filename = join( "/", $self->prophet_handle->db_root, $Prophet::Handle::MERGETICKET_METATYPE, $source );
-    my ( $rev_fetched, $props )
-        = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
-    return ( $props->{'last-changeset'} || 0 );
+    use App::Cache;
+    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+    return $cache->get($self->uuid.'-'.$source) || 0;
+}
 
+sub record_changeset_integration {
+    my ($self, $source_uuid, $source_seq) = @_;
+
+    my $cache = App::Cache->new({ ttl => 60*60 }); # la la la
+    return $cache->set($self->uuid.'-'.$source_uuid, $source_seq);
 }
 
 sub warp_list_to_old_value {
