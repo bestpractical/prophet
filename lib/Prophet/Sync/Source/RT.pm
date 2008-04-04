@@ -114,7 +114,6 @@ sub _recode_transactions {
 
     my $ticket = $args{'ticket'};
 
-    $ticket->{'uuid'} = "NEED A UUID HERE";
 
     my $create_state = $ticket;
     map { $create_state->{$_} =~ s/ minutes$// }  qw(TimeWorked TimeLeft TimeEstimated);
@@ -136,6 +135,7 @@ sub _recode_transactions {
         }
         else {
             warn "not handling txn type $txn->{Type} for $txn->{id} (Ticket $args{ticket}{id}) yet";
+            die YAML::Dump($txn);
         }
 
     }
@@ -182,6 +182,10 @@ sub _recode_txn_Set {
                 $args{txn}->{NewValue} = $current_queue;
             }
 
+        } elsif ( $args{txn}->{Field} eq 'Owner') {
+                $args{'txn'}->{NewValue} = $self->resolve_user_id_to(name => $args{'txn'}->{'NewValue'} ),
+                $args{'txn'}->{OldValue} = $self->resolve_user_id_to(name => $args{'txn'}->{'OldValue'} )
+                
         }
 
 
@@ -200,7 +204,9 @@ sub _recode_txn_Set {
 
         }
 
-
+*_recode_txn_Steal = \&_recode_txn_Set;
+*_recode_txn_Take = \&_recode_txn_Set;
+*_recode_txn_Give = \&_recode_txn_Set;
 
         
 sub _recode_txn_Create {
@@ -270,8 +276,8 @@ sub _recode_txn_AddWatcher {
             $args{'create_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(
                 $args{'create_state'}->{ $args{'txn'}->{'Field'} },
 
-                $self->resolve_user_id_to_email( $args{'txn'}->{'NewValue'} ),
-                $self->resolve_user_id_to_email( $args{'txn'}->{'OldValue'} )
+                $self->resolve_user_id_to( email => $args{'txn'}->{'NewValue'} ),
+                $self->resolve_user_id_to( email => $args{'txn'}->{'OldValue'} )
 
             );
 
@@ -327,17 +333,18 @@ sub _recode_txn_CustomField {
                 new  => $new_state
             );
         }
-sub resolve_user_id_to_email {
+sub resolve_user_id_to {
     my $self  = shift;
+    my $attr = shift;
     my $id = shift;
     return undef unless ($id);
      
      my $user = RT::Client::REST::User->new(rt => $self->rt, id =>  $id)->retrieve;
-     return $user->email_address;
+     return  $attr eq 'name' ? $user->name : $user->email_address;
 
 }
 
-memoize 'resolve_user_id_to_email';
+memoize 'resolve_user_id_to';
 
 
 sub _find_matching_tickets {
