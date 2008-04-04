@@ -76,7 +76,7 @@ sub record_pushed_transactions {
                                     rt => $self->rt, 
                                     id => $args{'ticket'} )->transactions->get_iterator->()
                             ) {
-            last if $txn->id <= $self->last_changeset_from_source( $changeset->original_source_uuid  );
+            last if $txn->id <= $self->last_changeset_from_source( $args{changeset}->original_source_uuid  );
             $self->record_pushed_transaction(transaction => $txn->id, changeset => $args{'changeset'});
         }
 }

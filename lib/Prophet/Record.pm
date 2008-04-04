@@ -63,7 +63,7 @@ sub register_reference {
             @args
         );
     } elsif ( $foreign_class->isa('Prophet::Record') ) {
-        warn "not yet";
+#        warn "not yet";
     } else {
         die "wtf";
     }
