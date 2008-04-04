@@ -258,17 +258,29 @@ sub _recode_txn_Create {
 sub _recode_txn_AddLink {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1 } );
-    warn "Recode links to actually be attributes rather than another table";
+    my $new_state = $args{'create_state'}->{ $args{'txn'}->{'Field'} };
+    $args{'create_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(  $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+                 $args{'txn'}->{'NewValue'},    $args{'txn'}->{'OldValue'});
+
     my $change = Prophet::Change->new(
-        {   node_type   => 'rt_link',
-            node_uuid   => $self->uuid_for_url( $self->rt_url . "/link/" . $args{'txn'}->{'id'} ),
-            change_type => 'add_file'
+        {   node_type   => 'ticket',
+            node_uuid   => $self->uuid_for_url( $self->rt_url . "/ticket/" . $args{'create_state'}->{'id'} ),
+            change_type => 'update_file'
         }
     );
     $args{'changeset'}->add_change( { change => $change } );
-    $change->add_prop_change( name => 'url',    old => undef, new => $args{'txn'}->{'NewValue'} );
-    $change->add_prop_change( name => 'type',   old => undef, new => $args{'txn'}->{'Field'} );
-    $change->add_prop_change( name => 'ticket', old => undef, new => $args{ticket}->{uuid} );
+    $change->add_prop_change(
+        name => $args{'txn'}->{'Field'},
+        old  => $args{'create_state'}->{ $args{'txn'}->{'Field'} },
+        new  => $new_state
+    );
+
+    
+    
+    
+    
+    
+    
 }
 
 sub _recode_content_update {
@@ -515,6 +527,30 @@ sub date_to_iso {
     return $t->ymd . " " . $t->hms;
 }
 
+
+our %PROP_MAP = (
+    subject => 'summary',
+    status => 'status',
+    owner => 'owner',
+    initialpriority => '_delete',
+    finalpriority => '_delete',
+    told => '_delete',
+    requestors => 'reported_by',
+    admincc => 'admin_cc',
+    refersto => 'refers_to',
+    referredtoby => 'referred_to_by',
+    dependson => 'depends_on',
+    dependedonby => 'depended_on_by',
+    hasmember => 'members',
+    memberof => 'member_of',
+    priority => 'priority_integer',
+    
+    resolved => 'completed',
+    lastupdated => '_delete',
+    created => '_delete', # we should be porting the create date as a metaproperty
+    
+);
+
 sub translate_prop_names {
     my $self = shift;
     my $changeset = shift;
@@ -522,7 +558,31 @@ sub translate_prop_names {
     for my $change (@{$changeset->changes}) {
         next unless $change->node_type eq 'ticket';
         
-#        for my $prop
+    
+        my @new_props;
+
+        for my $prop (@$change->prop_changes) {
+            next if $PROP_MAP{lc{$prop->name}} eq '_delete';
+            $prop->name($PROP_MAP{lc($prop->name)}) if $PROP_MAP{lc($prop->name)};
+
+        if ($prop->name eq 'id') {
+                $prop->old_value($prop->old_value.'@'.$self->changeset->original_source_uuid) if $prop->old_value =~ /^\d+$/;
+                $prop->old_value($prop->new_value.'@'.$self->changeset->original_source_uuid) if $prop->new_value =~ /^\d+$/;
+
+                
+                }
+
+
+        if ($prop->name =~ /^cf-(.*)$/) {
+                    $prop->name('custom-'.$1);
+        };
+
+            push @new_props, $prop;
+            
+            
+        }
+        $change->prop_changes(\@new_props);
+
         
     }
 

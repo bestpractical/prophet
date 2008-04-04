@@ -70,8 +70,8 @@ Bug tracker:
      comments		RT: comment/correspond
    					RT: Queue
    					RT: priority
-   					RT: initial_priority
-   					RT: final_priority
+   NO					RT: initial_priority
+   NO					RT: final_priority
    					RT: time_estimated
    					RT: time_worked
    					RT: time_left
@@ -80,7 +80,7 @@ Bug tracker:
    					RT: started
    					RT: lastupdated
    					RT: resolved
-   					RT: told (last user contact)
+    NO				RT: told (last user contact)
 [csv] 				RT: links * many
 [csv]   				DependsOn
 [csv]   				DependedOnBy

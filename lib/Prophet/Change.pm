@@ -31,14 +31,15 @@ The UUID of the node being changed
 One of create_file, add_dir, update_file, delete
 XXX TODO is it create_file or add_file?
 
-=head2 prop_changes
+=head2 prop_changes [\@PROPCHANGES]
 
-Returns a list of L<Prophet::PropChange/> associated with this Change
+Returns a list of L<Prophet::PropChange/> associated with this Change. Takes an optional arrayref to fully replace the set of propcahnges
 
 =cut
 
 sub prop_changes {
     my $self = shift;
+    $self->{prop_changes} = shift if @_;
     return @{ $self->{prop_changes} || [] };
 }
 
