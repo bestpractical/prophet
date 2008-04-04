@@ -290,20 +290,42 @@ sub fetch_resolutions {
     return $records;
 }
 
-=head2 news_changesets_for
+=head2 news_changesets_for Prophet::Sync::Source
 
-Returns the local changesets that are new to the replica $other.
+Returns the local changesets that have not yet been seen by the replica we're passing in.
 
 =cut
 
 sub new_changesets_for {
-    my ( $self, $other ) = @_;
+    my $self = shift;
+    my (  $other ) = validate_pos(@_, { isa => 'Prophet::Sync::Source'});
 
-    my $since = $other->last_changeset_from_source( $self->uuid );
-
-    return [ grep { !( $_->is_nullification || $_->is_resolution ) && !$other->has_seen_changeset($_) }
-            @{ $self->fetch_changesets( after => $since ) } ];
-
+    return [ 
+        grep { $self->should_send_changeset( changeset => $_, to => $other ) }
+                    @{ $self->fetch_changesets( after => $other->last_changeset_from_source( $self->uuid ) ) } 
+        ];
 }
+
+=head2 should_send_changeset { to => Prophet::Sync::Source, changeset => Prophet::ChangeSet }
+
+Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>
+
+
+=cut
+
+sub should_send_changeset {
+    my $self = shift;
+    my %args = validate(@_, { to => { isa => 'Prophet::Sync::Source'}, changeset =>{ isa=> 'Prophet::ChangeSet' }});
+    
+     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
+     return undef if $args{'to'}->has_seen_changeset($args{'changeset'});
+     
+    return 1;     
+}
+
+    
+    
+    
+
 
 1;

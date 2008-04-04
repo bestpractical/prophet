@@ -1,33 +1,26 @@
-
 Todo
+
+
+- prophet databases need uuids.
+    - each replica should know the uuid of the database it is a replica of
+    - merging between replicas with different uuids should require a 'force' argument of some kind.
 
 - refactor Source::integrate_changeset to get the merge ticket and let the source(dst) decide how to record them, rather than having handle does the job
 - also need to send along all merge tickets we have
 
 
--  ::CLI should automatically discover an app's model class based on the type name @done
-- Creation of bug tracking model classes @done
 - validation on bug tracker fields
-	- status @done
 	- severity
 
 - ability to add comments to a bug (visible history entries)
-    - relations between models @done
     - maybe long-prop edits
 
 - push to a remote prophet
-    - find out what the remote _would_ pull by inspecting its merge tickets on  @done
-            - current replica @done
-        - once we do that, we can find out who _we_ have synced from after that point, right? Then we want: @done
-            - anyone we have a merge ticket for _since_ the last time the other party saw us. @done
             
     - bundle all changesets newer than that which we know the other party hasn't seen up as a serialized structure (FeedSync? Storable ;)?)
     - send them to remote to "pull from textfile
-    - nobu @done
 
 - pull from a remote RT by url and query
-    - get RT to give us a list of ticket records matching our query @done
-    - get rt ro give us a list of history entries on those ticket records @done
     - be able to tell RT to only give us history entries newer than the $DATE of RT history entry with ID #1234 (which is the sequence number we used for the merge ticket from the remote RT).
 
     - massage this crap into a sequence of prophet changesets
@@ -58,54 +51,8 @@ Todo
 
 
 
-Bug tracker:
+Archive:
 
-     summary  		RT: subject
-     status			RT: status(new,open,stalled,resolved, rejected)
-     severity		
-     custom fields	RT: cf-*
-     owner			RT: owner
-     keywords/tags	 
-[csv]reported by		RT: requestors
-     comments		RT: comment/correspond
-   					RT: Queue
-   					RT: priority
-   NO					RT: initial_priority
-   NO					RT: final_priority
-   					RT: time_estimated
-   					RT: time_worked
-   					RT: time_left
-[dt]				RT: created
-[dt]    			RT: starts
-   					RT: started
-   					RT: lastupdated
-   					RT: resolved
-    NO				RT: told (last user contact)
-[csv] 				RT: links * many
-[csv]   				DependsOn
-[csv]   				DependedOnBy
-[csv]   				RefersTo
-[csv]   				ReferredToBy
-[csv]					MemberOf
-[csv]					HasMember
-   					
-[csv]  				RT: admin_ccs
-[csv]				RT: ccs
-   		
-   		
-				
-   		
-   					
-    attachments / patches
-    
-    milestones?
-    custom fields with possible values - loaded from some other record/table
-    
-    comments
-        seperate records referring to the ticket uuid
-        
-
-Done, I think.
 
 - when committing any change:
     - record the original depot uuid and change sequence_no as revprops
@@ -126,3 +73,14 @@ Done, I think.
 - handle conflicting conflict resolutions
 - base bug tracking schema
 
+-  ::CLI should automatically discover an app's model class based on the type name @done
+- Creation of bug tracking model classes @done
+	- status @done
+    - relations between models @done
+    - find out what the remote _would_ pull by inspecting its merge tickets on  @done
+            - current replica @done
+        - once we do that, we can find out who _we_ have synced from after that point, right? Then we want: @done
+            - anyone we have a merge ticket for _since_ the last time the other party saw us. @done
+    - nobu @done
+    - get RT to give us a list of ticket records matching our query @done
+    - get rt ro give us a list of history entries on those ticket records @done

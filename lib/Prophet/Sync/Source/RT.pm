@@ -76,11 +76,27 @@ sub record_pushed_transactions {
                                     rt => $self->rt, 
                                     id => $args{'ticket'} )->transactions->get_iterator->()
                             ) {
-            last if $txn->id <= $self->last_changeset_from_source();
+            last if $txn->id <= $self->last_changeset_from_source( $changeset->original_source_uuid  );
             $self->record_pushed_transaction(transaction => $txn->id, changeset => $args{'changeset'});
         }
 }
 
+=head2 prophet_has_seen_transaction $transaction_id
+
+Given an transaction id, will return true if this transaction originated in Prophet 
+and was pushed to RT or originated in RT and has already been pulled to the prophet replica.
+
+=cut
+
+sub  prophet_has_seen_transaction {
+    my $self = shift;
+    my ($id) = validate_pos(@_, 1 );
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                
+    return $cache->get(
+        $self->uuid,
+        '-txn-' . $id)
+         
+}
 
 sub record_pushed_transaction {
     my $self  = shift;
@@ -97,18 +113,28 @@ sub record_pushed_transaction {
     );
 }
 
+
 sub get_remote_id_for {
     my ( $self, $ticket_uuid ) = @_;
-
     # XXX: should not access CLI handle
     my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
     $ticket->load( uuid => $ticket_uuid );
     return $ticket->prop( $self->uuid . '-id' );
 }
 
+
+
+=head2 has_seen_changeset Prophet::ChangeSet
+
+Returns true if the RT instance we're pushing to has seen the changeset we've passed in.
+
+
+=cut
+
 sub has_seen_changeset {
-    my ( $self, $changeset ) = @_;
-    # XXXX: this is actually not right, because new_changesets_for
+    my $self = shift;
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+        # XXXX: this is actually not right, because new_changesets_for
     # is calling has_seen_changeset on $other, rather than us
     my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
     my $txn_id = $changeset->original_sequence_no;
@@ -116,7 +142,6 @@ sub has_seen_changeset {
     # XXX: extract the original txn id from $changeset
     #    warn "===> ? ".$self->uuid,'-txn-'.$txn_id;
     my $ret = $cache->get( $self->uuid, '-txn-' . $txn_id );
-
     #    warn "==> $ret";
     return $ret;
 }
@@ -635,6 +660,9 @@ sub _find_matching_transactions {
     my $ticket = shift;
     my @txns;
     for my $txn ( $self->rt->get_transaction_ids( parent_id => $ticket ) ) {
+    
+        next if $self->prophet_has_seen_transaction($txn);    
+    
         push @txns, $self->rt->get_transaction( parent_id => $ticket, id => $txn, type => 'ticket' );
     }
     return \@txns;
