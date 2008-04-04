@@ -168,16 +168,28 @@ sub _recode_txn_Set {
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
 
             my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->rt_url . "/Ticket/" . $args{'create_state'}->{'id'},
+                {   node_type   => 'ticket',
+                    node_uuid   =>  $self->uuid_for_url ( $self->rt_url . "/ticket/" . $args{'create_state'}->{'id'}),
                     change_type => 'update_file'
                 }
             );
+
+        if ( $args{txn}->{Field} eq 'Queue') {
+            my $current_queue = $args{ticket}->{'Queue'};
+            my $user = $args{txn}->{Creator};
+            if ($args{txn}->{Description} =~ /Queue changed from (.*) to $current_queue by $user/) {
+                $args{txn}->{OldValue} = $1;
+                $args{txn}->{NewValue} = $current_queue;
+            }
+
+        }
+
+
             $args{'changeset'}->add_change( { change => $change } );
             if ( $args{'create_state'}->{ $args{txn}->{Field} } eq $args{txn}->{'NewValue'} ) {
                 $args{'create_state'}->{ $args{txn}->{Field} } = $args{txn}->{'OldValue'};
             } else {
-                die $args{'create_state'}->{ $args{txn}->{Field} } . " != " . $args{txn}->{'NewValue'};
+                die $args{'create_state'}->{ $args{txn}->{Field} } . " != " . $args{txn}->{'NewValue'}."\n\n".YAML::Dump(\%args);
             }
             $change->add_prop_change(
                 name => $args{txn}->{'Field'},
@@ -187,14 +199,17 @@ sub _recode_txn_Set {
             );
 
         }
+
+
+
         
 sub _recode_txn_Create {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
         
             my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->rt_url . "/Ticket/" . $args{'create_state'}->{'id'},
+                {   node_type   => 'ticket',
+                    node_uuid   =>  $self->uuid_for_url ( $self->rt_url . "/ticket/" . $args{'create_state'}->{'id'}),
                     change_type => 'add_file'
                 }
             );
@@ -213,9 +228,10 @@ sub _recode_txn_Create {
 sub _recode_txn_AddLink {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
+    warn "Recode links to actually be attributes rather than another table";
             my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Link',
-                    node_uuid   => $self->rt_url . "/Link/" . $args{'txn'}->{'id'},
+                {   node_type   => 'rt_link',
+                    node_uuid   =>  $self->uuid_for_url ( $self->rt_url . "/link/" . $args{'txn'}->{'id'}),
                     change_type => 'add_file'
                 }
             );
@@ -227,8 +243,8 @@ sub _recode_txn_Correspond {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset=>1});
             my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Comment',
-                    node_uuid   => $self->rt_url . "/Transaction/" . $args{'txn'}->{'id'},
+                {   node_type   => 'rt_comment',
+                    node_uuid   => $self->uuid_for_url($self->rt_url . "/transaction/" . $args{'txn'}->{'id'}),
                     change_type => 'add_file'
                 }
             );
@@ -260,8 +276,8 @@ sub _recode_txn_AddWatcher {
             );
 
             my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->rt_url . "/Ticket/" . $args{'create_state'}->{'id'},
+                {   node_type   => 'ticket',
+                    node_uuid   => $self->uuid_for_url($self->rt_url . "/ticket/" . $args{'create_state'}->{'id'}),
                     change_type => 'update_file'
                 }
             );
@@ -298,8 +314,8 @@ sub _recode_txn_CustomField {
                 $args{'txn'}->{'NewValue'}, $args{'txn'}->{'OldValue'} );
 
             my $change = Prophet::Change->new(
-                {   node_type   => 'RT_Ticket',
-                    node_uuid   => $self->url . "/Ticket/" . $args{'create_state'}->{'id'},
+                {   node_type   => 'ticket',
+                    node_uuid   => $self->uuid_for_url($self->url . "/Ticket/" . $args{'create_state'}->{'id'}),
                     change_type => 'update_file'
                 }
             );
