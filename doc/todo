@@ -2,27 +2,29 @@
 Todo
 
 
--  ::CLI should automatically discover an app's model class based on the type name
-- Creation of bug tracking model classes
-- validation on bug tracker fields (status/severity)
+-  ::CLI should automatically discover an app's model class based on the type name @done
+- Creation of bug tracking model classes @done
+- validation on bug tracker fields
+	- status @done
+	- severity
 
 - ability to add comments to a bug (visible history entries)
-    - relations between models
+    - relations between models @done
     - maybe long-prop edits
 
 - push to a remote prophet
-    - find out what the remote _would_ pull by inspecting its merge tickets on 
-            - current replica
-        - once we do that, we can find out who _we_ have synced from after that point, right? Then we want:
-            - anyone we have a merge ticket for _since_ the last time the other party saw us.
+    - find out what the remote _would_ pull by inspecting its merge tickets on  @done
+            - current replica @done
+        - once we do that, we can find out who _we_ have synced from after that point, right? Then we want: @done
+            - anyone we have a merge ticket for _since_ the last time the other party saw us. @done
             
     - bundle all changesets newer than that which we know the other party hasn't seen up as a serialized structure (FeedSync? Storable ;)?)
     - send them to remote to "pull from textfile
-    - nobu
+    - nobu @done
 
 - pull from a remote RT by url and query
-    - get RT to give us a list of ticket records matching our query
-    - get rt ro give us a list of history entries on those ticket records
+    - get RT to give us a list of ticket records matching our query @done
+    - get rt ro give us a list of history entries on those ticket records @done
     - be able to tell RT to only give us history entries newer than the $DATE of RT history entry with ID #1234 (which is the sequence number we used for the merge ticket from the remote RT).
 
     - massage this crap into a sequence of prophet changesets
