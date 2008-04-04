@@ -8,7 +8,7 @@ use base qw/Prophet::Record/;
 sub new { shift->SUPER::new( @_, type => 'bug') }
 
 
-sub validate_name { 
+sub validate_prop_name { 
     my $self = shift;
     my %args = (@_);
 
@@ -18,7 +18,7 @@ sub validate_name {
 
 }
 
-sub canonicalize_email {
+sub canonicalize_prop_email {
     my $self = shift;
     my %args = (@_);
     $args{props}->{email} = lc($args{props}->{email});

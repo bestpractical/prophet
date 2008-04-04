@@ -15,8 +15,12 @@ use base qw/SVB::Record/;
 use constant collection_class => 'SVB::Collection::Ticket';
 use constant record_type => 'ticket';
 
+
 use constant summary_format => '%u %s %s';
 use constant summary_props => qw(summary status);
+
+
+
 
 sub validate_status {
     my ($self, %args) = @_;
@@ -34,11 +38,10 @@ sub validate_status {
 #has status
 #has owner
 
-__PACKAGE__->register_refers( comments => 'SVB::Collection::Comment',
+__PACKAGE__->register_reference( comments => 'SVB::Collection::Comment',
                               by => 'ticket'
                             );
-use Params::Validate;
-
+                            
 package SVB::Model::Comment;
 use base qw/SVB::Record/;
 
@@ -50,8 +53,13 @@ use constant summary_props => qw(content);
 
 #has SVK::Model::Ticket;
 
+__PACKAGE__->register_reference( ticket => 'SVB::Model::Comment');
+
+
 package SVB::Collection::Ticket;
 use base 'Prophet::Collection';
+
+
 
 use constant record_class => 'SVB::Model::Ticket';
 

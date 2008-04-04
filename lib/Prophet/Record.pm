@@ -17,14 +17,16 @@ use base qw'Class::Accessor Class::Data::Inheritable';
 
 __PACKAGE__->mk_accessors(qw'handle uuid type');
 __PACKAGE__->mk_classdata(REFERENCES => {});
+__PACKAGE__->mk_classdata(declared_props => {});
 
 use Params::Validate;
 use Prophet::HistoryEntry;
 use Data::UUID;
-
+use List::MoreUtils qw/uniq/;
 my $UUIDGEN = Data::UUID->new();
 
 use constant collection_class => 'Prophet::Collection';
+
 
 =head1 METHODS
 
@@ -46,7 +48,7 @@ sub new {
 
 sub record_type { $_[0]->type }
 
-=head2 register_refers $accessor, $collection_class, by => $key_in_model
+=head2 register_reference $accessor, $collection_class, by => $key_in_model
 
 Registers and create accessor in current class the associated
 collection C<$collection_class>, which refers to the current class by
@@ -54,7 +56,7 @@ $key_in_model in the model class of $collection_class.
 
 =cut
 
-sub register_refers {
+sub register_reference {
     my ($class, $accessor, $collection_class, @args) = @_;
     my %args = validate( @args, { by => 1 });
     no strict 'refs';
@@ -88,8 +90,8 @@ sub create {
     my %args = validate( @_, { props => 1 } );
     my $uuid = $UUIDGEN->create_str;
 
-    $self->_canonicalize_props( $args{'props'} );
-    $self->_validate_props( $args{'props'} ) or return undef;
+    $self->canonicalize_props( $args{'props'} );
+    $self->validate_props( $args{'props'} ) or return undef;
 
     $self->uuid($uuid);
 
@@ -145,8 +147,8 @@ sub set_props {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
 
-    $self->_canonicalize_props( $args{'props'} );
-    $self->_validate_props( $args{'props'} );
+    $self->canonicalize_props( $args{'props'} );
+    $self->validate_props( $args{'props'} );
     $self->handle->set_node_props( type => $self->type, uuid => $self->uuid, props => $args{'props'} );
 }
 
@@ -202,13 +204,14 @@ sub delete {
 
 }
 
-sub _validate_props {
+
+sub validate_props {
     my $self   = shift;
     my $props  = shift;
     my $errors = {};
-    for my $key ( keys %$props ) {
+    for my $key ( uniq(keys %$props, $self->declared_props) ) {
         return undef unless ( $self->_validate_prop_name($key) );
-        if ( my $sub = $self->can( 'validate_' . $key ) ) {
+        if ( my $sub = $self->can( 'validate_prop_' . $key ) ) {
             $sub->( $self, props => $props, errors => $errors ) or die "validation error on $key: $errors->{$key}\n";
         }
     }
@@ -217,12 +220,12 @@ sub _validate_props {
 
 sub _validate_prop_name {1}
 
-sub _canonicalize_props {
+sub canonicalize_props {
     my $self   = shift;
     my $props  = shift;
     my $errors = {};
-    for my $key ( keys %$props ) {
-        if ( my $sub = $self->can( 'canonicalize_' . $key ) ) {
+    for my $key ( uniq(keys %$props, $self->declared_props) ) {
+        if ( my $sub = $self->can( 'canonicalize_prop_' . $key ) ) {
             $sub->( $self, props => $props, errors => $errors );
         }
     }

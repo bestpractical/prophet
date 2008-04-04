@@ -152,10 +152,10 @@ sub _recode_transactions {
 }
 
 
-
-sub _recode_txn_EmailRecord {
-    return;
-}
+sub _recode_txn_EmailRecord { return ;}
+sub _recode_txn_AddReminder { return ;}
+sub _recode_txn_ResolveReminder { return ;}
+sub _recode_txn_DeleteLink {}
 
 sub _recode_txn_Status {
     my $self = shift;
