@@ -101,6 +101,7 @@ sub import_resolutions_from_remote_replica {
     my $source = $args{'from'};
 
     return unless $self->ressource;
+    return unless $source->ressource;
 
     $self->ressource->import_changesets(
         from     => $source->ressource,

@@ -109,15 +109,9 @@ sub setup {
         print "\n";
     }
     $self->rt->login( username => $username, password => $password );
-    my $orz = tempdir();
-    $self->{___Orz} = $orz;
-    SVN::Repos::create( $orz, undef, undef, undef, undef );
-    $self->ressource( __PACKAGE__->new( { url => "file://$orz", is_resdb => 1 } ) );
-    
-    warn "WE NEED A STATE HANDLE FOR REAL";
+
     my $cli = Prophet::CLI->new();
-    $self->state_handle($cli->_handle);
-    
+    $self->state_handle( $cli->get_handle_for_replica( $self, 'state' ) );
 }
 
 

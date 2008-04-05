@@ -35,6 +35,10 @@ sub handle {
     return $self->_handle();
 }
 
+=head2 hesdb_handle
+
+=cut
+
 sub resdb_handle {
     my $self = shift;
     unless ( $self->_resdb_handle ) {
@@ -42,6 +46,19 @@ sub resdb_handle {
         $self->_resdb_handle( Prophet::Handle->new( repository => $root ) );
     }
     return $self->_resdb_handle();
+}
+
+
+=head2 get_handle_for_replica($replica, $db_root)
+
+for a foreign $replica, this returns a Prophet::Handle for local storage that are based in db_root
+
+=cut
+
+sub get_handle_for_replica {
+    my ($self, $replica, $db_root) = @_;
+    my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ).'/_prophet_replica/'.$replica->uuid;
+    return Prophet::Handle->new( repository => $root, db_root => $db_root );
 }
 
 =head2 _record_cmd
