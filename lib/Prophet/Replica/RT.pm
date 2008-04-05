@@ -2,7 +2,7 @@ use warnings;
 use strict;
 
 package Prophet::Replica::RT;
-use base qw/Prophet::Replica/;
+use base qw/Prophet::ForeignReplica/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use RT::Client::REST       ();
@@ -11,7 +11,6 @@ use RT::Client::REST::Ticket;
 use Memoize;
 use Prophet::Handle;
 use Prophet::ChangeSet;
-use Prophet::Conflict;
 use Prophet::Replica::RT::PullEncoder;
 use App::Cache;
 
