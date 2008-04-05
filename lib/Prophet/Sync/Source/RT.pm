@@ -63,11 +63,14 @@ SD::Source::RT->recode_ticket
 sub conflicts_from_changeset { return; }
 sub accepts_changesets       {1}
 
-my $source_cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+my $SOURCE_CACHE = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+# "Remote bookkeeping merge tickets."
+# recording a merge ticket locally on behalf of the source ($self)
+# Prophet::Record type '_remote_merge_tickets'? 
 
 sub record_changeset_integration {
     my ( $self, $source_uuid, $source_seq ) = @_;
-    return $source_cache->set( $self->uuid . '-' . $source_uuid, $source_seq );
+    return $SOURCE_CACHE->set( $self->uuid . '-' . $source_uuid => $source_seq );
 }
 
 =head2 last_changeset_from_source $SOURCE_UUID
@@ -79,7 +82,7 @@ Returns the last changeset id seen from the source identified by $SOURCE_UUID
 sub last_changeset_from_source {
     my $self = shift;
     my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
-    return $source_cache->get( $self->uuid . '-' . $source_uuid ) || 0;
+    return $SOURCE_CACHE->get( $self->uuid . '-' . $source_uuid ) || 0;
 }
 
 sub record_integration_changeset {
@@ -115,19 +118,26 @@ and was pushed to RT or originated in RT and has already been pulled to the prop
 
 =cut
 
-my $txn_cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+my $TXN_CACHE = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+# This is a cache of all the transactions we have pushed to the remote replica
+# we'll only ever care about remote sequence #s greater than the last transaction # we've pulled from the remote replica
+# once we've done a pull from the remote replica, we can safely expire all records of this type for the remote replica 
+# (they'll be obsolete)
+
+# we use this cache to avoid integrating changesets we've pushed to the remote replica when doing a subsequent pull
+
 
 sub prophet_has_seen_transaction {
     my $self = shift;
     my ($id) = validate_pos( @_, 1 );
-    return $txn_cache->get( $self->uuid . '-txn-' . $id );
+    return $TXN_CACHE->get( $self->uuid . '-txn-' . $id );
 }
 
 sub record_pushed_transaction {
     my $self = shift;
     my %args = validate( @_, { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
 
-    $txn_cache->set( $self->uuid . '-txn-'
+    $TXN_CACHE->set( $self->uuid . '-txn-'
             . $args{transaction} =>
             join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no ) );
 }
@@ -145,7 +155,7 @@ sub has_seen_changeset {
 
     # XXXX: this is actually not right, because new_changesets_for
     # is calling has_seen_changeset on $other, rather than us
-    my $ret = $txn_cache->get( $self->uuid . '-txn-' . $changeset->original_sequence_no );
+    my $ret = $TXN_CACHE->get( $self->uuid . '-txn-' . $changeset->original_sequence_no );
     return $ret;
 }
 
@@ -158,21 +168,21 @@ sub record_changeset {
 
 }
 
-my $ticket_cache = App::Cache->new( { ttl => 60 * 60 } );
+my $TICKET_CACHE = App::Cache->new( { ttl => 60 * 60 } );
 
-sub get_remote_id_for {
-    my ( $self, $ticket_uuid ) = @_;
+sub remote_id_for_uuid {
+    my ( $self, $uuid_for_remote_id ) = @_;
 
     # XXX: should not access CLI handle
     my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
-    $ticket->load( uuid => $ticket_uuid );
+    $ticket->load( uuid => $uuid_for_remote_id );
     return $ticket->prop( $self->uuid . '-id' );
 }
 
-sub ticket_uuid {
+sub uuid_for_remote_id {
     my ( $self, $id ) = @_;
 
-    return $ticket_cache->get( $self->uuid . '-ticket-' . $id )
+    return $TICKET_CACHE->get( $self->uuid . '-ticket-' . $id )
         || $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
         ;
 }
@@ -186,7 +196,7 @@ sub record_pushed_ticket {
         }
     );
 
-    $ticket_cache->set( $self->uuid . '-ticket-' . $args{remote_id} => $args{uuid} );
+    $TICKET_CACHE->set( $self->uuid . '-ticket-' . $args{remote_id} => $args{uuid} );
 }
 
 sub _integrate_change {
@@ -222,7 +232,7 @@ sub integrate_ticket_update {
     my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
 
     # Figure out the remote site's ticket ID for this change's record
-    my $remote_ticket_id = $self->get_remote_id_for( $change->node_uuid );
+    my $remote_ticket_id = $self->remote_id_for_uuid( $change->node_uuid );
     my $ticket           = RT::Client::REST::Ticket->new(
         rt => $self->rt,
         id => $remote_ticket_id,
@@ -254,7 +264,7 @@ sub integrate_comment {
 
     my %props = map { $_->name => $_->new_value } $change->prop_changes;
 
-    my $id     = $self->get_remote_id_for( $props{'ticket'} );
+    my $id     = $self->remote_id_for_uuid( $props{'ticket'} );
     my $ticket = RT::Client::REST::Ticket->new(
         rt => $self->rt,
         id => $id

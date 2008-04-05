@@ -90,10 +90,6 @@ sub _recode_txn_Told {
     return $self->_recode_txn_Set(%args);
 }
 
-sub ticket_uuid {
-    my ($self, $id) = @_;
-    return $self->sync_source->ticket_uuid($id);
-}
 
 sub _recode_txn_Set {
     my $self = shift;
@@ -101,7 +97,7 @@ sub _recode_txn_Set {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
@@ -149,7 +145,7 @@ sub _recode_txn_Create {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
             change_type => 'add_file'
         }
     );
@@ -183,7 +179,7 @@ sub _recode_txn_AddLink {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
@@ -248,7 +244,7 @@ sub _recode_txn_AddWatcher {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
@@ -290,7 +286,7 @@ sub _recode_txn_CustomField {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
