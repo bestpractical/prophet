@@ -169,6 +169,10 @@ sub record_changeset {
 }
 
 my $TICKET_CACHE = App::Cache->new( { ttl => 60 * 60 } );
+# This cache stores uuids for tickets we've synced from a remote RT
+# Basically, if we created the ticket to begin with, then we'll know its uuid
+# if we pulled the ticket from RT then its uuid will be generated based on a UUID-from-ticket-url scheme
+# This cache is PERMANENT. - aka not a cache but a mapping table
 
 sub remote_id_for_uuid {
     my ( $self, $uuid_for_remote_id ) = @_;
@@ -181,10 +185,7 @@ sub remote_id_for_uuid {
 
 sub uuid_for_remote_id {
     my ( $self, $id ) = @_;
-
-    return $TICKET_CACHE->get( $self->uuid . '-ticket-' . $id )
-        || $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
-        ;
+    return $TICKET_CACHE->get( $self->uuid . '-ticket-' . $id ) || $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
 }
 
 sub record_pushed_ticket {
