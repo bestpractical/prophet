@@ -93,11 +93,8 @@ and was pushed to RT or originated in RT and has already been pulled to the prop
 sub  prophet_has_seen_transaction {
     my $self = shift;
     my ($id) = validate_pos(@_, 1 );
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                
-    return $cache->get(
-        $self->uuid,
-        '-txn-' . $id)
-         
+
+    return $cache->get( $self->uuid. '-txn-' . $id);
 }
 
 sub record_pushed_transaction {
@@ -106,11 +103,10 @@ sub record_pushed_transaction {
     my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
 
     #    warn "storing changeset metadata ".$self->uuid. " $uuid $seq / for ".join(',',@$txn_ids);
-    #    warn "===> ? ".$self->uuid,'-txn-....';
+    #    warn "===> ? ".$self->uuid.'      -txn-....'.$args{transaction};
 
     $cache->set(
-        $self->uuid,
-        '-txn-' . $args{transaction},
+        $self->uuid. '-txn-' . $args{transaction},
         join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no )
     );
 }
@@ -143,7 +139,7 @@ sub has_seen_changeset {
 
     # XXX: extract the original txn id from $changeset
     #    warn "===> ? ".$self->uuid,'-txn-'.$txn_id;
-    my $ret = $cache->get( $self->uuid, '-txn-' . $txn_id );
+    my $ret = $cache->get( $self->uuid. '-txn-' . $txn_id );
     #    warn "==> $ret";
     return $ret;
 }
@@ -375,9 +371,9 @@ sub _find_matching_transactions {
     my $ticket = shift;
     my @txns;
     for my $txn ( $self->rt->get_transaction_ids( parent_id => $ticket ) ) {
-    
+
         next if $self->prophet_has_seen_transaction($txn);    
-    
+
         push @txns, $self->rt->get_transaction( parent_id => $ticket, id => $txn, type => 'ticket' );
     }
     return \@txns;
