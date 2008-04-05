@@ -9,7 +9,7 @@ use Test::More;
 eval 'use RT::Test; 1'
     or plan skip_all => 'requires 3.7 to run tests.'.$@;
 
-use Prophet::Test tests => 10;
+use Prophet::Test tests => 9;
 
 no warnings 'once';
 
@@ -66,23 +66,53 @@ diag $yatta_uuid;
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    [ 
-                     "$flyman_uuid Fly Man open",
                     "$yatta_uuid YATTA new",
+                     "$flyman_uuid Fly Man open",
                    ]);
 
 ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
-warn $out;
-warn $err;
+
+my @tix = $rt->search(
+        type  => 'ticket',
+        query => "Subject='YATTA'"
+    );
+diag @tix;
+ok(scalar @tix, 'YATTA pushed');
 
 ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
 
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    [ 
-                     "$flyman_uuid Fly Man open",
                     "$yatta_uuid YATTA new",
+                     "$flyman_uuid Fly Man open",
                    ]);
 
+RT::Client::REST::Ticket->new(
+        rt => $rt,
+        id => $ticket->id,
+        status => 'stalled',
+    )->store();
+
+run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
+                   [ 
+                    "$yatta_uuid YATTA open",
+                     "$flyman_uuid Fly Man stalled",
+                   ]);
+
+RT::Client::REST::Ticket->new(
+        rt => $rt,
+        id => @tix[0],
+        status => 'open',
+    )->store();
+
+($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
+
+run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
+                   [ 
+                    "$yatta_uuid YATTA open",
+                     "$flyman_uuid Fly Man stalled",
+                   ]);
 
 #diag $uuid;
 
