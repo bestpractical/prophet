@@ -12,7 +12,6 @@ use Memoize;
 use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Replica::RT::PullEncoder;
-use App::Cache;
 
 __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
 
@@ -139,17 +138,16 @@ and was pushed to RT or originated in RT and has already been pulled to the prop
 
 =cut
 
-my $TXN_CACHE = App::Cache->new( { ttl => 60 * 60 } );    # la la la
-# This is a cache of all the transactions we have pushed to the remote replica
-# we'll only ever care about remote sequence #s greater than the last transaction # we've pulled from the remote replica
-# once we've done a pull from the remote replica, we can safely expire all records of this type for the remote replica 
-# (they'll be obsolete)
+# This is a mapping of all the transactions we have pushed to the
+# remote replica we'll only ever care about remote sequence #s greater
+# than the last transaction # we've pulled from the remote replica
+# once we've done a pull from the remote replica, we can safely expire
+# all records of this type for the remote replica (they'll be
+# obsolete)
 
 # we use this cache to avoid integrating changesets we've pushed to the remote replica when doing a subsequent pull
 
-
 my $TXN_METATYPE = 'txn-source';
-
 
 sub _txn_storage {
     my $self = shift;
@@ -170,23 +168,6 @@ sub record_pushed_transaction {
                            join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no ) );
 }
 
-=head2 has_seen_changeset Prophet::ChangeSet
-
-Returns true if the RT instance we're pushing to has seen the changeset we've passed in.
-
-
-=cut
-
-sub has_seen_changeset {
-    my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-return;
-    my $ret = $TXN_CACHE->get( $self->uuid . '-txn-' . $changeset->original_sequence_no );
-    return $ret;
-}
-
-
-
 # This cache stores uuids for tickets we've synced from a remote RT
 # Basically, if we created the ticket to begin with, then we'll know its uuid
 # if we pulled the ticket from RT then its uuid will be generated based on a UUID-from-ticket-url scheme
@@ -203,8 +184,6 @@ sub remote_id_for_uuid {
 
 sub uuid_for_remote_id {
     my ( $self, $id ) = @_;
-    warn "We are trying to look up a remote id for $id";
-    warn " The one we have stored in the state db is ". $self->_lookup_remote_id($id);
     return $self->_lookup_remote_id($id)|| $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
 }
 

@@ -5,7 +5,6 @@ use strict;
 package Prophet::ForeignReplica;
 use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
-use App::Cache;
 
 =head1 NAME
 
