@@ -22,13 +22,16 @@ our $DEBUG = $Prophet::Handle::DEBUG;
 sub run {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, transactions => 1} );
+
+    $args{'ticket'}->{'id'} =~ s/^ticket\///g;
     
     my $ticket = $args{'ticket'};
 
     warn "Working on " . $ticket->{id};
-    my $create_state = $ticket;
+    my $create_state = $ticket;;
     map { $create_state->{$_} = $self->date_to_iso( $create_state->{$_} ) }
         qw(Created Resolved Told LastUpdated Starts Started);
+
 
     map { $create_state->{$_} =~ s/ minutes$// } qw(TimeWorked TimeLeft TimeEstimated);
     my @changesets;
@@ -40,7 +43,7 @@ sub run {
                 }
             );
 
-            if ( ( "ticket/" . $txn->{'Ticket'} ne $ticket->{id} ) && $txn->{'Type'} !~ /^(?:Comment|Correspond)$/ ) {
+            if ( (  $txn->{'Ticket'} ne $ticket->{id} ) && $txn->{'Type'} !~ /^(?:Comment|Correspond)$/ ) {
                 warn "Skipping a data change from a merged ticket" . $txn->{'Ticket'} . ' vs ' . $ticket->{id};
                 next;
             }
@@ -87,13 +90,18 @@ sub _recode_txn_Told {
     return $self->_recode_txn_Set(%args);
 }
 
+sub ticket_uuid {
+    my ($self, $id) = @_;
+    return $self->sync_source->ticket_uuid($id);
+}
+
 sub _recode_txn_Set {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1 } );
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_url( $self->sync_source->rt_url . "/ticket/" . $args{'create_state'}->{'id'} ),
+            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
@@ -141,12 +149,11 @@ sub _recode_txn_Create {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_url( $self->sync_source->rt_url . "/ticket/" . $args{'create_state'}->{'id'} ),
+            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
             change_type => 'add_file'
         }
     );
 
-    $args{'create_state'}->{'id'} =~ s/^ticket\///g;
     $args{'create_state'}->{ $self->sync_source->uuid . '-id' } = delete $args{'create_state'}->{'id'};
 
     $args{'changeset'}->add_change( { change => $change } );
@@ -176,7 +183,7 @@ sub _recode_txn_AddLink {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_url( $self->sync_source->rt_url . "/ticket/" . $args{'create_state'}->{'id'} ),
+            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
@@ -241,7 +248,7 @@ sub _recode_txn_AddWatcher {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_url( $self->sync_source->rt_url . "/ticket/" . $args{'create_state'}->{'id'} ),
+            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );
@@ -283,7 +290,7 @@ sub _recode_txn_CustomField {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_url( $self->url . "/ticket/" . $args{'create_state'}->{'id'} ),
+            node_uuid   => $self->ticket_uuid($args{'create_state'}->{'id'}),
             change_type => 'update_file'
         }
     );

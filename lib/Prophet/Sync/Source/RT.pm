@@ -154,6 +154,37 @@ sub record_changeset {
 
 }
 
+sub ticket_uuid {
+    my ($self, $id) = @_;
+    
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
+    warn "===> ticket $id ?".$self->uuid.'-ticket-' . $id ;
+    my $uuid = $cache->get( $self->uuid.'-ticket-' . $id );
+
+    warn "=got $uuid " if $uuid;
+    return $uuid if $uuid;
+    
+    return $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
+}
+
+
+
+
+sub record_pushed_ticket {
+    my $self = shift;
+    my %args= validate(@_, {uuid =>  1,
+                remote_id => 1
+                });
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );         
+    warn "record just pushed ticket $args{remote_id} as ".        $args{uuid};
+    warn $self->uuid.'-ticket-' . $args{remote_id} ;
+
+    $cache->set(
+        $self->uuid.'-ticket-' . $args{remote_id} => 
+        $args{uuid}
+    );
+}
+
 sub _integrate_change {
     my $self = shift;
     my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
@@ -162,7 +193,11 @@ sub _integrate_change {
         if ( $change->node_type eq 'ticket' and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_ticket_create( $change, $changeset );
+        
+            $self->record_pushed_ticket(uuid => $change->node_uuid, remote_id => $id);
+            
         } elsif ( $change->node_type eq 'comment' ) {
+        
             $id = $self->integrate_comment( $change, $changeset );
         } elsif ( $change->node_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );
@@ -313,6 +348,9 @@ sub uuid {
 
 }
 
+
+
+
 use Data::UUID 'NameSpace_DNS';
 
 sub uuid_for_url {
@@ -348,6 +386,7 @@ sub fetch_changesets {
             };
     }
 
+#    warn YAML::Dump(\@changesets);
     return [  sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets];
 }
 
