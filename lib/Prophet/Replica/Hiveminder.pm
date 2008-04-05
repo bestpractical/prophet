@@ -125,7 +125,7 @@ sub fetch_changesets {
 
 sub find_matching_tasks {
     my $self = shift;
-my $tasks =  $j->act('TaskSearch',  
+my $tasks =  $self->hm->act('TaskSearch',  
                owner            => 'me',
                group => 0,
                requestor => 'me',
@@ -143,11 +143,11 @@ sub find_matching_transactions {
     my %args = validate( @_, { task => 1, starting_transaction => 1 } );
 
     my ($task) = validate_pos(@_, 1);
-    my $txns = $j->search('TaskTransaction', task_id => $args{task});
+    my $txns = $self->hm->search('TaskTransaction', task_id => $args{task});
     foreach my $txn (@{$txns||[]}) {
         next if $txn < $args{'starting_transaction'};        # Skip things we've pushed
         next if $self->prophet_has_seen_transaction($txn);
-        $txn->{history_entries} = $j->search('TaskHistory', transaction_id => $txn->{'id'});
+        $txn->{history_entries} = $self->hm->search('TaskHistory', transaction_id => $txn->{'id'});
     }
     return $txns;
 
