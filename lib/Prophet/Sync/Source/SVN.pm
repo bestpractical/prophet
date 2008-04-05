@@ -44,6 +44,7 @@ sub setup {
     $self->ra( $self->_get_ra );
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
         $self->prophet_handle( Prophet::Handle->new( { repository => $1 } ) );
+        $self->state_handle( $self->prophet_handle );
     }
     if ( $self->is_resdb ) {
 
@@ -175,6 +176,10 @@ sub record_changeset {
     my $self = shift;
     $self->prophet_handle->record_changeset(@_);
 }
+
+
+
+
 
 sub record_resolutions {
     my $self = shift;

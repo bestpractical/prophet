@@ -103,9 +103,11 @@ as_alice {
     }
     qr/not resolved/;
 
+    $target->import_resolutions_from_remote_replica( from => $source );
+
     $target->import_changesets(
         from      => $source,
-        use_resdb => 1,
+        resdb     => $target->ressource->prophet_handle,
     );
 
     lives_and {

@@ -13,7 +13,7 @@ sub run {
     my $resdb              = shift;    # XXX: we want diffrent collection actually now
 
     my $res = Prophet::Collection->new(
-        handle => $resdb->handle,
+        handle => $resdb,
         type   => '_prophet_resolution-' . $conflicting_change->cas_key
     );
     $res->matching( sub {1} );

@@ -173,24 +173,24 @@ sub _get_record {
 }
 
 sub do_create {
-    my $cli    = shift;
-    my $record = $cli->_get_record;
+    my $self    = shift;
+    my $record = $self->_get_record;
 
-    $record->create( props => $cli->args );
+    $record->create( props => $self->args );
 
     print "Created " . $record->record_type . " " . $record->uuid . "\n";
 
 }
 
 sub do_search {
-    my $cli = shift;
+    my $self = shift;
 
     my $regex;
-    unless ( $regex = $cli->args->{regex} ) {
+    unless ( $regex = $self->args->{regex} ) {
         die "Specify a regular expression and we'll search for records matching that regex";
     }
-    my $record = $cli->_get_record;
-    my $records = $record->collection_class->new( handle => $cli->handle, type => $cli->type );
+    my $record = $self->_get_record;
+    my $records = $record->collection_class->new( handle => $self->handle, type => $self->type );
     $records->matching(
         sub {
             my $item  = shift;
@@ -206,19 +206,19 @@ sub do_search {
 }
 
 sub do_update {
-    my $cli = shift;
+    my $self = shift;
 
-    my $record = $cli->_get_record;
-    $record->load( uuid => $cli->uuid );
-    $record->set_props( props => $cli->args );
+    my $record = $self->_get_record;
+    $record->load( uuid => $self->uuid );
+    $record->set_props( props => $self->args );
 
 }
 
 sub do_delete {
-    my $cli = shift;
+    my $self = shift;
 
-    my $record = $cli->_get_record;
-    $record->load( uuid => $cli->uuid );
+    my $record = $self->_get_record;
+    $record->load( uuid => $self->uuid );
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
     } else {
@@ -228,10 +228,10 @@ sub do_delete {
 }
 
 sub do_show {
-    my $cli = shift;
+    my $self = shift;
 
-    my $record = $cli->_get_record;
-    $record->load( uuid => $cli->uuid );
+    my $record = $self->_get_record;
+    $record->load( uuid => $self->uuid );
     print "id: " . $record->uuid . "\n";
     my $props = $record->get_props();
     for ( keys %$props ) {
@@ -240,19 +240,52 @@ sub do_show {
 
 }
 
-sub do_merge {
-    my $cli = shift;
+sub do_push {
+    my $self = shift;
+    my $source_me = Prophet::Sync::Source->new( { url => "file://".$self->handle->repo_path } );
+    my $other = shift @ARGV;
+    my $source_other = Prophet::Sync::Source->new( { url => $other } );
+    my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
+    
+    $self->_do_merge( $source_me, $source_other );
+}
 
-    my $opts = $cli->args();
+sub do_pull {
+    my $self = shift;
+    my $source_me = Prophet::Sync::Source->new( { url => "file://".$self->handle->repo_path } );
+    my $other = shift @ARGV;
+    my $source_other = Prophet::Sync::Source->new( { url => $other } );
+    my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
+    
+    $self->_do_merge( $source_other, $source_me );
+
+}
+
+
+sub do_merge {
+    my $self = shift;
+
+    my $opts = $self->args();
 
     my $source = Prophet::Sync::Source->new( { url => $opts->{'from'} } );
     my $target = Prophet::Sync::Source->new( { url => $opts->{'to'} } );
+    
+    $target->import_resolutions_from_remote_replica( from => $source );
+    
 
+    $self->_do_merge( $source, $target);
+}
+
+sub _do_merge {
+    my ($self, $source, $target) = @_;
     if ( $target->uuid eq $source->uuid ) {
         fatal_error( "You appear to be trying to merge two identical replicas. "
                 . "Either you're trying to merge a replica to itself or "
                 . "someone did a bad job cloning your database" );
     }
+
+    my $opts = $self->args();
+
 
     if ( !$target->accepts_changesets ) {
         fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
@@ -260,7 +293,7 @@ sub do_merge {
 
     $target->import_changesets(
         from      => $source,
-        use_resdb => 1,
+        resdb     => $self->resdb_handle,
         $ENV{'PROPHET_RESOLVER'}
         ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
         : ( ( $opts->{'prefer'} eq 'to'   ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' ) : () ),

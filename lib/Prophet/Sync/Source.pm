@@ -6,6 +6,8 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
+__PACKAGE__->mk_accessors(qw(state_handle));
+
 =head1 NAME
 
 Prophet::Sync::Source
@@ -61,7 +63,7 @@ sub import_changesets {
     my %args = validate(
         @_,
         {   from               => { isa      => 'Prophet::Sync::Source' },
-            use_resdb          => { optional => 1 },
+            resdb              => { optional => 1 },
             resolver           => { optional => 1 },
             resolver_class     => { optional => 1 },
             conflict_callback  => { optional => 1 },
@@ -70,8 +72,6 @@ sub import_changesets {
     );
 
     my $source = $args{'from'};
-
-    my $resdb = $args{use_resdb} ? $self->fetch_resolutions( from => $source ) : undef;
 
     my $changesets_to_integrate = $source->new_changesets_for($self);
 
@@ -82,11 +82,37 @@ sub import_changesets {
             reporting_callback => $args{'reporting_callback'},
             resolver           => $args{resolver},
             resolver_class     => $args{'resolver_class'},
-            resdb              => $resdb
+            resdb              => $args{'resdb'},
         );
 
     }
 }
+
+sub import_resolutions_from_remote_replica {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   from              => { isa      => 'Prophet::Sync::Source' },
+            resolver          => { optional => 1 },
+            resolver_class    => { optional => 1 },
+            conflict_callback => { optional => 1 }
+        }
+    );
+    my $source = $args{'from'};
+
+    return unless $self->ressource;
+
+    $self->ressource->import_changesets(
+        from     => $source->ressource,
+        resolver => sub { die "nono not yet" }
+
+    );
+}
+
+
+
+
+
 
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
@@ -266,29 +292,6 @@ sub remove_redundant_data {
     ];
 }
 
-sub fetch_resolutions {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   from              => { isa      => 'Prophet::Sync::Source' },
-            resolver          => { optional => 1 },
-            resolver_class    => { optional => 1 },
-            conflict_callback => { optional => 1 }
-        }
-    );
-    my $source = $args{'from'};
-
-    return unless $self->ressource;
-
-    $self->ressource->import_changesets(
-        from     => $source->ressource,
-        resolver => sub { die "nono not yet" }
-
-    );
-
-    my $records = Prophet::Collection->new( handle => $self->ressource->prophet_handle, type => '_prophet_resolution' );
-    return $records;
-}
 
 =head2 news_changesets_for Prophet::Sync::Source
 

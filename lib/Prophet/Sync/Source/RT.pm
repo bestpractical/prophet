@@ -24,10 +24,16 @@ our $DEBUG = $Prophet::Handle::DEBUG;
 If the remote storage (RT) can not represent a whole changeset along with the prophet changeset uuid, then we need to 
 create a seperate locally(?) stored map of:
     remote-subchangeset-identifier to changeset uuid.
+    remote id to prophet record uuid
+    
 
 For each sync of the same remote source (RT), we need a unique prophet database domain.
 
 if clkao syncs from RT, jesse can sync with clkao but not with RT directly with the same database.
+
+
+
+
 
 
 
@@ -185,8 +191,40 @@ sub remote_id_for_uuid {
 
 sub uuid_for_remote_id {
     my ( $self, $id ) = @_;
-    return $TICKET_CACHE->get( $self->uuid . '-ticket-' . $id ) || $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
+    warn "We are trying to look up a remote id for $id";
+    warn " The one we have stored in the state db is ". $self->_lookup_remote_id($id);
+    return $self->_lookup_remote_id($id)|| $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
 }
+
+our $REMOTE_ID_METATYPE = "_remote_id_map";
+
+sub _lookup_remote_id {
+    my $self = shift;
+    my ($id) = validate_pos(@_, 1);
+    
+    my $remote_id = Prophet::Record->new( handle => $self->state_handle, type => $REMOTE_ID_METATYPE);
+  $remote_id->load(uuid => $self->uuid_for_url( $self->rt_url . "/ticket/$id" )); # FAILURE IS OK
+    return eval {$remote_id->prop('prophet-uuid')};
+}
+
+
+sub _set_remote_id {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   uuid      => 1,
+            remote_id => 1
+        }
+            );
+    $self->state_handle->create_node( uuid => $self->uuid_for_url( $self->rt_url . "/ticket/".$args{'remote_id'} ),
+                                     type => $REMOTE_ID_METATYPE, props => {
+                                            'prophet-uuid' => $args{'uuid'}
+                                    
+                                    
+                                           } ) 
+
+}
+
 
 sub record_pushed_ticket {
     my $self = shift;
@@ -196,8 +234,7 @@ sub record_pushed_ticket {
             remote_id => 1
         }
     );
-
-    $TICKET_CACHE->set( $self->uuid . '-ticket-' . $args{remote_id} => $args{uuid} );
+    $self->_set_remote_id(%args);
 }
 
 sub _integrate_change {
@@ -208,7 +245,6 @@ sub _integrate_change {
         if ( $change->node_type eq 'ticket' and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_ticket_create( $change, $changeset );
-
             $self->record_pushed_ticket( uuid => $change->node_uuid, remote_id => $id );
 
         } elsif ( $change->node_type eq 'comment' ) {
@@ -344,9 +380,14 @@ sub setup {
     $self->{___Orz} = $orz;
     SVN::Repos::create( $orz, undef, undef, undef, undef );
     $self->ressource( __PACKAGE__->new( { url => "file://$orz", is_resdb => 1 } ) );
+    
+    warn "WE NEED A STATE HANDLE FOR REAL";
+    my $cli = Prophet::CLI->new();
+    $self->state_handle($cli->_handle);
+    
 }
 
-sub fetch_resolutions { warn 'no resdb'; return }
+sub import_resolutions_from_remote_source { warn 'no resdb'; return }
 
 =head2 uuid
 
@@ -397,7 +438,6 @@ sub fetch_changesets {
             };
     }
 
-    #    warn YAML::Dump(\@changesets);
     return [ sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets ];
 }
 
