@@ -210,7 +210,7 @@ sub _lookup_remote_id {
     my ($id) = validate_pos(@_, 1);
     
     my $remote_id = Prophet::Record->new( handle => $self->state_handle, type => $REMOTE_ID_METATYPE);
-  $remote_id->load(uuid => $self->uuid_for_url( $self->rt_url . "/ticket/$id" )); # FAILURE IS OK
+    $remote_id->load(uuid => $self->uuid_for_url( $self->rt_url . "/ticket/$id" ));
     return eval {$remote_id->prop('prophet-uuid')};
 }
 

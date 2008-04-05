@@ -154,6 +154,15 @@ Returns the last changeset id seen from the source identified by $SOURCE_UUID
 sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
+
+    return $self->prophet_handle->_retrieve_metadata_for( $Prophet::Handle::MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
+
+    # the code below is attempting to get the content over ra so we
+    # can deal with remote svn repo. however this also assuming the
+    # remote is having the same prophet_handle->db_root (which is
+    # always empty for now.)  the code to handle remote svn should be
+    # actually abstracted along when we design the sync prototype
+
     my ( $stream, $pool );
 
     my $filename = join( "/", $self->prophet_handle->db_root, $Prophet::Handle::MERGETICKET_METATYPE, $source );

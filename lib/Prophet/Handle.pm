@@ -157,20 +157,36 @@ sub record_changeset_integration {
 sub _record_merge_ticket {
     my $self = shift;
     my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
+    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no);
+}
 
-    my $props = eval { $self->get_node_props( uuid => $source_uuid, type => $MERGETICKET_METATYPE ) };
-    unless ( $props->{'last-changeset'} ) {
-        eval { $self->create_node( uuid => $source_uuid, type => $MERGETICKET_METATYPE, props => {} ) };
+sub _retrieve_metadata_for {
+    my $self = shift;
+    my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
+
+    my $entry = Prophet::Record->new( handle => $self, type => $name );
+    $entry->load(uuid => $source_uuid);
+    return eval { $entry->prop($prop_name) };
+
+}
+
+sub _record_metadata_for {
+    my $self = shift;
+    my ( $name, $source_uuid, $prop_name, $content ) = validate_pos( @_, 1, 1, 1, 1 );
+
+    my $props = eval { $self->get_node_props( uuid => $source_uuid, type => $name ) };
+
+    # XXX: do set-prop when exists, and just create new node with all props is probably better
+    unless ( $props->{$prop_name} ) {
+        eval { $self->create_node( uuid => $source_uuid, type => $name, props => {} ) };
     }
 
     $self->set_node_props(
         uuid => $source_uuid,
-        type => $MERGETICKET_METATYPE,
-        props => { 'last-changeset' => $sequence_no }
+        type => $name,
+        props => { $prop_name => $content }
     );
-
 }
-
 
 
 
