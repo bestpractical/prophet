@@ -15,7 +15,6 @@ use Prophet::Conflict;
 use Prophet::Sync::Source::RT::PullEncoder;
 use App::Cache;
 
-
 __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
@@ -62,8 +61,7 @@ SD::Source::RT->recode_ticket
 =cut
 
 sub conflicts_from_changeset { return; }
-sub accepts_changesets {1}
-
+sub accepts_changesets       {1}
 
 my $source_cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
 
@@ -71,7 +69,6 @@ sub record_changeset_integration {
     my ( $self, $source_uuid, $source_seq ) = @_;
     return $source_cache->set( $self->uuid . '-' . $source_uuid, $source_seq );
 }
-
 
 =head2 last_changeset_from_source $SOURCE_UUID
 
@@ -85,9 +82,6 @@ sub last_changeset_from_source {
     return $source_cache->get( $self->uuid . '-' . $source_uuid ) || 0;
 }
 
-
-
-
 sub record_integration_changeset {
     warn "record_integration_changeset should be renamed to 'record_original_change";
     my ( $self, $changeset ) = @_;
@@ -98,18 +92,20 @@ sub record_integration_changeset {
     $self->record_changeset_integration( $changeset->original_source_uuid, $changeset->original_sequence_no );
 }
 
-
 sub record_pushed_transactions {
     my $self = shift;
-    my %args = validate(@_, { ticket => 1, changeset => { isa => 'Prophet::ChangeSet'} });
+    my %args = validate( @_, { ticket => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
 
-        for my $txn ( reverse RT::Client::REST::Ticket->new( 
-                                    rt => $self->rt, 
-                                    id => $args{'ticket'} )->transactions->get_iterator->()
-                            ) {
-            last if $txn->id <= $self->last_changeset_from_source( $args{changeset}->original_source_uuid  );
-            $self->record_pushed_transaction(transaction => $txn->id, changeset => $args{'changeset'});
-        }
+    for my $txn (
+        reverse RT::Client::REST::Ticket->new(
+            rt => $self->rt,
+            id => $args{'ticket'}
+        )->transactions->get_iterator->()
+        )
+    {
+        last if $txn->id <= $self->last_changeset_from_source( $args{changeset}->original_source_uuid );
+        $self->record_pushed_transaction( transaction => $txn->id, changeset => $args{'changeset'} );
+    }
 }
 
 =head2 prophet_has_seen_transaction $transaction_id
@@ -119,25 +115,22 @@ and was pushed to RT or originated in RT and has already been pulled to the prop
 
 =cut
 
-my $txn_cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
+my $txn_cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
 
-sub  prophet_has_seen_transaction {
+sub prophet_has_seen_transaction {
     my $self = shift;
-    my ($id) = validate_pos(@_, 1 );
-    return $txn_cache->get( $self->uuid. '-txn-' . $id);
+    my ($id) = validate_pos( @_, 1 );
+    return $txn_cache->get( $self->uuid . '-txn-' . $id );
 }
 
 sub record_pushed_transaction {
-    my $self  = shift;
-    my %args  = validate( @_, { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
+    my $self = shift;
+    my %args = validate( @_, { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
 
-    $txn_cache->set( $self->uuid.'-txn-' . $args{transaction} => 
-        join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no )
-    );
+    $txn_cache->set( $self->uuid . '-txn-'
+            . $args{transaction} =>
+            join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no ) );
 }
-
-
-
 
 =head2 has_seen_changeset Prophet::ChangeSet
 
@@ -149,9 +142,10 @@ Returns true if the RT instance we're pushing to has seen the changeset we've pa
 sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-        # XXXX: this is actually not right, because new_changesets_for
+
+    # XXXX: this is actually not right, because new_changesets_for
     # is calling has_seen_changeset on $other, rather than us
-    my $ret = $txn_cache->get( $self->uuid. '-txn-' . $changeset->original_sequence_no );
+    my $ret = $txn_cache->get( $self->uuid . '-txn-' . $changeset->original_sequence_no );
     return $ret;
 }
 
@@ -159,37 +153,40 @@ sub record_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
     for my $change ( $changeset->changes ) {
-        my $result=  $self->_integrate_change( $change, $changeset ) 
+        my $result = $self->_integrate_change( $change, $changeset );
     }
 
 }
 
-
-my $ticket_cache = App::Cache->new( { ttl => 60 * 60 } );         
+my $ticket_cache = App::Cache->new( { ttl => 60 * 60 } );
 
 sub get_remote_id_for {
     my ( $self, $ticket_uuid ) = @_;
+
     # XXX: should not access CLI handle
     my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
     $ticket->load( uuid => $ticket_uuid );
     return $ticket->prop( $self->uuid . '-id' );
 }
 
-
-
 sub ticket_uuid {
-    my ($self, $id) = @_;
-    
-    return $ticket_cache->get( $self->uuid.'-ticket-' . $id ) || $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
-}
+    my ( $self, $id ) = @_;
 
+    return $ticket_cache->get( $self->uuid . '-ticket-' . $id )
+        || $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
+        ;
+}
 
 sub record_pushed_ticket {
     my $self = shift;
-    my %args= validate(@_, {uuid =>  1,
-                remote_id => 1                });
+    my %args = validate(
+        @_,
+        {   uuid      => 1,
+            remote_id => 1
+        }
+    );
 
-    $ticket_cache->set( $self->uuid.'-ticket-' . $args{remote_id} =>         $args{uuid}    );
+    $ticket_cache->set( $self->uuid . '-ticket-' . $args{remote_id} => $args{uuid} );
 }
 
 sub _integrate_change {
@@ -200,11 +197,11 @@ sub _integrate_change {
         if ( $change->node_type eq 'ticket' and $change->change_type eq 'add_file' )
         {
             $id = $self->integrate_ticket_create( $change, $changeset );
-        
-            $self->record_pushed_ticket(uuid => $change->node_uuid, remote_id => $id);
-            
+
+            $self->record_pushed_ticket( uuid => $change->node_uuid, remote_id => $id );
+
         } elsif ( $change->node_type eq 'comment' ) {
-        
+
             $id = $self->integrate_comment( $change, $changeset );
         } elsif ( $change->node_type eq 'ticket' ) {
             $id = $self->integrate_ticket_update( $change, $changeset );
@@ -237,16 +234,14 @@ sub integrate_ticket_update {
 
 sub integrate_ticket_create {
     my $self = shift;
-    my ( $change, $changeset ) = validate_pos( @_, 
-                                               { isa => 'Prophet::Change' }, 
-                                               { isa => 'Prophet::ChangeSet' } );
+    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
 
     # Build up a ticket object out of all the record's attributes
     my $ticket = RT::Client::REST::Ticket->new(
         rt    => $self->rt,
         queue => $self->rt_queue(),
-        %{ $self->_recode_props_for_integrate($change) })->store( 
-        text => "Not yet pulling in ticket creation comment" );
+        %{ $self->_recode_props_for_integrate($change) }
+    )->store( text => "Not yet pulling in ticket creation comment" );
 
     return $ticket->id;
 }
@@ -259,7 +254,7 @@ sub integrate_comment {
 
     my %props = map { $_->name => $_->new_value } $change->prop_changes;
 
-    my $id = $self->get_remote_id_for( $props{'ticket'} );
+    my $id     = $self->get_remote_id_for( $props{'ticket'} );
     my $ticket = RT::Client::REST::Ticket->new(
         rt => $self->rt,
         id => $id
@@ -272,7 +267,6 @@ sub integrate_comment {
     }
     return $id;
 }
-
 
 sub _recode_props_for_integrate {
     my $self = shift;
@@ -355,9 +349,6 @@ sub uuid {
 
 }
 
-
-
-
 use Data::UUID 'NameSpace_DNS';
 
 sub uuid_for_url {
@@ -382,39 +373,38 @@ sub fetch_changesets {
 
     my @changesets;
     my %tix;
-    my $recoder = Prophet::Sync::Source::RT::PullEncoder->new({ sync_source => $self } );
+    my $recoder = Prophet::Sync::Source::RT::PullEncoder->new( { sync_source => $self } );
     for my $id ( $self->find_matching_tickets ) {
 
         # XXX: _recode_transactions should ignore txn-id <= $first_rev
         push @changesets,
-            @{ $recoder->run(
-                ticket       => $self->rt->show( type => 'ticket', id => $id ),
-                transactions => $self->find_matching_transactions(ticket => $id, starting_transaction => $first_rev))
+            @{
+            $recoder->run(
+                ticket => $self->rt->show( type => 'ticket', id => $id ),
+                transactions => $self->find_matching_transactions( ticket => $id, starting_transaction => $first_rev )
+            )
             };
     }
 
-#    warn YAML::Dump(\@changesets);
-    return [  sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets];
+    #    warn YAML::Dump(\@changesets);
+    return [ sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets ];
 }
-
 
 sub find_matching_tickets {
     my $self = shift;
-    return $self->rt->search(        type  => 'ticket',  query => $self->rt_query    );
+    return $self->rt->search( type => 'ticket', query => $self->rt_query );
 }
 
 sub find_matching_transactions {
-    my $self   = shift;
-    my %args = validate ( @_, {ticket => 1, starting_transaction => 1 });
+    my $self = shift;
+    my %args = validate( @_, { ticket => 1, starting_transaction => 1 } );
     my @txns;
     for my $txn ( sort $self->rt->get_transaction_ids( parent_id => $args{ticket} ) ) {
-        next if $txn < $args{'starting_transaction'}; # Skip things we've pushed
-        next if $self->prophet_has_seen_transaction($txn);    
+        next if $txn < $args{'starting_transaction'};        # Skip things we've pushed
+        next if $self->prophet_has_seen_transaction($txn);
         push @txns, $self->rt->get_transaction( parent_id => $args{ticket}, id => $txn, type => 'ticket' );
     }
     return \@txns;
 }
-
-
 
 1;
