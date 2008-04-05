@@ -207,29 +207,25 @@ our $REMOTE_ID_METATYPE = "_remote_id_map";
 
 sub _lookup_remote_id {
     my $self = shift;
-    my ($id) = validate_pos(@_, 1);
-    
-    my $remote_id = Prophet::Record->new( handle => $self->state_handle, type => $REMOTE_ID_METATYPE);
-    $remote_id->load(uuid => $self->uuid_for_url( $self->rt_url . "/ticket/$id" ));
-    return eval {$remote_id->prop('prophet-uuid')};
-}
+    my ($id) = validate_pos( @_, 1 );
 
+    return $self->state_handle->_retrieve_metadata_for(
+        $REMOTE_ID_METATYPE,
+        $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
+        'prophet-uuid' );
+}
 
 sub _set_remote_id {
     my $self = shift;
-    my %args = validate(
-        @_,
-        {   uuid      => 1,
-            remote_id => 1
+    my %args = validate( @_,
+        { uuid      => 1,
+          remote_id => 1
         }
-            );
-    $self->state_handle->create_node( uuid => $self->uuid_for_url( $self->rt_url . "/ticket/".$args{'remote_id'} ),
-                                     type => $REMOTE_ID_METATYPE, props => {
-                                            'prophet-uuid' => $args{'uuid'}
-                                    
-                                    
-                                           } ) 
-
+    );
+    return $self->state_handle->_record_metadata_for(
+        $REMOTE_ID_METATYPE,
+        $self->uuid_for_url( $self->rt_url . "/ticket/" . $args{'remote_id'} ),
+        'prophet-uuid' => $args{uuid} );
 }
 
 
