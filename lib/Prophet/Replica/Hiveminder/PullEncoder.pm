@@ -42,7 +42,21 @@ sub run {
             die "failed to know how to handle this entry: " . YAML::Dump($entry);
         }
         }
-            $self->translate_prop_names($changeset);
+
+        foreach my $email (@{$txn->{email_entries}}) {
+            if(my $sub = $self->can('_recode_email_'.'blah') {
+                $sub->(
+                    $self     => previous_state => $previous_state,
+                    email       => $email,
+                    txn       => $txn,
+                    changeset => $changeset
+                );
+                }
+                
+        }
+
+
+        $self->translate_prop_names($changeset);
         unshift @changesets, $changeset unless $changeset->is_empty;
     }
 

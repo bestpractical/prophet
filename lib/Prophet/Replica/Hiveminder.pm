@@ -15,7 +15,7 @@ use Prophet::ChangeSet;
 use Prophet::Replica::Hiveminder::PullEncoder;
 use App::Cache;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
+__PACKAGE__->mk_accessors(qw/m hm_url/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -85,7 +85,7 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    return $self->uuid_for_url( join( '/', $self->hm_url, $self->username ) );
+    return $self->uuid_for_url( join( '/', $self->hm_url, $self->hm->username ) );
 }
 
 
@@ -109,45 +109,45 @@ sub fetch_changesets {
     my %tix;
     my $recoder = Prophet::Replica::Hiveminder::PullEncoder->new( { sync_source => $self } );
     for my $task ( $self->find_matching_tasks ) {
-
-        # XXX: _recode_transactions should ignore txn-id <= $first_rev
-        push @changesets,
-            @{
-            $recoder->run(
+        push @changesets, @{ $recoder->run(
                 task => $task,
-                transactions => $self->find_matching_transactions( task => $task->{id}, starting_transaction => $first_rev )
-            )
-            };
+                transactions => $self->find_matching_transactions( task => $task->{id}, starting_transaction => $first_rev )) };
     }
 
     return [ sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets ];
 }
 
 sub find_matching_tasks {
-    my $self = shift;
-my $tasks =  $self->hm->act('TaskSearch',  
-               owner            => 'me',
-               group => 0,
-               requestor => 'me',
-               not_complete => 1,
+    my $self  = shift;
+    my $tasks = $self->hm->act(
+        'TaskSearch',
+        owner        => 'me',
+        group        => 0,
+        requestor    => 'me',
+        not_complete => 1,
 
-        
     )->{content}->{tasks};
     return $tasks;
 }
 
 sub prophet_has_seen_transaction { warn "not yet"; return undef }
 
+
+# hiveminder transaction ~= prophet changeset
+# hiveminder taskhistory ~= prophet change
+# hiveminder taskemail ~= prophet change
 sub find_matching_transactions {
     my $self = shift;
     my %args = validate( @_, { task => 1, starting_transaction => 1 } );
 
-    my ($task) = validate_pos(@_, 1);
-    my $txns = $self->hm->search('TaskTransaction', task_id => $args{task});
-    foreach my $txn (@{$txns||[]}) {
+    my ($task) = validate_pos( @_, 1 );
+    my $txns = $self->hm->search( 'TaskTransaction', task_id => $args{task} );
+    foreach my $txn ( @{ $txns || [] } ) {
         next if $txn < $args{'starting_transaction'};        # Skip things we've pushed
+
         next if $self->prophet_has_seen_transaction($txn);
-        $txn->{history_entries} = $self->hm->search('TaskHistory', transaction_id => $txn->{'id'});
+        $txn->{history_entries} = $self->hm->search( 'TaskHistory', transaction_id => $txn->{'id'} );
+        $txn->{email_entries} = $self->hm->search( 'TaskEmail', transaction_id => $txn->{'id'} );
     }
     return $txns;
 
