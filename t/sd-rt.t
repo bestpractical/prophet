@@ -65,7 +65,7 @@ run_output_matches('sd', ['ticket', '--create', '--summary', 'YATTA', '--status'
 diag $yatta_uuid;
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
-                   [ 
+                   [ sort 
                     "$yatta_uuid YATTA new",
                      "$flyman_uuid Fly Man open",
                    ]);
@@ -83,7 +83,7 @@ ok(scalar @tix, 'YATTA pushed');
 
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
-                   [ 
+                   [ sort
                     "$yatta_uuid YATTA new",
                      "$flyman_uuid Fly Man open",
                    ]);
@@ -94,22 +94,24 @@ RT::Client::REST::Ticket->new(
         status => 'stalled',
     )->store();
 
+($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
+
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
-                   [ 
+                   [ sort
                     "$yatta_uuid YATTA open",
                      "$flyman_uuid Fly Man stalled",
                    ]);
 
 RT::Client::REST::Ticket->new(
         rt => $rt,
-        id => @tix[0],
+        id => $tix[0],
         status => 'open',
     )->store();
 
 ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
-                   [ 
+                   [ sort
                     "$yatta_uuid YATTA open",
                      "$flyman_uuid Fly Man stalled",
                    ]);
