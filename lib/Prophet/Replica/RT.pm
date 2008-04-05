@@ -148,19 +148,26 @@ my $TXN_CACHE = App::Cache->new( { ttl => 60 * 60 } );    # la la la
 # we use this cache to avoid integrating changesets we've pushed to the remote replica when doing a subsequent pull
 
 
+my $TXN_METATYPE = 'txn-source';
+
+
+sub _txn_storage {
+    my $self = shift;
+    return $self->state_handle->metadata_storage($TXN_METATYPE, 'prophet-txn-source');
+}
+
 sub prophet_has_seen_transaction {
     my $self = shift;
     my ($id) = validate_pos( @_, 1 );
-    return $TXN_CACHE->get( $self->uuid . '-txn-' . $id );
+    return $self->_txn_storage->( $self->uuid . '-txn-' . $id );
 }
 
 sub record_pushed_transaction {
     my $self = shift;
     my %args = validate( @_, { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
 
-    $TXN_CACHE->set( $self->uuid . '-txn-'
-            . $args{transaction} =>
-            join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no ) );
+    $self->_txn_storage->( $self->uuid . '-txn-' . $args{transaction},
+                           join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no ) );
 }
 
 =head2 has_seen_changeset Prophet::ChangeSet
@@ -173,9 +180,7 @@ Returns true if the RT instance we're pushing to has seen the changeset we've pa
 sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-
-    # XXXX: this is actually not right, because new_changesets_for
-    # is calling has_seen_changeset on $other, rather than us
+return;
     my $ret = $TXN_CACHE->get( $self->uuid . '-txn-' . $changeset->original_sequence_no );
     return $ret;
 }
@@ -205,14 +210,16 @@ sub uuid_for_remote_id {
 
 our $REMOTE_ID_METATYPE = "_remote_id_map";
 
+sub _remote_id_storage {
+    my $self = shift;
+    return $self->state_handle->metadata_storage($REMOTE_ID_METATYPE, 'prophet-uuid');
+}
+
 sub _lookup_remote_id {
     my $self = shift;
     my ($id) = validate_pos( @_, 1 );
 
-    return $self->state_handle->_retrieve_metadata_for(
-        $REMOTE_ID_METATYPE,
-        $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
-        'prophet-uuid' );
+    return $self->_remote_id_storage->( $self->uuid_for_url( $self->rt_url . "/ticket/$id" ) );
 }
 
 sub _set_remote_id {
@@ -222,10 +229,9 @@ sub _set_remote_id {
           remote_id => 1
         }
     );
-    return $self->state_handle->_record_metadata_for(
-        $REMOTE_ID_METATYPE,
+    return $self->_remote_id_storage->(
         $self->uuid_for_url( $self->rt_url . "/ticket/" . $args{'remote_id'} ),
-        'prophet-uuid' => $args{uuid} );
+        $args{uuid} );
 }
 
 

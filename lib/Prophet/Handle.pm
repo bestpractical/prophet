@@ -160,6 +160,19 @@ sub _record_merge_ticket {
     return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no);
 }
 
+sub metadata_storage {
+    my $self = shift;
+    my ($type, $prop_name) = validate_pos( @_, 1, 1);
+    return sub {
+        my $uuid = shift;
+        if (@_) {
+            return $self->_record_metadata_for( $type, $uuid, $prop_name, @_ );
+        }
+        return $self->_retrieve_metadata_for( $type, $uuid, $prop_name );
+
+    };
+}
+
 sub _retrieve_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
