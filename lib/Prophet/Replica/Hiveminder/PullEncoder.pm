@@ -22,47 +22,49 @@ sub run {
     my $previous_state = $args{'task'};
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
 
-        if ( my $sub = $self->can( '_recode_txn_' . $txn->{'Type'} ) ) {
-            my $changeset = Prophet::ChangeSet->new(
-                {   original_source_uuid => $self->sync_source->uuid,
-                    original_sequence_no => $txn->{'id'},
-                }
-            );
+        my $changeset = Prophet::ChangeSet->new(
+            {   original_source_uuid => $self->sync_source->uuid,
+                original_sequence_no => $txn->{'id'},
+            }
+        );
 
-            $sub->(
-                $self,
-                previous_state => $previous_state,
-                txn            => $txn,
-                changeset      => $changeset
-            );
-            $self->translate_prop_names($changeset);
+        foreach my $entry ( @{ $txn->{'history_entries'} } ) {
 
-            unshift @changesets, $changeset unless $changeset->is_empty;
-        } else {
-            warn "not handling txn type $txn->{Type} for $txn->{id} (Ticket $args{task}{id}) yet";
-            die YAML::Dump($txn);
+            if ( my $sub = $self->can( '_recode_entry_' . $entry->{'field'} ) ) {
+                $sub->(
+                    $self     => previous_state => $previous_state,
+                    entry     => $entry,
+                    txn       => $txn,
+                    changeset => $changeset
+                );
+            }
+        else {
+            die "failed to know how to handle this entry: " . YAML::Dump($entry);
         }
-
+        }
+            $self->translate_prop_names($changeset);
+        unshift @changesets, $changeset unless $changeset->is_empty;
     }
+
     return \@changesets;
 }
 
-sub _recode_txn_Status {
+sub _recode_entry_Status {
     my $self = shift;
     my %args = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
 
     $args{txn}->{'Type'} = 'Set';
-    return $self->_recode_txn_Set(%args);
+    return $self->_recode_entry_Set(%args);
 }
 
-sub _recode_txn_Told {
+sub _recode_entry_Told {
     my $self = shift;
     my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
     $args{txn}->{'Type'} = 'Set';
-    return $self->_recode_txn_Set(%args);
+    return $self->_recode_entry_Set(%args);
 }
 
-sub _recode_txn_Set {
+sub _recode_entry_Set {
     my $self = shift;
     my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
 
@@ -106,11 +108,11 @@ sub _recode_txn_Set {
 
 }
 
-*_recode_txn_Steal = \&_recode_txn_Set;
-*_recode_txn_Take  = \&_recode_txn_Set;
-*_recode_txn_Give  = \&_recode_txn_Set;
+*_recode_entry_Steal = \&_recode_entry_Set;
+*_recode_entry_Take  = \&_recode_entry_Set;
+*_recode_entry_Give  = \&_recode_entry_Set;
 
-sub _recode_txn_Create {
+sub _recode_entry_Create {
     my $self = shift;
     my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
 
@@ -138,7 +140,7 @@ sub _recode_txn_Create {
 
 }
 
-sub _recode_txn_AddLink {
+sub _recode_entry_AddLink {
     my $self      = shift;
     my %args      = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
     my $new_state = $args{'previous_state'}->{ $args{'txn'}->{'Field'} };
@@ -197,10 +199,10 @@ sub _recode_content_update {
     $args{'changeset'}->add_change( { change => $change } );
 }
 
-*_recode_txn_Comment    = \&_recode_content_update;
-*_recode_txn_Correspond = \&_recode_content_update;
+*_recode_entry_Comment    = \&_recode_content_update;
+*_recode_entry_Correspond = \&_recode_content_update;
 
-sub _recode_txn_AddWatcher {
+sub _recode_entry_AddWatcher {
     my $self = shift;
     my %args = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
 
@@ -229,7 +231,7 @@ sub _recode_txn_AddWatcher {
 
 }
 
-*_recode_txn_DelWatcher = \&_recode_txn_AddWatcher;
+*_recode_entry_DelWatcher = \&_recode_entry_AddWatcher;
 
 sub resolve_user_id_to {
     my $self = shift;
@@ -270,16 +272,6 @@ our $MONNUM = {
     Dec => 12
 };
 
-use DateTime::Format::HTTP;
-
-sub date_to_iso {
-    my $self = shift;
-    my $date = shift;
-
-    return '' if $date eq 'Not set';
-    my $t = DateTime::Format::HTTP->parse_datetime($date);
-    return $t->ymd . " " . $t->hms;
-}
 
 our %PROP_MAP = (
     subject         => 'summary',
