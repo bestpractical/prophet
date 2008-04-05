@@ -13,7 +13,7 @@ use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 use Prophet::Sync::Source::RT::PullEncoder;
-
+use App::Cache;
 
 
 __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
@@ -21,6 +21,17 @@ __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queu
 our $DEBUG = $Prophet::Handle::DEBUG;
 
 =head1 NOTES ON PUSH
+
+If the remote storage (RT) can not represent a whole changeset along with the prophet changeset uuid, then we need to 
+create a seperate locally(?) stored map of:
+    remote-subchangeset-identifier to changeset uuid.
+
+For each sync of the same remote source (RT), we need a unique prophet database domain.
+
+if clkao syncs from RT, jesse can sync with clkao but not with RT directly with the same database.
+
+
+
 
 Push to rt algorithm
 
@@ -53,11 +64,29 @@ SD::Source::RT->recode_ticket
 sub conflicts_from_changeset { return; }
 sub accepts_changesets {1}
 
+
+my $source_cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
+
 sub record_changeset_integration {
     my ( $self, $source_uuid, $source_seq ) = @_;
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
-    return $cache->set( $self->uuid . '-' . $source_uuid, $source_seq );
+    return $source_cache->set( $self->uuid . '-' . $source_uuid, $source_seq );
 }
+
+
+=head2 last_changeset_from_source $SOURCE_UUID
+
+Returns the last changeset id seen from the source identified by $SOURCE_UUID
+
+=cut
+
+sub last_changeset_from_source {
+    my $self = shift;
+    my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
+    return $source_cache->get( $self->uuid . '-' . $source_uuid ) || 0;
+}
+
+
+
 
 sub record_integration_changeset {
     warn "record_integration_changeset should be renamed to 'record_original_change";
@@ -90,36 +119,23 @@ and was pushed to RT or originated in RT and has already been pulled to the prop
 
 =cut
 
+my $txn_cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
+
 sub  prophet_has_seen_transaction {
     my $self = shift;
     my ($id) = validate_pos(@_, 1 );
-
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
-    return $cache->get( $self->uuid. '-txn-' . $id);
+    return $txn_cache->get( $self->uuid. '-txn-' . $id);
 }
 
 sub record_pushed_transaction {
     my $self  = shift;
     my %args  = validate( @_, { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
 
-    #    warn "storing changeset metadata ".$self->uuid. " $uuid $seq / for ".join(',',@$txn_ids);
-    #    warn "===> ? ".$self->uuid.'      -txn-....'.$args{transaction};
-
-    $cache->set(
-        $self->uuid.'-txn-' . $args{transaction} => 
+    $txn_cache->set( $self->uuid.'-txn-' . $args{transaction} => 
         join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no )
     );
 }
 
-
-sub get_remote_id_for {
-    my ( $self, $ticket_uuid ) = @_;
-    # XXX: should not access CLI handle
-    my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
-    $ticket->load( uuid => $ticket_uuid );
-    return $ticket->prop( $self->uuid . '-id' );
-}
 
 
 
@@ -135,13 +151,7 @@ sub has_seen_changeset {
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
         # XXXX: this is actually not right, because new_changesets_for
     # is calling has_seen_changeset on $other, rather than us
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
-    my $txn_id = $changeset->original_sequence_no;
-
-    # XXX: extract the original txn id from $changeset
-    #    warn "===> ? ".$self->uuid,'-txn-'.$txn_id;
-    my $ret = $cache->get( $self->uuid. '-txn-' . $txn_id );
-    #    warn "==> $ret";
+    my $ret = $txn_cache->get( $self->uuid. '-txn-' . $changeset->original_sequence_no );
     return $ret;
 }
 
@@ -154,35 +164,32 @@ sub record_changeset {
 
 }
 
-sub ticket_uuid {
-    my ($self, $id) = @_;
-    
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
-    warn "===> ticket $id ?".$self->uuid.'-ticket-' . $id ;
-    my $uuid = $cache->get( $self->uuid.'-ticket-' . $id );
 
-    warn "=got $uuid " if $uuid;
-    return $uuid if $uuid;
-    
-    return $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
+my $ticket_cache = App::Cache->new( { ttl => 60 * 60 } );         
+
+sub get_remote_id_for {
+    my ( $self, $ticket_uuid ) = @_;
+    # XXX: should not access CLI handle
+    my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
+    $ticket->load( uuid => $ticket_uuid );
+    return $ticket->prop( $self->uuid . '-id' );
 }
 
 
+
+sub ticket_uuid {
+    my ($self, $id) = @_;
+    
+    return $ticket_cache->get( $self->uuid.'-ticket-' . $id ) || $self->uuid_for_url( $self->rt_url . "/ticket/$id" ),
+}
 
 
 sub record_pushed_ticket {
     my $self = shift;
     my %args= validate(@_, {uuid =>  1,
-                remote_id => 1
-                });
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );         
-    warn "record just pushed ticket $args{remote_id} as ".        $args{uuid};
-    warn $self->uuid.'-ticket-' . $args{remote_id} ;
+                remote_id => 1                });
 
-    $cache->set(
-        $self->uuid.'-ticket-' . $args{remote_id} => 
-        $args{uuid}
-    );
+    $ticket_cache->set( $self->uuid.'-ticket-' . $args{remote_id} =>         $args{uuid}    );
 }
 
 sub _integrate_change {
@@ -408,23 +415,6 @@ sub find_matching_transactions {
     return \@txns;
 }
 
-=head2 last_changeset_from_source $SOURCE_UUID
-
-Returns the last changeset id seen from the source identified by $SOURCE_UUID
-
-=cut
-
-sub last_changeset_from_source {
-    my $self = shift;
-    my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
-
-    use App::Cache;
-    my $cache = App::Cache->new( { ttl => 60 * 60 } );    # la la la
-
-    #$cache->delete($self->uuid.'-'.$source_uuid) || 0;
-
-    return $cache->get( $self->uuid . '-' . $source_uuid ) || 0;
-}
 
 
 1;
