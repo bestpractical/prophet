@@ -40,11 +40,6 @@ sub integrate_changeset {
 
     $self->begin_edit();
     $self->record_changeset($changeset);
-
-    $self->_set_original_source_metadata($changeset);
-    warn "to commit... " if ($DEBUG);
-    my $changed = $self->current_edit->root->paths_changed;
-    warn Dumper($changed) if ($DEBUG);
     $self->record_changeset_integration($changeset);
     $self->commit_edit();
 }
@@ -58,11 +53,6 @@ sub record_resolutions {
 
     $self->begin_edit();
     $self->record_changeset($changeset);
-
-    warn "to commit... " if ($DEBUG);
-    my $changed = $self->current_edit->root->paths_changed;
-    warn Dumper($changed) if ($DEBUG);
-
     $res_handle->record_resolution($_) for $changeset->changes;
     $self->commit_edit();
 }
@@ -100,21 +90,14 @@ sub record_changeset {
         my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit() unless ($inside_edit);
         $self->_integrate_change($_) for ( $changeset->changes );
-        $self->current_edit->change_prop( 'prophet:special-type' => 'nullification' )
-            if ( $changeset->is_nullification );
-        $self->current_edit->change_prop( 'prophet:special-type' => 'resolution' ) if ( $changeset->is_resolution );
+        $self->_cleanup_integrated_changeset($changeset);
+
+
         $self->commit_edit() unless ($inside_edit);
     };
     die($@) if ($@);
 }
 
-sub _set_original_source_metadata {
-    my $self   = shift;
-    my $change = shift;
-
-    $self->current_edit->change_prop( 'prophet:original-source'      => $change->original_source_uuid );
-    $self->current_edit->change_prop( 'prophet:original-sequence-no' => $change->original_sequence_no );
-}
 
 sub _integrate_change {
     my $self   = shift;

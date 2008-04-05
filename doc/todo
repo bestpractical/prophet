@@ -9,15 +9,7 @@ Todo Saturday
           - prophet::record: get_logs/youngest_rev/reivision_root/node_proplist
           - prophet::handle: revision_root, current_edit
           - prophet::test : youngest_rev
-          - move {begin,end}_edit, node* methods into repo handler (Prophet::Handle::SVN) ?
-                record_resolution & other friends belong higher level than actual storage, ditto for record_changeset,
-                node* and edit* functions are needed from the storage layer
-                rebless is probbly good for now, i will work on the callers that creates proper handles.
-    
-                - what if we move them to ..no. moving them to ::Replica::SVN is wrong.
-                
-                - Should I start on that and make Handle->new() rebless to handle::svn new for now?         
-                
+          - move {begin,end}_edit, node* methods into repo handler (Prophet::Handle::SVN) ? @done 
   
   
     

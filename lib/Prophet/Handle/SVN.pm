@@ -65,6 +65,35 @@ sub _connect {
     $self->_create_nonexistent_dir( $self->db_root );
 }
 
+
+sub _cleanup_integrated_changeset{
+    my $self = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+            
+        $self->current_edit->change_prop( 'prophet:special-type' => 'nullification' )            if ( $changeset->is_nullification );
+        $self->current_edit->change_prop( 'prophet:special-type' => 'resolution' ) if ( $changeset->is_resolution );
+}
+
+
+sub record_changeset_integration {
+    my $self = shift;
+      my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+  
+        $self->_set_original_source_metadata($changeset);
+    return $self->SUPER::record_changeset_integration($changeset);
+
+}
+
+
+sub _set_original_source_metadata {
+    my $self   = shift;
+      my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+
+    $self->current_edit->change_prop( 'prophet:original-source'      => $changeset->original_source_uuid );
+    $self->current_edit->change_prop( 'prophet:original-sequence-no' => $changeset->original_sequence_no );
+}
+
+
 sub _create_nonexistent_dir {
     my $self = shift;
     my $dir  = shift;
