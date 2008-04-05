@@ -30,41 +30,19 @@ sub record_changeset {
 
 }
 
-
-
-my $SOURCE_CACHE = App::Cache->new( { ttl => 60 * 60 } );    # la la la
-# "Remote bookkeeping merge tickets."
-# recording a merge ticket locally on behalf of the source ($self)
-# Prophet::Record type '_remote_merge_tickets'? 
-
-sub record_changeset_integration {
-    my ( $self, $source_uuid, $source_seq ) = @_;
-    return $SOURCE_CACHE->set( $self->uuid . '-' . $source_uuid => $source_seq );
-}
-
-=head2 last_changeset_from_source $SOURCE_UUID
-
-Returns the last changeset id seen from the source identified by $SOURCE_UUID
-
-=cut
-
-sub last_changeset_from_source {
-    my $self = shift;
-    my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
-    return $SOURCE_CACHE->get( $self->uuid . '-' . $source_uuid ) || 0;
-}
-
-
-
-
 sub record_integration_changeset {
     warn "record_integration_changeset should be renamed to 'record_original_change";
     my ( $self, $changeset ) = @_;
     $self->record_changeset($changeset);
 
+    # XXX: this can now be back in the base class and always record in state_handle sanely
     # does the merge ticket recording & _source_metadata (book keeping for what txns in rt we just created)
 
-    $self->record_changeset_integration( $changeset->original_source_uuid, $changeset->original_sequence_no );
+    $self->state_handle->begin_edit;
+    $self->state_handle->record_changeset_integration($changeset);
+    $self->state_handle->commit_edit;
+
+    return;
 }
 
 

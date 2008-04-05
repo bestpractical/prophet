@@ -145,37 +145,6 @@ sub _recode_changeset {
     return $changeset;
 }
 
-=head2 last_changeset_from_source $SOURCE_UUID
-
-Returns the last changeset id seen from the source identified by $SOURCE_UUID
-
-=cut
-
-sub last_changeset_from_source {
-    my $self = shift;
-    my ($source) = validate_pos( @_, { type => SCALAR } );
-
-    return $self->prophet_handle->_retrieve_metadata_for( $Prophet::Handle::MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
-
-    # the code below is attempting to get the content over ra so we
-    # can deal with remote svn repo. however this also assuming the
-    # remote is having the same prophet_handle->db_root (which is
-    # always empty for now.)  the code to handle remote svn should be
-    # actually abstracted along when we design the sync prototype
-
-    my ( $stream, $pool );
-
-    my $filename = join( "/", $self->prophet_handle->db_root, $Prophet::Handle::MERGETICKET_METATYPE, $source );
-    my ( $rev_fetched, $props )
-        = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
-
-    # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
-    # because we want to be able to sync to a remote replica someday.
-
-    return ( $props->{'last-changeset'} || 0 );
-
-}
-
 sub record_integration_changeset {
     my $self = shift;
     $self->prophet_handle->integrate_changeset(@_);
