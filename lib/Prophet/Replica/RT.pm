@@ -65,40 +65,62 @@ SD::Source::RT->recode_ticket
 
 =cut
 
-sub conflicts_from_changeset { return; }
-sub accepts_changesets       {1}
 
-my $SOURCE_CACHE = App::Cache->new( { ttl => 60 * 60 } );    # la la la
-# "Remote bookkeeping merge tickets."
-# recording a merge ticket locally on behalf of the source ($self)
-# Prophet::Record type '_remote_merge_tickets'? 
 
-sub record_changeset_integration {
-    my ( $self, $source_uuid, $source_seq ) = @_;
-    return $SOURCE_CACHE->set( $self->uuid . '-' . $source_uuid => $source_seq );
-}
 
-=head2 last_changeset_from_source $SOURCE_UUID
+=head2 setup
 
-Returns the last changeset id seen from the source identified by $SOURCE_UUID
+Open a connection to the SVN source identified by C<$self->url>.
+
+XXX TODO, make the _prophet/ directory in the replica configurable
 
 =cut
 
-sub last_changeset_from_source {
+use File::Temp 'tempdir';
+
+sub setup {
     my $self = shift;
-    my ($source_uuid) = validate_pos( @_, { type => SCALAR } );
-    return $SOURCE_CACHE->get( $self->uuid . '-' . $source_uuid ) || 0;
+    my ( $server, $type, $query ) = $self->{url} =~ m/^rt:(.*?)\|(.*?)\|(.*)$/
+        or die "Can't parse rt server spec";
+    my $uri = URI->new($server);
+    my ( $username, $password );
+    if ( my $auth = $uri->userinfo ) {
+        ( $username, $password ) = split /:/, $auth, 2;
+        $uri->userinfo(undef);
+    }
+    $self->rt_url("$uri");
+    $self->rt_queue($type);
+    $self->rt_query( $query . " AND Queue = '$type'" );
+    $self->rt( RT::Client::REST->new( server => $server ) );
+    unless ($username) {
+
+        # XXX belongs to some CLI callback
+        use Term::ReadKey;
+        local $| = 1;
+        print "Username for $uri: ";
+        ReadMode 1;
+        $username = ReadLine 0;
+        chomp $username;
+        print "Password for $username @ $uri: ";
+        ReadMode 2;
+        $password = ReadLine 0;
+        chomp $password;
+        ReadMode 1;
+        print "\n";
+    }
+    $self->rt->login( username => $username, password => $password );
+    my $orz = tempdir();
+    $self->{___Orz} = $orz;
+    SVN::Repos::create( $orz, undef, undef, undef, undef );
+    $self->ressource( __PACKAGE__->new( { url => "file://$orz", is_resdb => 1 } ) );
+    
+    warn "WE NEED A STATE HANDLE FOR REAL";
+    my $cli = Prophet::CLI->new();
+    $self->state_handle($cli->_handle);
+    
 }
 
-sub record_integration_changeset {
-    warn "record_integration_changeset should be renamed to 'record_original_change";
-    my ( $self, $changeset ) = @_;
-    $self->record_changeset($changeset);
 
-    # does the merge ticket recording & _source_metadata (book keeping for what txns in rt we just created)
-
-    $self->record_changeset_integration( $changeset->original_source_uuid, $changeset->original_sequence_no );
-}
 
 sub record_pushed_transactions {
     my $self = shift;
@@ -164,16 +186,8 @@ sub has_seen_changeset {
     return $ret;
 }
 
-sub record_changeset {
-    my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-    for my $change ( $changeset->changes ) {
-        my $result = $self->_integrate_change( $change, $changeset );
-    }
 
-}
 
-my $TICKET_CACHE = App::Cache->new( { ttl => 60 * 60 } );
 # This cache stores uuids for tickets we've synced from a remote RT
 # Basically, if we created the ticket to begin with, then we'll know its uuid
 # if we pulled the ticket from RT then its uuid will be generated based on a UUID-from-ticket-url scheme
@@ -334,59 +348,6 @@ sub _recode_props_for_integrate {
     return \%attr;
 }
 
-=head2 setup
-
-Open a connection to the SVN source identified by C<$self->url>.
-
-XXX TODO, make the _prophet/ directory in the replica configurable
-
-=cut
-
-use File::Temp 'tempdir';
-
-sub setup {
-    my $self = shift;
-    my ( $server, $type, $query ) = $self->{url} =~ m/^rt:(.*?)\|(.*?)\|(.*)$/
-        or die "Can't parse rt server spec";
-    my $uri = URI->new($server);
-    my ( $username, $password );
-    if ( my $auth = $uri->userinfo ) {
-        ( $username, $password ) = split /:/, $auth, 2;
-        $uri->userinfo(undef);
-    }
-    $self->rt_url("$uri");
-    $self->rt_queue($type);
-    $self->rt_query( $query . " AND Queue = '$type'" );
-    $self->rt( RT::Client::REST->new( server => $server ) );
-    unless ($username) {
-
-        # XXX belongs to some CLI callback
-        use Term::ReadKey;
-        local $| = 1;
-        print "Username for $uri: ";
-        ReadMode 1;
-        $username = ReadLine 0;
-        chomp $username;
-        print "Password for $username @ $uri: ";
-        ReadMode 2;
-        $password = ReadLine 0;
-        chomp $password;
-        ReadMode 1;
-        print "\n";
-    }
-    $self->rt->login( username => $username, password => $password );
-    my $orz = tempdir();
-    $self->{___Orz} = $orz;
-    SVN::Repos::create( $orz, undef, undef, undef, undef );
-    $self->ressource( __PACKAGE__->new( { url => "file://$orz", is_resdb => 1 } ) );
-    
-    warn "WE NEED A STATE HANDLE FOR REAL";
-    my $cli = Prophet::CLI->new();
-    $self->state_handle($cli->_handle);
-    
-}
-
-sub import_resolutions_from_remote_source { warn 'no resdb'; return }
 
 =head2 uuid
 
@@ -400,12 +361,7 @@ sub uuid {
 
 }
 
-use Data::UUID 'NameSpace_DNS';
 
-sub uuid_for_url {
-    my ( $self, $url ) = @_;
-    return Data::UUID->new->create_from_name_str( NameSpace_DNS, $url );
-}
 
 =head2 fetch_changesets { after => SEQUENCE_NO } 
 
