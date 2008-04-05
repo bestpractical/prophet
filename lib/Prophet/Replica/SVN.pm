@@ -16,7 +16,7 @@ use Prophet::Replica::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url ra prophet_handle ressource is_resdb pool/);
+__PACKAGE__->mk_accessors(qw/url ra prophet_handle pool/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 

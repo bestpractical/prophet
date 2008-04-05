@@ -33,4 +33,28 @@ sub uuid_for_url {
     return Data::UUID->new->create_from_name_str( NameSpace_DNS, $url );
 }
 
+sub prompt_for_login {
+    my ( $self, $uri, $username ) = @_;
+
+    my $password;
+    # XXX belongs to some CLI callback
+    use Term::ReadKey;
+    local $| = 1;
+    if ($username) {
+        print "Username for $uri: ";
+        ReadMode 1;
+        $username = ReadLine 0;
+        chomp $username;
+    }
+
+    print "Password for $username @ $uri: ";
+    ReadMode 2;
+    $password = ReadLine 0;
+    chomp $password;
+    ReadMode 1;
+    print "\n";
+    return ($username, $password);
+}
+
+
 1;

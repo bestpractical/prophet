@@ -13,7 +13,7 @@ use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Replica::RT::PullEncoder;
 
-__PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
+__PACKAGE__->mk_accessors(qw/rt rt_url rt_queue rt_query/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -91,22 +91,9 @@ sub setup {
     $self->rt_queue($type);
     $self->rt_query( $query . " AND Queue = '$type'" );
     $self->rt( RT::Client::REST->new( server => $server ) );
-    unless ($username) {
 
-        # XXX belongs to some CLI callback
-        use Term::ReadKey;
-        local $| = 1;
-        print "Username for $uri: ";
-        ReadMode 1;
-        $username = ReadLine 0;
-        chomp $username;
-        print "Password for $username @ $uri: ";
-        ReadMode 2;
-        $password = ReadLine 0;
-        chomp $password;
-        ReadMode 1;
-        print "\n";
-    }
+    ( $username, $password ) = $self->prompt_for_login( $uri, $username ) unless $password;
+
     $self->rt->login( username => $username, password => $password );
 
     my $cli = Prophet::CLI->new();

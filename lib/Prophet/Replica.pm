@@ -6,7 +6,7 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
-__PACKAGE__->mk_accessors(qw(state_handle));
+__PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb));
 
 =head1 NAME
 
