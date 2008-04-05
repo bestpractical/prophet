@@ -43,23 +43,8 @@ sub setup {
     $self->hm_url("$uri");
 
     $self->hm( Jifyt RT::Client::REST->new( server => $server ) );
-    unless ($username) {
 
-        # XXX belongs to some CLI callback
-        use Term::ReadKey;
-        local $| = 1;
-        print "Username for $uri: ";
-        ReadMode 1;
-        $username = ReadLine 0;
-        chomp $username;
-        print "Password for $username @ $uri: ";
-        ReadMode 2;
-        $password = ReadLine 0;
-        chomp $password;
-        ReadMode 1;
-        print "\n";
-    }
-
+    ( $username, $password ) = $self->prompt_for_login( $uri, $username ) unless $password;
 
     $self->hm( Net::Jifty->new(site => $self->hm_url,
                         cookie_name => 'JIFTY_SID_HIVEMINDER',
