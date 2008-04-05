@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-package Prophet::Sync::Source;
+package Prophet::Replica;
 use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
@@ -10,7 +10,7 @@ __PACKAGE__->mk_accessors(qw(state_handle));
 
 =head1 NAME
 
-Prophet::Sync::Source
+Prophet::Replica
 
 =head1 DESCRIPTION
                         
@@ -50,9 +50,9 @@ sub rebless_to_replica_type {
 
     # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
     if ( $args->{url} =~ /^rt:/ ) {
-        $class = 'Prophet::Sync::Source::RT';
+        $class = 'Prophet::Replica::RT';
     } else {
-        $class = 'Prophet::Sync::Source::SVN';
+        $class = 'Prophet::Replica::SVN';
     }
     $class->require or die $@;
     bless $self, $class;
@@ -62,7 +62,7 @@ sub import_changesets {
     my $self = shift;
     my %args = validate(
         @_,
-        {   from               => { isa      => 'Prophet::Sync::Source' },
+        {   from               => { isa      => 'Prophet::Replica' },
             resdb              => { optional => 1 },
             resolver           => { optional => 1 },
             resolver_class     => { optional => 1 },
@@ -92,7 +92,7 @@ sub import_resolutions_from_remote_replica {
     my $self = shift;
     my %args = validate(
         @_,
-        {   from              => { isa      => 'Prophet::Sync::Source' },
+        {   from              => { isa      => 'Prophet::Replica' },
             resolver          => { optional => 1 },
             resolver_class    => { optional => 1 },
             conflict_callback => { optional => 1 }
@@ -293,7 +293,7 @@ sub remove_redundant_data {
 }
 
 
-=head2 news_changesets_for Prophet::Sync::Source
+=head2 news_changesets_for Prophet::Replica
 
 Returns the local changesets that have not yet been seen by the replica we're passing in.
 
@@ -301,7 +301,7 @@ Returns the local changesets that have not yet been seen by the replica we're pa
 
 sub new_changesets_for {
     my $self = shift;
-    my (  $other ) = validate_pos(@_, { isa => 'Prophet::Sync::Source'});
+    my (  $other ) = validate_pos(@_, { isa => 'Prophet::Replica'});
 
     return [ 
         grep { $self->should_send_changeset( changeset => $_, to => $other ) }
@@ -309,7 +309,7 @@ sub new_changesets_for {
         ];
 }
 
-=head2 should_send_changeset { to => Prophet::Sync::Source, changeset => Prophet::ChangeSet }
+=head2 should_send_changeset { to => Prophet::Replica, changeset => Prophet::ChangeSet }
 
 Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>
 
@@ -318,7 +318,7 @@ Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>
 
 sub should_send_changeset {
     my $self = shift;
-    my %args = validate(@_, { to => { isa => 'Prophet::Sync::Source'}, changeset =>{ isa=> 'Prophet::ChangeSet' }});
+    my %args = validate(@_, { to => { isa => 'Prophet::Replica'}, changeset =>{ isa=> 'Prophet::ChangeSet' }});
     
      return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
      return undef if $args{'to'}->has_seen_changeset($args{'changeset'});

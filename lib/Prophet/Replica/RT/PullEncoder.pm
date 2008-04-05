@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-package Prophet::Sync::Source::RT::PullEncoder;
+package Prophet::Replica::RT::PullEncoder;
 use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;

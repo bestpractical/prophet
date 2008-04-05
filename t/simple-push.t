@@ -24,10 +24,10 @@ as_bob {
 
 };
 
-use_ok('Prophet::Sync::Source::SVN');
+use_ok('Prophet::Replica::SVN');
 
-my $alice = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
-my $bob   = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
+my $alice = Prophet::Replica->new( { url => repo_uri_for('alice') } );
+my $bob   = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
 my $changesets = $bob->new_changesets_for($alice);
 

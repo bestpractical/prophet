@@ -1,8 +1,8 @@
 use warnings;
 use strict;
 
-package Prophet::Sync::Source::RT;
-use base qw/Prophet::Sync::Source/;
+package Prophet::Replica::RT;
+use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use RT::Client::REST       ();
@@ -12,7 +12,7 @@ use Memoize;
 use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
-use Prophet::Sync::Source::RT::PullEncoder;
+use Prophet::Replica::RT::PullEncoder;
 use App::Cache;
 
 __PACKAGE__->mk_accessors(qw/prophet_handle ressource is_resdb rt rt_url rt_queue rt_query/);
@@ -425,7 +425,7 @@ sub fetch_changesets {
 
     my @changesets;
     my %tix;
-    my $recoder = Prophet::Sync::Source::RT::PullEncoder->new( { sync_source => $self } );
+    my $recoder = Prophet::Replica::RT::PullEncoder->new( { sync_source => $self } );
     for my $id ( $self->find_matching_tickets ) {
 
         # XXX: _recode_transactions should ignore txn-id <= $first_rev

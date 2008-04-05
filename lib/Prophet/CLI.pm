@@ -10,7 +10,7 @@ use Prophet;
 use Prophet::Handle;
 use Prophet::Record;
 use Prophet::Collection;
-use Prophet::Sync::Source;
+use Prophet::Replica;
 
 sub new {
     my $class = shift;
@@ -242,9 +242,9 @@ sub do_show {
 
 sub do_push {
     my $self = shift;
-    my $source_me = Prophet::Sync::Source->new( { url => "file://".$self->handle->repo_path } );
+    my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
     my $other = shift @ARGV;
-    my $source_other = Prophet::Sync::Source->new( { url => $other } );
+    my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
     
     $self->_do_merge( $source_me, $source_other );
@@ -252,9 +252,9 @@ sub do_push {
 
 sub do_pull {
     my $self = shift;
-    my $source_me = Prophet::Sync::Source->new( { url => "file://".$self->handle->repo_path } );
+    my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
     my $other = shift @ARGV;
-    my $source_other = Prophet::Sync::Source->new( { url => $other } );
+    my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
     
     $self->_do_merge( $source_other, $source_me );
@@ -267,12 +267,11 @@ sub do_merge {
 
     my $opts = $self->args();
 
-    my $source = Prophet::Sync::Source->new( { url => $opts->{'from'} } );
-    my $target = Prophet::Sync::Source->new( { url => $opts->{'to'} } );
+    my $source = Prophet::Replica->new( { url => $opts->{'from'} } );
+    my $target = Prophet::Replica->new( { url => $opts->{'to'} } );
     
     $target->import_resolutions_from_remote_replica( from => $source );
     
-
     $self->_do_merge( $source, $target);
 }
 

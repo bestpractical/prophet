@@ -1,8 +1,8 @@
 use warnings;
 use strict;
 
-package Prophet::Sync::Source::SVN;
-use base qw/Prophet::Sync::Source/;
+package Prophet::Replica::SVN;
+use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
@@ -11,8 +11,8 @@ use SVN::Ra;
 use SVN::Delta;
 
 use Prophet::Handle;
-use Prophet::Sync::Source::SVN::ReplayEditor;
-use Prophet::Sync::Source::SVN::Util;
+use Prophet::Replica::SVN::ReplayEditor;
+use Prophet::Replica::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
@@ -30,8 +30,8 @@ XXX TODO, make the _prophet/ directory in the replica configurable
 
 sub _get_ra {
     my $self = shift;
-    my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Sync::Source::SVN::Util->get_auth_providers );
-    my $config = Prophet::Sync::Source::SVN::Util->svnconfig;
+    my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::SVN::Util->get_auth_providers );
+    my $config = Prophet::Replica::SVN::Util->svnconfig;
     return SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->pool );
 }
 
@@ -87,7 +87,7 @@ sub fetch_changesets {
     # XXX TODO we should  be using a svn get_log call here rather than simple iteration
     # clkao explains that this won't deal cleanly with cases where there are revision "holes"
     for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
-        my $editor = Prophet::Sync::Source::SVN::ReplayEditor->new( _debug => 0 );
+        my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
         $editor->ra( $self->_get_ra );
         my $pool = SVN::Pool->new_default;
 

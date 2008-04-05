@@ -1,9 +1,9 @@
 Todo
 
     - get a state_db exposed within the RT source
-    - extract the reusable bits of Prophet::Sync::Source::RT to
+    - extract the reusable bits of Prophet::Replica::RT to
             Prophet::Sync::UpstreamSource
-    - implement a simple Prophet::Sync::Source::Hiveminder for "personal tasks only"
+    - implement a simple Prophet::Replica::Hiveminder for "personal tasks only"
     - write tests for RT-prophet-prophet-RT sync
     
     - lunch

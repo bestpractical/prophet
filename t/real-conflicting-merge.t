@@ -19,7 +19,7 @@ as_bob {
 
     run_ok( 'prophet-node-create', [qw(--type Dummy --ignore yes)], "Created a dummy record" );
 
-    run_ok( 'prophet-merge', [ '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', ['merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet-node-search', [qw(--type Bug --regex .)] );
@@ -52,10 +52,10 @@ as_alice {
 # This conflict, we can autoresolve
 
 as_bob {
-    use_ok('Prophet::Sync::Source::SVN');
+    use_ok('Prophet::Replica::SVN');
 
-    my $source = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
+    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
+    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
     my $conflict_obj;
 
@@ -95,8 +95,8 @@ as_bob {
     check_bob_final_state_ok(@changesets);
 };
 as_alice {
-    my $source = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
-    my $target = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
+    my $source = Prophet::Replica->new( { url => repo_uri_for('bob') } );
+    my $target = Prophet::Replica->new( { url => repo_uri_for('alice') } );
 
     throws_ok {
         $target->import_changesets( from => $source, );
@@ -123,8 +123,8 @@ as_alice {
 };
 
 as_bob {
-    my $source = Prophet::Sync::Source->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Sync::Source->new( { url => repo_uri_for('bob') } );
+    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
+    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
     lives_and {
         ok_added_revisions(

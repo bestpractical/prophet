@@ -135,8 +135,8 @@ sub cmd_push {
 
 
 return;
-    my $source = Prophet::Sync::Source->new( { url => 'file://'.$CLI->handle->repo_path } );
-    my $target = Prophet::Sync::Source->new( { url => $url });
+    my $source = Prophet::Replica->new( { url => 'file://'.$CLI->handle->repo_path } );
+    my $target = Prophet::Replica->new( { url => $url });
 #    my $changesets = $source->new_changesets_for($target);
     my $changesets = $source->new_changesets_for($target);
     warn Dumper($changesets); use Data::Dumper;

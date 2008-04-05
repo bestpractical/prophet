@@ -2,11 +2,11 @@ use warnings;
 use strict;
 
 # XXX CARGO CULTED FROM SVK::Util;
-package Prophet::Sync::Source::SVN::Util;
+package Prophet::Replica::SVN::Util;
 
 =head1 NAME
 
-Prophet::Sync::Source::SVN
+Prophet::Replica::SVN
 
 =head1 DESCRIPTION
 

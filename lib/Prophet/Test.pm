@@ -269,7 +269,7 @@ Returns C<COUNT> newest L<Prophet::ChangeSet> objects in the current user's repl
 
 sub fetch_newest_changesets {
     my $count = shift;
-    my $source = Prophet::Sync::Source->new( { url => repo_uri_for( $ENV{'PROPHET_USER'} ) } );
+    my $source = Prophet::Replica->new( { url => repo_uri_for( $ENV{'PROPHET_USER'} ) } );
     return @{ $source->fetch_changesets( after => ( replica_last_rev() - $count ) ) };
 
 }
