@@ -134,6 +134,7 @@ Runs the script, checking to see that its output matches
 our $RUNCNT;
 
 sub _get_perl_cmd {
+    my $base_dir = Path::Class::file->new($0)->dir->parent->subdir('bin');
     my $script = shift;
     my @cmd = ( $^X, ( map {"-I$_"} @INC ) );
     push @cmd, '-MDevel::Cover' if $INC{'Devel/Cover.pm'};
@@ -141,7 +142,8 @@ sub _get_perl_cmd {
         push @cmd, '-d:DProf';
         $ENV{'PERL_DPROF_OUT_FILE_NAME'} = 'tmon.out.' . $$ . '.' . $RUNCNT++;
     }
-    push @cmd, 'bin/' . $script;
+    warn $base_dir->file( $script );
+    push @cmd, $base_dir->file( $script );
     return @cmd;
 }
 

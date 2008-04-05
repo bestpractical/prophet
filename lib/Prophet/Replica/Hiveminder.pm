@@ -32,7 +32,7 @@ use File::Temp 'tempdir';
 
 sub setup {
     my $self = shift;
-    my ( $server, $type, $query ) = $self->{url} =~ m/^hiveminder:(.*?)\|(.*?)\|(.*)$/
+    my ( $server, $type, $query ) = $self->{url} =~ m/^hiveminder:(.*?)$/
         or die "Can't parse hiveminder server spec";
     my $uri = URI->new($server);
     my ( $username, $password );
