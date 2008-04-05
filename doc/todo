@@ -1,8 +1,7 @@
-Todo
+Todo Saturday
 
-    - get a state_db exposed within the RT source
-    - extract the reusable bits of Prophet::Replica::RT to
-            Prophet::Sync::UpstreamSource
+    - get a state_db exposed within the ::ForeignReplica driver
+    - replace app::cache with state dbs 
     - implement a simple Prophet::Replica::Hiveminder for "personal tasks only"
     - write tests for RT-prophet-prophet-RT sync
     
@@ -16,6 +15,16 @@ Todo
 
     - dinner
 
+Saturday done
+
+    - extract the reusable bits of Prophet::Replica::RT to
+            Prophet::ForeignReplica
+
+
+
+
+
+-----------------
 
 
 - prophet databases need uuids.
