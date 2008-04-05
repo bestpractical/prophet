@@ -193,6 +193,7 @@ sub integrate_changeset {
 }
 
 =head2 record_changeset
+
 =cut
 
 sub record_changeset {
@@ -204,7 +205,19 @@ sub record_changeset {
 =cut
 
 sub record_integration_changeset {
-    die ref( $_[0] ) . ' must implement record_changeset';
+    my $self      = shift;
+    my $changeset = shift;
+
+    $self->record_changeset($changeset);
+
+    my $state_handle = $self->state_handle;
+
+    my $inside_edit = $state_handle->current_edit ? 1 : 0;
+    $state_handle->begin_edit() unless ($inside_edit);
+    $state_handle->record_changeset_integration($changeset);
+    $state_handle->commit_edit() unless ($inside_edit);
+
+    return;
 }
 
 

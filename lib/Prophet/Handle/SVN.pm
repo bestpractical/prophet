@@ -77,9 +77,9 @@ sub _cleanup_integrated_changeset{
 
 sub record_changeset_integration {
     my $self = shift;
-      my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-  
-        $self->_set_original_source_metadata($changeset);
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+
+    $self->_set_original_source_metadata($changeset);
     return $self->SUPER::record_changeset_integration($changeset);
 
 }
