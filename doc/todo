@@ -1,19 +1,53 @@
 Todo Saturday
 
     - get a state_db exposed within the ::ForeignReplica driver
-    - replace app::cache with state dbs 
+    - replace app::cache with state dbs
+    
+      - multiple Prophet::Handle can point to the same repo_handle but with different db_root
+      - repo_handle should be the actual storage layer
+        - current use of repo_handle
+          - prophet::record: get_logs/youngest_rev/reivision_root/node_proplist
+          - prophet::handle: revision_root, current_edit
+          - prophet::test : youngest_rev
+          - move {begin,end}_edit, node* methods into repo handler (Prophet::Handle::SVN) ?
+                record_resolution & other friends belong higher level than actual storage, ditto for record_changeset,
+                node* and edit* functions are needed from the storage layer
+                rebless is probbly good for now, i will work on the callers that creates proper handles.
+    
+                - what if we move them to ..no. moving them to ::Replica::SVN is wrong.
+                
+                - Should I start on that and make Handle->new() rebless to handle::svn new for now?         
+                
+  
+  
+    
     - implement a simple Prophet::Replica::Hiveminder for "personal tasks only"
     - write tests for RT-prophet-prophet-RT sync
     
     - lunch
     
     - implement uuids for prophet databases
-       - (use the uuid as a prefix for the db root?)    
-    - design/implement basic non-svn sync protocol
+       - (use the uuid as a prefix for the db root?)  
+        - each replica should know the uuid of the database it is a replica of
+        - merging between replicas with different uuids should require a 'force' argument of some kind.
+
+    - push to a remote prophet
+        - bundle all changesets newer than that which we know the other party hasn't seen up as a serialized structure (FeedSync? Storable ;)?)
+        - send them to remote to "pull from textfile
+        - also need to send along all merge tickets we have
+                 
+        - design/implement basic non-svn sync protocol
+
+    - refactor Source::integrate_changeset to get the merge ticket and let the source(dst) decide how to record them, rather than having handle do the job
+
+
 
     - sketch out RT scrips replacement
 
     - dinner
+
+
+
 
 Saturday done
 
@@ -22,62 +56,21 @@ Saturday done
 
 
 
+Todo after saturday:
 
-
------------------
-
-
-- prophet databases need uuids.
-    - each replica should know the uuid of the database it is a replica of
-    - merging between replicas with different uuids should require a 'force' argument of some kind.
-
-- refactor Source::integrate_changeset to get the merge ticket and let the source(dst) decide how to record them, rather than having handle does the job
-- also need to send along all merge tickets we have
-
-
-- validation on bug tracker fields
-	- severity
-
-- ability to add comments to a bug (visible history entries)
-    - maybe long-prop edits
-
-- push to a remote prophet
-            
-    - bundle all changesets newer than that which we know the other party hasn't seen up as a serialized structure (FeedSync? Storable ;)?)
-    - send them to remote to "pull from textfile
-
-- pull from a remote RT by url and query
-    - be able to tell RT to only give us history entries newer than the $DATE of RT history entry with ID #1234 (which is the sequence number we used for the merge ticket from the remote RT).
-
-    - massage this crap into a sequence of prophet changesets
-    - apply.
-    - rt id & record uuid bidirectional mapping how?
-        - uuid as a link?
-        - get rt to store uuid on all tickets at create time?
-            - jesse thinks rt should do this anyway
-
-- issues:
-    - how do we validate RT queues?
-    - how do we deal with RT rejecting a commit because the committer doesn't have acls?
-    - how do we map random remote sd users to rt users?
-    
-
-- push to a remote RT
-    - get the remote RT to give us its merge tickets ?!
-    - for every txn RT hasn't seen, send the txn to remote.
-    - if it's a record-create, we need to do some clever mapping.
-        "find an RT ticket with the uuid $UUID"
-        map that back to local
-
+- validation on bug tracker fields	- severity
 - Replace this todo list with a svb database
 - elegant support for large attachments
 - RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
-
 - define a value for a property that is a reference to another record or set of records
 
 
 
 Archive:
+
+- ability to add comments to a bug (visible history entries)
+    - maybe long-prop edits
+
 
 
 - when committing any change:
