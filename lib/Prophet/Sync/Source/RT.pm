@@ -94,6 +94,7 @@ sub  prophet_has_seen_transaction {
     my $self = shift;
     my ($id) = validate_pos(@_, 1 );
 
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );                                                # la la la
     return $cache->get( $self->uuid. '-txn-' . $id);
 }
 
