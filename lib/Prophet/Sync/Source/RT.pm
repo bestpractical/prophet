@@ -107,7 +107,7 @@ sub record_pushed_transaction {
     #    warn "===> ? ".$self->uuid.'      -txn-....'.$args{transaction};
 
     $cache->set(
-        $self->uuid. '-txn-' . $args{transaction},
+        $self->uuid.'-txn-' . $args{transaction} => 
         join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no )
     );
 }
@@ -338,44 +338,33 @@ sub fetch_changesets {
     my @changesets;
     my %tix;
     my $recoder = Prophet::Sync::Source::RT::PullEncoder->new({ sync_source => $self } );
-    for my $id ( $self->_find_matching_tickets ) {
+    for my $id ( $self->find_matching_tickets ) {
 
         # XXX: _recode_transactions should ignore txn-id <= $first_rev
         push @changesets,
-            @{
-            $recoder->run(
+            @{ $recoder->run(
                 ticket       => $self->rt->show( type => 'ticket', id => $id ),
-                transactions => $self->_find_matching_transactions($id)
-            )
+                transactions => $self->find_matching_transactions(ticket => $id, starting_transaction => $first_rev))
             };
     }
 
     return [  sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets];
-
 }
 
 
-sub _find_matching_tickets {
+sub find_matching_tickets {
     my $self = shift;
-
-    # Find all stalled tickets
-    my @tix = $self->rt->search(
-        type  => 'ticket',
-        query => $self->rt_query,
-    );
-    return @tix;
-
+    return $self->rt->search(        type  => 'ticket',  query => $self->rt_query    );
 }
 
-sub _find_matching_transactions {
+sub find_matching_transactions {
     my $self   = shift;
-    my $ticket = shift;
+    my %args = validate ( @_, {ticket => 1, starting_transaction => 1 });
     my @txns;
-    for my $txn ( $self->rt->get_transaction_ids( parent_id => $ticket ) ) {
-
+    for my $txn ( sort $self->rt->get_transaction_ids( parent_id => $args{ticket} ) ) {
+        next if $txn < $args{'starting_transaction'}; # Skip things we've pushed
         next if $self->prophet_has_seen_transaction($txn);    
-
-        push @txns, $self->rt->get_transaction( parent_id => $ticket, id => $txn, type => 'ticket' );
+        push @txns, $self->rt->get_transaction( parent_id => $args{ticket}, id => $txn, type => 'ticket' );
     }
     return \@txns;
 }
