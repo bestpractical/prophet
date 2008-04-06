@@ -138,15 +138,17 @@ sub find_matching_transactions {
     my %args = validate( @_,   {task => 1, starting_transaction => 1 } );
 
     my $txns = $self->hm->search( 'TaskTransaction', task_id => $args{task} ) || [];
+    my @matched;
     foreach my $txn ( @$txns) {
         next if $txn->{'id'} < $args{'starting_transaction'};        # Skip things we've pushed
 
-        warn $txn->{'id'};
         next if $self->prophet_has_seen_transaction($txn->{'id'});
+
         $txn->{history_entries} = $self->hm->search( 'TaskHistory', transaction_id => $txn->{'id'} );
         $txn->{email_entries} = $self->hm->search( 'TaskEmail', transaction_id => $txn->{'id'} );
+        push @matched, $txn;
     }
-    return $txns;
+    return \@matched;
 
 }
 
@@ -168,16 +170,13 @@ repeat_stacking       => 0,
        %{ $self->_recode_props_for_integrate($change) }
 
 
-    );#->{content}->{tasks};
-
-    warn Dumper( $task );
-
-    use Data::Dumper;
-    return $task->{content}->{id};
+    );
 
     my $txns = $self->hm->search( 'TaskTransaction', task_id => $task->{content}->{id} );
 
-    $self->record_pushed_transaction( transaction => $txns->[0]->id, changeset => $changeset );
+    # lalala
+    $self->record_pushed_transaction( transaction => $txns->[0]->{id}, changeset => $changeset );
+    return $task->{content}->{id};
 
 
 #    return $ticket->id;

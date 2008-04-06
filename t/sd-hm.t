@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use warnings;
 use strict;
-use Prophet::Test tests => 3;
+use Prophet::Test tests => 10;
 
 use Test::More;
 BEGIN {
