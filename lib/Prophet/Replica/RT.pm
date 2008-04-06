@@ -172,18 +172,11 @@ sub uuid_for_remote_id {
     return $self->_lookup_remote_id($id)|| $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
 }
 
-our $REMOTE_ID_METATYPE = "_remote_id_map";
-
-sub _remote_id_storage {
-    my $self = shift;
-    return $self->state_handle->metadata_storage($REMOTE_ID_METATYPE, 'prophet-uuid');
-}
-
 sub _lookup_remote_id {
     my $self = shift;
     my ($id) = validate_pos( @_, 1 );
 
-    return $self->_remote_id_storage->( $self->uuid_for_url( $self->rt_url . "/ticket/$id" ) );
+    return $self->_remote_id_storage( $self->uuid_for_url( $self->rt_url . "/ticket/$id" ) );
 }
 
 sub _set_remote_id {
@@ -193,7 +186,7 @@ sub _set_remote_id {
           remote_id => 1
         }
     );
-    return $self->_remote_id_storage->(
+    return $self->_remote_id_storage(
         $self->uuid_for_url( $self->rt_url . "/ticket/" . $args{'remote_id'} ),
         $args{uuid} );
 }

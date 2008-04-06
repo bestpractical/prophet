@@ -59,5 +59,11 @@ sub prompt_for_login {
     return ($username, $password);
 }
 
+our $REMOTE_ID_METATYPE = "_remote_id_map";
+
+sub _remote_id_storage {
+    my $self = shift;
+    return $self->state_handle->metadata_storage($REMOTE_ID_METATYPE, 'prophet-uuid')->(@_);
+}
 
 1;

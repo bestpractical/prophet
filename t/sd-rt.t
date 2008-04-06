@@ -5,11 +5,12 @@
 # RT_DBA_USER=root RT_DBA_PASSWORD= prove -lv -I/Users/clkao/work/bps/rt-3.7/lib t/sd-rt.t
 use strict;
 
+
 use Test::More;
 eval 'use RT::Test; 1'
     or plan skip_all => 'requires 3.7 to run tests.'.$@;
 
-use Prophet::Test tests => 9;
+eval 'use Prophet::Test tests => 9';
 
 no warnings 'once';
 

@@ -361,8 +361,8 @@ sub new_changesets_for {
     my $self = shift;
     my (  $other ) = validate_pos(@_, { isa => 'Prophet::Replica'});
     if ($self->db_uuid && $other->db_uuid && $self->db_uuid ne $other->db_uuid) {
-        warn "HEY. You should not be merging between two replicas with different database uuids";
-
+        #warn "HEY. You should not be merging between two replicas with different database uuids";
+        # XXX TODO
     }
 
     return [ 

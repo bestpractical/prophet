@@ -1,0 +1,5 @@
+export PATH=/usr/bin:$PATH
+export PERL5LIB=/Users/jesse/svk/rt-3.8/lib
+export JIFTY_APP_ROOT=/Users/jesse/svk/hiveminder-trunk/
+export RT_DBA_USER=root
+export RT_DBA_PASSWORD=''

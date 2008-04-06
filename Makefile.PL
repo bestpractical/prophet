@@ -33,7 +33,7 @@ features(
         'Crazy debugging tools' => [
             -default => 1,
             recommends => 'Devel::Gladiator'
-        ]
+        ],
     'Hiveminder sync' => [
             -default => 0,
             requires => 'Net::Jifty',
