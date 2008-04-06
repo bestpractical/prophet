@@ -16,14 +16,10 @@ sub run {
     my $self = shift;
     my %args = validate( @_, { task => 1, transactions => 1 } );
 
-    warn YAML::Dump( \%args );
-    warn "Working on " . $args{'task'}->{id};
     my @changesets;
 
     my $previous_state = $args{'task'};
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
-        warn "Our task is " . $args{'task'}->{id};
-        warn "Our transaction type is " . $txn->{'type'};
         my $changeset = Prophet::ChangeSet->new(
             {   original_source_uuid => $self->sync_source->uuid,
                 original_sequence_no => $txn->{'id'},
@@ -60,16 +56,15 @@ sub run {
                 }
             );
             for my $key ( keys %$previous_state ) {
-
-                $change->add_prop_change( {new => $previous_state->{$key}, old => undef, name => $key });
+                $change->add_prop_change( { new => $previous_state->{$key}, old => undef, name => $key } );
             }
 
         }
         $changeset->add_change( { change => $change } );
         foreach my $email ( @{ $txn->{email_entries} } ) {
             if ( my $sub = $self->can( '_recode_email_' . 'blah' ) ) {
-                $sub->( $self     => 
-                    previous_state => $previous_state,
+                $sub->(
+                    $self     => previous_state => $previous_state,
                     email     => $email,
                     txn       => $txn,
                     changeset => $changeset
@@ -77,7 +72,7 @@ sub run {
             }
         }
 
-        $self->translate_prop_names($changeset);
+        $self->translate_props($changeset);
         unshift @changesets, $changeset unless $changeset->is_empty;
     }
     return \@changesets;
@@ -166,52 +161,16 @@ sub _recode_content_update {
     $args{'changeset'}->add_change( { change => $change } );
 }
 
-*_recode_entry_Comment    = \&_recode_content_update;
-*_recode_entry_Correspond = \&_recode_content_update;
-
-sub _recode_entry_AddWatcher {
+sub resolve_user_id_to_email {
     my $self = shift;
-    my %args = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
-
-    my $new_state = $args{'previous_state'}->{ $args{'txn'}->{'field'} };
-
-    $args{'previous_state'}->{ $args{'txn'}->{'field'} } = $self->warp_list_to_old_value(
-        $args{'previous_state'}->{ $args{'txn'}->{'field'} },
-
-        $self->resolve_user_id_to( email => $args{'txn'}->{'new_value'} ),
-        $self->resolve_user_id_to( email => $args{'txn'}->{'old_value'} )
-
-    );
-
-    my $change = Prophet::Change->new(
-        {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
-            change_type => 'update_file'
-        }
-    );
-    $args{'changeset'}->add_change( { change => $change } );
-    $change->add_prop_change(
-        name => $args{'txn'}->{'field'},
-        old  => $args{'previous_state'}->{ $args{'txn'}->{'field'} },
-        new  => $new_state
-    );
-
-}
-
-*_recode_entry_DelWatcher = \&_recode_entry_AddWatcher;
-
-sub resolve_user_id_to {
-    my $self = shift;
-    my $attr = shift;
     my $id   = shift;
     return undef unless ($id);
 
-    my $user = Hiveminder::Client::REST::User->new( rt => $self->sync_source->rt, id => $id )->retrieve;
-    return $attr eq 'name' ? $user->name : $user->email_address;
-
+    my $user = $self->sync_source->hm->read('User', 'id', $id);
+    return $user->{'email'};
 }
 
-memoize 'resolve_user_id_to';
+memoize 'resolve_user_id_to_email';
 
 sub warp_list_to_old_value {
     my $self       = shift;
@@ -240,42 +199,44 @@ our $MONNUM = {
 };
 
 our %PROP_MAP = (
-    subject         => 'summary',
-    status          => 'status',
-    owner           => 'owner',
-    initialpriority => '_delete',
-    finalpriority   => '_delete',
-    told            => '_delete',
-    requestors      => 'reported_by',
-    admincc         => 'admin_cc',
-    refersto        => 'refers_to',
-    referredtoby    => 'referred_to_by',
-    dependson       => 'depends_on',
-    dependedonby    => 'depended_on_by',
-    hasmember       => 'members',
-    memberof        => 'member_of',
+    owner_id           => 'owner',
+    requestor_id      => 'reported_by',
     priority        => 'priority_integer',
-    resolved        => 'completed',
+    completed_at        => 'completed',
     due             => 'due',
     creator         => 'creator',
-    timeworked      => 'time_worked',
-    timeleft        => 'time_left',
-    lastupdated     => '_delete',
-    created         => '_delete',            # we should be porting the create date as a metaproperty
+    attachment_count => '_delete',
+    depended_on_by_count => '_delete',
+    depended_on_by_summaries => '_delete',
+    depends_on_count => '_delete',
+    depends_on_summaries => '_delete',
+    group_id => '_delete',
+    last_repeat => '_delete',
+    repeat_days_before_due => '_delete',
+    repeat_every => '_delete',
+    repeat_of => '_delete',
+    repeat_next_create => '_delete',
+    repeat_period => '_delete',
+    repeat_stacking => '_delete',
 
 );
 
-sub translate_prop_names {
+sub translate_props {
     my $self      = shift;
     my $changeset = shift;
 
     for my $change ( $changeset->changes ) {
         next unless $change->node_type eq 'ticket';
-
         my @new_props;
         for my $prop ( $change->prop_changes ) {
-            next if ( ( $PROP_MAP{ lc( $prop->name ) } || '' ) eq '_delete' );
             $prop->name( $PROP_MAP{ lc( $prop->name ) } ) if $PROP_MAP{ lc( $prop->name ) };
+            next if ($prop->name eq '_delete');
+
+            if( $prop->name =~ /^(?:reported_by|owner|next_action_by)$/) {
+                $prop->old_value( $self->resolve_user_id_to_email($prop->old_value));
+                $prop->new_value( $self->resolve_user_id_to_email($prop->new_value));
+            }
+
 
             if ( $prop->name eq 'id' ) {
                 $prop->old_value( $prop->old_value . '@' . $changeset->original_source_uuid )
@@ -284,11 +245,6 @@ sub translate_prop_names {
                     if ( $prop->new_value || '' ) =~ /^\d+$/;
 
             }
-
-            if ( $prop->name =~ /^cf-(.*)$/ ) {
-                $prop->name( 'custom-' . $1 );
-            }
-
             push @new_props, $prop;
 
         }
