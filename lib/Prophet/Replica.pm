@@ -40,8 +40,6 @@ sub new {
 
 Reblesses this sync source into the right sort of sync source for whatever kind of replica $self->url points to
 
-TODO: currently knows that we only have SVN replicas
-
 
 =cut
 
@@ -463,23 +461,43 @@ sub export_to {
     my $path = shift;
 
     my $replica_root = dir( $path, $self->db_uuid );
+    my $cas_dir = dir($replica_root => 'cas');
+    my $record_dir = dir($replica_root => 'records');
     _mkdir($path);
     _mkdir($replica_root);
+    _mkdir( $record_dir);
+    make_tiered_dirs( $cas_dir);
 
-    open( my $uuidfile, ">", file( $replica_root, 'replica-uuid' ) ) || die $!;
+    $self->init_export(root => $replica_root);
+    
+    foreach my $type ( @{ $self->prophet_handle->enumerate_types } ) {
+        $self->export_records(type => $type, root => $replica_root, cas_dir => $cas_dir);
+    }
+
+    $self->export_changesets( root => $replica_root, cas_dir => $cas_dir);
+}
+
+
+
+sub init_export {
+    my $self = shift;
+    my %args = validate(@_, { root => 1});
+
+    open( my $uuidfile, ">", file( $args{'root'}, 'replica-uuid' ) ) || die $!;
     print $uuidfile $self->uuid || die $!;
     close $uuidfile || die $!;
-    open( my $latest, ">", file( $replica_root, 'latest' ) ) || die $!;
+    open( my $latest, ">", file( $args{'root'}, 'latest' ) ) || die $!;
     print $latest $self->most_recent_changeset;
     close $latest || die $!;
+}
 
-    make_tiered_dirs( dir( $replica_root => 'cas' ) );
-    _mkdir( dir( $replica_root => 'records' ) );
-    _mkdir( dir( $replica_root => 'records' => 'some_record_type' ) );
 
-    foreach my $type ( @{ $self->prophet_handle->enumerate_types } ) {
+sub export_records{
+    my $self = shift;
+    my %args = validate(@_, { root => 1, type => 1, cas_dir => 1});
+    my $type = $args{'type'};
 
-        make_tiered_dirs( dir( $replica_root => 'records' => $type ) );
+        make_tiered_dirs( dir( $args{'root'} => 'records' => $type ) );
 
         my $collection = Prophet::Collection->new( handle => $self->prophet_handle, type => $type );
         $collection->matching( sub {1} );
@@ -488,14 +506,14 @@ sub export_to {
             my $content = XMLout( $record_as_hash, NoAttr => 1, RootName => 'record' );
             my $fingerprint = sha1_hex($content);
             my $content_filename
-                = file( $replica_root, 'cas', substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ),
+                = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ),
                 $fingerprint );
             open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
             print $output $content || die $!;
             close $output;
 
             my $idx_filename = file(
-                $replica_root, 'records',$type,
+                $args{'root'}, 'records',$type,
                 substr( $record->uuid, 0, 1 ),
                 substr( $record->uuid, 1, 1 ),
                 $record->uuid
@@ -515,7 +533,12 @@ sub export_to {
 
     }
 
-    open( my $cs_file, ">" . file( $replica_root, 'changesets.idx' ) ) || die $!;
+
+sub export_changesets {
+    my $self = shift;
+    my %args = validate(@_,{ root => 1, cas_dir => 1});
+    
+    open( my $cs_file, ">" . file( $args{'root'}, 'changesets.idx' ) ) || die $!;
 
     foreach my $changeset ( @{ $self->fetch_changesets( after => 0 ) } ) {
         my $hash_changeset = $changeset->as_hash;
@@ -525,7 +548,7 @@ sub export_to {
         my $content = XMLout( $hash_changeset, NoAttr => 1, RootName => 'changeset' );
         my $fingerprint = sha1_hex($content);
         my $content_filename
-            = file( $replica_root, 'cas', substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
+            = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
         open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
         print $output $content || die $!;
         close $output;
@@ -557,7 +580,7 @@ sub _mkdir {
 
 }
 
-    sub make_tiered_dirs {
+sub make_tiered_dirs {
         my $base = shift;
         _mkdir(dir($base));
     for my $a (0..9, 'a'..'f') {
