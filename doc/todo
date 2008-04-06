@@ -1,31 +1,30 @@
 Todo 
-        
+
+    - document sd & replica format
+
+
+
+    - turn fetch_changesets streamy
+
     - write tests for RT-prophet-prophet-hiveminder sync - mostly done
-    
-            
-                
       - make merge aware of database uuids
                 - and does it mean if the db is initialized with a pull, it uses the same UUID
                 - yes. in general, dbs should be initialized with pull or be new projects
                 - merging between replicas with different uuids should require a 'force' argument of some kind.
 
      "publish my changes for remote pulling"    - mostly done. needs test and cleanup, "publish" scp wrapper
-    - pull from a published prophet replica
-        - "hash changeset -> real changeset"
+
     - use a filesystem style prophet replica 'directly' (needs a handle subclass?)
-    
+    - resdb export and sync
 
- 
-
-    - refactor Source::integrate_changeset to get the merge ticket and let the source(dst) decide how to record them, rather than having handle do the job
+    - move merge-ticket logic out of handle and only provides metadata storage
     - validation on bug tracker fields	- severity
     - Replace this todo list with a svb database
     - elegant support for large attachments
     - RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
-    - define a value for a property that is a reference to another record or set of records
-
-
-
+    - define a value for a property that is a reference to:
+      - another record
+      - a set of records @done
 
     - sketch out RT scrips replacement
 
