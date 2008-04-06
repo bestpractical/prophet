@@ -44,8 +44,8 @@ as_bob {
 
     run_ok( 'prophet', [ 'export', '--path', $path ] );
     my $cli = Prophet::CLI->new;
-    $path = $path->subdir( "_prophet-" . $cli->handle->db_uuid );
-    ok( -d $path,                       'found db-uuid root.' );
+    $path = $path->subdir( $cli->handle->db_uuid );
+    ok( -d $path,                       'found db-uuid root '.$path );
     ok( -e $path->file('replica-uuid'), 'found replica uuid file' );
     lives_and {
         is( $path->file('replica-uuid')->slurp, replica_uuid() );
