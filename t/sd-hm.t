@@ -5,8 +5,8 @@ use Prophet::Test tests => 3;
 
 # you need to run this test script from the BTDT directory
 
-eval 'use BTDT::Test; 1;'
-    or plan skip_all => 'requires 3.7 to run tests.'.$@;
+eval 'use BTDT::Test; 1;' or die "$@";
+
 
 my $server = BTDT::Test->make_server;
 my $URL = $server->started_ok;
@@ -14,8 +14,13 @@ my $URL = $server->started_ok;
 $URL =~ s|http://|http://gooduser\@example.com:secret@|;
 
 ok(1, "Loaded the test script");
-
+my $root = BTDT::CurrentUser->superuser;
+my $as_root = BTDT::Model::User->new(current_user => $root);
+$as_root->load_by_cols(email => 'gooduser@example.com');
+my ($val,$msg ) =$as_root->set_accepted_eula_version(Jifty->config->app('EULAVersion'));
+ok($val,$msg);
 my $GOODUSER = BTDT::CurrentUser->new( email => 'gooduser@example.com' );
+$GOODUSER->user_object->set_accepted_eula_version(Jifty->config->app('EULAVersion'));
 my $task = BTDT::Model::Task->new(current_user => $GOODUSER);
 $task->create(
     summary => "Fly Man",
@@ -26,8 +31,8 @@ diag $task->id;
 my ($ret, $out, $err);
 
 my $sd_rt_url = "hm:$URL";
-
-($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
+warn $URL;
+eval { ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url])};
 diag $err;
 
 my ($yatta_uuid, $flyman_uuid);
