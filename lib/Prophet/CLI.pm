@@ -257,6 +257,7 @@ sub do_show {
 
 }
 
+
 sub do_push {
     my $self = shift;
     my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
@@ -265,6 +266,13 @@ sub do_push {
     my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
     
     $self->_do_merge( $source_me, $source_other );
+}
+
+sub do_export {
+    my $self = shift;
+    my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
+    my $path = $self->args->{'path'};
+    $source_me->export_to($path);
 }
 
 sub do_pull {

@@ -416,6 +416,48 @@ sub fetch_changesets {
     return \@results;
 }
 
+use Path::Class;
+use Digest::SHA1 qw(sha1);
+
+sub export_to {
+    my $self = shift;
+    my $path = shift;
+
+     my $replica_root=   dir($path, $self->db_uuid);
+
+    _mkdir($path);
+    _mkdir($replica_root);
+    my $uuid_file = file($replica_root => $self->uuid);
+    `touch $uuid_file`; 
+    mkdir(dir($replica_root => 'content'));    
+    mkdir(dir($replica_root => 'content' => 'some_record_type'));    
+    mkdir(dir($replica_root => 'cas'));
+    for my $a (0..9, 'a'..'f') {
+        mkdir(dir($replica_root => 'cas' => $a));
+        for my $b (0..9, 'a'..'f') {
+        mkdir(dir($replica_root => 'cas' => $a => $b));
+        }
+    }
+    open(my $changesets, ">" . file($replica_root, 'changesets.idx')) || die $!;
+    print $changesets " 1 : ". Data::UUID->new->create_str(). " : 2 : ".sha1('flying man') ."\n" || die $!;
+
+    close ($changesets); 
+}
+
+
+sub _mkdir {
+    my $path = shift;
+    unless (-d $path) {
+        mkdir ($path) || die $@;
+    }
+    unless (-w $path) {
+        die "$path not writable";
+    }
+
+
+}
+
+
     
 sub serialize_changeset {
     my $self = shift;
