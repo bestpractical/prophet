@@ -31,7 +31,7 @@ sub run {
             # In Hiveminder, a changeset has only one change
             $change = Prophet::Change->new(
                 {   node_type   => 'ticket',
-                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
+                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'task'}->{id}),
                     change_type => 'update_file'
                 }
             );
@@ -51,7 +51,7 @@ sub run {
             # In Hiveminder, a changeset has only one change
             $change = Prophet::Change->new(
                 {   node_type   => 'ticket',
-                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
+                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'task'}->{'id'} ),
                     change_type => 'add_file'
                 }
             );
