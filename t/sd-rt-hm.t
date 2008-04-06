@@ -6,9 +6,10 @@
 use strict;
 
 use Test::More;
+BEGIN {
 eval 'use RT::Test; 1'
     or plan skip_all => 'requires 3.7 to run tests.'.$@;
-
+}
 BEGIN {
     unless ($ENV{'JIFTY_APP_ROOT'}) {
         die "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
@@ -35,7 +36,7 @@ my $sd_hm_url = "hm:$URL";
 ok(1, "Loaded the test script");
 
 # setup for rt
-use Prophet::Test tests => 7;
+use Prophet::Test tests => 10;
 
 my ($url, $m) = RT::Test->started_ok;
 diag $url;
@@ -78,7 +79,7 @@ as_alice {
     local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
     ($ret, $out, $err) = run_script('sd', ['pull', $sd_hm_url]);
     warn $err;
-    run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $flyman_uuid = $1 }) YATTA .*/]);
+    run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $yatta_uuid = $1 }) YATTA .*/]);
 };
 
 as_bob {
@@ -90,12 +91,31 @@ as_bob {
 
 
     ($ret, $out, $err) = run_script('sd', ['pull', repo_uri_for('alice')]);
-    ($ret, $out, $err) = run_script('sd', ['ticket', '--list', '--regex', '.']);
-    warn $out;
-    warn $err;
+    run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
+                       [ sort
+                         "$yatta_uuid YATTA (no status)",
+                         "$flyman_uuid Fly Man new",
+                       ]);
 
+    ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
+    warn $out;
+    # XXX: to check YATTA ticket created in RT.
 };
 
+as_alice {
+    local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
+    ($ret, $out, $err) = run_script('sd', ['pull', repo_uri_for('bob')]);
+    run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
+                       [ sort
+                         "$yatta_uuid YATTA (no status)",
+                         "$flyman_uuid Fly Man new",
+                       ]);
+
+    ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
+
+    ok( $task->load_by_cols( summary => 'Fly Man' ) );
+
+}
 
 
 __END__

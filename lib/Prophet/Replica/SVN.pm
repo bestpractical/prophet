@@ -63,7 +63,7 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    return $self->ra->get_uuid;
+    return $self->prophet_handle->repo_handle->fs->get_uuid;
 }
 
 =head2 fetch_changesets { after => SEQUENCE_NO } 

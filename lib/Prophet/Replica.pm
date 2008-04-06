@@ -338,7 +338,7 @@ sub remove_redundant_data {
     # XXX: encapsulation
     $changeset->{changes} = [
         grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' } grep {
-            !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->prophet_handle->uuid )
+            !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid )
             } $changeset->changes
     ];
 }

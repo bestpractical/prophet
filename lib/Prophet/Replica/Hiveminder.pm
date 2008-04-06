@@ -182,6 +182,14 @@ repeat_stacking       => 0,
 
 }
 
+sub integrate_comment {
+    warn "comment not yet";
+}
+
+sub integrate_ticket_update {
+    warn "update not yet";
+}
+
 sub _recode_props_for_integrate {
     my $self = shift;
     my ($change) = validate_pos( @_, { isa => 'Prophet::Change' } );
