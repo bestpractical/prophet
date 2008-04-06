@@ -76,7 +76,12 @@ $ug->to_string( $uuid );
         my $changeset = Prophet::ChangeSet->new({ source_uuid => $self->uuid, sequence_no => $seq
                                                   original_source_uuid => $orig_uuid, original_sequence_no => $orig_seq,
                                                 });
+        my $key = pack('h40', $key);
         # XXX: deserialize the changeset content from the cas with $key
+        my $casfile = $self->url.'/cas/'.substr($key, 0, 1).'/'.substr($key, 1, 1).'/'.$key;
+        use XML::Simple 'XMLin';
+        $changeset->fillin_from_hash(XMLin(get($casfile)));
+        push @results, $changeset;
     }
 
     return \@results;
