@@ -24,13 +24,23 @@ requires('RT::Client::REST::Ticket');
 requires('RT::Client::REST::User');
 requires('SVB::Record');
 requires('Term::ReadKey');
+requires('Digest::SHA1');
+requires('LWP::Simple');
+requires('URI');
+
 requires('SVN::Core'); # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
 features(
         'Crazy debugging tools' => [
             -default => 1,
             recommends => 'Devel::Gladiator'
         ]
+    'Hiveminder sync' => [
+            -default => 0,
+            requires => 'Net::Jifty',
+            requires => 'Jifty',
+    ]
     );
+
 
 all_from('lib/Prophet.pm');
 
