@@ -142,7 +142,6 @@ sub _get_perl_cmd {
         push @cmd, '-d:DProf';
         $ENV{'PERL_DPROF_OUT_FILE_NAME'} = 'tmon.out.' . $$ . '.' . $RUNCNT++;
     }
-    warn $base_dir->file( $script );
     push @cmd, $base_dir->file( $script );
     return @cmd;
 }

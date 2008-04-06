@@ -17,6 +17,9 @@ BEGIN {
     $ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} =
         File::Temp::tempdir( CLEANUP => 0).'/_svb';
     warn $ENV{'PROPHET_REPO'};
+    use Jifty;
+    push @INC, File::Spec->catdir(Jifty::Util->app_root, "lib");
+
 }
 
 
