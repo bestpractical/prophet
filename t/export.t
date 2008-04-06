@@ -56,7 +56,8 @@ as_bob {
     is($latest, 5);
     use_ok('Prophet::Replica::HTTP');
     my $changesets = Prophet::Replica->new({ url => 'prophet:file://'.$path} )->fetch_changesets( after => 0 );
-    is( $#{ $changesets}, 5);
+    warn YAML::Dump($changesets); use YAML;
+    is( $#{ $changesets}, 4, "We found a total of 5 changesets");
 
 };
 
