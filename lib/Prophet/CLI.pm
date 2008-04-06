@@ -217,7 +217,7 @@ sub do_search {
         }
     );
 
-    for ( @{ $records->as_array_ref } ) {
+    for ( sort {$a->uuid cmp  $b->uuid} @{ $records->as_array_ref } ) {
         print $_->format_summary . "\n";
     }
 }

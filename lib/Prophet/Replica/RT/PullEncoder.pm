@@ -27,7 +27,6 @@ sub run {
     
     my $ticket = $args{'ticket'};
 
-    warn "Working on " . $ticket->{id};
     my $create_state = $ticket;;
     map { $create_state->{$_} = $self->date_to_iso( $create_state->{$_} ) }
         qw(Created Resolved Told LastUpdated Starts Started);

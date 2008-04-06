@@ -41,10 +41,8 @@ my $ticket = RT::Client::REST::Ticket->new(
         subject => 'Fly Man',
     )->store(text => "Ticket Comment");
 
-diag $ticket->id;
 my ($ret, $out, $err);
 ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
-warn $err;
 my ($yatta_uuid, $flyman_uuid);
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $flyman_uuid = $1 }) Fly Man new/]);
 
@@ -63,7 +61,6 @@ run_output_matches('sd', ['ticket', '--list', '--regex', '.'], ["$flyman_uuid Fl
 
 run_output_matches('sd', ['ticket', '--create', '--summary', 'YATTA', '--status', 'new'], [qr/Created ticket (.*)(?{ $yatta_uuid = $1 })/]);
 
-diag $yatta_uuid;
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    [ sort 
@@ -72,7 +69,6 @@ run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    ]);
 
 ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
-diag $err;
 my @tix = $rt->search(
         type  => 'ticket',
         query => "Subject='YATTA'"
@@ -110,7 +106,6 @@ RT::Client::REST::Ticket->new(
 
 warn "===> bad pull";
 ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
-diag $err;
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    [ sort
                     "$yatta_uuid YATTA open",

@@ -5,7 +5,7 @@ package Prophet::Test;
 use base qw/Test::More Exporter/;
 our @EXPORT
     = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid
-    serialize_conflict serialize_changeset in_gladiator
+    serialize_conflict serialize_changeset in_gladiator diag
     /;
 
 use File::Path 'rmtree';
@@ -39,8 +39,6 @@ sub import_extra {
     no warnings 'redefine';
 
     sub Test::More::diag {    # bad bad bad # convenient convenient convenient
-                              # my $tb = Test::More->builder;
-
         Test::More->builder->diag(@_) if ( $Test::Harness::Verbose || $ENV{'TEST_VERBOSE'} );
     }
 }

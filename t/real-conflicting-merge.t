@@ -27,7 +27,6 @@ as_bob {
     if ( $out =~ /^(.*?)\s./ ) {
         $record_id = $1;
     }
-    diag($record_id);
 
     run_ok( 'prophet-node-update', [ '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
     run_output_matches(
@@ -97,7 +96,6 @@ as_bob {
 as_alice {
     my $source = Prophet::Replica->new( { url => repo_uri_for('bob') } );
     my $target = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-
     throws_ok {
         $target->import_changesets( from => $source, );
     }
