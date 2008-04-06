@@ -310,6 +310,7 @@ sub _do_merge {
 
     my $opts = $self->args();
 
+    $opts->{'prefer'} ||= 'none';
 
     if ( !$target->accepts_changesets ) {
         fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
