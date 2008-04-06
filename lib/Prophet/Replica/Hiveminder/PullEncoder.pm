@@ -61,15 +61,15 @@ sub run {
             );
             for my $key ( keys %$previous_state ) {
 
-                $change->add_prop_change( {new => $previous_state, {$key}, old => undef, name => $key });
+                $change->add_prop_change( {new => $previous_state->{$key}, old => undef, name => $key });
             }
 
         }
         $changeset->add_change( { change => $change } );
         foreach my $email ( @{ $txn->{email_entries} } ) {
             if ( my $sub = $self->can( '_recode_email_' . 'blah' ) ) {
-                $sub->(
-                    $self     => previous_state => $previous_state,
+                $sub->( $self     => 
+                    previous_state => $previous_state,
                     email     => $email,
                     txn       => $txn,
                     changeset => $changeset
