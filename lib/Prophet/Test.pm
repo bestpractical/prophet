@@ -19,7 +19,7 @@ use Prophet::CLI;
 
 our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
-diag($REPO_BASE);
+diag("Replicas can be found in". $REPO_BASE);
 
 sub import_extra {
     my $class = shift;
@@ -98,7 +98,8 @@ sub run_ok {
     @_ = sub {
         my ( $ret, $stdout, $stderr ) = ( run_script( $script, $args ), $msg );
         @_ = ( $ret, $msg );
-        diag($stderr);
+        diag("STDOUT: " . $stdout) if ($stdout);
+        diag("STDERR: " . $stderr) if ($stderr);
         goto &Test::More::ok;
     };
     goto \&lives_and;
@@ -134,7 +135,8 @@ Runs the script, checking to see that its output matches
 our $RUNCNT;
 
 sub _get_perl_cmd {
-    my $base_dir = Path::Class::file->new($0)->dir->parent->subdir('bin');
+    my $base_dir = Path::Class::File->new($0)->dir->parent->subdir('bin');
+
     my $script = shift;
     my @cmd = ( $^X, ( map {"-I$_"} @INC ) );
     push @cmd, '-MDevel::Cover' if $INC{'Devel/Cover.pm'};
