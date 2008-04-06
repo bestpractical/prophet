@@ -57,7 +57,7 @@ $task->set_summary( 'Crash Man' );
 
 ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
 
-run_output_matches('sd', ['ticket', '--list', '--regex', '.'], ["$flyman_uuid Crash Man (.*)"]);
+run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr"$flyman_uuid Crash Man (.*)"]);
 
 
 ($ret, $out, $err) = run_script('sd', ['ticket', '--show', '--uuid', $flyman_uuid]);

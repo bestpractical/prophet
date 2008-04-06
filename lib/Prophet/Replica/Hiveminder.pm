@@ -138,7 +138,76 @@ sub find_matching_transactions {
 
 }
 
+sub integrate_ticket_create {
+    my $self = shift;
+    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
 
+    # Build up a ticket object out of all the record's attributes
+
+    my $task = $self->hm->create(
+        'Task',
+        owner        => 'me',
+        group        => 0,
+        requestor    => 'me',
+        not_complete => 1,
+       %{ $self->_recode_props_for_integrate($change) }
+
+
+    );#->{content}->{tasks};
+    warn Dumper( $task );
+
+    use Data::Dumper;
+    return 1;
+
+#    return $ticket->id;
+
+
+}
+
+sub _recode_props_for_integrate {
+    my $self = shift;
+    my ($change) = validate_pos( @_, { isa => 'Prophet::Change' } );
+
+    my %props = map { $_->name => $_->new_value } $change->prop_changes;
+    my %attr;
+
+    for my $key ( keys %props ) {
+        # XXX: fill me in
+    }
+    return \%attr;
+}
+
+
+sub _integrate_change {
+
+    my $self = shift;
+    require Prophet::Replica::RT;
+    return Prophet::Replica::RT::_integrate_change($self, @_);
+
+    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
+    my $id;
+eval {
+        if ( $change->node_type eq 'ticket' and $change->change_type eq 'add_file' )
+        {
+            $id = $self->integrate_ticket_create( $change, $changeset );
+#            $self->record_pushed_ticket( uuid => $change->node_uuid, remote_id => $id );
+
+        } elsif ( $change->node_type eq 'comment' ) {
+
+            $id = $self->integrate_comment( $change, $changeset );
+        } elsif ( $change->node_type eq 'ticket' ) {
+            $id = $self->integrate_ticket_update( $change, $changeset );
+
+        } else {
+            die "AAAAAH I DO NOT KNOW HOW TO PUSH " . YAML::Dump($change);
+        }
+
+
+    };
+    warn $@ if $@;
+    return $id;
+
+}
 
 
 
