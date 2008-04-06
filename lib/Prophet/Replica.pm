@@ -416,7 +416,7 @@ sub fetch_changesets {
 
 use Path::Class;
 use Digest::SHA1 qw(sha1 sha1_hex);
-use XML::Simple;
+use YAML::Syck;
 
 =head2 export_to
 
@@ -503,7 +503,7 @@ sub export_records{
         $collection->matching( sub {1} );
         foreach my $record (@$collection) {
             my $record_as_hash = $record->get_props;
-            my $content = XMLout( $record_as_hash, NoAttr => 1, RootName => 'record' );
+            my $content = YAML::Syck::Dump( $record_as_hash);
             my $fingerprint = sha1_hex($content);
             my $content_filename
                 = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ),
@@ -545,7 +545,7 @@ sub export_changesets {
         delete $hash_changeset->{'sequence_no'};
         delete $hash_changeset->{'source_uuid'};
 
-        my $content = XMLout( $hash_changeset, NoAttr => 1, RootName => 'changeset' );
+        my $content = YAML::Syck::Dump( $hash_changeset);
         my $fingerprint = sha1_hex($content);
         my $content_filename
             = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
