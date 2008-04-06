@@ -61,7 +61,7 @@ sub run {
             );
             for my $key ( keys %$previous_state ) {
 
-                $change->add_prop_change( new => $previous_state, {$key}, old => undef, name => $key );
+                $change->add_prop_change( {new => $previous_state, {$key}, old => undef, name => $key });
             }
 
         }
