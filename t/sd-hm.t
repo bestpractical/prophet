@@ -83,7 +83,7 @@ ok( $task->load_by_cols( summary => 'YATTA' ) );
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    [ sort
                     "$yatta_uuid YATTA new",
-                     "$flyman_uuid Fly Man (no status)",
+                     "$flyman_uuid Crash Man (no status)",
                    ]);
 
 $task->set_summary( 'KILL' );
@@ -93,5 +93,5 @@ $task->set_summary( 'KILL' );
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
                    [ sort
                     "$yatta_uuid KILL new",
-                     "$flyman_uuid Fly Man (no status)",
+                     "$flyman_uuid Crash Man (no status)",
                    ]);

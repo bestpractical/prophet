@@ -115,8 +115,20 @@ sub find_matching_tasks {
     return $tasks;
 }
 
-sub prophet_has_seen_transaction { warn "not yet"; return undef }
+sub prophet_has_seen_transaction {
+    goto \&Prophet::Replica::RT::prophet_has_seen_transaction;
+}
+sub record_pushed_transaction {
+    goto \&Prophet::Replica::RT::record_pushed_transaction;
+}
 
+sub record_pushed_transactions {
+    # don't need this for hm
+}
+
+sub _txn_storage {
+    goto \&Prophet::Replica::RT::_txn_storage;
+}
 
 # hiveminder transaction ~= prophet changeset
 # hiveminder taskhistory ~= prophet change
@@ -144,20 +156,29 @@ sub integrate_ticket_create {
 
     # Build up a ticket object out of all the record's attributes
 
+    warn Dumper($change); use Data::Dumper;
     my $task = $self->hm->create(
         'Task',
         owner        => 'me',
         group        => 0,
         requestor    => 'me',
-        not_complete => 1,
+        complete     => 0,
+        will_complete => 1,
+repeat_stacking       => 0,
        %{ $self->_recode_props_for_integrate($change) }
 
 
     );#->{content}->{tasks};
+
     warn Dumper( $task );
 
     use Data::Dumper;
-    return 1;
+    return $task->{content}->{id};
+
+    my $txns = $self->hm->search( 'TaskTransaction', task_id => $task->{content}->{id} );
+
+    $self->record_pushed_transaction( transaction => $txns->[0]->id, changeset => $changeset );
+
 
 #    return $ticket->id;
 
@@ -173,39 +194,17 @@ sub _recode_props_for_integrate {
 
     for my $key ( keys %props ) {
         # XXX: fill me in
+#        next unless ( $key =~ /^(summary|queue|status|owner|custom)/ );
+        $attr{$key} = $props{$key};
     }
     return \%attr;
 }
 
 
+require Prophet::Replica::RT;
 sub _integrate_change {
 
-    my $self = shift;
-    require Prophet::Replica::RT;
-    return Prophet::Replica::RT::_integrate_change($self, @_);
-
-    my ( $change, $changeset ) = validate_pos( @_, { isa => 'Prophet::Change' }, { isa => 'Prophet::ChangeSet' } );
-    my $id;
-eval {
-        if ( $change->node_type eq 'ticket' and $change->change_type eq 'add_file' )
-        {
-            $id = $self->integrate_ticket_create( $change, $changeset );
-#            $self->record_pushed_ticket( uuid => $change->node_uuid, remote_id => $id );
-
-        } elsif ( $change->node_type eq 'comment' ) {
-
-            $id = $self->integrate_comment( $change, $changeset );
-        } elsif ( $change->node_type eq 'ticket' ) {
-            $id = $self->integrate_ticket_update( $change, $changeset );
-
-        } else {
-            die "AAAAAH I DO NOT KNOW HOW TO PUSH " . YAML::Dump($change);
-        }
-
-
-    };
-    warn $@ if $@;
-    return $id;
+    goto \&Prophet::Replica::RT::_integrate_change;
 
 }
 
@@ -258,6 +257,8 @@ sub _set_remote_id {
           remote_id => 1
         }
     );
+    warn "==> doing set remote id $args{remote_id}.........".$self->uuid_for_url( $self->hm_url . "/task/" . $args{'remote_id'} );
+    warn "====> $args{uuid}";
     return $self->_remote_id_storage->(
         $self->uuid_for_url( $self->hm_url . "/task/" . $args{'remote_id'} ),
         $args{uuid} );
@@ -265,7 +266,16 @@ sub _set_remote_id {
 
 }
 
-
+sub record_pushed_ticket {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   uuid      => 1,
+            remote_id => 1
+        }
+    );
+    $self->_set_remote_id(%args);
+}
 
 
 
