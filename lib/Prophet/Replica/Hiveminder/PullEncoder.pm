@@ -16,6 +16,7 @@ sub run {
     my $self = shift;
     my %args = validate( @_, { task => 1, transactions => 1 } );
 
+    warn YAML::Dump(\%args);
     warn "Working on " . $args{'task'}->{id};
     my @changesets;
 
@@ -27,106 +28,65 @@ sub run {
                 original_sequence_no => $txn->{'id'},
             }
         );
+        # In Hiveminder, a changeset has only one change 
+        my $change = Prophet::Change->new( {   node_type   => 'ticket',
+            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
+            change_type => ($txn->{type} eq 'create' ? 'add_file' :'update_file' )
 
-        foreach my $entry ( @{ $txn->{'history_entries'} } ) {
-
-            if ( my $sub = $self->can( '_recode_entry_' . $entry->{'field'} ) ) {
-                $sub->(
-                    $self     => previous_state => $previous_state,
-                    entry     => $entry,
-                    txn       => $txn,
-                    changeset => $changeset
-                );
-            }
-        else {
-            die "failed to know how to handle this entry: " . YAML::Dump($entry);
         }
+        );
+        warn "We're not yet detecting create vs update vs delete";
+        $changeset->add_change({ change => $change});
+        foreach my $entry ( @{ $txn->{'history_entries'} } ) {
+            # Each of these entries is essentially a propchange
+            $self->add_prop_change( change => $change, history_entry =>  $entry,
+                    previous_state => $previous_state,
+            );
+
         }
 
         foreach my $email (@{$txn->{email_entries}}) {
-            if(my $sub = $self->can('_recode_email_'.'blah') {
-                $sub->(
-                    $self     => previous_state => $previous_state,
+            if(my $sub = $self->can('_recode_email_'.'blah')) {
+                $sub->( $self     => 
+                    previous_state => $previous_state,
                     email       => $email,
                     txn       => $txn,
                     changeset => $changeset
                 );
                 }
-                
         }
 
 
         $self->translate_prop_names($changeset);
         unshift @changesets, $changeset unless $changeset->is_empty;
     }
-
-    return \@changesets;
+        return \@changesets;
 }
 
-sub _recode_entry_Status {
+
+
+sub add_prop_change {
     my $self = shift;
-    my %args = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
+    my %args = validate( @_, {  history_entry => 1, previous_state => 1, change => 1 } );
 
-    $args{txn}->{'Type'} = 'Set';
-    return $self->_recode_entry_Set(%args);
-}
-
-sub _recode_entry_Told {
-    my $self = shift;
-    my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
-    $args{txn}->{'Type'} = 'Set';
-    return $self->_recode_entry_Set(%args);
-}
-
-sub _recode_entry_Set {
-    my $self = shift;
-    my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
-
-    my $change = Prophet::Change->new(
-        {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
-            change_type => 'update_file'
-        }
-    );
-
-    if ( $args{txn}->{Field} eq 'Queue' ) {
-        my $current_queue = $args{task}->{'Queue'};
-        my $user          = $args{txn}->{Creator};
-        if ( $args{txn}->{Description} =~ /Queue changed from (.*) to $current_queue by $user/ ) {
-            $args{txn}->{old_value} = $1;
-            $args{txn}->{new_value} = $current_queue;
-        }
-
-    } elsif ( $args{txn}->{Field} eq 'Owner' ) {
-        $args{'txn'}->{new_value} = $self->resolve_user_id_to( name => $args{'txn'}->{'new_value'} ),
-            $args{'txn'}->{old_value}
-            = $self->resolve_user_id_to( name => $args{'txn'}->{'old_value'} )
-
-    }
-
-    $args{'changeset'}->add_change( { change => $change } );
-    if ( $args{'previous_state'}->{ $args{txn}->{Field} } eq $args{txn}->{'new_value'} ) {
-        $args{'previous_state'}->{ $args{txn}->{Field} } = $args{txn}->{'old_value'};
+    if ( $args{'previous_state'}->{ $args{history_entry}->{field} } eq $args{history_entry}->{'new_value'} ) {
+        $args{'previous_state'}->{ $args{history_entry}->{field} } = $args{history_entry}->{'old_value'};
     } else {
-        $args{'previous_state'}->{ $args{txn}->{Field} } = $args{txn}->{'old_value'};
-        warn $args{'previous_state'}->{ $args{txn}->{Field} } . " != "
-            . $args{txn}->{'new_value'} . "\n\n"
+        $args{'previous_state'}->{ $args{history_entry}->{field} } = $args{history_entry}->{'old_value'};
+        warn $args{'previous_state'}->{ $args{history_entry}->{field} } . " != "
+            . $args{history_entry}->{'new_value'} . "\n\n"
             . YAML::Dump( \%args );
     }
-    $change->add_prop_change(
-        name => $args{txn}->{'Field'},
-        old  => $args{txn}->{'old_value'},
-        new  => $args{txn}->{'new_value'}
+    $args{change}->add_prop_change(
+        name => $args{history_entry}->{'field'},
+        old  => $args{history_entry}->{'old_value'},
+        new  => $args{history_entry}->{'new_value'}
 
     );
 
 }
 
-*_recode_entry_Steal = \&_recode_entry_Set;
-*_recode_entry_Take  = \&_recode_entry_Set;
-*_recode_entry_Give  = \&_recode_entry_Set;
-
-sub _recode_entry_Create {
+sub _recode_entry_create {
     my $self = shift;
     my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
 
@@ -151,31 +111,6 @@ sub _recode_entry_Create {
     }
 
     $self->_recode_content_update(%args);    # add the create content txn as a seperate change in this changeset
-
-}
-
-sub _recode_entry_AddLink {
-    my $self      = shift;
-    my %args      = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
-    my $new_state = $args{'previous_state'}->{ $args{'txn'}->{'Field'} };
-    $args{'previous_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(
-        $args{'previous_state'}->{ $args{'txn'}->{'Field'} },
-        $args{'txn'}->{'new_value'},
-        $args{'txn'}->{'old_value'}
-    );
-
-    my $change = Prophet::Change->new(
-        {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
-            change_type => 'update_file'
-        }
-    );
-    $args{'changeset'}->add_change( { change => $change } );
-    $change->add_prop_change(
-        name => $args{'txn'}->{'Field'},
-        old  => $args{'previous_state'}->{ $args{'txn'}->{'Field'} },
-        new  => $new_state
-    );
 
 }
 
@@ -220,10 +155,10 @@ sub _recode_entry_AddWatcher {
     my $self = shift;
     my %args = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
 
-    my $new_state = $args{'previous_state'}->{ $args{'txn'}->{'Field'} };
+    my $new_state = $args{'previous_state'}->{ $args{'txn'}->{'field'} };
 
-    $args{'previous_state'}->{ $args{'txn'}->{'Field'} } = $self->warp_list_to_old_value(
-        $args{'previous_state'}->{ $args{'txn'}->{'Field'} },
+    $args{'previous_state'}->{ $args{'txn'}->{'field'} } = $self->warp_list_to_old_value(
+        $args{'previous_state'}->{ $args{'txn'}->{'field'} },
 
         $self->resolve_user_id_to( email => $args{'txn'}->{'new_value'} ),
         $self->resolve_user_id_to( email => $args{'txn'}->{'old_value'} )
@@ -238,8 +173,8 @@ sub _recode_entry_AddWatcher {
     );
     $args{'changeset'}->add_change( { change => $change } );
     $change->add_prop_change(
-        name => $args{'txn'}->{'Field'},
-        old  => $args{'previous_state'}->{ $args{'txn'}->{'Field'} },
+        name => $args{'txn'}->{'field'},
+        old  => $args{'previous_state'}->{ $args{'txn'}->{'field'} },
         new  => $new_state
     );
 

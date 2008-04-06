@@ -15,7 +15,7 @@ use Prophet::ChangeSet;
 use Prophet::Replica::Hiveminder::PullEncoder;
 use App::Cache;
 
-__PACKAGE__->mk_accessors(qw/m hm_url/);
+__PACKAGE__->mk_accessors(qw/hm_username hm hm_url ressource/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -32,7 +32,7 @@ use File::Temp 'tempdir';
 
 sub setup {
     my $self = shift;
-    my ( $server, $type, $query ) = $self->{url} =~ m/^hiveminder:(.*?)$/
+    my ( $server) = $self->{url} =~ m/^hm:(.*?)$/
         or die "Can't parse hiveminder server spec";
     my $uri = URI->new($server);
     my ( $username, $password );
@@ -42,7 +42,6 @@ sub setup {
     }
     $self->hm_url("$uri");
 
-    $self->hm( Jifyt RT::Client::REST->new( server => $server ) );
 
     ( $username, $password ) = $self->prompt_for_login( $uri, $username ) unless $password;
 
@@ -54,6 +53,7 @@ sub setup {
                         ));
     
 
+    $self->hm_username($username);
     my $cli = Prophet::CLI->new();
     $self->state_handle( $cli->get_handle_for_replica( $self, 'state' ) );
 }
@@ -70,7 +70,7 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    return $self->uuid_for_url( join( '/', $self->hm_url, $self->hm->username ) );
+    return $self->uuid_for_url( join( '/', $self->hm_url, $self->hm_username ) );
 }
 
 
@@ -93,7 +93,7 @@ sub fetch_changesets {
     my @changesets;
     my %tix;
     my $recoder = Prophet::Replica::Hiveminder::PullEncoder->new( { sync_source => $self } );
-    for my $task ( $self->find_matching_tasks ) {
+    for my $task ( @{$self->find_matching_tasks} ) {
         push @changesets, @{ $recoder->run(
                 task => $task,
                 transactions => $self->find_matching_transactions( task => $task->{id}, starting_transaction => $first_rev )) };
@@ -123,19 +123,81 @@ sub prophet_has_seen_transaction { warn "not yet"; return undef }
 # hiveminder taskemail ~= prophet change
 sub find_matching_transactions {
     my $self = shift;
-    my %args = validate( @_, { task => 1, starting_transaction => 1 } );
+    my %args = validate( @_,   {task => 1, starting_transaction => 1 } );
 
-    my ($task) = validate_pos( @_, 1 );
-    my $txns = $self->hm->search( 'TaskTransaction', task_id => $args{task} );
-    foreach my $txn ( @{ $txns || [] } ) {
-        next if $txn < $args{'starting_transaction'};        # Skip things we've pushed
+    my $txns = $self->hm->search( 'TaskTransaction', task_id => $args{task} ) || [];
+    foreach my $txn ( @$txns) {
+        next if $txn->{'id'} < $args{'starting_transaction'};        # Skip things we've pushed
 
-        next if $self->prophet_has_seen_transaction($txn);
+        warn $txn->{'id'};
+        next if $self->prophet_has_seen_transaction($txn->{'id'});
         $txn->{history_entries} = $self->hm->search( 'TaskHistory', transaction_id => $txn->{'id'} );
         $txn->{email_entries} = $self->hm->search( 'TaskEmail', transaction_id => $txn->{'id'} );
     }
     return $txns;
 
 }
+
+
+
+
+
+
+{ 
+
+
+
+# XXXXXXXX
+# XXXXXXXXX
+# XXX todo code in this block cargo culted from the RT Replica type
+
+
+
+
+sub remote_id_for_uuid {
+    my ( $self, $uuid_for_remote_id ) = @_;
+
+    # XXX: should not access CLI handle
+    my $ticket = Prophet::Record->new( handle => Prophet::CLI->new->handle, type => 'ticket' );
+    $ticket->load( uuid => $uuid_for_remote_id );
+    return $ticket->prop( $self->uuid . '-id' );
+}
+
+sub uuid_for_remote_id {
+    my ( $self, $id ) = @_;
+    return $self->_lookup_remote_id($id)|| $self->uuid_for_url( $self->hm_url . "/ticket/$id" );
+}
+
+our $REMOTE_ID_METATYPE = "_remote_id_map";
+
+sub _remote_id_storage {
+    my $self = shift;
+    return $self->state_handle->metadata_storage($REMOTE_ID_METATYPE, 'prophet-uuid');
+}
+
+sub _lookup_remote_id {
+    my $self = shift;
+    my ($id) = validate_pos( @_, 1 );
+
+    return $self->_remote_id_storage->( $self->uuid_for_url( $self->hm_url . "/ticket/$id" ) );
+}
+
+sub _set_remote_id {
+    my $self = shift;
+    my %args = validate( @_,
+        { uuid      => 1,
+          remote_id => 1
+        }
+    );
+    return $self->_remote_id_storage->(
+        $self->uuid_for_url( $self->hm_url . "/ticket/" . $args{'remote_id'} ),
+        $args{uuid} );
+}
+
+}
+
+
+
+
 
 1;

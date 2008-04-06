@@ -51,7 +51,6 @@ sub rebless_to_replica_type {
     # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
     if ( $args->{url} =~ /^rt:/ ) {
         $class = 'Prophet::Replica::RT';
-    }
     elsif ($args->{url} =~ /^hiveminder:/ ) {
         $class = 'Prophet::Replica::Hiveminder';
     } else {
