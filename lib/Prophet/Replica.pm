@@ -396,7 +396,9 @@ Returns a reference to an array of L<Prophet::ChangeSet/> objects.
         
 
 =cut    
-        
+
+
+# XXX: this totally wants to get streamy and use a callback so we can integrate while fetching.
 sub fetch_changesets {
     my $self = shift;
     my %args = validate( @_, { after => 1 } );
