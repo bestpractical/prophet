@@ -9,7 +9,7 @@ my $REPO = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 ok( !-d $REPO );
 `svnadmin create $REPO`;
 ok( -d $REPO, "The repo exists ater svnadmin create" );
-my $cxn = Prophet::Handle->new( repository => "$REPO", db_root => '/_propdb-test' );
+my $cxn = Prophet::Handle->new( repository => "$REPO");
 isa_ok( $cxn, 'Prophet::Handle', "Got the cxn" );
 use_ok('TestApp::Bug');
 

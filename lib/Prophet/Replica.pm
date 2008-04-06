@@ -8,6 +8,9 @@ use UNIVERSAL::require;
 
 __PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb));
 
+use constant state_db_uuid => 'state';
+
+
 =head1 NAME
 
 Prophet::Replica
@@ -235,15 +238,15 @@ sub last_changeset_from_source {
 
     return $self->state_handle->_retrieve_metadata_for( $Prophet::Handle::MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
 
-    # the code below is attempting to get the content over ra so we
+    # XXXX the code below is attempting to get the content over ra so we
     # can deal with remote svn repo. however this also assuming the
-    # remote is having the same prophet_handle->db_root (which is
-    # always empty for now.)  the code to handle remote svn should be
+    # remote is having the same prophet_handle->db_rot 
+    # the code to handle remote svn should be
     # actually abstracted along when we design the sync prototype
 
     my ( $stream, $pool );
 
-    my $filename = join( "/", $self->prophet_handle->db_root, $Prophet::Handle::MERGETICKET_METATYPE, $source );
+    my $filename = join( "/", $self->prophet_handle->db_uuid, $Prophet::Handle::MERGETICKET_METATYPE, $source );
     my ( $rev_fetched, $props )
         = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
 

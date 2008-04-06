@@ -56,9 +56,9 @@ for a foreign $replica, this returns a Prophet::Handle for local storage that ar
 =cut
 
 sub get_handle_for_replica {
-    my ($self, $replica, $db_root) = @_;
+    my ($self, $replica, $db_uuid) = @_;
     my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ).'/_prophet_replica/'.$replica->uuid;
-    return Prophet::Handle->new( repository => $root, db_root => $db_root );
+    return Prophet::Handle->new( repository => $root, db_uuid => $db_uuid);
 }
 
 =head2 _record_cmd

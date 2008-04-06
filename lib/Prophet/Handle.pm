@@ -10,7 +10,7 @@ use Data::UUID;
 our $DEBUG = 0;
 
 
-use constant db_root => '_prophet';
+use constant db_uuid => '_prophet';
 
 =head2 new { repository => $FILESYSTEM_PATH}
  

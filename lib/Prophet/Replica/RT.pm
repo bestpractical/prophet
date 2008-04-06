@@ -71,8 +71,6 @@ SD::Source::RT->recode_ticket
 
 Open a connection to the SVN source identified by C<$self->url>.
 
-XXX TODO, make the _prophet/ directory in the replica configurable
-
 =cut
 
 use File::Temp 'tempdir';
@@ -97,7 +95,7 @@ sub setup {
     $self->rt->login( username => $username, password => $password );
 
     my $cli = Prophet::CLI->new();
-    $self->state_handle( $cli->get_handle_for_replica( $self, 'state' ) );
+    $self->state_handle( $cli->get_handle_for_replica( $self, $self->state_db_uuid ) );
 }
 
 

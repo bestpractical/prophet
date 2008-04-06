@@ -20,7 +20,7 @@ sub new {
     my $self  = {};
     bless $self, $class;
     
-    my %args = validate( @_, { repository => 1, db_root => 0 } );
+    my %args = validate( @_, { repository => 1, db_uuid => 0 } );
     $self->repo_path( $args{'repository'} );
     $self->_connect();
     $self->_pool( SVN::Pool->new );
@@ -62,7 +62,7 @@ sub _connect {
     }
 
     $self->repo_handle($repos);
-    $self->_create_nonexistent_dir( $self->db_root );
+    $self->_create_nonexistent_dir( $self->db_uuid );
 }
 
 
@@ -154,7 +154,7 @@ sub create_node {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
-    $self->_create_nonexistent_dir( join( '/', $self->db_root, $args{'type'} ) );
+    $self->_create_nonexistent_dir( join( '/', $self->db_uuid, $args{'type'} ) );
 
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
@@ -281,7 +281,7 @@ sub directory_for_type {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
     Carp::cluck unless defined $args{type};
-    return join( "/", $self->db_root, $args{'type'} );
+    return join( "/", $self->db_uuid, $args{'type'} );
 
 }
 
@@ -301,6 +301,12 @@ sub node_exists {
     return $root->check_path( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 
 }
+sub enumerate_nodes {
+    my $self = shift;
+    my %args = validate(@_ => { type => 1 } );
+   return $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' );
+}
+
 
 sub type_exists {
     my $self = shift;
@@ -314,7 +320,4 @@ sub type_exists {
 
 
 1;
-
-
-
 

@@ -24,8 +24,6 @@ our $DEBUG = $Prophet::Handle::DEBUG;
 
 Open a connection to the SVN source identified by C<$self->url>.
 
-XXX TODO, make the _prophet/ directory in the replica configurable
-
 =cut
 
 sub _get_ra {
