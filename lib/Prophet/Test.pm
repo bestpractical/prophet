@@ -156,11 +156,11 @@ sub is_script_output {
         _mk_cmp_closure( $exp_stderr, $stdout_err );                                       # stderr
 
     if (@$stdout_err) {
-        @_ = ( 0, join( ' ', "$msg:", $script, @$arg ) );
+        @_ = ( 0, join( ' ', $msg ? "$msg:" : '', $script, @$arg ) );
         diag( "Different in line: " . join( ',', @$stdout_err ) );
         goto \&ok;
     } else {
-        @_ = ( 1, join( ' ', "$msg:", $script, @$arg ) );
+        @_ = ( 1, join( ' ', $msg ? "$msg:" : '', $script, @$arg ) );
         goto \&ok;
     }
 
@@ -168,6 +168,7 @@ sub is_script_output {
 
 sub run_output_matches {
     my ( $script, $args, $expected, $msg ) = @_;
+    Test::Builder->new->level(2);
     lives_and {
         @_ = ( $script, $args, $expected, [], $msg );
         goto \&is_script_output;
