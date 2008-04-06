@@ -5,23 +5,16 @@ use Prophet::Test tests => 10;
 
 use Test::More;
 BEGIN {
-    require File::Temp;
-    $ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} =
-        File::Temp::tempdir( CLEANUP => 0).'/_svb';
-    warn $ENV{'PROPHET_REPO'};
-}
-
-# you need to run this test script from the BTDT directory
-BEGIN {
+    unless ($ENV{'JIFTY_APP_ROOT'}) {
+        die "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
+    }
     require File::Temp;
     $ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} =
         File::Temp::tempdir( CLEANUP => 0).'/_svb';
     warn $ENV{'PROPHET_REPO'};
     use Jifty;
     push @INC, File::Spec->catdir(Jifty::Util->app_root, "lib");
-
 }
-
 
 eval 'use BTDT::Test; 1;' or die "$@";
 
