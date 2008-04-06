@@ -525,7 +525,7 @@ sub export_records{
             my $record_last_changed_changeset = 1;
 
             # XXX TODO FETCH THAT
-            print $record_index pack( 'Na16a20', $record_last_changed_changeset, $record->uuid, sha1_hex($content) )
+            print $record_index pack( 'Na16H40', $record_last_changed_changeset, $record->uuid, sha1_hex($content) )
                 || die $!;
             close $record_index;
 

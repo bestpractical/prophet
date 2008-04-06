@@ -4,7 +4,7 @@ use strict;
 package Prophet::Replica::HTTP;
 use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
-use LWP::Simple 'get';
+use LWP::Simple ();
 
 use Prophet::Handle;
 use Prophet::ChangeSet;
@@ -23,12 +23,13 @@ Open a connection to the SVN source identified by C<$self->url>.
 sub setup {
     my $self = shift;
 
+    $self->{url} =~ s/^prophet://; # url-based constructor in ::replica should do better
     $self->{url} =~ s{/$}{};
     my ($db_uuid) = $self->url =~ m{^.*/(.*?)$};
     $self->db_uuid($db_uuid);
 
     unless ($self->is_resdb) {
-        $self->ressource( __PACKAGE__->new( { url => $self->{url}.'/resolutions', is_resdb => 1 } ) );
+#        $self->ressource( __PACKAGE__->new( { url => $self->{url}.'/resolutions', is_resdb => 1 } ) );
     }
 }
 
@@ -40,7 +41,7 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    return get($self->url.'/replica-uuid');
+    return LWP::Simple::get($self->url.'/replica-uuid');
 }
 
 =head2 fetch_changesets { after => SEQUENCE_NO } 
@@ -64,23 +65,26 @@ sub fetch_changesets {
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
-    my $latest = get($self->url.'/latest');
+    my $latest = LWP::Simple::get($self->url.'/latest');
 
-    my $chgidx = get($self->url.'/changesets.idx');
+    my $chgidx = LWP::Simple::get($self->url.'/changesets.idx');
 
     for my $rev ( $first_rev .. $latest ) {
         my ($seq, $orig_uuid, $orig_seq, $key)
-            = unpack('Na16Na20', substr( $chgidx, ($rev-1)*CHG_RECORD_SIZE, CHG_RECORD_SIZE ) );
+            = unpack('Na16NH40', substr( $chgidx, ($rev-1)*CHG_RECORD_SIZE, CHG_RECORD_SIZE ) );
         $orig_uuid = Data::UUID->new->to_string( $orig_uuid );
-$ug->to_string( $uuid );
-        my $changeset = Prophet::ChangeSet->new({ source_uuid => $self->uuid, sequence_no => $seq
-                                                  original_source_uuid => $orig_uuid, original_sequence_no => $orig_seq,
-                                                });
-        my $key = pack('h40', $key);
+        warn "($key)";
         # XXX: deserialize the changeset content from the cas with $key
         my $casfile = $self->url.'/cas/'.substr($key, 0, 1).'/'.substr($key, 1, 1).'/'.$key;
-        use XML::Simple 'XMLin';
-        $changeset->fillin_from_hash(XMLin(get($casfile)));
+        warn $casfile;
+        my $content = YAML::Syck::Load(LWP::Simple::get($casfile));
+        warn Dumper($content);use Data::Dumper;
+        my $changeset = Prophet::ChangeSet->new_from_hashref( $content );
+        $changeset->source_uuid($self->uuid);
+        $changeset->sequence_no($seq);
+        $changeset->original_source_uuid( $orig_uuid);
+        $changeset->original_sequence_no( $orig_seq);
+
         push @results, $changeset;
     }
 
