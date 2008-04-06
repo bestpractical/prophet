@@ -16,58 +16,76 @@ sub run {
     my $self = shift;
     my %args = validate( @_, { task => 1, transactions => 1 } );
 
-    warn YAML::Dump(\%args);
+    warn YAML::Dump( \%args );
     warn "Working on " . $args{'task'}->{id};
     my @changesets;
 
     my $previous_state = $args{'task'};
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
-        warn "Our task is ".$args{'task'}->{id};
-        warn "Our transaction type is ". $txn->{'type'};
+        warn "Our task is " . $args{'task'}->{id};
+        warn "Our transaction type is " . $txn->{'type'};
         my $changeset = Prophet::ChangeSet->new(
             {   original_source_uuid => $self->sync_source->uuid,
                 original_sequence_no => $txn->{'id'},
             }
         );
-        # In Hiveminder, a changeset has only one change 
-        my $change = Prophet::Change->new( {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
-            change_type => ( $txn->{type} eq 'create' ? 'add_file' : 'update_file' )
+        my $change;
+        if ( $txn->{type} eq 'update' ) {
 
-        }
-        );
-        $changeset->add_change({ change => $change});
-        foreach my $entry ( @{ $txn->{'history_entries'} } ) {
-            # Each of these entries is essentially a propchange
-            $self->add_prop_change( change => $change, history_entry =>  $entry,
-                    previous_state => $previous_state,
+            # In Hiveminder, a changeset has only one change
+            $change = Prophet::Change->new(
+                {   node_type   => 'ticket',
+                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
+                    change_type => 'update_file'
+                }
             );
+            foreach my $entry ( @{ $txn->{'history_entries'} } ) {
+
+                # Each of these entries is essentially a propchange
+                $self->add_prop_change(
+                    change         => $change,
+                    history_entry  => $entry,
+                    previous_state => $previous_state,
+                );
+
+            }
+
+        } elsif ( $txn->{type} eq 'create' ) {
+
+            # In Hiveminder, a changeset has only one change
+            $change = Prophet::Change->new(
+                {   node_type   => 'ticket',
+                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
+                    change_type => 'add_file'
+                }
+            );
+            for my $key ( keys %$previous_state ) {
+
+                $change->add_prop_change( new => $previous_state, {$key}, old => undef, name => $key );
+            }
 
         }
-
-        foreach my $email (@{$txn->{email_entries}}) {
-            if(my $sub = $self->can('_recode_email_'.'blah')) {
-                $sub->( $self     => 
-                    previous_state => $previous_state,
-                    email       => $email,
+        $changeset->add_change( { change => $change } );
+        foreach my $email ( @{ $txn->{email_entries} } ) {
+            if ( my $sub = $self->can( '_recode_email_' . 'blah' ) ) {
+                $sub->(
+                    $self     => previous_state => $previous_state,
+                    email     => $email,
                     txn       => $txn,
                     changeset => $changeset
                 );
-                }
+            }
         }
-
 
         $self->translate_prop_names($changeset);
         unshift @changesets, $changeset unless $changeset->is_empty;
     }
-        return \@changesets;
+    return \@changesets;
 }
-
-
 
 sub add_prop_change {
     my $self = shift;
-    my %args = validate( @_, {  history_entry => 1, previous_state => 1, change => 1 } );
+    my %args = validate( @_, { history_entry => 1, previous_state => 1, change => 1 } );
 
     if ( $args{'previous_state'}->{ $args{history_entry}->{field} } eq $args{history_entry}->{'new_value'} ) {
         $args{'previous_state'}->{ $args{history_entry}->{field} } = $args{history_entry}->{'old_value'};
@@ -88,7 +106,7 @@ sub add_prop_change {
 
 sub _recode_entry_create {
     my $self = shift;
-    my %args = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
+    my %args = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
@@ -116,7 +134,7 @@ sub _recode_entry_create {
 
 sub _recode_content_update {
     my $self   = shift;
-    my %args   = validate( @_, {  txn => 1, previous_state => 1, changeset => 1 } );
+    my %args   = validate( @_, { txn => 1, previous_state => 1, changeset => 1 } );
     my $change = Prophet::Change->new(
         {   node_type => 'comment',
             node_uuid =>
@@ -220,7 +238,6 @@ our $MONNUM = {
     Nov => 11,
     Dec => 12
 };
-
 
 our %PROP_MAP = (
     subject         => 'summary',
