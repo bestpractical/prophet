@@ -3,6 +3,14 @@ use warnings;
 use strict;
 use Prophet::Test tests => 3;
 
+use Test::More;
+BEGIN {
+    require File::Temp;
+    $ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} =
+        File::Temp::tempdir( CLEANUP => 0).'/_svb';
+    warn $ENV{'PROPHET_REPO'};
+}
+
 # you need to run this test script from the BTDT directory
 
 eval 'use BTDT::Test; 1;' or die "$@";
