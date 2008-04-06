@@ -28,6 +28,9 @@ sub record_changeset {
 
 use Data::UUID 'NameSpace_DNS';
 
+# foreign replicas never have a db uuid
+sub db_uuid { return undef };
+
 sub uuid_for_url {
     my ( $self, $url ) = @_;
     return Data::UUID->new->create_from_name_str( NameSpace_DNS, $url );
