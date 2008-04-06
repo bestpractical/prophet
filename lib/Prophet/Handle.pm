@@ -9,8 +9,7 @@ use Data::UUID;
 
 our $DEBUG = 0;
 
-
-use constant db_uuid => '_prophet';
+__PACKAGE__->mk_accessors(qw/db_uuid/);
 
 =head2 new { repository => $FILESYSTEM_PATH}
  

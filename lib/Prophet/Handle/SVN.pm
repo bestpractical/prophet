@@ -22,6 +22,7 @@ sub new {
     
     my %args = validate( @_, { repository => 1, db_uuid => 0 } );
     $self->repo_path( $args{'repository'} );
+    $self->db_uuid($args{'db_uuid'}) if ($args{'db_uuid'});
     $self->_connect();
     $self->_pool( SVN::Pool->new );
     return $self;
@@ -61,8 +62,33 @@ sub _connect {
         $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef, $self->_pool );
     }
 
+
     $self->repo_handle($repos);
-    $self->_create_nonexistent_dir( $self->db_uuid );
+    $self->_determine_db_uuid;
+    $self->_create_nonexistent_dir($self->db_uuid);
+}
+
+use constant USER_PROVIDED_DB_UUID => 1;
+use constant DETECTED_DB_UUID => 2;
+use constant CREATED_DB_UUID => 3;
+
+
+sub _determine_db_uuid {
+    my $self = shift;
+    return USER_PROVIDED_DB_UUID if $self->db_uuid;
+    my @known_replicas = keys %{ $self->current_root->dir_entries("/") };
+
+    for my $key ( keys %{ $self->current_root->dir_entries("/") } ) {
+        if ( $key =~ /^_prophet-/ ) {
+            $self->db_uuid($key);
+            return DETECTED_DB_UUID;
+        }
+    }
+
+    # no luck. create one
+
+    $self->db_uuid( "_prophet-" . Data::UUID->new->create_str() );
+    return CREATED_DB_UUID;
 }
 
 
@@ -304,7 +330,7 @@ sub node_exists {
 sub enumerate_nodes {
     my $self = shift;
     my %args = validate(@_ => { type => 1 } );
-   return $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' );
+   return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' )}];
 }
 
 

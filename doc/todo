@@ -9,19 +9,20 @@ Todo Saturday
             - set replica's 'db_root' to _prophet-UUID
         
         
+            - how do we tell prophet what db uuid it wants to use if there are two of them? or do we expect one replica to only ever have one database?
             
             - how to mark two uuid as joined? 
                 - merging between two replicas with different uuids is basically saying "I want to merge these two different databases"
                 - it should be possible to _change_ a replica's uuid. but maybe not for 0.1
                 - merging between replicas that were seperately initialized is to be treated as hm. "ow"
-                
+                - sane?
                 
             
             - and does it mean if the db is initialized with a pull, it uses the same UUID
                 - yes. in general, dbs should be initialized with pull or be new projects
                    
             
-       - (use the uuid as a prefix for the db root?)  
+           - (use the uuid as a prefix for the db root?)  
         - each replica should know the uuid of the database it is a replica of
         - merging between replicas with different uuids should require a 'force' argument of some kind.
 

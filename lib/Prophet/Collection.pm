@@ -61,7 +61,7 @@ sub matching {
 
     # run coderef against each item;
     # if it matches, add it to _items
-    foreach my $key ( sort keys %$nodes ) {
+    foreach my $key ( @$nodes) {
         my $record = $self->record_class->new( { handle => $self->handle, type => $self->type } );
         $record->load( uuid => $key );
         if ( $coderef->($record) ) {
