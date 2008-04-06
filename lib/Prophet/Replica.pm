@@ -424,45 +424,86 @@ sub export_to {
     my $self = shift;
     my $path = shift;
 
-     my $replica_root=   dir($path, $self->db_uuid);
-
+    my $replica_root = dir( $path, $self->db_uuid );
     _mkdir($path);
     _mkdir($replica_root);
-    my $uuid_file = file($replica_root => $self->uuid);
-    `touch $uuid_file`; 
-    open (my $latest, ">", file ($replica_root, 'latest')) || die $!;
+
+    open( my $uuidfile, ">", file( $replica_root, 'replica-uuid' ) ) || die $!;
+    print $uuidfile $self->uuid || die $!;
+    close $uuidfile || die $!;
+    open( my $latest, ">", file( $replica_root, 'latest' ) ) || die $!;
     print $latest $self->most_recent_changeset;
-    close $latest;
+    close $latest || die $!;
 
-    mkdir(dir($replica_root => 'content'));    
-    mkdir(dir($replica_root => 'content' => 'some_record_type'));    
-    mkdir(dir($replica_root => 'cas'));
-    for my $a (0..9, 'a'..'f') {
-        mkdir(dir($replica_root => 'cas' => $a));
-        for my $b (0..9, 'a'..'f') {
-        mkdir(dir($replica_root => 'cas' => $a => $b));
+    make_tiered_dirs( dir( $replica_root => 'cas' ) );
+    _mkdir( dir( $replica_root => 'records' ) );
+    _mkdir( dir( $replica_root => 'records' => 'some_record_type' ) );
+
+    foreach my $type ( @{ $self->prophet_handle->enumerate_types } ) {
+
+        make_tiered_dirs( dir( $replica_root => 'records' => $type ) );
+
+        my $collection = Prophet::Collection->new( handle => $self->prophet_handle, type => $type );
+        $collection->matching( sub {1} );
+        foreach my $record (@$collection) {
+            my $record_as_hash = $record->get_props;
+            my $content = XMLout( $record_as_hash, NoAttr => 1, RootName => 'record' );
+            my $fingerprint = sha1_hex($content);
+            my $content_filename
+                = file( $replica_root, 'cas', substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ),
+                $fingerprint );
+            open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
+            print $output $content || die $!;
+            close $output;
+
+            my $idx_filename = file(
+                $replica_root, 'records',$type,
+                substr( $record->uuid, 0, 1 ),
+                substr( $record->uuid, 1, 1 ),
+                $record->uuid
+            );
+
+            open(my $record_index, ">>", $idx_filename ) || die $!;
+
+            # XXX TODO: skip if the index already has this version of the record;
+            my $record_last_changed_changeset = 1;
+
+            # XXX TODO FETCH THAT
+            print $record_index pack( 'Na16a20', $record_last_changed_changeset, $record->uuid, sha1_hex($content) )
+                || die $!;
+            close $record_index;
+
         }
-    }
-    open(my $cs_file, ">" . file($replica_root, 'changesets.idx')) || die $!;
 
-    foreach my $changeset( @{$self->fetch_changesets(after=>0)} ) {
+    }
+
+    open( my $cs_file, ">" . file( $replica_root, 'changesets.idx' ) ) || die $!;
+
+    foreach my $changeset ( @{ $self->fetch_changesets( after => 0 ) } ) {
         my $hash_changeset = $changeset->as_hash;
         delete $hash_changeset->{'sequence_no'};
         delete $hash_changeset->{'source_uuid'};
-        my $content = XMLout($hash_changeset, NoAttr => 1, RootName => 'changeset');
+
+        my $content = XMLout( $hash_changeset, NoAttr => 1, RootName => 'changeset' );
         my $fingerprint = sha1_hex($content);
-        my $content_filename =  file($replica_root, 'cas',substr($fingerprint,0,1), substr($fingerprint,1,1), $fingerprint);
-        open(my $output, ">", $content_filename) || die "Could not open $content_filename";
+        my $content_filename
+            = file( $replica_root, 'cas', substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
+        open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
         print $output $content || die $!;
         close $output;
+
         # XXX TODO we should only actually be encoding the sha1 of content once
         # and then converting. this is wasteful
-        print $cs_file pack('Na16Na20', $changeset->sequence_no, $changeset->original_source_uuid, $changeset->original_sequence_no, sha1($content)) || die $!;
+        print $cs_file pack( 'Na16Na20',
+            $changeset->sequence_no,
+            $changeset->original_source_uuid,
+            $changeset->original_sequence_no,
+            sha1($content) )
+            || die $!;
 
     }
-    
 
-    close ($cs_file); 
+    close($cs_file);
 }
 
 
@@ -478,6 +519,18 @@ sub _mkdir {
 
 }
 
+    sub make_tiered_dirs {
+        my $base = shift;
+        _mkdir(dir($base));
+    for my $a (0..9, 'a'..'f') {
+        _mkdir(dir($base => $a));
+        for my $b (0..9, 'a'..'f') {
+        _mkdir(dir($base => $a => $b));
+        }
+    }
+
+
+}
 
     
 sub serialize_changeset {

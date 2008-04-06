@@ -334,6 +334,12 @@ sub enumerate_nodes {
 }
 
 
+sub enumerate_types {
+    my $self = shift;
+   return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' )}];
+}
+
+
 sub type_exists {
     my $self = shift;
     my %args = validate( @_, { type => 1, root => undef } );
