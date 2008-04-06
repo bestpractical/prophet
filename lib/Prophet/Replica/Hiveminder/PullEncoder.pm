@@ -22,7 +22,8 @@ sub run {
 
     my $previous_state = $args{'task'};
     for my $txn ( sort { $b->{'id'} <=> $a->{'id'} } @{ $args{'transactions'} } ) {
-
+        warn "Our task is ".$args{'task'}->{id};
+        warn "Our transaction type is ". $txn->{'type'};
         my $changeset = Prophet::ChangeSet->new(
             {   original_source_uuid => $self->sync_source->uuid,
                 original_sequence_no => $txn->{'id'},
@@ -31,11 +32,10 @@ sub run {
         # In Hiveminder, a changeset has only one change 
         my $change = Prophet::Change->new( {   node_type   => 'ticket',
             node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'previous_state'}->{'id'} ),
-            change_type => ($txn->{type} eq 'create' ? 'add_file' :'update_file' )
+            change_type => ( $txn->{type} eq 'create' ? 'add_file' : 'update_file' )
 
         }
         );
-        warn "We're not yet detecting create vs update vs delete";
         $changeset->add_change({ change => $change});
         foreach my $entry ( @{ $txn->{'history_entries'} } ) {
             # Each of these entries is essentially a propchange

@@ -202,10 +202,4 @@ sub _record_metadata_for {
 }
 
 
-
-use YAML::Syck;
-
-package YAML;
-*Dump = *YAML::Syck::Dump;
-
 1;

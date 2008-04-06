@@ -12,6 +12,13 @@ BEGIN {
 }
 
 # you need to run this test script from the BTDT directory
+BEGIN {
+    require File::Temp;
+    $ENV{'PROPHET_REPO'} = $ENV{'SVB_REPO'} =
+        File::Temp::tempdir( CLEANUP => 0).'/_svb';
+    warn $ENV{'PROPHET_REPO'};
+}
+
 
 eval 'use BTDT::Test; 1;' or die "$@";
 

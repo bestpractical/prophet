@@ -1,18 +1,5 @@
 Todo Saturday
 
-    - get a state_db exposed within the ::ForeignReplica driver
-    - replace app::cache with state dbs
-    
-      - multiple Prophet::Handle can point to the same repo_handle but with different db_root
-      - repo_handle should be the actual storage layer
-        - current use of repo_handle
-          - prophet::record: get_logs/youngest_rev/reivision_root/node_proplist
-          - prophet::handle: revision_root, current_edit
-          - prophet::test : youngest_rev
-          - move {begin,end}_edit, node* methods into repo handler (Prophet::Handle::SVN) ? @done 
-        - refactoring _record_merge_ticket into _record_random_metadata so can be reused for state/txn/etc cache
-  
-    
     - implement a simple Prophet::Replica::Hiveminder for "personal tasks only"
     - write tests for RT-prophet-prophet-RT sync
     
