@@ -26,15 +26,15 @@ eval 'use BTDT::Test; 1;' or die "$@";
 my $server = BTDT::Test->make_server;
 my $URL = $server->started_ok;
 
-$URL =~ s|http://|http://gooduser\@example.com:secret@|;
+$URL =~ s|http://|http://onlooker\@example.com:something@|;
 
 ok(1, "Loaded the test script");
 my $root = BTDT::CurrentUser->superuser;
 my $as_root = BTDT::Model::User->new(current_user => $root);
-$as_root->load_by_cols(email => 'gooduser@example.com');
+$as_root->load_by_cols(email => 'onlooker@example.com');
 my ($val,$msg ) =$as_root->set_accepted_eula_version(Jifty->config->app('EULAVersion'));
 ok($val,$msg);
-my $GOODUSER = BTDT::CurrentUser->new( email => 'gooduser@example.com' );
+my $GOODUSER = BTDT::CurrentUser->new( email => 'onlooker@example.com' );
 $GOODUSER->user_object->set_accepted_eula_version(Jifty->config->app('EULAVersion'));
 my $task = BTDT::Model::Task->new(current_user => $GOODUSER);
 $task->create(
@@ -58,6 +58,11 @@ $task->set_summary( 'Crash Man' );
 ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
 
 run_output_matches('sd', ['ticket', '--list', '--regex', '.'], ["$flyman_uuid Crash Man (.*)"]);
+
+
+($ret, $out, $err) = run_script('sd', ['ticket', '--show', '--uuid', $flyman_uuid]);
+diag $out;
+
 
 run_output_matches('sd', ['ticket', '--create', '--summary', 'YATTA', '--status', 'new'], [qr/Created ticket (.*)(?{ $yatta_uuid = $1 })/]);
 
