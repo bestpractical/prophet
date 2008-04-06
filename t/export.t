@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use Test::Exception;
 
-use Prophet::Test tests => 12;
+use Prophet::Test tests => 16;
 use Test::Exception;
 
 as_alice {
@@ -57,6 +57,7 @@ as_bob {
     use_ok('Prophet::Replica::HTTP');
     my $changesets = Prophet::Replica->new({ url => 'prophet:file://'.$path} )->fetch_changesets( after => 0 );
     is( $#{ $changesets}, 4, "We found a total of 5 changesets");
+    is(lc($changesets->[-1]->{source_uuid}), lc($changesets->[-1]->{original_source_uuid}));
 
 };
 

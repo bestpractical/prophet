@@ -10,7 +10,7 @@ use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url db_uuid/);
+__PACKAGE__->mk_accessors(qw/url db_uuid _uuid/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
@@ -41,7 +41,9 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    return LWP::Simple::get($self->url.'/replica-uuid');
+
+    $self->_uuid( LWP::Simple::get($self->url.'/replica-uuid') ) unless $self->_uuid;
+    return $self->_uuid ;
 }
 
 =head2 fetch_changesets { after => SEQUENCE_NO } 
@@ -73,18 +75,18 @@ sub fetch_changesets {
         my ($seq, $orig_uuid, $orig_seq, $key)
             = unpack('Na16NH40', substr( $chgidx, ($rev-1)*CHG_RECORD_SIZE, CHG_RECORD_SIZE ) );
         $orig_uuid = Data::UUID->new->to_string( $orig_uuid );
-        warn "($key)";
+
         # XXX: deserialize the changeset content from the cas with $key
         my $casfile = $self->url.'/cas/'.substr($key, 0, 1).'/'.substr($key, 1, 1).'/'.$key;
-        warn $casfile;
+
         my $content = YAML::Syck::Load(LWP::Simple::get($casfile));
-        warn Dumper($content);use Data::Dumper;
+
         my $changeset = Prophet::ChangeSet->new_from_hashref( $content );
         $changeset->source_uuid($self->uuid);
         $changeset->sequence_no($seq);
         $changeset->original_source_uuid( $orig_uuid);
         $changeset->original_sequence_no( $orig_seq);
-
+        warn Dumper($changeset);use Data::Dumper;
         push @results, $changeset;
     }
 

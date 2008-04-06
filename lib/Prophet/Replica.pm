@@ -557,7 +557,7 @@ sub export_changesets {
         # and then converting. this is wasteful
         print $cs_file pack( 'Na16Na20',
             $changeset->sequence_no,
-            $changeset->original_source_uuid,
+            Data::UUID->new->from_string( $changeset->original_source_uuid ),
             $changeset->original_sequence_no,
             sha1($content) )
             || die $!;
