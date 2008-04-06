@@ -1,4 +1,4 @@
-Todo Saturday
+Todo 
         
     - write tests for RT-prophet-prophet-hiveminder sync - mostly done
     
@@ -9,72 +9,37 @@ Todo Saturday
                 - yes. in general, dbs should be initialized with pull or be new projects
                 - merging between replicas with different uuids should require a 'force' argument of some kind.
 
-    - pull from a remote prophet
+     "publish my changes for remote pulling"    - mostly done. needs test and cleanup, "publish" scp wrapper
+    - pull from a published prophet replica
+        - "hash changeset -> real changeset"
+    - use a filesystem style prophet replica 'directly' (needs a handle subclass?)
+    
 
- "publish my changes for remote pulling"
  
- $URL
-    /<db-uuid>/
-        /replica-uuid
-        /latest
-        /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
-        /content (optional?)
-            /<record type> (for resolution is actually _prophet-resolution-<cas-key>)
-                /<record uuid> which is a file containing a list of 0 or more rows
-                    last-changed-sequence-no : cas key
-                                    
-        /changesets.idx
-    
-            index which has records:
-                each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-            ...
-    
-        /resolutions/
-            /replica-uuid
-            /latest
-            /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
-            /content (optional?)
-                /_prophet-resolution-<cas-key>   (cas-key == a hash the conflicting change)
-                    /<record uuid>  (record uuid == the originating replica)
-                        last-changed-sequence-no : <cas key to the content of the resolution>
-                                        
-            /changesets.idx
-                index which has records:
-                    each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-                ...
- 
- 
-    - replica publishing todo
-    
- 
-
-    - push to a remote prophet
-        - bundle all changesets newer than that which we know the other party hasn't seen up as a serialized structure (FeedSync? Storable ;)?)
-        - send them to remote to "pull from textfile
-        - also need to send along all merge tickets we have
-                 
-        - design/implement basic non-svn sync protocol
 
     - refactor Source::integrate_changeset to get the merge ticket and let the source(dst) decide how to record them, rather than having handle do the job
+    - validation on bug tracker fields	- severity
+    - Replace this todo list with a svb database
+    - elegant support for large attachments
+    - RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
+    - define a value for a property that is a reference to another record or set of records
+
 
 
 
     - sketch out RT scrips replacement
 
-    - dinner
 
 
 
 
 Saturday done
     - implement a simple Prophet::Replica::Hiveminder for "personal tasks only"
-
     - extract the reusable bits of Prophet::Replica::RT to
             Prophet::ForeignReplica
-
     - implement uuids for prophet databases DONE
-
     - light dinner
+    - dinner @done
 
     
 
@@ -82,12 +47,6 @@ Saturday done
 
 
 Todo after saturday:
-
-- validation on bug tracker fields	- severity
-- Replace this todo list with a svb database
-- elegant support for large attachments
-- RESTy web server API to let third-parties build non-perl apps against a Prophet Depot
-- define a value for a property that is a reference to another record or set of records
 
 
 

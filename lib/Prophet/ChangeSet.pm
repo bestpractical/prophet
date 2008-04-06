@@ -91,12 +91,12 @@ sub is_empty {
     return $self->changes ? 0 : 1;
 }
 
+
+our @SERIALIZE_PROPS = (            qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty));
+
 sub as_hash {
     my $self = shift;
-    my $as_hash
-        = { map { $_ => $self->$_() }
-            qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty)
-        };
+    my $as_hash = { map { $_ => $self->$_() } @SERIALIZE_PROPS };
 
     for my $change ( $self->changes ) {
 
@@ -104,5 +104,17 @@ sub as_hash {
     }
     return $as_hash;
 }
+
+sub new_from_hashref {
+    my $class = shift;
+    my $hashref = shift;
+    my $self = $class->new({ map  { $_ => $hashref->{$_}  } @SERIALIZE_PROPS });
+
+    foreach my $change (keys %{$hashref->{changes}}) {
+            $self->add_change(Prophet::Change->new_from_hashref($change => $hashref->{changes}->{$change}))
+    }
+    return $self;
+}
+
 
 1;

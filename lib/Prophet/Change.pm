@@ -95,4 +95,19 @@ sub as_hash {
     };
 }
 
+sub new_from_hashref {
+    my $class = shift;
+    my $uuid = shift;
+    my $hashref = shift;
+    my $self = $class->new({ node_type => $hashref->{'node_type'}, node_uuid => $uuid, change_type => $hashref->{'change_type'}});
+    foreach my $prop (keys %{$hashref->{'prop_changes'}}) {
+            $self->add_prop_change( name => $prop, 
+                    old => $hashref->{'prop_changes'}->{'old_value'},
+                    new => $hashref->{'prop_changes'}->{'new_value'}
+                );
+    }
+    return $self;
+}
+
+
 1;

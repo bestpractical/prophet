@@ -420,6 +420,44 @@ use Path::Class;
 use Digest::SHA1 qw(sha1 sha1_hex);
 use XML::Simple;
 
+=head2 export_to
+
+
+filesystem replica type
+ 
+ $URL
+    /<db-uuid>/
+        /replica-uuid
+        /latest
+        /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
+        /records (optional?)
+            /<record type> (for resolution is actually _prophet-resolution-<cas-key>)
+                /<record uuid> which is a file containing a list of 0 or more rows
+                    last-changed-sequence-no : cas key
+                                    
+        /changesets.idx
+    
+            index which has records:
+                each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
+            ...
+    
+        /resolutions/
+            /replica-uuid
+            /latest
+            /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
+            /content (optional?)
+                /_prophet-resolution-<cas-key>   (cas-key == a hash the conflicting change)
+                    /<record uuid>  (record uuid == the originating replica)
+                        last-changed-sequence-no : <cas key to the content of the resolution>
+                                        
+            /changesets.idx
+                index which has records:
+                    each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
+                ...
+
+=cut
+
+
 sub export_to {
     my $self = shift;
     my $path = shift;
