@@ -390,9 +390,44 @@ sub should_send_changeset {
     return 1;     
 }
 
+=head2 fetch_changesets { after => SEQUENCE_NO } 
+
+Fetch all changesets from the source. 
+        
+Returns a reference to an array of L<Prophet::ChangeSet/> objects.
+        
+
+=cut    
+        
+sub fetch_changesets {
+    my $self = shift;
+    my %args = validate( @_, { after => 1 } );
+    my @results;
+
+    my $first_rev = ( $args{'after'} + 1 ) || 1;
+
+    # XXX TODO we should  be using a svn get_log call here rather than simple iteration
+    # clkao explains that this won't deal cleanly with cases where there are revision "holes"
+    for my $rev ( $first_rev .. $self->most_recent_changeset) {
+        push @results, $self->fetch_changeset($rev);
+    }
+
+
+    return \@results;
+}
+
     
-    
-    
+sub serialize_changeset {
+    my $self = shift;
+    my $changeset_id = shift;
+    $self->fetch_changeset($changeset_id);
+
+}
+
+
+sub serialize_node {
+
+}
 
 
 1;

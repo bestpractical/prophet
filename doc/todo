@@ -1,6 +1,6 @@
 Todo Saturday
         
-    - write tests for RT-prophet-prophet-hiveminder sync
+    - write tests for RT-prophet-prophet-hiveminder sync - mostly done
     
             
                 
@@ -9,7 +9,44 @@ Todo Saturday
                 - yes. in general, dbs should be initialized with pull or be new projects
                 - merging between replicas with different uuids should require a 'force' argument of some kind.
 
-    - light dinner
+    - pull from a remote prophet
+
+ "publish my changes for remote pulling"
+ 
+ $URL
+    /<db-uuid>/
+        /replica-uuid
+        /latest
+        /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
+        /content (optional?)
+            /<record type> (for resolution is actually _prophet-resolution-<cas-key>)
+                /<record uuid> which is a file containing a list of 0 or more rows
+                    last-changed-sequence-no : cas key
+                                    
+        /changesets.idx
+    
+            index which has records:
+                each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
+            ...
+    
+        /resolutions/
+            /replica-uuid
+            /latest
+            /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
+            /content (optional?)
+                /_prophet-resolution-<cas-key>   (cas-key == a hash the conflicting change)
+                    /<record uuid>  (record uuid == the originating replica)
+                        last-changed-sequence-no : <cas key to the content of the resolution>
+                                        
+            /changesets.idx
+                index which has records:
+                    each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
+                ...
+ 
+ 
+    - replica publishing todo
+    
+ 
 
     - push to a remote prophet
         - bundle all changesets newer than that which we know the other party hasn't seen up as a serialized structure (FeedSync? Storable ;)?)
@@ -36,6 +73,9 @@ Saturday done
             Prophet::ForeignReplica
 
     - implement uuids for prophet databases DONE
+
+    - light dinner
+
     
 
 

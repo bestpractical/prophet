@@ -66,25 +66,14 @@ sub uuid {
     return $self->prophet_handle->repo_handle->fs->get_uuid;
 }
 
-=head2 fetch_changesets { after => SEQUENCE_NO } 
-
-Fetch all changesets from the source. 
-
-Returns a reference to an array of L<Prophet::ChangeSet/> objects.
-
-
-=cut
-
-sub fetch_changesets {
+sub most_recent_changeset {
     my $self = shift;
-    my %args = validate( @_, { after => 1 } );
-    my @results;
+     $self->ra->get_latest_revnum
+}
 
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
-
-    # XXX TODO we should  be using a svn get_log call here rather than simple iteration
-    # clkao explains that this won't deal cleanly with cases where there are revision "holes"
-    for my $rev ( $first_rev .. $self->ra->get_latest_revnum ) {
+sub fetch_changeset {
+    my $self = shift;
+    my $rev = shift;
         my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
         $editor->ra( $self->_get_ra );
         my $pool = SVN::Pool->new_default;
@@ -93,12 +82,10 @@ sub fetch_changesets {
         $editor->{revision} = $rev;
 
         $self->ra->replay( $rev, 0, 1, $editor );
-        push @results, $self->_recode_changeset( $editor->dump_deltas, $self->ra->rev_proplist($rev) );
+        return $self->_recode_changeset( $editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
-    }
-
-    return \@results;
 }
+
 
 sub _recode_changeset {
     my $self      = shift;
