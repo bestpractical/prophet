@@ -56,6 +56,8 @@ sub rebless_to_replica_type {
         $class = 'Prophet::Replica::RT';
     } elsif ($args->{url} =~ /^hm:/ ) {
         $class = 'Prophet::Replica::Hiveminder';
+    } elsif ($args->{url} =~ s/^prophet://) {
+        $class = 'Prophet::Replica::HTTP';
     } else {
         $class = 'Prophet::Replica::SVN';
     }
