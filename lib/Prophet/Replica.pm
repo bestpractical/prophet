@@ -250,7 +250,7 @@ sub last_changeset_from_source {
 
     my $filename = join( "/", $self->prophet_handle->db_uuid, $Prophet::Handle::MERGETICKET_METATYPE, $source );
     my ( $rev_fetched, $props )
-        = eval { $self->ra->get_file( $filename, $self->ra->get_latest_revnum, $stream, $pool ); };
+        = eval { $self->ra->get_file( $filename, $self->most_recent_changeset, $stream, $pool ); };
 
     # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
     # because we want to be able to sync to a remote replica someday.
@@ -417,7 +417,8 @@ sub fetch_changesets {
 }
 
 use Path::Class;
-use Digest::SHA1 qw(sha1);
+use Digest::SHA1 qw(sha1 sha1_hex);
+use XML::Simple;
 
 sub export_to {
     my $self = shift;
@@ -429,6 +430,10 @@ sub export_to {
     _mkdir($replica_root);
     my $uuid_file = file($replica_root => $self->uuid);
     `touch $uuid_file`; 
+    open (my $latest, ">", file ($replica_root, 'latest')) || die $!;
+    print $latest $self->most_recent_changeset;
+    close $latest;
+
     mkdir(dir($replica_root => 'content'));    
     mkdir(dir($replica_root => 'content' => 'some_record_type'));    
     mkdir(dir($replica_root => 'cas'));
@@ -438,10 +443,26 @@ sub export_to {
         mkdir(dir($replica_root => 'cas' => $a => $b));
         }
     }
-    open(my $changesets, ">" . file($replica_root, 'changesets.idx')) || die $!;
-    print $changesets " 1 : ". Data::UUID->new->create_str(). " : 2 : ".sha1('flying man') ."\n" || die $!;
+    open(my $cs_file, ">" . file($replica_root, 'changesets.idx')) || die $!;
 
-    close ($changesets); 
+    foreach my $changeset( @{$self->fetch_changesets(after=>0)} ) {
+        my $hash_changeset = $changeset->as_hash;
+        delete $hash_changeset->{'sequence_no'};
+        delete $hash_changeset->{'source_uuid'};
+        my $content = XMLout($hash_changeset, NoAttr => 1, RootName => 'changeset');
+        my $fingerprint = sha1_hex($content);
+        my $content_filename =  file($replica_root, 'cas',substr($fingerprint,0,1), substr($fingerprint,1,1), $fingerprint);
+        open(my $output, ">", $content_filename) || die "Could not open $content_filename";
+        print $output $content || die $!;
+        close $output;
+        # XXX TODO we should only actually be encoding the sha1 of content once
+        # and then converting. this is wasteful
+        print $cs_file pack('Na16Na20', $changeset->sequence_no, $changeset->original_source_uuid, $changeset->original_sequence_no, sha1($content)) || die $!;
+
+    }
+    
+
+    close ($cs_file); 
 }
 
 
