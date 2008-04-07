@@ -502,7 +502,7 @@ sub export_to {
     _mkdir( $record_dir);
     make_tiered_dirs( $cas_dir);
 
-    $self->init_export(root => $replica_root);
+    $self->_init_export_metadata(root => $replica_root);
     
     foreach my $type ( @{ $self->prophet_handle->enumerate_types } ) {
         $self->export_records(
@@ -517,16 +517,14 @@ sub export_to {
 
 
 
-sub init_export {
+sub _init_export_metadata {
     my $self = shift;
     my %args = validate(@_, { root => 1});
 
-    open( my $uuidfile, ">", file( $args{'root'}, 'replica-uuid' ) ) || die $!;
-    print $uuidfile $self->uuid || die $!;
-    close $uuidfile || die $!;
-    open( my $latest, ">", file( $args{'root'}, 'latest' ) ) || die $!;
-    print $latest $self->most_recent_changeset;
-    close $latest || die $!;
+    $self->_output_oneliner_file( path => file( $args{'root'}, 'replica-uuid' ), content => $self->uuid );
+    $self->_output_oneliner_file( path => file( $args{'root'}, 'latest' ), content => $self->most_recent_changeset);
+    $self->_output_oneliner_file( path => file( $args{'root'}, 'repository-version' ), content => '1');
+
 }
 
 
@@ -550,22 +548,16 @@ sub export_records {
 
 sub export_record {
     my $self = shift;
-    my %args = validate(
-        @_,
+    my %args = validate( @_,
         {   record  => { isa => 'Prophet::Record' },
             record_dir => 1,
             cas_dir => 1,
-        }
-    );
+        });
 
-
-    my $record_as_hash = $args{record}->get_props;
-    my $content        = YAML::Syck::Dump($record_as_hash);
-    my ($cas_key) = $self->_write_to_cas(content_ref => \$content,
+    my $content        = YAML::Syck::Dump($args{'record'}->get_props);
+    my ($cas_key) = $self->_write_to_cas(
+            content_ref => \$content,
             cas_dir => $args{'cas_dir'});
-
-
-
 
     my $idx_filename = file(
         $args{'record_dir'},
@@ -574,23 +566,23 @@ sub export_record {
         $args{record}->uuid
     );
 
-
-
-    warn $idx_filename;
     open( my $record_index, ">>", $idx_filename ) || die $!;
 
     # XXX TODO: skip if the index already has this version of the record;
+    # XXX TODO FETCH THAT
     my $record_last_changed_changeset = 1;
 
-    # XXX TODO FETCH THAT
-    print $record_index pack( 'Na16H40', $record_last_changed_changeset, $args{record}->uuid, $cas_key) || die $!;
+    
+     
+    my $index_row =  pack( 'Na16H40', $record_last_changed_changeset, $args{record}->uuid, $cas_key) ;
+    print $record_index  $index_row || die $!;
     close $record_index;
 }
 
 sub export_changesets {
     my $self = shift;
-    my %args = validate(@_,{ root => 1, cas_dir => 1});
-    
+    my %args = validate( @_, { root => 1, cas_dir => 1 } );
+
     open( my $cs_file, ">" . file( $args{'root'}, 'changesets.idx' ) ) || die $!;
 
     foreach my $changeset ( @{ $self->fetch_changesets( after => 0 ) } ) {
@@ -598,20 +590,21 @@ sub export_changesets {
         delete $hash_changeset->{'sequence_no'};
         delete $hash_changeset->{'source_uuid'};
 
-        my $content = YAML::Syck::Dump( $hash_changeset);
-        my $cas_key = $self->_write_to_cas( content_ref => \$content, cas_dir => $args{'cas_dir'});
+        my $content = YAML::Syck::Dump($hash_changeset);
+        my $cas_key = $self->_write_to_cas( 
+                content_ref => \$content, 
+                cas_dir => $args{'cas_dir'} );
 
-       
         # XXX TODO we should only actually be encoding the sha1 of content once
         # and then converting. this is wasteful
-        
-        my $packed_cas_key=sha1($content); 
-        
+
+        my $packed_cas_key = sha1($content);
+
         print $cs_file pack( 'Na16Na20',
             $changeset->sequence_no,
             Data::UUID->new->from_string( $changeset->original_source_uuid ),
             $changeset->original_sequence_no,
-            $packed_cas_key)
+            $packed_cas_key )
             || die $!;
 
     }
@@ -659,5 +652,14 @@ sub _write_to_cas {
     return $fingerprint;
 }
 
+
+sub _output_oneliner_file {
+    my $self = shift;
+    my %args = validate(@_, { path => 1, content => 1});
+
+    open (my $file , ">", $args{'path'}) || die $!; 
+    print $file $args{'content'} || die $!;
+    close $file || die $!;
+}
 
 1;
