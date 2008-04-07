@@ -77,6 +77,8 @@ sub run_script {
     #    diag(join(' ', @cmd, @$args));
     my $ret = run3 [ @cmd, @$args ], undef, \$stdout, \$stderr;
     Carp::croak $stderr if $?;
+        diag("STDOUT: " . $stdout) if ($stdout);
+        diag("STDERR: " . $stderr) if ($stderr);
 
     #Test::More::diag $stderr;
     return ( $ret, $stdout, $stderr );
@@ -96,8 +98,8 @@ sub run_ok {
     @_ = sub {
         my ( $ret, $stdout, $stderr ) = ( run_script( $script, $args ), $msg );
         @_ = ( $ret, $msg );
-        diag("STDOUT: " . $stdout) if ($stdout);
-        diag("STDERR: " . $stderr) if ($stderr);
+        #diag("STDOUT: " . $stdout) if ($stdout);
+        #diag("STDERR: " . $stderr) if ($stderr);
         goto &Test::More::ok;
     };
     goto \&lives_and;

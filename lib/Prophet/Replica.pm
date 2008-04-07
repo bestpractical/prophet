@@ -496,6 +496,7 @@ sub export_to {
     my $replica_root = dir( $path, $self->db_uuid );
     my $cas_dir = dir($replica_root => 'cas');
     my $record_dir = dir($replica_root => 'records');
+
     _mkdir($path);
     _mkdir($replica_root);
     _mkdir( $record_dir);
@@ -504,7 +505,11 @@ sub export_to {
     $self->init_export(root => $replica_root);
     
     foreach my $type ( @{ $self->prophet_handle->enumerate_types } ) {
-        $self->export_records(type => $type, root => $replica_root, cas_dir => $cas_dir);
+        $self->export_records(
+            type    => $type,
+            root    => $replica_root,
+            cas_dir => $cas_dir
+        );
     }
 
     $self->export_changesets( root => $replica_root, cas_dir => $cas_dir);
@@ -525,47 +530,62 @@ sub init_export {
 }
 
 
-sub export_records{
+sub export_records {
     my $self = shift;
-    my %args = validate(@_, { root => 1, type => 1, cas_dir => 1});
-    my $type = $args{'type'};
+    my %args = validate( @_, { root => 1, type => 1, cas_dir => 1 } );
 
-        make_tiered_dirs( dir( $args{'root'} => 'records' => $type ) );
+    make_tiered_dirs( dir( $args{'root'} => 'records' => $args{'type'} ) );
 
-        my $collection = Prophet::Collection->new( handle => $self->prophet_handle, type => $type );
-        $collection->matching( sub {1} );
-        foreach my $record (@$collection) {
-            my $record_as_hash = $record->get_props;
-            my $content = YAML::Syck::Dump( $record_as_hash);
-            my $fingerprint = sha1_hex($content);
-            my $content_filename
-                = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ),
-                $fingerprint );
-            open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
-            print $output $content || die $!;
-            close $output;
+    my $collection = Prophet::Collection->new( 
+            handle => $self->prophet_handle, 
+            type => $args{type} );
+    $collection->matching( sub {1} );
+    $self->export_record(
+        record_dir    => dir($args{'root'}, 'records', $_->type),
+        cas_dir => $args{'cas_dir'},
+        record  => $_
+    ) for @$collection;
 
-            my $idx_filename = file(
-                $args{'root'}, 'records',$type,
-                substr( $record->uuid, 0, 1 ),
-                substr( $record->uuid, 1, 1 ),
-                $record->uuid
-            );
+}
 
-            open(my $record_index, ">>", $idx_filename ) || die $!;
-
-            # XXX TODO: skip if the index already has this version of the record;
-            my $record_last_changed_changeset = 1;
-
-            # XXX TODO FETCH THAT
-            print $record_index pack( 'Na16H40', $record_last_changed_changeset, $record->uuid, sha1_hex($content) )
-                || die $!;
-            close $record_index;
-
+sub export_record {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   record  => { isa => 'Prophet::Record' },
+            record_dir => 1,
+            cas_dir => 1,
         }
+    );
 
-    }
 
+    my $record_as_hash = $args{record}->get_props;
+    my $content        = YAML::Syck::Dump($record_as_hash);
+    my ($cas_key) = $self->_write_to_cas(content_ref => \$content,
+            cas_dir => $args{'cas_dir'});
+
+
+
+
+    my $idx_filename = file(
+        $args{'record_dir'},
+        substr( $args{record}->uuid, 0, 1 ),
+        substr( $args{record}->uuid, 1, 1 ),
+        $args{record}->uuid
+    );
+
+
+
+    warn $idx_filename;
+    open( my $record_index, ">>", $idx_filename ) || die $!;
+
+    # XXX TODO: skip if the index already has this version of the record;
+    my $record_last_changed_changeset = 1;
+
+    # XXX TODO FETCH THAT
+    print $record_index pack( 'Na16H40', $record_last_changed_changeset, $args{record}->uuid, $cas_key) || die $!;
+    close $record_index;
+}
 
 sub export_changesets {
     my $self = shift;
@@ -579,20 +599,19 @@ sub export_changesets {
         delete $hash_changeset->{'source_uuid'};
 
         my $content = YAML::Syck::Dump( $hash_changeset);
-        my $fingerprint = sha1_hex($content);
-        my $content_filename
-            = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
-        open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
-        print $output $content || die $!;
-        close $output;
+        my $cas_key = $self->_write_to_cas( content_ref => \$content, cas_dir => $args{'cas_dir'});
 
+       
         # XXX TODO we should only actually be encoding the sha1 of content once
         # and then converting. this is wasteful
+        
+        my $packed_cas_key=sha1($content); 
+        
         print $cs_file pack( 'Na16Na20',
             $changeset->sequence_no,
             Data::UUID->new->from_string( $changeset->original_source_uuid ),
             $changeset->original_sequence_no,
-            sha1($content) )
+            $packed_cas_key)
             || die $!;
 
     }
@@ -614,29 +633,30 @@ sub _mkdir {
 }
 
 sub make_tiered_dirs {
-        my $base = shift;
-        _mkdir(dir($base));
-    for my $a (0..9, 'a'..'f') {
-        _mkdir(dir($base => $a));
-        for my $b (0..9, 'a'..'f') {
-        _mkdir(dir($base => $a => $b));
+    my $base = shift;
+    _mkdir( dir($base) );
+    for my $a ( 0 .. 9, 'a' .. 'f' ) {
+        _mkdir( dir( $base => $a ) );
+        for my $b ( 0 .. 9, 'a' .. 'f' ) {
+            _mkdir( dir( $base => $a => $b ) );
         }
     }
 
-
 }
 
-    
-sub serialize_changeset {
+
+sub _write_to_cas {
     my $self = shift;
-    my $changeset_id = shift;
-    $self->fetch_changeset($changeset_id);
+    my %args = validate(@_, { content_ref => 1, cas_dir => 1 });
 
-}
-
-
-sub serialize_node {
-
+    my $content = ${$args{'content_ref'}};
+    my $fingerprint    = sha1_hex($content);
+    my $content_filename
+        = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
+    open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
+    print $output $content || die $!;
+    close $output;
+    return $fingerprint;
 }
 
 
