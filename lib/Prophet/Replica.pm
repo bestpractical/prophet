@@ -10,7 +10,6 @@ __PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb));
 
 use constant state_db_uuid => 'state';
 
-
 =head1 NAME
 
 Prophet::Replica
@@ -52,9 +51,9 @@ sub rebless_to_replica_type {
     # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
     if ( $args->{url} =~ /^rt:/ ) {
         $class = 'Prophet::Replica::RT';
-    } elsif ($args->{url} =~ /^hm:/ ) {
+    } elsif ( $args->{url} =~ /^hm:/ ) {
         $class = 'Prophet::Replica::Hiveminder';
-    } elsif ($args->{url} =~ s/^prophet://) {
+    } elsif ( $args->{url} =~ s/^prophet:// ) {
         $class = 'Prophet::Replica::HTTP';
     } else {
         $class = 'Prophet::Replica::SVN';
@@ -114,11 +113,6 @@ sub import_resolutions_from_remote_replica {
 
     );
 }
-
-
-
-
-
 
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
@@ -225,7 +219,6 @@ sub record_integration_changeset {
     return;
 }
 
-
 =head2 last_changeset_from_source $SOURCE_UUID
 
 Returns the last changeset id seen from the source identified by $SOURCE_UUID
@@ -236,11 +229,13 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    return $self->state_handle->_retrieve_metadata_for( $Prophet::Handle::MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
+    return $self->state_handle->_retrieve_metadata_for( $Prophet::Handle::MERGETICKET_METATYPE, $source,
+        'last-changeset' )
+        || 0;
 
     # XXXX the code below is attempting to get the content over ra so we
     # can deal with remote svn repo. however this also assuming the
-    # remote is having the same prophet_handle->db_rot 
+    # remote is having the same prophet_handle->db_rot
     # the code to handle remote svn should be
     # actually abstracted along when we design the sync prototype
 
@@ -336,13 +331,11 @@ sub remove_redundant_data {
     my ( $self, $changeset ) = @_;
 
     # XXX: encapsulation
-    $changeset->{changes} = [
-        grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' } grep {
-            !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid )
-            } $changeset->changes
-    ];
+    $changeset->{changes}
+        = [ grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' }
+            grep { !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
+            $changeset->changes ];
 }
-
 
 =head2 news_changesets_for Prophet::Replica
 
@@ -352,23 +345,22 @@ Returns the local changesets that have not yet been seen by the replica we're pa
 
 sub db_uuid {
     my $self = shift;
-    return undef unless ($self->can('prophet_handle'));
+    return undef unless ( $self->can('prophet_handle') );
     return $self->prophet_handle->db_uuid;
 
 }
 
 sub new_changesets_for {
     my $self = shift;
-    my (  $other ) = validate_pos(@_, { isa => 'Prophet::Replica'});
-    if ($self->db_uuid && $other->db_uuid && $self->db_uuid ne $other->db_uuid) {
+    my ($other) = validate_pos( @_, { isa => 'Prophet::Replica' } );
+    if ( $self->db_uuid && $other->db_uuid && $self->db_uuid ne $other->db_uuid ) {
+
         #warn "HEY. You should not be merging between two replicas with different database uuids";
         # XXX TODO
     }
 
-    return [ 
-        grep { $self->should_send_changeset( changeset => $_, to => $other ) }
-                    @{ $self->fetch_changesets( after => $other->last_changeset_from_source( $self->uuid ) ) } 
-        ];
+    return [ grep { $self->should_send_changeset( changeset => $_, to => $other ) }
+            @{ $self->fetch_changesets( after => $other->last_changeset_from_source( $self->uuid ) ) } ];
 }
 
 =head2 should_send_changeset { to => Prophet::Replica, changeset => Prophet::ChangeSet }
@@ -380,12 +372,12 @@ Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>
 
 sub should_send_changeset {
     my $self = shift;
-    my %args = validate(@_, { to => { isa => 'Prophet::Replica'}, changeset =>{ isa=> 'Prophet::ChangeSet' }});
-    
-     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
-     return undef if $args{'to'}->has_seen_changeset($args{'changeset'});
-     
-    return 1;     
+    my %args = validate( @_, { to => { isa => 'Prophet::Replica' }, changeset => { isa => 'Prophet::ChangeSet' } } );
+
+    return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
+    return undef if $args{'to'}->has_seen_changeset( $args{'changeset'} );
+
+    return 1;
 }
 
 =head2 fetch_changesets { after => SEQUENCE_NO } 
@@ -397,7 +389,6 @@ Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 
 =cut    
 
-
 # XXX: this totally wants to get streamy and use a callback so we can integrate while fetching.
 sub fetch_changesets {
     my $self = shift;
@@ -408,10 +399,9 @@ sub fetch_changesets {
 
     # XXX TODO we should  be using a svn get_log call here rather than simple iteration
     # clkao explains that this won't deal cleanly with cases where there are revision "holes"
-    for my $rev ( $first_rev .. $self->most_recent_changeset) {
+    for my $rev ( $first_rev .. $self->most_recent_changeset ) {
         push @results, $self->fetch_changeset($rev);
     }
-
 
     return \@results;
 }
@@ -488,22 +478,21 @@ Inside the B<<db-uuid>> directory, are a set of files and directories that make 
 
 =cut
 
-
 sub export_to {
     my $self = shift;
     my $path = shift;
 
     my $replica_root = dir( $path, $self->db_uuid );
-    my $cas_dir = dir($replica_root => 'cas');
-    my $record_dir = dir($replica_root => 'records');
+    my $cas_dir    = dir( $replica_root => 'cas' );
+    my $record_dir = dir( $replica_root => 'records' );
 
     _mkdir($path);
     _mkdir($replica_root);
-    _mkdir( $record_dir);
-    make_tiered_dirs( $cas_dir);
+    _mkdir($record_dir);
+    make_tiered_dirs($cas_dir);
 
-    $self->_init_export_metadata(root => $replica_root);
-    
+    $self->_init_export_metadata( root => $replica_root );
+
     foreach my $type ( @{ $self->prophet_handle->enumerate_types } ) {
         $self->export_records(
             type    => $type,
@@ -512,21 +501,18 @@ sub export_to {
         );
     }
 
-    $self->export_changesets( root => $replica_root, cas_dir => $cas_dir);
+    $self->export_changesets( root => $replica_root, cas_dir => $cas_dir );
 }
-
-
 
 sub _init_export_metadata {
     my $self = shift;
-    my %args = validate(@_, { root => 1});
+    my %args = validate( @_, { root => 1 } );
 
     $self->_output_oneliner_file( path => file( $args{'root'}, 'replica-uuid' ), content => $self->uuid );
-    $self->_output_oneliner_file( path => file( $args{'root'}, 'latest' ), content => $self->most_recent_changeset);
-    $self->_output_oneliner_file( path => file( $args{'root'}, 'repository-version' ), content => '1');
+    $self->_output_oneliner_file( path => file( $args{'root'}, 'latest' ), content => $self->most_recent_changeset );
+    $self->_output_oneliner_file( path => file( $args{'root'}, 'repository-version' ), content => '1' );
 
 }
-
 
 sub export_records {
     my $self = shift;
@@ -534,30 +520,34 @@ sub export_records {
 
     make_tiered_dirs( dir( $args{'root'} => 'records' => $args{'type'} ) );
 
-    my $collection = Prophet::Collection->new( 
-            handle => $self->prophet_handle, 
-            type => $args{type} );
+    my $collection = Prophet::Collection->new(
+        handle => $self->prophet_handle,
+        type   => $args{type}
+    );
     $collection->matching( sub {1} );
     $self->export_record(
-        record_dir    => dir($args{'root'}, 'records', $_->type),
-        cas_dir => $args{'cas_dir'},
-        record  => $_
+        record_dir => dir( $args{'root'}, 'records', $_->type ),
+        cas_dir    => $args{'cas_dir'},
+        record     => $_
     ) for @$collection;
 
 }
 
 sub export_record {
     my $self = shift;
-    my %args = validate( @_,
-        {   record  => { isa => 'Prophet::Record' },
+    my %args = validate(
+        @_,
+        {   record     => { isa => 'Prophet::Record' },
             record_dir => 1,
-            cas_dir => 1,
-        });
+            cas_dir    => 1,
+        }
+    );
 
-    my $content        = YAML::Syck::Dump($args{'record'}->get_props);
+    my $content = YAML::Syck::Dump( $args{'record'}->get_props );
     my ($cas_key) = $self->_write_to_cas(
-            content_ref => \$content,
-            cas_dir => $args{'cas_dir'});
+        content_ref => \$content,
+        cas_dir     => $args{'cas_dir'}
+    );
 
     my $idx_filename = file(
         $args{'record_dir'},
@@ -572,10 +562,8 @@ sub export_record {
     # XXX TODO FETCH THAT
     my $record_last_changed_changeset = 1;
 
-    
-     
-    my $index_row =  pack( 'Na16H40', $record_last_changed_changeset, $args{record}->uuid, $cas_key) ;
-    print $record_index  $index_row || die $!;
+    my $index_row = pack( 'Na16H40', $record_last_changed_changeset, $args{record}->uuid, $cas_key );
+    print $record_index $index_row || die $!;
     close $record_index;
 }
 
@@ -591,9 +579,10 @@ sub export_changesets {
         delete $hash_changeset->{'source_uuid'};
 
         my $content = YAML::Syck::Dump($hash_changeset);
-        my $cas_key = $self->_write_to_cas( 
-                content_ref => \$content, 
-                cas_dir => $args{'cas_dir'} );
+        my $cas_key = $self->_write_to_cas(
+            content_ref => \$content,
+            cas_dir     => $args{'cas_dir'}
+        );
 
         # XXX TODO we should only actually be encoding the sha1 of content once
         # and then converting. this is wasteful
@@ -612,16 +601,14 @@ sub export_changesets {
     close($cs_file);
 }
 
-
 sub _mkdir {
     my $path = shift;
-    unless (-d $path) {
-        mkdir ($path) || die $@;
+    unless ( -d $path ) {
+        mkdir($path) || die $@;
     }
-    unless (-w $path) {
+    unless ( -w $path ) {
         die "$path not writable";
     }
-
 
 }
 
@@ -637,13 +624,12 @@ sub make_tiered_dirs {
 
 }
 
-
 sub _write_to_cas {
     my $self = shift;
-    my %args = validate(@_, { content_ref => 1, cas_dir => 1 });
+    my %args = validate( @_, { content_ref => 1, cas_dir => 1 } );
 
-    my $content = ${$args{'content_ref'}};
-    my $fingerprint    = sha1_hex($content);
+    my $content     = ${ $args{'content_ref'} };
+    my $fingerprint = sha1_hex($content);
     my $content_filename
         = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
     open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
@@ -652,12 +638,11 @@ sub _write_to_cas {
     return $fingerprint;
 }
 
-
 sub _output_oneliner_file {
     my $self = shift;
-    my %args = validate(@_, { path => 1, content => 1});
+    my %args = validate( @_, { path => 1, content => 1 } );
 
-    open (my $file , ">", $args{'path'}) || die $!; 
+    open( my $file, ">", $args{'path'} ) || die $!;
     print $file $args{'content'} || die $!;
     close $file || die $!;
 }
