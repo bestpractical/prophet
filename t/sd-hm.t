@@ -57,7 +57,6 @@ run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr"$flyman_uuid 
 
 
 ($ret, $out, $err) = run_script('sd', ['ticket', '--show', '--uuid', $flyman_uuid]);
-diag $out;
 
 
 run_output_matches('sd', ['ticket', '--create', '--summary', 'YATTA', '--status', 'new'], [qr/Created ticket (.*)(?{ $yatta_uuid = $1 })/]);

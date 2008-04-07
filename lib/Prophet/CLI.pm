@@ -325,6 +325,7 @@ sub _do_merge {
             ( $opts->{'prefer'} eq 'from' ? ( resolver_class => 'Prophet::Resolver::AlwaysSource' ) : () )
         )
     );
+}
 
     sub fatal_error {
         my $reason = shift;
@@ -332,6 +333,5 @@ sub _do_merge {
 
     }
 
-}
 
 1;

@@ -5,9 +5,11 @@
 # RT_DBA_USER=root RT_DBA_PASSWORD= prove -lv -I/Users/clkao/work/bps/rt-3.7/lib t/sd-rt.t
 use strict;
 
-use Test::More;
+# setup for rt
+use Prophet::Test;
+
 BEGIN {
-eval 'use RT::Test; 1'
+eval 'require RT::Test; 1'
     or plan skip_all => 'requires 3.7 to run tests.'.$@;
 }
 BEGIN {
@@ -19,6 +21,9 @@ BEGIN {
     push @INC, File::Spec->catdir(Jifty::Util->app_root, "lib");
 }
 
+plan tests => 10;
+
+RT::Test->import();
 
 no warnings 'once';
 
@@ -35,11 +40,9 @@ my $sd_hm_url = "hm:$URL";
 
 ok(1, "Loaded the test script");
 
-# setup for rt
-use Prophet::Test tests => 10;
 
 my ($url, $m) = RT::Test->started_ok;
-diag $url;
+diag ("RT server started at $url");
 
 use RT::Client::REST;
 use RT::Client::REST::Ticket;
@@ -78,7 +81,7 @@ my     ($ret, $out, $err);
 as_alice {
     local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
     ($ret, $out, $err) = run_script('sd', ['pull', $sd_hm_url]);
-    warn $err;
+    diag($err) if ($err);
     run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $yatta_uuid = $1 }) YATTA .*/]);
 };
 
@@ -86,7 +89,7 @@ as_bob {
     local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
     run_output_matches('sd', ['ticket', '--list', '--regex', '.'], []);
     ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
-    warn $err;
+    diag($err) if ($err);
     run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $flyman_uuid = $1 }) Fly Man new/]);
 
 
@@ -98,7 +101,7 @@ as_bob {
                        ]);
 
     ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
-    warn $out;
+    diag($err) if ($err);
     # XXX: to check YATTA ticket created in RT.
 };
 

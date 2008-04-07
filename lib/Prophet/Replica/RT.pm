@@ -220,7 +220,8 @@ sub _integrate_change {
             $id = $self->integrate_ticket_update( $change, $changeset );
 
         } else {
-            die "AAAAAH I DO NOT KNOW HOW TO PUSH " . YAML::Dump($change);
+            require YAML::Syck;
+            die "AAAAAH I DO NOT KNOW HOW TO PUSH " . YAML::Syck::Dump($change);
         }
 
         $self->record_pushed_transactions( ticket => $id, changeset => $changeset );

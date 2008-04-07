@@ -156,7 +156,6 @@ sub integrate_ticket_create {
 
     # Build up a ticket object out of all the record's attributes
 
-    warn Dumper($change); use Data::Dumper;
     my $task = $self->hm->create(
         'Task',
         owner        => 'me',
