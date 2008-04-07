@@ -67,7 +67,7 @@ sub fetch_changesets {
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
-    my $latest = LWP::Simple::get($self->url.'/latest');
+    my $latest = LWP::Simple::get($self->url.'/latest-sequence-no');
 
     my $chgidx = LWP::Simple::get($self->url.'/changesets.idx');
 
@@ -77,7 +77,7 @@ sub fetch_changesets {
         $orig_uuid = Data::UUID->new->to_string( $orig_uuid );
 
         # XXX: deserialize the changeset content from the cas with $key
-        my $casfile = $self->url.'/cas/'.substr($key, 0, 1).'/'.substr($key, 1, 1).'/'.$key;
+        my $casfile = $self->url.'/cas/changesets/'.substr($key, 0, 1).'/'.substr($key, 1, 1).'/'.$key;
 
         my $content = YAML::Syck::Load(LWP::Simple::get($casfile));
 

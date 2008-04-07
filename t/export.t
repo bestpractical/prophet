@@ -52,7 +52,7 @@ as_bob {
     };
 
     ok( -e $path->file('changesets.idx'), 'found changesets index' );
-    my $latest = $path->file('latest')->slurp;
+    my $latest = $path->file('latest-sequence-no')->slurp;
     is($latest, 5);
     use_ok('Prophet::Replica::HTTP');
     my $changesets = Prophet::Replica->new({ url => 'prophet:file://'.$path} )->fetch_changesets( after => 0 );
