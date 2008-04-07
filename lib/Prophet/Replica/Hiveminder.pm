@@ -72,32 +72,22 @@ sub uuid {
 }
 
 
-
-=head2 fetch_changesets { after => SEQUENCE_NO } 
-
-Fetch all changesets from the source. 
-
-Returns a reference to an array of L<Prophet::ChangeSet/> objects.
-
-
-=cut
-
-sub fetch_changesets {
+sub traverse_changesets {
     my $self = shift;
-    my %args = validate( @_, { after => 1 } );
+    my %args = validate(
+        @_, { after => 1,
+              callback => 1,
+        } );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
-    my @changesets;
-    my %tix;
     my $recoder = Prophet::Replica::Hiveminder::PullEncoder->new( { sync_source => $self } );
-    for my $task ( @{$self->find_matching_tasks} ) {
-        push @changesets, @{ $recoder->run(
+    for my $task ( @{ $self->find_matching_tasks } ) {
+        $args{callback}->($_)
+            for @{ $recoder->run(
                 task => $task,
-                transactions => $self->find_matching_transactions( task => $task->{id}, starting_transaction => $first_rev )) };
+                transactions => $self->find_matching_transactions( task => $task->{id}, starting_transaction => $first_rev ) ) };
     }
-
-    return [ sort { $a->original_sequence_no <=> $b->original_sequence_no } @changesets ];
 }
 
 sub find_matching_tasks {

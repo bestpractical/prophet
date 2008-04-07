@@ -60,10 +60,12 @@ Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 
 use constant CHG_RECORD_SIZE =>  ( 4 + 16 + 4 +20 );
 
-sub fetch_changesets {
+sub traverse_changesets {
     my $self = shift;
-    my %args = validate( @_, { after => 1 } );
-    my @results;
+    my %args = validate(
+        @_, { after => 1,
+              callback => 1,
+        } );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
@@ -86,11 +88,10 @@ sub fetch_changesets {
         $changeset->sequence_no($seq);
         $changeset->original_source_uuid( $orig_uuid);
         $changeset->original_sequence_no( $orig_seq);
-        push @results, $changeset;
+        $args{callback}->($changeset);
     }
-
-    return \@results;
 }
+
 sub record_integration_changeset {
     die 'readonly';
 }

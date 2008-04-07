@@ -77,19 +77,18 @@ sub import_changesets {
 
     my $source = $args{'from'};
 
-    my $changesets_to_integrate = $source->new_changesets_for($self);
-
-    for my $changeset (@$changesets_to_integrate) {
-        $self->integrate_changeset(
-            changeset          => $changeset,
-            conflict_callback  => $args{conflict_callback},
-            reporting_callback => $args{'reporting_callback'},
-            resolver           => $args{resolver},
-            resolver_class     => $args{'resolver_class'},
-            resdb              => $args{'resdb'},
-        );
-
-    }
+    $source->traverse_new_changesets
+        ( for => $self,
+          callback => sub {
+            $self->integrate_changeset(
+                changeset          => $_[0],
+                conflict_callback  => $args{conflict_callback},
+                reporting_callback => $args{'reporting_callback'},
+                resolver           => $args{resolver},
+                resolver_class     => $args{'resolver_class'},
+                resdb              => $args{'resdb'},
+            );
+        } );
 }
 
 sub import_resolutions_from_remote_replica {
@@ -337,7 +336,38 @@ sub remove_redundant_data {
             $changeset->changes ];
 }
 
+=head2 traverse_new_changesets ( for => $replica, callback => sub { my $changeset = shift; ... } )
+
+Traverse the new changesets for C<$replica> and call C<callback> for each new changesets.
+
+XXX: this also provide hinting callbacks for the caller to know in
+advance how many changesets are there for traversal.
+
+=cut
+
+sub traverse_new_changesets {
+    my $self = shift;
+    my %args = validate(
+        @_, { for => { isa => 'Prophet::Replica' },
+              callback => 1,
+        } );
+
+    if ($self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid) {
+        #warn "HEY. You should not be merging between two replicas with different database uuids";
+        # XXX TODO
+    }
+
+
+    $self->traverse_changesets( after => $args{for}->last_changeset_from_source( $self->uuid ),
+                                callback => sub {
+                                    $args{callback}->($_[0])
+                                        if $self->should_send_changeset( changeset => $_[0], to => $args{for} );
+                                } );
+}
+
 =head2 news_changesets_for Prophet::Replica
+
+DEPRECATED: use traverse_new_changesets instead
 
 Returns the local changesets that have not yet been seen by the replica we're passing in.
 
@@ -352,15 +382,12 @@ sub db_uuid {
 
 sub new_changesets_for {
     my $self = shift;
-    my ($other) = validate_pos( @_, { isa => 'Prophet::Replica' } );
-    if ( $self->db_uuid && $other->db_uuid && $self->db_uuid ne $other->db_uuid ) {
+    my (  $other ) = validate_pos(@_, { isa => 'Prophet::Replica'});
 
-        #warn "HEY. You should not be merging between two replicas with different database uuids";
-        # XXX TODO
-    }
+    my @result;
+    $self->traverse_new_changesets( for => $other, callback => sub { push @result, $_[0] } );
 
-    return [ grep { $self->should_send_changeset( changeset => $_, to => $other ) }
-            @{ $self->fetch_changesets( after => $other->last_changeset_from_source( $self->uuid ) ) } ];
+    return \@result;
 }
 
 =head2 should_send_changeset { to => Prophet::Replica, changeset => Prophet::ChangeSet }
@@ -385,25 +412,36 @@ sub should_send_changeset {
 Fetch all changesets from the source. 
         
 Returns a reference to an array of L<Prophet::ChangeSet/> objects.
+
+See also L<traverse_new_changesets> for replica implementations to provide streamly interface
         
 
 =cut    
 
-# XXX: this totally wants to get streamy and use a callback so we can integrate while fetching.
 sub fetch_changesets {
     my $self = shift;
     my %args = validate( @_, { after => 1 } );
     my @results;
 
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
-
-    # XXX TODO we should  be using a svn get_log call here rather than simple iteration
-    # clkao explains that this won't deal cleanly with cases where there are revision "holes"
-    for my $rev ( $first_rev .. $self->most_recent_changeset ) {
-        push @results, $self->fetch_changeset($rev);
-    }
+    $self->traverse_changesets( %args, callback => sub { push @results, $_[0] } );
 
     return \@results;
+}
+
+sub traverse_changesets {
+    my $self = shift;
+    my %args = validate(
+        @_, { after => 1,
+              callback => 1,
+        } );
+
+    my $first_rev = ( $args{'after'} + 1 ) || 1;
+    die "you must implement most_recent_changeset in ".ref($self).", or override traverse_changesets"
+        unless $self->can('most_recent_changeset');
+
+    for my $rev ( $first_rev .. $self->most_recent_changeset ) {
+        $args{callback}->( $self->fetch_changeset($rev) );
+    }
 }
 
 use Path::Class;
