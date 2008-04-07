@@ -16,8 +16,13 @@ sub new {
     my $class = shift;
     my $self  = $class->SUPER::new(@_);
     $self->record_class('Prophet::Record') unless $self->record_class;
+
+    # Initialize our handle and resolution db handle
+
     $self->handle;
     $self->resdb_handle;
+
+
     return $self;
 }
 
@@ -94,7 +99,6 @@ sub _record_cmd {
     if ( $record_class->REFERENCES->{$cmd} ) {
         return $self->_handle_reference_command( $record_class, $record_class->REFERENCES->{$cmd} );
     }
-
     $cmd = $CMD_MAP{$cmd} if exists $CMD_MAP{$cmd};
     my $func = $self->can("do_$cmd") or Carp::confess "no such record command $cmd";
     if ($record_class) {
@@ -272,7 +276,7 @@ sub do_export {
     my $self = shift;
     my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
     my $path = $self->args->{'path'};
-    $source_me->export_to($path);
+    $source_me->export_to( path => $path);
 }
 
 sub do_pull {

@@ -475,15 +475,21 @@ The current replica version is 1.
 
 Contains a single integer, the replica's most recent sequence number.
 
-=item C<cas>
+=item C<cas/records>
+
+=item C<cas/changesets>
 
 The C<cas> directory holds changesets and records, each keyed by a
 hex-encoded hash of the item's content. Inside the C<cas> directory, you'll find
 a two-level deep directory tree of single-character hex digits. 
-You'll find  the content with the key C<f4b7489b21f8d107ad8df78750a410c028abbf6c>
-inside C<cas/f/4>
+You'll find  the changeset with the sha1 digest  C<f4b7489b21f8d107ad8df78750a410c028abbf6c>
+inside C<cas/changesets/f/4/f4b7489b21f8d107ad8df78750a410c028abbf6c>.
+
+You'll find the record with the sha1 digest C<dd6fb674de879a1a4762d690141cdfee138daf65> inside
+C<cas/records/d/d/dd6fb674de879a1a4762d690141cdfee138daf65>.
 
 
+TODO: define the format for changesets and records
 
 
 =item C<records>
@@ -518,7 +524,7 @@ The file is sorted in ascending order by revision id.
 
 =item C<resolutions>
 
-=over 
+=over  TODO DOC RESOLUTIONS
 
 =item 
 
@@ -531,15 +537,19 @@ The file is sorted in ascending order by revision id.
 
 sub export_to {
     my $self = shift;
-    my $path = shift;
+    my %args = validate(
+        @_,
+        {   path         => 1,
+        }
+    );
 
-    my $replica_root = dir( $path, $self->db_uuid );
-    my $cas_dir    = dir( $replica_root => 'cas' );
-    my $record_cas_dir    = dir( $cas_dir => 'records' );
-    my $changeset_cas_dir    = dir( $cas_dir => 'changesets' );
-    my $record_dir = dir( $replica_root => 'records' );
+    my $replica_root = dir( $args{path}, $self->db_uuid );
+    my $cas_dir           = dir( $replica_root => 'cas' );
+    my $record_cas_dir    = dir( $cas_dir      => 'records' );
+    my $changeset_cas_dir = dir( $cas_dir      => 'changesets' );
+    my $record_dir        = dir( $replica_root => 'records' );
 
-    _mkdir($path);
+    _mkdir($args{path});
     _mkdir($replica_root);
     _mkdir($record_dir);
     _mkdir($cas_dir);
@@ -557,7 +567,17 @@ sub export_to {
     }
 
     $self->export_changesets( root => $replica_root, cas_dir => $changeset_cas_dir );
+    #$self->export_resolutions( path => dir( $replica_root, 'resolutions'), resdb_handle => $args{'resdb_handle'} );
+
 }
+
+sub export_resolutions {
+    my $self = shift;
+    my $replica = Prophet::Replica->new();
+    # ...
+}
+
+
 
 sub _init_export_metadata {
     my $self = shift;
@@ -568,6 +588,7 @@ sub _init_export_metadata {
     $self->_output_oneliner_file( path => file( $args{'root'}, 'latest-sequence-no' ), content => $self->most_recent_changeset );
 
 }
+
 
 sub export_records {
     my $self = shift;
