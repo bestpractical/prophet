@@ -290,6 +290,15 @@ sub do_pull {
 
 }
 
+sub do_server {
+    my $self = shift;
+
+    my $opts = $self->args();
+    require Prophet::Server::REST;
+    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080);
+    $server->prophet_handle($self->handle);
+    $server->run;
+}
 
 sub do_merge {
     my $self = shift;
@@ -336,6 +345,8 @@ sub _do_merge {
         die $reason . "\n";
 
     }
+
+
 
 
 1;
