@@ -420,15 +420,46 @@ use Path::Class;
 use Digest::SHA1 qw(sha1 sha1_hex);
 use YAML::Syck;
 
-=head2 export_to
+=head2 export_to { path => $PATH } 
+
+This routine will export a copy of this prophet database replica to a flat file on disk suitable for 
+publishing via HTTP or over a local filesystem for other Prophet replicas to clone or incorporate changes from.
 
 
-filesystem replica type
+Inside the top level directory for the mirror, you'll find a directory named as B<a hex-encoded UUID>.
+This directory is the root of the published replica. The uuid uniquely identifes the database being replicated.
+All replicas of this database will share the same UUID.
+
+Inside the B<<db-uuid>> directory, are a set of files and directories that make up the actual content of the database replica:
+
+=over
+
+=item C<replica-uuid>
+
+=item C<latest-changeset>
+
+=item C<cas>
+
+=item C<records>
+
+=item C<changesets.idx>
+
+=item C<resolutions>
+
+=over 
+
+=item 
+
+
+=back
+
+=back
+
  
  $URL
     /<db-uuid>/
         /replica-uuid
-        /latest
+        /latest
         /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
         /records (optional?)
             /<record type> (for resolution is actually _prophet-resolution-<cas-key>)
