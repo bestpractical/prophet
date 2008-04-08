@@ -6,9 +6,14 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
-__PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb));
+
+__PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb url));
 
 use constant state_db_uuid => 'state';
+use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 1, except => qr/Prophet::Replica::(.*)::/;
+
+our $REPLICA_TYPE_MAP = {};
+ __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) for ( __PACKAGE__->core_replica_types);
 
 =head1 NAME
 
@@ -16,7 +21,7 @@ Prophet::Replica
 
 =head1 DESCRIPTION
                         
-A base class for all Prophet sync sources
+A base class for all Prophet replicas
 
 =cut
 
@@ -24,42 +29,54 @@ A base class for all Prophet sync sources
 
 =head2 new
 
-Instantiates a new sync source
+Instantiates a new replica
 
 =cut
 
 sub new {
     my $self = shift->SUPER::new(@_);
-    $self->rebless_to_replica_type(@_);
+    $self->_rebless_to_replica_type(@_);
     $self->setup();
     return $self;
 }
 
-=head2 rebless_to_replica_type
+=head2 register_replica_scheme { class=> Some::Perl::Class, scheme => 'scheme:' }
 
-Reblesses this sync source into the right sort of sync source for whatever kind of replica $self->url points to
+B<Class Method>. Register a URI scheme C<scheme> to point to a replica object of type C<class>.
+
+=cut
+
+
+sub register_replica_scheme {
+    my $class = shift;
+    my %args = validate(@_, { class => 1, scheme => 1});
+
+    $Prophet::Replica::REPLICA_TYPE_MAP->{$args{'scheme'}} = $args{'class'};
+
+
+
+}
+
+
+=head2 _rebless_to_replica_type
+
+Reblesses this replica into the right sort of replica for whatever kind of replica $self->url points to
 
 
 =cut
 
-sub rebless_to_replica_type {
+sub _rebless_to_replica_type {
     my $self = shift;
-    my $args = shift;
 
-    my $class;
 
-    # XXX TODO HACK NEED A PROPER WAY TO DETERMINE SYNC SOURCE
-    if ( $args->{url} =~ /^rt:/ ) {
-        $class = 'Prophet::Replica::RT';
-    } elsif ( $args->{url} =~ /^hm:/ ) {
-        $class = 'Prophet::Replica::Hiveminder';
-    } elsif ( $args->{url} =~ s/^prophet:// ) {
-        $class = 'Prophet::Replica::HTTP';
-    } else {
-        $class = 'Prophet::Replica::SVN';
-    }
+    my ($scheme, $real_url) = split(/:/,$self->url,2);
+    $self->url($real_url);
+    if ( my $class = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme}) {
     $class->require or die $@;
-    bless $self, $class;
+    return bless $self, $class;
+    } else {
+        die "$scheme isn't a replica type I know how to handle";
+    }
 }
 
 sub import_changesets {

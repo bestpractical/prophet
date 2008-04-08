@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 10;
+use Prophet::Test tests => 9;
 
 as_alice {
     run_ok( 'prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice" );
@@ -24,7 +24,6 @@ as_bob {
 
 };
 
-use_ok('Prophet::Replica::SVN');
 
 my $alice = Prophet::Replica->new( { url => repo_uri_for('alice') } );
 my $bob   = Prophet::Replica->new( { url => repo_uri_for('bob') } );
@@ -95,7 +94,7 @@ as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
-    run_ok( 'prophet-merge', [ '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge', '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
 };
 
 my $last_id;

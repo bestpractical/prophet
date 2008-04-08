@@ -205,7 +205,7 @@ sub repo_uri_for {
     my $path = repo_path_for($username);
     $path =~ s{^|\\}{/}g if IS_WIN32;
 
-    return 'file://' . $path;
+    return 'svn:file://' . $path;
 }
 
 sub replica_uuid {

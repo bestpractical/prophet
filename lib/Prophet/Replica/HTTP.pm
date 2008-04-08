@@ -14,6 +14,8 @@ __PACKAGE__->mk_accessors(qw/url db_uuid _uuid/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
+use constant scheme => 'prophet';
+
 =head2 setup
 
 Open a connection to the SVN source identified by C<$self->url>.

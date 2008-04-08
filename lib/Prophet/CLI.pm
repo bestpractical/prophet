@@ -261,7 +261,7 @@ sub do_show {
 
 sub do_push {
     my $self         = shift;
-    my $source_me    = Prophet::Replica->new( { url => "file://" . $self->handle->repo_path } );
+    my $source_me    = Prophet::Replica->new( { url => "svn:file://" . $self->handle->repo_path } );
     my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
@@ -271,14 +271,14 @@ sub do_push {
 
 sub do_export {
     my $self      = shift;
-    my $source_me = Prophet::Replica->new( { url => "file://" . $self->handle->repo_path } );
+    my $source_me = Prophet::Replica->new( { url => "svn:file://" . $self->handle->repo_path } );
     my $path      = $self->args->{'path'};
     $source_me->export_to( path => $path );
 }
 
 sub do_pull {
     my $self         = shift;
-    my $source_me    = Prophet::Replica->new( { url => "file://" . $self->handle->repo_path } );
+    my $source_me    = Prophet::Replica->new( { url => "svn:file://" . $self->handle->repo_path } );
     my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );

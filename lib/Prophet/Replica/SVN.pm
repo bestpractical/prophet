@@ -11,14 +11,18 @@ use SVN::Ra;
 use SVN::Delta;
 
 use Prophet::Handle;
-use Prophet::Replica::SVN::ReplayEditor;
-use Prophet::Replica::SVN::Util;
+# require rather than use to make them late-binding
+require Prophet::Replica::SVN::ReplayEditor;
+require Prophet::Replica::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
 __PACKAGE__->mk_accessors(qw/url ra prophet_handle pool/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
+
+use constant scheme => 'svn';
+
 
 =head2 setup
 
@@ -50,7 +54,7 @@ sub setup {
         return;
     }
 
-    my $res_url = $self->url;
+    my $res_url = "svn:".$self->url;
     $res_url =~ s/(\_res|)$/_res/;
     $self->ressource( __PACKAGE__->new( { url => $res_url, is_resdb => 1 } ) );
 }
