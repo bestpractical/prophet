@@ -497,7 +497,7 @@ All replicas of this database will share the same UUID.
 
 Inside the B<<db-uuid>> directory, are a set of files and directories that make up the actual content of the database replica:
 
-=over
+=over 2
 
 =item C<replica-uuid>
 
@@ -562,9 +562,9 @@ The file is sorted in ascending order by revision id.
 
 =item C<resolutions>
 
-=over  TODO DOC RESOLUTIONS
+=over 2
 
-=item 
+=item TODO DOC RESOLUTIONS
 
 
 =back

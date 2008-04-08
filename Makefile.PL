@@ -27,20 +27,23 @@ requires('Term::ReadKey');
 requires('Digest::SHA1');
 requires('LWP::Simple');
 requires('URI');
-
-requires('SVN::Core'); # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
+requires('JSON');
+requires('Test::HTTP::Server::Simple');
+requires('HTTP::Server::Simple');
+requires('Test::WWW::Mechanize');
+requires('HTTP::Server::Simple::CGI');
+requires('SVN::Core');    # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
 features(
-        'Crazy debugging tools' => [
-            -default => 1,
-            recommends => 'Devel::Gladiator'
-        ],
+    'Crazy debugging tools' => [
+        -default   => 1,
+        recommends => 'Devel::Gladiator'
+    ],
     'Hiveminder sync' => [
-            -default => 0,
-            requires => 'Net::Jifty',
-            requires => 'Jifty',
+        -default => 0,
+        requires => 'Net::Jifty',
+        requires => 'Jifty',
     ]
-    );
-
+);
 
 all_from('lib/Prophet.pm');
 
