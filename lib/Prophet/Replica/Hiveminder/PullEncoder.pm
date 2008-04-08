@@ -31,7 +31,7 @@ sub run {
             # In Hiveminder, a changeset has only one change
             $change = Prophet::Change->new(
                 {   node_type   => 'ticket',
-                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'task'}->{id}),
+                    node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'task'}->{id} ),
                     change_type => 'update_file'
                 }
             );
@@ -166,7 +166,7 @@ sub resolve_user_id_to_email {
     my $id   = shift;
     return undef unless ($id);
 
-    my $user = $self->sync_source->hm->read('User', 'id', $id);
+    my $user = $self->sync_source->hm->read( 'User', 'id', $id );
     return $user->{'email'};
 }
 
@@ -199,25 +199,25 @@ our $MONNUM = {
 };
 
 our %PROP_MAP = (
-    owner_id           => 'owner',
-    requestor_id      => 'reported_by',
-    priority        => 'priority_integer',
-    completed_at        => 'completed',
-    due             => 'due',
-    creator         => 'creator',
-    attachment_count => '_delete',
-    depended_on_by_count => '_delete',
+    owner_id                 => 'owner',
+    requestor_id             => 'reported_by',
+    priority                 => 'priority_integer',
+    completed_at             => 'completed',
+    due                      => 'due',
+    creator                  => 'creator',
+    attachment_count         => '_delete',
+    depended_on_by_count     => '_delete',
     depended_on_by_summaries => '_delete',
-    depends_on_count => '_delete',
-    depends_on_summaries => '_delete',
-    group_id => '_delete',
-    last_repeat => '_delete',
-    repeat_days_before_due => '_delete',
-    repeat_every => '_delete',
-    repeat_of => '_delete',
-    repeat_next_create => '_delete',
-    repeat_period => '_delete',
-    repeat_stacking => '_delete',
+    depends_on_count         => '_delete',
+    depends_on_summaries     => '_delete',
+    group_id                 => '_delete',
+    last_repeat              => '_delete',
+    repeat_days_before_due   => '_delete',
+    repeat_every             => '_delete',
+    repeat_of                => '_delete',
+    repeat_next_create       => '_delete',
+    repeat_period            => '_delete',
+    repeat_stacking          => '_delete',
 
 );
 
@@ -230,13 +230,12 @@ sub translate_props {
         my @new_props;
         for my $prop ( $change->prop_changes ) {
             $prop->name( $PROP_MAP{ lc( $prop->name ) } ) if $PROP_MAP{ lc( $prop->name ) };
-            next if ($prop->name eq '_delete');
+            next if ( $prop->name eq '_delete' );
 
-            if( $prop->name =~ /^(?:reported_by|owner|next_action_by)$/) {
-                $prop->old_value( $self->resolve_user_id_to_email($prop->old_value));
-                $prop->new_value( $self->resolve_user_id_to_email($prop->new_value));
+            if ( $prop->name =~ /^(?:reported_by|owner|next_action_by)$/ ) {
+                $prop->old_value( $self->resolve_user_id_to_email( $prop->old_value ) );
+                $prop->new_value( $self->resolve_user_id_to_email( $prop->new_value ) );
             }
-
 
             if ( $prop->name eq 'id' ) {
                 $prop->old_value( $prop->old_value . '@' . $changeset->original_source_uuid )

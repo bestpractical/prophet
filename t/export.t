@@ -22,7 +22,7 @@ as_bob {
 
     run_ok( 'prophet-node-create', [qw(--type Dummy --ignore yes)], "Created a dummy record" );
 
-    run_ok( 'prophet', ['merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet-node-search', [qw(--type Bug --regex .)] );
@@ -45,7 +45,7 @@ as_bob {
     run_ok( 'prophet', [ 'export', '--path', $path ] );
     my $cli = Prophet::CLI->new;
     $path = $path->subdir( $cli->handle->db_uuid );
-    ok( -d $path,                       'found db-uuid root '.$path );
+    ok( -d $path,                       'found db-uuid root ' . $path );
     ok( -e $path->file('replica-uuid'), 'found replica uuid file' );
     lives_and {
         is( $path->file('replica-uuid')->slurp, replica_uuid() );
@@ -53,12 +53,13 @@ as_bob {
 
     ok( -e $path->file('changesets.idx'), 'found changesets index' );
     my $latest = $path->file('latest-sequence-no')->slurp;
-    is($latest, 5);
+    is( $latest, 5 );
     use_ok('Prophet::Replica::HTTP');
-    my $changesets = Prophet::Replica->new({ url => 'prophet:file://'.$path} )->fetch_changesets( after => 0 );
-    is( $#{ $changesets}, 4, "We found a total of 5 changesets");
+    my $changesets = Prophet::Replica->new( { url => 'prophet:file://' . $path } )->fetch_changesets( after => 0 );
+    is( $#{$changesets}, 4, "We found a total of 5 changesets" );
+
     # XXX: compare the changeset structure
-    is(lc($changesets->[-1]->{source_uuid}), lc($changesets->[-1]->{original_source_uuid}));
+    is( lc( $changesets->[-1]->{source_uuid} ), lc( $changesets->[-1]->{original_source_uuid} ) );
 
 };
 

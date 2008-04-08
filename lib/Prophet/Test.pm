@@ -19,7 +19,7 @@ use Prophet::CLI;
 
 our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
-diag("Replicas can be found in". $REPO_BASE);
+diag( "Replicas can be found in" . $REPO_BASE );
 
 sub import_extra {
     my $class = shift;
@@ -43,12 +43,13 @@ sub import_extra {
     }
 }
 
-
 sub in_gladiator (&) {
     my $code = shift;
 
     my $types;
-    require "Devel::Gladiator" or die 'Get Devel::Gladiator from http://code.sixapart.com/svn/Devel-Gladiator/trunk/ and harass sky@crucially.net to CPAN it';
+    require "Devel::Gladiator"
+        or die
+        'Get Devel::Gladiator from http://code.sixapart.com/svn/Devel-Gladiator/trunk/ and harass sky@crucially.net to CPAN it';
     for ( @{ Devel::Gladiator::walk_arena() } ) {
         $types->{ ref($_) }--;
     }
@@ -76,9 +77,9 @@ sub run_script {
 
     #    diag(join(' ', @cmd, @$args));
     my $ret = run3 [ @cmd, @$args ], undef, \$stdout, \$stderr;
-    Carp::croak $stderr if $?;
-        diag("STDOUT: " . $stdout) if ($stdout);
-        diag("STDERR: " . $stderr) if ($stderr);
+    Carp::croak $stderr          if $?;
+    diag( "STDOUT: " . $stdout ) if ($stdout);
+    diag( "STDERR: " . $stderr ) if ($stderr);
 
     #Test::More::diag $stderr;
     return ( $ret, $stdout, $stderr );
@@ -98,6 +99,7 @@ sub run_ok {
     @_ = sub {
         my ( $ret, $stdout, $stderr ) = ( run_script( $script, $args ), $msg );
         @_ = ( $ret, $msg );
+
         #diag("STDOUT: " . $stdout) if ($stdout);
         #diag("STDERR: " . $stderr) if ($stderr);
         goto &Test::More::ok;
@@ -144,7 +146,7 @@ sub _get_perl_cmd {
         push @cmd, '-d:DProf';
         $ENV{'PERL_DPROF_OUT_FILE_NAME'} = 'tmon.out.' . $$ . '.' . $RUNCNT++;
     }
-    push @cmd, $base_dir->file( $script );
+    push @cmd, $base_dir->file($script);
     return @cmd;
 }
 

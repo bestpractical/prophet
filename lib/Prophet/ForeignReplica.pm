@@ -1,7 +1,6 @@
 use warnings;
 use strict;
 
-
 package Prophet::ForeignReplica;
 use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
@@ -14,8 +13,8 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 =cut
 
-sub conflicts_from_changeset { return; }
-sub accepts_changesets       {1}
+sub conflicts_from_changeset              { return; }
+sub accepts_changesets                    {1}
 sub import_resolutions_from_remote_source { warn 'no resdb'; return }
 
 sub record_changeset {
@@ -29,7 +28,7 @@ sub record_changeset {
 use Data::UUID 'NameSpace_DNS';
 
 # foreign replicas never have a db uuid
-sub db_uuid { return undef };
+sub db_uuid { return undef }
 
 sub uuid_for_url {
     my ( $self, $url ) = @_;
@@ -40,6 +39,7 @@ sub prompt_for_login {
     my ( $self, $uri, $username ) = @_;
 
     my $password;
+
     # XXX belongs to some CLI callback
     use Term::ReadKey;
     local $| = 1;
@@ -56,14 +56,14 @@ sub prompt_for_login {
     chomp $password;
     ReadMode 1;
     print "\n";
-    return ($username, $password);
+    return ( $username, $password );
 }
 
 our $REMOTE_ID_METATYPE = "_remote_id_map";
 
 sub _remote_id_storage {
     my $self = shift;
-    return $self->state_handle->metadata_storage($REMOTE_ID_METATYPE, 'prophet-uuid')->(@_);
+    return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE, 'prophet-uuid' )->(@_);
 }
 
 1;

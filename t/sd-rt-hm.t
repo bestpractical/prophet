@@ -9,16 +9,17 @@ use strict;
 use Prophet::Test;
 
 BEGIN {
-eval 'require RT::Test; 1'
-    or plan skip_all => 'requires 3.7 to run tests.'.$@;
+    eval 'require RT::Test; 1'
+        or plan skip_all => 'requires 3.7 to run tests.' . $@;
 }
+
 BEGIN {
-    unless ($ENV{'JIFTY_APP_ROOT'}) {
+    unless ( $ENV{'JIFTY_APP_ROOT'} ) {
         die "You must define a JIFTY_APP_ROOT environment variable which points to your hiveminder source tree";
     }
     require File::Temp;
     use Jifty;
-    push @INC, File::Spec->catdir(Jifty::Util->app_root, "lib");
+    push @INC, File::Spec->catdir( Jifty::Util->app_root, "lib" );
 }
 
 plan tests => 10;
@@ -27,22 +28,20 @@ RT::Test->import();
 
 no warnings 'once';
 
-RT::Handle->InsertData($RT::EtcPath.'/initialdata');
+RT::Handle->InsertData( $RT::EtcPath . '/initialdata' );
 
 eval 'use BTDT::Test; 1;' or die "$@";
 
-
 my $server = BTDT::Test->make_server;
-my $URL = $server->started_ok;
+my $URL    = $server->started_ok;
 
 $URL =~ s|http://|http://onlooker\@example.com:something@|;
 my $sd_hm_url = "hm:$URL";
 
-ok(1, "Loaded the test script");
+ok( 1, "Loaded the test script" );
 
-
-my ($url, $m) = RT::Test->started_ok;
-diag ("RT server started at $url");
+my ( $url, $m ) = RT::Test->started_ok;
+diag("RT server started at $url");
 
 use RT::Client::REST;
 use RT::Client::REST::Ticket;
@@ -54,72 +53,71 @@ warn $url;
 my $sd_rt_url = "rt:$url|General|Status!='resolved'";
 
 my $ticket = RT::Client::REST::Ticket->new(
-        rt => $rt,
-        queue => 'General',
-        status => 'new',
-        subject => 'Fly Man',
-    )->store(text => "Ticket Comment");
+    rt      => $rt,
+    queue   => 'General',
+    status  => 'new',
+    subject => 'Fly Man',
+)->store( text => "Ticket Comment" );
 
 # setup for hm
 my $root = BTDT::CurrentUser->superuser;
-my $as_root = BTDT::Model::User->new(current_user => $root);
-$as_root->load_by_cols(email => 'onlooker@example.com');
-my ($val,$msg ) =$as_root->set_accepted_eula_version(Jifty->config->app('EULAVersion'));
-ok($val,$msg);
+my $as_root = BTDT::Model::User->new( current_user => $root );
+$as_root->load_by_cols( email => 'onlooker@example.com' );
+my ( $val, $msg ) = $as_root->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
+ok( $val, $msg );
 my $GOODUSER = BTDT::CurrentUser->new( email => 'onlooker@example.com' );
-$GOODUSER->user_object->set_accepted_eula_version(Jifty->config->app('EULAVersion'));
-my $task = BTDT::Model::Task->new(current_user => $GOODUSER);
+$GOODUSER->user_object->set_accepted_eula_version( Jifty->config->app('EULAVersion') );
+my $task = BTDT::Model::Task->new( current_user => $GOODUSER );
 $task->create(
-    summary => "YATTA",
+    summary     => "YATTA",
     description => '',
 );
 
+my ( $yatta_uuid, $flyman_uuid );
+my ( $ret, $out, $err );
 
-my ($yatta_uuid, $flyman_uuid);
-my     ($ret, $out, $err);
 # now the tests, bob syncs with rt, alice syncs with hm
 as_alice {
     local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
-    ($ret, $out, $err) = run_script('sd', ['pull', $sd_hm_url]);
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', $sd_hm_url ] );
     diag($err) if ($err);
-    run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $yatta_uuid = $1 }) YATTA .*/]);
+    run_output_matches( 'sd', [ 'ticket', '--list', '--regex', '.' ], [qr/(.*?)(?{ $yatta_uuid = $1 }) YATTA .*/] );
 };
 
 as_bob {
     local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
-    run_output_matches('sd', ['ticket', '--list', '--regex', '.'], []);
-    ($ret, $out, $err) = run_script('sd', ['pull', $sd_rt_url]);
+    run_output_matches( 'sd', [ 'ticket', '--list', '--regex', '.' ], [] );
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', $sd_rt_url ] );
     diag($err) if ($err);
-    run_output_matches('sd', ['ticket', '--list', '--regex', '.'], [qr/(.*?)(?{ $flyman_uuid = $1 }) Fly Man new/]);
+    run_output_matches( 'sd', [ 'ticket', '--list', '--regex', '.' ], [qr/(.*?)(?{ $flyman_uuid = $1 }) Fly Man new/] );
 
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', repo_uri_for('alice') ] );
+    run_output_matches(
+        'sd',
+        [ 'ticket',                             '--list', '--regex', '.' ],
+        [ sort "$yatta_uuid YATTA (no status)", "$flyman_uuid Fly Man new", ]
+    );
 
-    ($ret, $out, $err) = run_script('sd', ['pull', repo_uri_for('alice')]);
-    run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
-                       [ sort
-                         "$yatta_uuid YATTA (no status)",
-                         "$flyman_uuid Fly Man new",
-                       ]);
-
-    ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'push', $sd_rt_url ] );
     diag($err) if ($err);
+
     # XXX: to check YATTA ticket created in RT.
 };
 
 as_alice {
     local $ENV{SVB_REPO} = $ENV{'PROPHET_REPO'};
-    ($ret, $out, $err) = run_script('sd', ['pull', repo_uri_for('bob')]);
-    run_output_matches('sd', ['ticket', '--list', '--regex', '.'],
-                       [ sort
-                         "$yatta_uuid YATTA (no status)",
-                         "$flyman_uuid Fly Man new",
-                       ]);
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'pull', repo_uri_for('bob') ] );
+    run_output_matches(
+        'sd',
+        [ 'ticket',                             '--list', '--regex', '.' ],
+        [ sort "$yatta_uuid YATTA (no status)", "$flyman_uuid Fly Man new", ]
+    );
 
-    ($ret, $out, $err) = run_script('sd', ['push', $sd_rt_url]);
+    ( $ret, $out, $err ) = run_script( 'sd', [ 'push', $sd_rt_url ] );
 
     ok( $task->load_by_cols( summary => 'Fly Man' ) );
 
 }
-
 
 __END__
 

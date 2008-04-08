@@ -68,24 +68,23 @@ sub uuid {
 
 sub most_recent_changeset {
     my $self = shift;
-     $self->ra->get_latest_revnum
+    $self->ra->get_latest_revnum;
 }
 
 sub fetch_changeset {
-    my $self = shift;
-    my $rev = shift;
-        my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
-        $editor->ra( $self->_get_ra );
-        my $pool = SVN::Pool->new_default;
+    my $self   = shift;
+    my $rev    = shift;
+    my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
+    $editor->ra( $self->_get_ra );
+    my $pool = SVN::Pool->new_default;
 
-        # This horrible hack is here because I have no idea how to pass custom variables into the editor
-        $editor->{revision} = $rev;
+    # This horrible hack is here because I have no idea how to pass custom variables into the editor
+    $editor->{revision} = $rev;
 
-        $self->ra->replay( $rev, 0, 1, $editor );
-        return $self->_recode_changeset( $editor->dump_deltas, $self->ra->rev_proplist($rev) );
+    $self->ra->replay( $rev, 0, 1, $editor );
+    return $self->_recode_changeset( $editor->dump_deltas, $self->ra->rev_proplist($rev) );
 
 }
-
 
 sub _recode_changeset {
     my $self      = shift;

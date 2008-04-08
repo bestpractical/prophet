@@ -29,8 +29,10 @@ use_ok('Prophet::Replica::SVN');
 my $alice = Prophet::Replica->new( { url => repo_uri_for('alice') } );
 my $bob   = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
-
-is ($bob->prophet_handle->db_uuid, $alice->prophet_handle->db_uuid, "bob and alice's replicas need to have the same uuid for them to be able to sync without issues");
+is( $bob->prophet_handle->db_uuid,
+    $alice->prophet_handle->db_uuid,
+    "bob and alice's replicas need to have the same uuid for them to be able to sync without issues"
+);
 
 my $changesets = $bob->new_changesets_for($alice);
 

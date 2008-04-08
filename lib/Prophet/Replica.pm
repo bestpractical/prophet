@@ -77,9 +77,9 @@ sub import_changesets {
 
     my $source = $args{'from'};
 
-    $source->traverse_new_changesets
-        ( for => $self,
-          callback => sub {
+    $source->traverse_new_changesets(
+        for      => $self,
+        callback => sub {
             $self->integrate_changeset(
                 changeset          => $_[0],
                 conflict_callback  => $args{conflict_callback},
@@ -88,7 +88,8 @@ sub import_changesets {
                 resolver_class     => $args{'resolver_class'},
                 resdb              => $args{'resdb'},
             );
-        } );
+        }
+    );
 }
 
 sub import_resolutions_from_remote_replica {
@@ -330,10 +331,11 @@ sub remove_redundant_data {
     my ( $self, $changeset ) = @_;
 
     # XXX: encapsulation
-    $changeset->{changes}
-        = [ grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' }
+    $changeset->{changes} = [
+        grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' }
             grep { !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
-            $changeset->changes ];
+            $changeset->changes
+    ];
 }
 
 =head2 traverse_new_changesets ( for => $replica, callback => sub { my $changeset = shift; ... } )
@@ -348,21 +350,25 @@ advance how many changesets are there for traversal.
 sub traverse_new_changesets {
     my $self = shift;
     my %args = validate(
-        @_, { for => { isa => 'Prophet::Replica' },
-              callback => 1,
-        } );
+        @_,
+        {   for      => { isa => 'Prophet::Replica' },
+            callback => 1,
+        }
+    );
 
-    if ($self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid) {
+    if ( $self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid ) {
+
         #warn "HEY. You should not be merging between two replicas with different database uuids";
         # XXX TODO
     }
 
-
-    $self->traverse_changesets( after => $args{for}->last_changeset_from_source( $self->uuid ),
-                                callback => sub {
-                                    $args{callback}->($_[0])
-                                        if $self->should_send_changeset( changeset => $_[0], to => $args{for} );
-                                } );
+    $self->traverse_changesets(
+        after    => $args{for}->last_changeset_from_source( $self->uuid ),
+        callback => sub {
+            $args{callback}->( $_[0] )
+                if $self->should_send_changeset( changeset => $_[0], to => $args{for} );
+        }
+    );
 }
 
 =head2 news_changesets_for Prophet::Replica
@@ -382,7 +388,7 @@ sub db_uuid {
 
 sub new_changesets_for {
     my $self = shift;
-    my (  $other ) = validate_pos(@_, { isa => 'Prophet::Replica'});
+    my ($other) = validate_pos( @_, { isa => 'Prophet::Replica' } );
 
     my @result;
     $self->traverse_new_changesets( for => $other, callback => sub { push @result, $_[0] } );
@@ -431,12 +437,14 @@ sub fetch_changesets {
 sub traverse_changesets {
     my $self = shift;
     my %args = validate(
-        @_, { after => 1,
-              callback => 1,
-        } );
+        @_,
+        {   after    => 1,
+            callback => 1,
+        }
+    );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-    die "you must implement most_recent_changeset in ".ref($self).", or override traverse_changesets"
+    die "you must implement most_recent_changeset in " . ref($self) . ", or override traverse_changesets"
         unless $self->can('most_recent_changeset');
 
     for my $rev ( $first_rev .. $self->most_recent_changeset ) {
@@ -575,11 +583,7 @@ The file is sorted in ascending order by revision id.
 
 sub export_to {
     my $self = shift;
-    my %args = validate(
-        @_,
-        {   path         => 1,
-        }
-    );
+    my %args = validate( @_, { path => 1, } );
 
     my $replica_root = dir( $args{path}, $self->db_uuid );
     my $cas_dir           = dir( $replica_root => 'cas' );
@@ -587,7 +591,7 @@ sub export_to {
     my $changeset_cas_dir = dir( $cas_dir      => 'changesets' );
     my $record_dir        = dir( $replica_root => 'records' );
 
-    _mkdir($args{path});
+    _mkdir( $args{path} );
     _mkdir($replica_root);
     _mkdir($record_dir);
     _mkdir($cas_dir);
@@ -605,28 +609,30 @@ sub export_to {
     }
 
     $self->export_changesets( root => $replica_root, cas_dir => $changeset_cas_dir );
+
     #$self->export_resolutions( path => dir( $replica_root, 'resolutions'), resdb_handle => $args{'resdb_handle'} );
 
 }
 
 sub export_resolutions {
-    my $self = shift;
+    my $self    = shift;
     my $replica = Prophet::Replica->new();
+
     # ...
 }
-
-
 
 sub _init_export_metadata {
     my $self = shift;
     my %args = validate( @_, { root => 1 } );
 
-    $self->_output_oneliner_file( path => file( $args{'root'}, 'replica-uuid' ), content => $self->uuid );
+    $self->_output_oneliner_file( path => file( $args{'root'}, 'replica-uuid' ),    content => $self->uuid );
     $self->_output_oneliner_file( path => file( $args{'root'}, 'replica-version' ), content => '1' );
-    $self->_output_oneliner_file( path => file( $args{'root'}, 'latest-sequence-no' ), content => $self->most_recent_changeset );
+    $self->_output_oneliner_file(
+        path    => file( $args{'root'}, 'latest-sequence-no' ),
+        content => $self->most_recent_changeset
+    );
 
 }
-
 
 sub export_records {
     my $self = shift;

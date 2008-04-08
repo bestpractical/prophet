@@ -23,7 +23,6 @@ sub new {
     return Prophet::Handle::SVN->new(@_);
 }
 
-
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
 Given a L<Prophet::ChangeSet>, integrates each and every change within that changeset into the handle's replica.
@@ -91,12 +90,10 @@ sub record_changeset {
         $self->_integrate_change($_) for ( $changeset->changes );
         $self->_cleanup_integrated_changeset($changeset);
 
-
         $self->commit_edit() unless ($inside_edit);
     };
     die($@) if ($@);
 }
-
 
 sub _integrate_change {
     my $self   = shift;
@@ -125,13 +122,8 @@ sub _integrate_change {
     } else {
         Carp::confess( " I have never heard of the change type: " . $change->change_type );
     }
-    
+
 }
-
-
-
-
-
 
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
@@ -156,12 +148,12 @@ sub record_changeset_integration {
 sub _record_merge_ticket {
     my $self = shift;
     my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
-    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no);
+    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no );
 }
 
 sub metadata_storage {
     my $self = shift;
-    my ($type, $prop_name) = validate_pos( @_, 1, 1);
+    my ( $type, $prop_name ) = validate_pos( @_, 1, 1 );
     return sub {
         my $uuid = shift;
         if (@_) {
@@ -177,7 +169,7 @@ sub _retrieve_metadata_for {
     my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
 
     my $entry = Prophet::Record->new( handle => $self, type => $name );
-    $entry->load(uuid => $source_uuid);
+    $entry->load( uuid => $source_uuid );
     return eval { $entry->prop($prop_name) };
 
 }
@@ -194,11 +186,10 @@ sub _record_metadata_for {
     }
 
     $self->set_node_props(
-        uuid => $source_uuid,
-        type => $name,
+        uuid  => $source_uuid,
+        type  => $name,
         props => { $prop_name => $content }
     );
 }
-
 
 1;

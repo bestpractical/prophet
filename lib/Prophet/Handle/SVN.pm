@@ -13,21 +13,18 @@ use Params::Validate qw(:all);
 
 __PACKAGE__->mk_accessors(qw(repo_path repo_handle current_edit _pool));
 
-
-
 sub new {
     my $class = shift;
     my $self  = {};
     bless $self, $class;
-    
+
     my %args = validate( @_, { repository => 1, db_uuid => 0 } );
     $self->repo_path( $args{'repository'} );
-    $self->db_uuid($args{'db_uuid'}) if ($args{'db_uuid'});
+    $self->db_uuid( $args{'db_uuid'} ) if ( $args{'db_uuid'} );
     $self->_connect();
     $self->_pool( SVN::Pool->new );
     return $self;
 }
-
 
 =head2 uuid 
 
@@ -39,8 +36,6 @@ sub uuid {
     my $self = shift;
     return $self->repo_handle->fs->get_uuid;
 }
-
-
 
 =head2 current_root
 
@@ -62,16 +57,14 @@ sub _connect {
         $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef, $self->_pool );
     }
 
-
     $self->repo_handle($repos);
     $self->_determine_db_uuid;
-    $self->_create_nonexistent_dir($self->db_uuid);
+    $self->_create_nonexistent_dir( $self->db_uuid );
 }
 
 use constant USER_PROVIDED_DB_UUID => 1;
-use constant DETECTED_DB_UUID => 2;
-use constant CREATED_DB_UUID => 3;
-
+use constant DETECTED_DB_UUID      => 2;
+use constant CREATED_DB_UUID       => 3;
 
 sub _determine_db_uuid {
     my $self = shift;
@@ -91,15 +84,13 @@ sub _determine_db_uuid {
     return CREATED_DB_UUID;
 }
 
-
-sub _cleanup_integrated_changeset{
+sub _cleanup_integrated_changeset {
     my $self = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-            
-        $self->current_edit->change_prop( 'prophet:special-type' => 'nullification' )            if ( $changeset->is_nullification );
-        $self->current_edit->change_prop( 'prophet:special-type' => 'resolution' ) if ( $changeset->is_resolution );
-}
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
+    $self->current_edit->change_prop( 'prophet:special-type' => 'nullification' ) if ( $changeset->is_nullification );
+    $self->current_edit->change_prop( 'prophet:special-type' => 'resolution' )    if ( $changeset->is_resolution );
+}
 
 sub record_changeset_integration {
     my $self = shift;
@@ -110,15 +101,13 @@ sub record_changeset_integration {
 
 }
 
-
 sub _set_original_source_metadata {
-    my $self   = shift;
-      my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+    my $self = shift;
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     $self->current_edit->change_prop( 'prophet:original-source'      => $changeset->original_source_uuid );
     $self->current_edit->change_prop( 'prophet:original-sequence-no' => $changeset->original_sequence_no );
 }
-
 
 sub _create_nonexistent_dir {
     my $self = shift;
@@ -163,8 +152,6 @@ sub commit_edit {
     $self->current_edit(undef);
 
 }
-
-
 
 =head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
 
@@ -259,8 +246,6 @@ sub set_node_props {
 
 }
 
-
-
 =head2 get_node_props {uuid => $uuid, type => $type, root => $root }
 
 Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
@@ -282,11 +267,6 @@ sub get_node_props {
     my $root = $args{'root'} || $self->current_root;
     return $root->node_proplist( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 }
-
-
-
-
-
 
 =head2 file_for { uuid => $UUID, type => $type }
 
@@ -311,8 +291,6 @@ sub directory_for_type {
 
 }
 
-
-
 =head2 node_exists {uuid => $uuid, type => $type, root => $root }
 
 Returns true if the node in question exists. False otherwise
@@ -327,18 +305,17 @@ sub node_exists {
     return $root->check_path( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 
 }
+
 sub enumerate_nodes {
     my $self = shift;
-    my %args = validate(@_ => { type => 1 } );
-   return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' )}];
+    my %args = validate( @_ => { type => 1 } );
+    return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' ) } ];
 }
-
 
 sub enumerate_types {
     my $self = shift;
-   return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' )}];
+    return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' ) } ];
 }
-
 
 sub type_exists {
     my $self = shift;
@@ -348,8 +325,6 @@ sub type_exists {
     return $root->check_path( $self->directory_for_type( type => $args{'type'}, ) );
 
 }
-
-
 
 1;
 

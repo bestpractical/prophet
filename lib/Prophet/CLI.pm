@@ -22,7 +22,6 @@ sub new {
     $self->handle;
     $self->resdb_handle;
 
-
     return $self;
 }
 
@@ -53,7 +52,6 @@ sub resdb_handle {
     return $self->_resdb_handle();
 }
 
-
 =head2 get_handle_for_replica($replica, $db_root)
 
 for a foreign $replica, this returns a Prophet::Handle for local storage that are based in db_root
@@ -61,9 +59,9 @@ for a foreign $replica, this returns a Prophet::Handle for local storage that ar
 =cut
 
 sub get_handle_for_replica {
-    my ($self, $replica, $db_uuid) = @_;
-    my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ).'/_prophet_replica/'.$replica->uuid;
-    return Prophet::Handle->new( repository => $root, db_uuid => $db_uuid);
+    my ( $self, $replica, $db_uuid ) = @_;
+    my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) . '/_prophet_replica/' . $replica->uuid;
+    return Prophet::Handle->new( repository => $root, db_uuid => $db_uuid );
 }
 
 =head2 _record_cmd
@@ -194,7 +192,7 @@ sub _get_record {
 }
 
 sub do_create {
-    my $self    = shift;
+    my $self   = shift;
     my $record = $self->_get_record;
 
     $record->create( props => $self->args );
@@ -221,7 +219,7 @@ sub do_search {
         }
     );
 
-    for ( sort {$a->uuid cmp  $b->uuid} @{ $records->as_array_ref } ) {
+    for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
         print $_->format_summary . "\n";
     }
 }
@@ -261,31 +259,30 @@ sub do_show {
 
 }
 
-
 sub do_push {
-    my $self = shift;
-    my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
-    my $other = shift @ARGV;
+    my $self         = shift;
+    my $source_me    = Prophet::Replica->new( { url => "file://" . $self->handle->repo_path } );
+    my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
-    my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
-    
+    my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
+
     $self->_do_merge( $source_me, $source_other );
 }
 
 sub do_export {
-    my $self = shift;
-    my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
-    my $path = $self->args->{'path'};
-    $source_me->export_to( path => $path);
+    my $self      = shift;
+    my $source_me = Prophet::Replica->new( { url => "file://" . $self->handle->repo_path } );
+    my $path      = $self->args->{'path'};
+    $source_me->export_to( path => $path );
 }
 
 sub do_pull {
-    my $self = shift;
-    my $source_me = Prophet::Replica->new( { url => "file://".$self->handle->repo_path } );
-    my $other = shift @ARGV;
+    my $self         = shift;
+    my $source_me    = Prophet::Replica->new( { url => "file://" . $self->handle->repo_path } );
+    my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
-    my $resdb = $source_me->import_resolutions_from_remote_replica( from => $source_other );
-    
+    my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
+
     $self->_do_merge( $source_other, $source_me );
 
 }
@@ -295,8 +292,8 @@ sub do_server {
 
     my $opts = $self->args();
     require Prophet::Server::REST;
-    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080);
-    $server->prophet_handle($self->handle);
+    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080 );
+    $server->prophet_handle( $self->handle );
     $server->run;
 }
 
@@ -307,14 +304,14 @@ sub do_merge {
 
     my $source = Prophet::Replica->new( { url => $opts->{'from'} } );
     my $target = Prophet::Replica->new( { url => $opts->{'to'} } );
-    
+
     $target->import_resolutions_from_remote_replica( from => $source );
-    
-    $self->_do_merge( $source, $target);
+
+    $self->_do_merge( $source, $target );
 }
 
 sub _do_merge {
-    my ($self, $source, $target) = @_;
+    my ( $self, $source, $target ) = @_;
     if ( $target->uuid eq $source->uuid ) {
         fatal_error( "You appear to be trying to merge two identical replicas. "
                 . "Either you're trying to merge a replica to itself or "
@@ -330,8 +327,8 @@ sub _do_merge {
     }
 
     $target->import_changesets(
-        from      => $source,
-        resdb     => $self->resdb_handle,
+        from  => $source,
+        resdb => $self->resdb_handle,
         $ENV{'PROPHET_RESOLVER'}
         ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
         : ( ( $opts->{'prefer'} eq 'to'   ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' ) : () ),
@@ -340,13 +337,10 @@ sub _do_merge {
     );
 }
 
-    sub fatal_error {
-        my $reason = shift;
-        die $reason . "\n";
+sub fatal_error {
+    my $reason = shift;
+    die $reason . "\n";
 
-    }
-
-
-
+}
 
 1;

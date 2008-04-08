@@ -15,22 +15,17 @@ __PACKAGE__->mk_accessors(qw/sync_source/);
 
 our $DEBUG = $Prophet::Handle::DEBUG;
 
-
-
-
-
 sub run {
     my $self = shift;
-    my %args = validate( @_, { ticket => 1, transactions => 1} );
+    my %args = validate( @_, { ticket => 1, transactions => 1 } );
 
     $args{'ticket'}->{'id'} =~ s/^ticket\///g;
-    
+
     my $ticket = $args{'ticket'};
 
-    my $create_state = $ticket;;
+    my $create_state = $ticket;
     map { $create_state->{$_} = $self->date_to_iso( $create_state->{$_} ) }
         qw(Created Resolved Told LastUpdated Starts Started);
-
 
     map { $create_state->{$_} =~ s/ minutes$// } qw(TimeWorked TimeLeft TimeEstimated);
     my @changesets;
@@ -42,7 +37,7 @@ sub run {
                 }
             );
 
-            if ( (  $txn->{'Ticket'} ne $ticket->{id} ) && $txn->{'Type'} !~ /^(?:Comment|Correspond)$/ ) {
+            if ( ( $txn->{'Ticket'} ne $ticket->{id} ) && $txn->{'Type'} !~ /^(?:Comment|Correspond)$/ ) {
                 warn "Skipping a data change from a merged ticket" . $txn->{'Ticket'} . ' vs ' . $ticket->{id};
                 next;
             }
@@ -61,7 +56,6 @@ sub run {
             warn "not handling txn type $txn->{Type} for $txn->{id} (Ticket $args{ticket}{id}) yet";
             die YAML::Dump($txn);
         }
-
 
     }
     return \@changesets;
@@ -89,14 +83,13 @@ sub _recode_txn_Told {
     return $self->_recode_txn_Set(%args);
 }
 
-
 sub _recode_txn_Set {
     my $self = shift;
     my %args = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1 } );
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'create_state'}->{'id'} ),
             change_type => 'update_file'
         }
     );
@@ -144,7 +137,7 @@ sub _recode_txn_Create {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'create_state'}->{'id'} ),
             change_type => 'add_file'
         }
     );
@@ -178,7 +171,7 @@ sub _recode_txn_AddLink {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'create_state'}->{'id'} ),
             change_type => 'update_file'
         }
     );
@@ -195,8 +188,9 @@ sub _recode_content_update {
     my $self   = shift;
     my %args   = validate( @_, { ticket => 1, txn => 1, create_state => 1, changeset => 1 } );
     my $change = Prophet::Change->new(
-        {   node_type   => 'comment',
-            node_uuid   => $self->sync_source->uuid_for_url( $self->sync_source->rt_url . "/transaction/" . $args{'txn'}->{'id'} ),
+        {   node_type => 'comment',
+            node_uuid =>
+                $self->sync_source->uuid_for_url( $self->sync_source->rt_url . "/transaction/" . $args{'txn'}->{'id'} ),
             change_type => 'add_file'
         }
     );
@@ -243,7 +237,7 @@ sub _recode_txn_AddWatcher {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'create_state'}->{'id'} ),
             change_type => 'update_file'
         }
     );
@@ -285,7 +279,7 @@ sub _recode_txn_CustomField {
 
     my $change = Prophet::Change->new(
         {   node_type   => 'ticket',
-            node_uuid   => $self->sync_source->uuid_for_remote_id($args{'create_state'}->{'id'}),
+            node_uuid   => $self->sync_source->uuid_for_remote_id( $args{'create_state'}->{'id'} ),
             change_type => 'update_file'
         }
     );
@@ -310,7 +304,6 @@ sub resolve_user_id_to {
 }
 
 memoize 'resolve_user_id_to';
-
 
 sub warp_list_to_old_value {
     my $self         = shift;

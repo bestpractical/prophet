@@ -91,8 +91,8 @@ sub is_empty {
     return $self->changes ? 0 : 1;
 }
 
-
-our @SERIALIZE_PROPS = (            qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty));
+our @SERIALIZE_PROPS
+    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty));
 
 sub as_hash {
     my $self = shift;
@@ -106,15 +106,14 @@ sub as_hash {
 }
 
 sub new_from_hashref {
-    my $class = shift;
+    my $class   = shift;
     my $hashref = shift;
-    my $self = $class->new({ map  { $_ => $hashref->{$_}  } @SERIALIZE_PROPS });
+    my $self    = $class->new( { map { $_ => $hashref->{$_} } @SERIALIZE_PROPS } );
 
-    foreach my $change (keys %{$hashref->{changes}}) {
-            $self->add_change(change => Prophet::Change->new_from_hashref($change => $hashref->{changes}->{$change}))
+    foreach my $change ( keys %{ $hashref->{changes} } ) {
+        $self->add_change( change => Prophet::Change->new_from_hashref( $change => $hashref->{changes}->{$change} ) );
     }
     return $self;
 }
-
 
 1;

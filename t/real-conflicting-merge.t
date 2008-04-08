@@ -19,7 +19,7 @@ as_bob {
 
     run_ok( 'prophet-node-create', [qw(--type Dummy --ignore yes)], "Created a dummy record" );
 
-    run_ok( 'prophet', ['merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet-node-search', [qw(--type Bug --regex .)] );
@@ -104,8 +104,8 @@ as_alice {
     $target->import_resolutions_from_remote_replica( from => $source );
 
     $target->import_changesets(
-        from      => $source,
-        resdb     => $target->ressource->prophet_handle,
+        from  => $source,
+        resdb => $target->ressource->prophet_handle,
     );
 
     lives_and {

@@ -10,7 +10,7 @@ ok( !-d $REPO );
 diag($REPO);
 `svnadmin create $REPO`;
 ok( -d $REPO, "The repo exists ater svnadmin create" );
-my $cxn = Prophet::Handle->new( repository => "$REPO");
+my $cxn = Prophet::Handle->new( repository => "$REPO" );
 isa_ok( $cxn, 'Prophet::Handle', "Got the cxn" );
 use_ok('Prophet::Record');
 my $record = Prophet::Record->new( handle => $cxn, type => 'Person' );

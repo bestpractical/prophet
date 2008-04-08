@@ -64,9 +64,6 @@ SD::Source::RT->recode_ticket
 
 =cut
 
-
-
-
 =head2 setup
 
 Open a connection to the SVN source identified by C<$self->url>.
@@ -97,8 +94,6 @@ sub setup {
     my $cli = Prophet::CLI->new();
     $self->state_handle( $cli->get_handle_for_replica( $self, $self->state_db_uuid ) );
 }
-
-
 
 sub record_pushed_transactions {
     my $self = shift;
@@ -136,7 +131,7 @@ my $TXN_METATYPE = 'txn-source';
 
 sub _txn_storage {
     my $self = shift;
-    return $self->state_handle->metadata_storage($TXN_METATYPE, 'prophet-txn-source');
+    return $self->state_handle->metadata_storage( $TXN_METATYPE, 'prophet-txn-source' );
 }
 
 sub prophet_has_seen_transaction {
@@ -149,8 +144,10 @@ sub record_pushed_transaction {
     my $self = shift;
     my %args = validate( @_, { transaction => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
 
-    $self->_txn_storage->( $self->uuid . '-txn-' . $args{transaction},
-                           join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no ) );
+    $self->_txn_storage->(
+        $self->uuid . '-txn-' . $args{transaction},
+        join( ':', $args{changeset}->original_source_uuid, $args{changeset}->original_sequence_no )
+    );
 }
 
 # This cache stores uuids for tickets we've synced from a remote RT
@@ -169,7 +166,7 @@ sub remote_id_for_uuid {
 
 sub uuid_for_remote_id {
     my ( $self, $id ) = @_;
-    return $self->_lookup_remote_id($id)|| $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
+    return $self->_lookup_remote_id($id) || $self->uuid_for_url( $self->rt_url . "/ticket/$id" );
 }
 
 sub _lookup_remote_id {
@@ -181,16 +178,15 @@ sub _lookup_remote_id {
 
 sub _set_remote_id {
     my $self = shift;
-    my %args = validate( @_,
-        { uuid      => 1,
-          remote_id => 1
+    my %args = validate(
+        @_,
+        {   uuid      => 1,
+            remote_id => 1
         }
     );
-    return $self->_remote_id_storage(
-        $self->uuid_for_url( $self->rt_url . "/ticket/" . $args{'remote_id'} ),
+    return $self->_remote_id_storage( $self->uuid_for_url( $self->rt_url . "/ticket/" . $args{'remote_id'} ),
         $args{uuid} );
 }
-
 
 sub record_pushed_ticket {
     my $self = shift;
@@ -302,7 +298,6 @@ sub _recode_props_for_integrate {
     return \%attr;
 }
 
-
 =head2 uuid
 
 Return the replica SVN repository's UUID
@@ -318,9 +313,11 @@ sub uuid {
 sub traverse_changesets {
     my $self = shift;
     my %args = validate(
-        @_, { after => 1,
-              callback => 1,
-        } );
+        @_,
+        {   after    => 1,
+            callback => 1,
+        }
+    );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
 
@@ -329,10 +326,12 @@ sub traverse_changesets {
 
         # XXX: _recode_transactions should ignore txn-id <= $first_rev
         $args{callback}->($_)
-            for @{ $recoder->run(
+            for @{
+            $recoder->run(
                 ticket => $self->rt->show( type => 'ticket', id => $id ),
                 transactions => $self->find_matching_transactions( ticket => $id, starting_transaction => $first_rev )
-                ) };
+            )
+            };
     }
 }
 
