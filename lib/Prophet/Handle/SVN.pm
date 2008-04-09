@@ -84,7 +84,7 @@ sub _determine_db_uuid {
     return CREATED_DB_UUID;
 }
 
-sub _cleanup_integrated_changeset {
+sub _post_process_integrated_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
@@ -172,7 +172,7 @@ sub create_node {
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-    my $file = $self->file_for( uuid => $args{uuid}, type => $args{'type'} );
+    my $file = $self->_file_for( uuid => $args{uuid}, type => $args{'type'} );
     $self->current_edit->root->make_file($file);
     {
         my $stream = $self->current_edit->root->apply_text( $file, undef );
@@ -193,7 +193,7 @@ sub _set_node_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
-    my $file = $self->file_for( uuid => $args{uuid}, type => $args{type} );
+    my $file = $self->_file_for( uuid => $args{uuid}, type => $args{type} );
     foreach my $prop ( keys %{ $args{'props'} } ) {
         eval { $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef ) };
         Carp::confess($@) if ($@);
@@ -215,7 +215,7 @@ sub delete_node {
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-    $self->current_edit->root->delete( $self->file_for( uuid => $args{uuid}, type => $args{type} ) );
+    $self->current_edit->root->delete( $self->_file_for( uuid => $args{uuid}, type => $args{type} ) );
     $self->commit_edit() unless ($inside_edit);
     return 1;
 }
@@ -236,7 +236,7 @@ sub set_node_props {
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-    my $file = $self->file_for( uuid => $args{uuid}, type => $args{'type'} );
+    my $file = $self->_file_for( uuid => $args{uuid}, type => $args{'type'} );
     $self->_set_node_props(
         uuid  => $args{uuid},
         props => $args{props},
@@ -265,25 +265,25 @@ sub get_node_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
     my $root = $args{'root'} || $self->current_root;
-    return $root->node_proplist( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
+    return $root->node_proplist( $self->_file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 }
 
-=head2 file_for { uuid => $UUID, type => $type }
+=head2 _file_for { uuid => $UUID, type => $type }
 
 Returns a file path within the repository (starting from the root)
 
 =cut
 
-sub file_for {
+sub _file_for {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
     Carp::cluck unless $args{uuid};
-    my $file = join( "/", $self->directory_for_type( type => $args{'type'} ), $args{'uuid'} );
+    my $file = join( "/", $self->_directory_for_type( type => $args{'type'} ), $args{'uuid'} );
     return $file;
 
 }
 
-sub directory_for_type {
+sub _directory_for_type {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
     Carp::cluck unless defined $args{type};
@@ -302,9 +302,15 @@ sub node_exists {
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
 
     my $root = $args{'root'} || $self->current_root;
-    return $root->check_path( $self->file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
+    return $root->check_path( $self->_file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 
 }
+
+=head2 enumerate_nodes { type => $type }
+
+Returns a reference to a list of all the records of type $type
+
+=cut
 
 sub enumerate_nodes {
     my $self = shift;
@@ -312,17 +318,31 @@ sub enumerate_nodes {
     return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' ) } ];
 }
 
+=head2 enumerate_types
+
+Returns a reference to a list of all the known types in your Prophet database
+
+=cut
+
 sub enumerate_types {
     my $self = shift;
     return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' ) } ];
 }
+
+
+=head2 type_exists { type => $type }
+
+Returns true if we have any nodes of type C<$type>
+
+=cut
+
 
 sub type_exists {
     my $self = shift;
     my %args = validate( @_, { type => 1, root => undef } );
 
     my $root = $args{'root'} || $self->current_root;
-    return $root->check_path( $self->directory_for_type( type => $args{'type'}, ) );
+    return $root->check_path( $self->_directory_for_type( type => $args{'type'}, ) );
 
 }
 

@@ -34,7 +34,7 @@ This routine also records that we've seen this changeset (and hence everything b
 
 sub integrate_changeset {
     my $self      = shift;
-    my $changeset = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
 
     $self->begin_edit();
     $self->record_changeset($changeset);
@@ -42,10 +42,19 @@ sub integrate_changeset {
     $self->commit_edit();
 }
 
+=head2 record_resolutions Prophet::ChangeSet, (Prophet::Handle, a resolution database handle)
+
+Given a resolution changeset and a resolution database handle,
+record all the resolution changesets as well as resolution records
+in the content-addressed-store.
+
+Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
+
+=cut
+
 sub record_resolutions {
     my $self       = shift;
-    my $changeset  = shift;
-    my $res_handle = shift;
+    my ($changeset, $res_handle) = validate_pos(@_, { isa => 'Prophet::ChangeSet'}, { isa => 'Prophet::Handle'});
 
     return unless $changeset->changes;
 
@@ -55,14 +64,15 @@ sub record_resolutions {
     $self->commit_edit();
 }
 
-=head2 record_resolution
-
+=head2 record_resolution Prophet::Change
+ 
 Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
 
 =cut
 
 sub record_resolution {
-    my ( $self, $change ) = @_;
+    my $self      = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
 
     return 1 if $self->node_exists(
         uuid => $self->uuid,
@@ -79,16 +89,23 @@ sub record_resolution {
     );
 }
 
+=head2 record_changeset Prophet::ChangeSet
+
+Inside an edit (transaction), integrate all changes in this transaction
+and then call the _post_process_integrated_changeset() hook
+
+=cut
+
 sub record_changeset {
     my $self      = shift;
-    my $changeset = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
 
     eval {
 
         my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit() unless ($inside_edit);
         $self->_integrate_change($_) for ( $changeset->changes );
-        $self->_cleanup_integrated_changeset($changeset);
+        $self->_post_process_integrated_changeset($changeset);
 
         $self->commit_edit() unless ($inside_edit);
     };
@@ -97,7 +114,7 @@ sub record_changeset {
 
 sub _integrate_change {
     my $self   = shift;
-    my $change = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
 
@@ -151,6 +168,14 @@ sub _record_merge_ticket {
     return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no );
 }
 
+=head2 metadata_storage $RECORD_TYPE, $PROPERTY_NAME
+
+Returns a function which takes a UUID and an optional value to get (or set) metadata rows in a metadata table.
+We use this to record things like merge tickets
+
+
+=cut
+
 sub metadata_storage {
     my $self = shift;
     my ( $type, $prop_name ) = validate_pos( @_, 1, 1 );
@@ -191,5 +216,78 @@ sub _record_metadata_for {
         props => { $prop_name => $content }
     );
 }
+
+=head1 DATA STORE API
+
+=head1 The following functions need to be implemented by any Prophet backing store.
+
+=head2 uuid
+
+Returns this replica's UUID
+
+=head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
+
+Create a new record of type C<$type> with uuid C<$uuid>  within the current replica.
+
+Sets the record's properties to the key-value hash passed in as the C<props> argument.
+
+If called from within an edit, it uses the current edit. Otherwise it manufactures and finalizes one of its own.
+
+
+
+=head2 delete_node {uuid => $uuid, type => $type }
+
+Deletes the node C<$uuid> of type C<$type> from the current replica. 
+
+Manufactures its own new edit if C<$self->current_edit> is undefined.
+
+=head2 set_node_props { uuid => $uuid, type => $type, props => {hash of kv pairs }}
+
+
+Updates the record of type C<$type> with uuid C<$uuid> to set each property defined by the props hash. It does NOT alter any property not defined by the props hash.
+
+Manufactures its own current edit if none exists.
+
+
+=head2 get_node_props {uuid => $uuid, type => $type, root => $root }
+
+Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
+
+'root' is an optional argument which you can use to pass in an alternate historical version of the replica to inspect.  Code to look at the immediately previous version of a record might look like:
+
+    $handle->get_node_props(
+        type => $record->type,
+        uuid => $record->uuid,
+        root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
+    );
+
+=head2 node_exists {uuid => $uuid, type => $type, root => $root }
+
+Returns true if the node in question exists. False otherwise
+
+
+=head2 enumerate_nodes { type => $type }
+
+Returns a reference to a list of all the records of type $type
+
+=head2 enumerate_nodes
+
+Returns a reference to a list of all the known types in your Prophet database
+
+
+=head2 type_exists { type => $type }
+
+Returns true if we have any nodes of type C<$type>
+
+
+
+=cut
+
+
+
+=head2 The following functions need to be implemented by any _writable_ prophet backing store
+
+=cut
+
 
 1;
