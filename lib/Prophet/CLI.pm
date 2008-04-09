@@ -3,7 +3,7 @@ use strict;
 
 package Prophet::CLI;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/record_class type uuid _handle _resdb_handle/);
+__PACKAGE__->mk_accessors(qw/app_class record_class type uuid _handle _resdb_handle/);
 
 use Path::Class;
 use Prophet;
@@ -16,6 +16,14 @@ sub new {
     my $class = shift;
     my $self  = $class->SUPER::new(@_);
     $self->record_class('Prophet::Record') unless $self->record_class;
+    
+    if($self->app_class) {
+        my $replica_class = $self->app_class."::Replica";
+        my $except = $replica_class."::(.*)::";
+        Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 1, except => qr/$except/);
+        Prophet::Replica->register_replica_scheme(scheme => $_->scheme, class => $_) for ( __PACKAGE__->app_replica_types);
+    }
+
 
     # Initialize our handle and resolution db handle
 
@@ -94,6 +102,7 @@ sub _record_cmd {
     my $cmd = shift @ARGV or die "record subcommand required";
     $cmd =~ s/^--//g;
 
+    $record_class->require || die $@;
     if ( $record_class->REFERENCES->{$cmd} ) {
         return $self->_handle_reference_command( $record_class, $record_class->REFERENCES->{$cmd} );
     }
@@ -124,6 +133,7 @@ sub register_types {
     for my $type (@types) {
         no strict 'refs';
         my $class = $model_base . '::' . ucfirst($type);
+        $class->require;
         *{ $calling_package . "::cmd_" . $type } = sub {
             $self->_record_cmd( $type => $class );
         };
@@ -209,6 +219,7 @@ sub do_search {
         die "Specify a regular expression and we'll search for records matching that regex";
     }
     my $record = $self->_get_record;
+    $record->collection_class->require;
     my $records = $record->collection_class->new( handle => $self->handle, type => $self->type );
     $records->matching(
         sub {
