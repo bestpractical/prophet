@@ -133,22 +133,5 @@ sub _recode_changeset {
     return $changeset;
 }
 
-sub record_integration_changeset {
-    my $self = shift;
-    $self->prophet_handle->begin_edit;
-    $self->SUPER::record_integration_changeset(@_);
-    $self->prophet_handle->commit_edit;
-}
-
-sub record_changeset {
-    my $self = shift;
-    $self->prophet_handle->record_changeset(@_);
-}
-
-sub record_resolutions {
-    my $self = shift;
-    $self->prophet_handle->record_resolutions( @_,
-        $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
-}
 
 1;

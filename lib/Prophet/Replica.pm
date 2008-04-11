@@ -33,6 +33,8 @@ Instantiates a new replica
 
 =cut
 
+sub _unimplemented { my $self = shift; die ref($self). " does not implement ". shift; }
+
 sub new {
     my $self = shift->SUPER::new(@_);
     $self->_rebless_to_replica_type(@_);
@@ -130,6 +132,22 @@ sub import_resolutions_from_remote_replica {
     );
 }
 
+=head2 record_resolutions Prophet::Changeset
+
+Record a Prophet::ChangeSet containing a set of resolutions to a resolution database
+
+=cut
+
+sub record_resolutions {
+    my $self = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+    if ($self->accepts_changesets) {
+        $self->prophet_handle->record_resolutions( $changeset,  $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
+    } else {
+        $self->_unimplemented("record_resolutions (since there is no writable handle)");
+    }
+}
+
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
 If there are conflicts, generate a nullification change, figure out a conflict resolution and apply the nullification, original change and resolution all at once (as three separate changes).
@@ -207,14 +225,6 @@ sub integrate_changeset {
     }
 }
 
-=head2 record_changeset
-
-=cut
-
-sub record_changeset {
-    die ref( $_[0] ) . ' must implement record_changeset';
-}
-
 =head2 record_integration_changeset
 
 =cut
@@ -223,14 +233,16 @@ sub record_integration_changeset {
     my $self      = shift;
     my $changeset = shift;
 
+    $self->prophet_handle->begin_edit;
     $self->record_changeset($changeset);
 
     my $state_handle = $self->state_handle;
-
     my $inside_edit = $state_handle->current_edit ? 1 : 0;
     $state_handle->begin_edit() unless ($inside_edit);
     $state_handle->record_changeset_integration($changeset);
     $state_handle->commit_edit() unless ($inside_edit);
+    
+    $self->prophet_handle->commit_edit;
 
     return;
 }
@@ -281,6 +293,24 @@ sub accepts_changesets {
 
     return 1 if $self->prophet_handle;
     return undef;
+}
+
+
+=head2 record_changeset Prophet::ChangeSet 
+
+Record a Prophet::ChangeSet to this replica (passes through to the current prophet handle)
+
+=cut
+
+sub record_changeset {
+    my $self = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+    if ($self->accepts_changesets) {
+    $self->prophet_handle->record_changeset($changeset);
+    } else {
+        $self->_unimplemented ('record_changeset');
+    }
+
 }
 
 =head2 has_seen_changeset Prophet::ChangeSet
@@ -605,5 +635,40 @@ sub export_to {
     my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, replica => $self});
     $exporter->export();
 }
+
+
+
+
+=head1 methods to be implemented by a replica backend
+
+
+
+=cut
+
+
+=head2 uuid 
+
+Returns this replica's uuid
+
+=cut
+
+sub uuid {}
+
+=head2 most_recent_changeset
+
+Returns the sequence # of the most recently committed changeset
+
+=cut
+
+sub most_recent_changeset { }
+
+=head2 fetch_changeset SEQUENCE_NO
+
+Returns a Prophet::ChangeSet object for changeset # C<SEQUENCE_NO>
+
+=cut
+
+sub fetch_changeset {} 
+
 
 1;
