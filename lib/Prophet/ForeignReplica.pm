@@ -15,6 +15,9 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 sub conflicts_from_changeset              { return; }
 sub accepts_changesets                    {1}
+
+sub record_resolutions { die "not for foreign replicas" }
+
 sub import_resolutions_from_remote_source { warn 'no resdb'; return }
 
 sub record_changeset {
