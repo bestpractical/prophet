@@ -490,8 +490,11 @@ sub traverse_changesets {
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
+    my $last_rev = $self->most_recent_changeset();
+
+
     die "you must implement most_recent_changeset in " . ref($self) . ", or override traverse_changesets"
-        unless $self->can('most_recent_changeset');
+        unless defined $last_rev;
 
     for my $rev ( $first_rev .. $self->most_recent_changeset ) {
         $args{callback}->( $self->fetch_changeset($rev) );
@@ -660,7 +663,7 @@ Returns the sequence # of the most recently committed changeset
 
 =cut
 
-sub most_recent_changeset { }
+sub most_recent_changeset {return undef }
 
 =head2 fetch_changeset SEQUENCE_NO
 
