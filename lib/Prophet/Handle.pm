@@ -23,25 +23,6 @@ sub new {
     return Prophet::Handle::SVN->new(@_);
 }
 
-=head2 integrate_changeset L<Prophet::ChangeSet>
-
-Given a L<Prophet::ChangeSet>, integrates each and every change within that changeset into the handle's replica.
-
-This routine also records that we've seen this changeset (and hence everything before it) from both the peer who sent it to us AND the replica who originally created it.
-
-
-=cut
-
-sub integrate_changeset {
-    my $self      = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-
-    $self->begin_edit();
-    $self->record_changeset($changeset);
-    $self->record_changeset_integration($changeset);
-    $self->commit_edit();
-}
-
 =head2 record_resolutions Prophet::ChangeSet, (Prophet::Handle, a resolution database handle)
 
 Given a resolution changeset and a resolution database handle,
@@ -89,6 +70,29 @@ sub record_resolution {
     );
 }
 
+
+=head1 Routines dealing with integrating changesets into a replica
+
+
+=head2 integrate_changeset L<Prophet::ChangeSet>
+
+Given a L<Prophet::ChangeSet>, integrates each and every change within that changeset into the handle's replica.
+
+This routine also records that we've seen this changeset (and hence everything before it) from both the peer who sent it to us AND the replica who originally created it.
+
+
+=cut
+
+sub integrate_changeset {
+    my $self      = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+
+    $self->begin_edit();
+    $self->record_changeset($changeset);
+    $self->record_changeset_integration($changeset);
+    $self->commit_edit();
+}
+
 =head2 record_changeset Prophet::ChangeSet
 
 Inside an edit (transaction), integrate all changes in this transaction
@@ -99,14 +103,11 @@ and then call the _post_process_integrated_changeset() hook
 sub record_changeset {
     my $self      = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-
     eval {
-
         my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit() unless ($inside_edit);
         $self->_integrate_change($_) for ( $changeset->changes );
         $self->_post_process_integrated_changeset($changeset);
-
         $self->commit_edit() unless ($inside_edit);
     };
     die($@) if ($@);
@@ -117,25 +118,13 @@ sub _integrate_change {
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
-
     if ( $change->change_type eq 'add_file' ) {
-        $self->create_node(
-            type  => $change->node_type,
-            uuid  => $change->node_uuid,
-            props => \%new_props
-        );
+        $self->create_node( type  => $change->node_type, uuid  => $change->node_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'add_dir' ) {
     } elsif ( $change->change_type eq 'update_file' ) {
-        $self->set_node_props(
-            type  => $change->node_type,
-            uuid  => $change->node_uuid,
-            props => \%new_props
-        );
+        $self->set_node_props( type  => $change->node_type, uuid  => $change->node_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'delete' ) {
-        $self->delete_node(
-            type => $change->node_type,
-            uuid => $change->node_uuid
-        );
+        $self->delete_node( type => $change->node_type, uuid => $change->node_uuid);
     } else {
         Carp::confess( " I have never heard of the change type: " . $change->change_type );
     }
@@ -167,6 +156,16 @@ sub _record_merge_ticket {
     my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
     return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no );
 }
+
+
+
+
+
+
+=head1 metadata storage routines 
+
+=cut 
+
 
 =head2 metadata_storage $RECORD_TYPE, $PROPERTY_NAME
 
@@ -216,6 +215,10 @@ sub _record_metadata_for {
         props => { $prop_name => $content }
     );
 }
+
+
+
+
 
 =head1 DATA STORE API
 
@@ -285,9 +288,29 @@ Returns true if we have any nodes of type C<$type>
 
 
 
+
+
 =head2 The following functions need to be implemented by any _writable_ prophet backing store
 
 =cut
+
+
+
+=head2 The following optional routines are provided for you to override with backing-store specific behaviour
+
+
+=head3 _post_process_integrated_changeset Prophet::ChangeSet
+
+Called after the replica has integrated a new changeset but before closing the current transaction/edit.
+
+The SVN backend, for example, uses this to record author metadata about this changeset.
+
+=cut
+
+
+sub _post_process_integrated_changeset {
+    return 1;
+}
 
 
 1;
