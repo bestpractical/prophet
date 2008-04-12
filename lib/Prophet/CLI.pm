@@ -278,6 +278,7 @@ sub do_merge {
 
     my $opts = $self->args();
 
+
     my $source = Prophet::Replica->new( { url => $opts->{'from'} } );
     my $target = Prophet::Replica->new( { url => $opts->{'to'} } );
 
@@ -298,7 +299,7 @@ sub _do_merge {
 
     $opts->{'prefer'} ||= 'none';
 
-    if ( !$target->accepts_changesets ) {
+    if ( !$target->can_write_changesets) {
         fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
     }
 

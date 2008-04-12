@@ -4,14 +4,14 @@ use Test::More tests => 25;
 
 use File::Temp qw'tempdir';
 
-use_ok('Prophet::Handle');
+use_ok('Prophet::Replica');
 my $REPO = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 ok( !-d $REPO );
 diag($REPO);
 `svnadmin create $REPO`;
 ok( -d $REPO, "The repo exists ater svnadmin create" );
-my $cxn = Prophet::Handle->new( repository => "$REPO" );
-isa_ok( $cxn, 'Prophet::Handle', "Got the cxn" );
+my $cxn = Prophet::Replica->new({ url => "svn:file://$REPO" });
+isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 use_ok('Prophet::Record');
 my $record = Prophet::Record->new( handle => $cxn, type => 'Person' );
 isa_ok( $record, 'Prophet::Record' );

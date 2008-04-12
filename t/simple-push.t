@@ -27,8 +27,8 @@ as_bob {
 my $alice = Prophet::Replica->new( { url => repo_uri_for('alice') } );
 my $bob   = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
-is( $bob->prophet_handle->db_uuid,
-    $alice->prophet_handle->db_uuid,
+is( $bob->db_uuid,
+    $alice->db_uuid,
     "bob and alice's replicas need to have the same uuid for them to be able to sync without issues"
 );
 

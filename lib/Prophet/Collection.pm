@@ -24,7 +24,7 @@ as a collection.
 =head1 METHODS
 
 
-=head2 new { handle => L<Prophet::Handle>, type => $TYPE }
+=head2 new { handle => L<Prophet::Replica>, type => $TYPE }
 
 Instantiate a new, empty L<Prophet::Collection> object to find items of type C<$TYPE>
 

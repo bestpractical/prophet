@@ -5,13 +5,13 @@ use File::Temp qw'tempdir';
 use lib 't/lib';
 use Test::Exception;
 
-use_ok('Prophet::Handle');
+use_ok('Prophet::Replica');
 my $REPO = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 ok( !-d $REPO );
 `svnadmin create $REPO`;
 ok( -d $REPO, "The repo exists ater svnadmin create" );
-my $cxn = Prophet::Handle->new( repository => "$REPO" );
-isa_ok( $cxn, 'Prophet::Handle', "Got the cxn" );
+my $cxn = Prophet::Replica->new( { url => "svn:file://$REPO" });
+isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 use_ok('TestApp::Bug');
 
 my $record = TestApp::Bug->new( handle => $cxn );

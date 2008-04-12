@@ -9,9 +9,8 @@ use Digest::SHA1 qw(sha1 sha1_hex);
 use YAML::Syck;
 use UNIVERSAL::require;
 
-
 __PACKAGE__->mk_accessors(qw( replica target_path));
-
+ 
 =head1 NAME
 
 Prophet::ReplicaExporter
@@ -175,7 +174,7 @@ sub export {
 
     $self->_init_export_metadata( root => $replica_root );
 
-    foreach my $type ( @{ $self->replica->prophet_handle->enumerate_types } ) {
+    foreach my $type ( @{ $self->replica->enumerate_types } ) {
         $self->export_records(
             type    => $type,
             root    => $replica_root,
@@ -216,7 +215,7 @@ sub export_records {
     make_tiered_dirs( dir( $args{'root'} => 'records' => $args{'type'} ) );
 
     my $collection = Prophet::Collection->new(
-        handle => $self->replica->prophet_handle,
+        handle => $self->replica,
         type   => $args{type}
     );
     $collection->matching( sub {1} );

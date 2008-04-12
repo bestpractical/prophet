@@ -7,12 +7,14 @@ use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
 
-__PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb url));
+__PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb db_uuid url));
 
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 1, except => qr/Prophet::Replica::(.*)::/;
 
 our $REPLICA_TYPE_MAP = {};
+our $MERGETICKET_METATYPE = '_merge_tickets';
+
  __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) for ( __PACKAGE__->core_replica_types);
 
 =head1 NAME
@@ -57,15 +59,12 @@ sub register_replica_scheme {
 
 
 }
-
-
 =head2 _rebless_to_replica_type
 
 Reblesses this replica into the right sort of replica for whatever kind of replica $self->url points to
 
 
 =cut
-
 sub _rebless_to_replica_type {
     my $self = shift;
 
@@ -132,22 +131,6 @@ sub import_resolutions_from_remote_replica {
     );
 }
 
-=head2 record_resolutions Prophet::Changeset
-
-Record a Prophet::ChangeSet containing a set of resolutions to a resolution database
-
-=cut
-
-sub record_resolutions {
-    my $self = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-    if ($self->accepts_changesets) {
-        $self->prophet_handle->record_resolutions( $changeset,  $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
-    } else {
-        $self->_unimplemented("record_resolutions (since there is no writable handle)");
-    }
-}
-
 =head2 integrate_changeset L<Prophet::ChangeSet>
 
 If there are conflicts, generate a nullification change, figure out a conflict resolution and apply the nullification, original change and resolution all at once (as three separate changes).
@@ -209,7 +192,7 @@ sub integrate_changeset {
         $self->record_changeset( $conflict->nullification_changeset );
 
         # integrate the original change
-        $self->record_integration_changeset($changeset);
+        $self->record_changeset_and_integration($changeset);
 
         # integrate the conflict resolution change
         $self->record_resolutions( $conflict->resolution_changeset );
@@ -219,21 +202,44 @@ sub integrate_changeset {
             if ( $args{'reporting_callback'} );
 
     } else {
-        $self->record_integration_changeset($changeset);
+        $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
 
     }
 }
 
-=head2 record_integration_changeset
+=head2 integrate_changeset L<Prophet::ChangeSet>
+
+Given a L<Prophet::ChangeSet>, integrates each and every change within that changeset into the handle's replica.
+
+This routine also records that we've seen this changeset (and hence everything before it) from both the peer who sent it to us AND the replica who originally created it.
+
+THIS OLD VERSION OF THE ROUTINE CAME FROM HANDLE
+
+sub integrate_changeset {
+    my $self      = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+
+    $self->begin_edit();
+    $self->record_changeset($changeset);
+    $self->record_changeset_integration($changeset);
+    $self->commit_edit();
+}
 
 =cut
 
-sub record_integration_changeset {
+
+
+=head2 record_changeset_and_integration
+
+=cut
+
+sub record_changeset_and_integration {
     my $self      = shift;
     my $changeset = shift;
 
-    $self->prophet_handle->begin_edit;
+    Carp::cluck;
+    $self->begin_edit;
     $self->record_changeset($changeset);
 
     my $state_handle = $self->state_handle;
@@ -242,11 +248,10 @@ sub record_integration_changeset {
     $state_handle->record_changeset_integration($changeset);
     $state_handle->commit_edit() unless ($inside_edit);
     
-    $self->prophet_handle->commit_edit;
+    $self->commit_edit;
 
     return;
 }
-
 =head2 last_changeset_from_source $SOURCE_UUID
 
 Returns the last changeset id seen from the source identified by $SOURCE_UUID
@@ -257,7 +262,7 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    return $self->state_handle->_retrieve_metadata_for( $Prophet::Handle::MERGETICKET_METATYPE, $source,
+    return $self->state_handle->_retrieve_metadata_for( $MERGETICKET_METATYPE, $source,
         'last-changeset' )
         || 0;
 
@@ -269,7 +274,7 @@ sub last_changeset_from_source {
 
     my ( $stream, $pool );
 
-    my $filename = join( "/", $self->prophet_handle->db_uuid, $Prophet::Handle::MERGETICKET_METATYPE, $source );
+    my $filename = join( "/", $self->db_uuid, $MERGETICKET_METATYPE, $source );
     my ( $rev_fetched, $props )
         = eval { $self->ra->get_file( $filename, $self->most_recent_changeset, $stream, $pool ); };
 
@@ -280,38 +285,6 @@ sub last_changeset_from_source {
 
 }
 
-=head2 accepts_changesets
-
-Returns true if this source is one we know how to write to (and have permission to write to)
-
-Returns false otherwise
-
-=cut
-
-sub accepts_changesets {
-    my $self = shift;
-
-    return 1 if $self->prophet_handle;
-    return undef;
-}
-
-
-=head2 record_changeset Prophet::ChangeSet 
-
-Record a Prophet::ChangeSet to this replica (passes through to the current prophet handle)
-
-=cut
-
-sub record_changeset {
-    my $self = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-    if ($self->accepts_changesets) {
-    $self->prophet_handle->record_changeset($changeset);
-    } else {
-        $self->_unimplemented ('record_changeset');
-    }
-
-}
 
 =head2 has_seen_changeset Prophet::ChangeSet
 
@@ -363,7 +336,7 @@ sub conflicts_from_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    my $conflict = Prophet::Conflict->new( { changeset => $changeset, prophet_handle => $self->prophet_handle } );
+    my $conflict = Prophet::Conflict->new( { changeset => $changeset, prophet_handle => $self} );
 
     $conflict->analyze_changeset();
 
@@ -379,7 +352,7 @@ sub remove_redundant_data {
     # XXX: encapsulation
     $changeset->{changes} = [
         grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' }
-            grep { !( $_->node_type eq $Prophet::Handle::MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
+            grep { !( $_->node_type eq $MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
             $changeset->changes
     ];
 }
@@ -425,12 +398,6 @@ Returns the local changesets that have not yet been seen by the replica we're pa
 
 =cut
 
-sub db_uuid {
-    my $self = shift;
-    return undef unless ( $self->can('prophet_handle') );
-    return $self->prophet_handle->db_uuid;
-
-}
 
 sub new_changesets_for {
     my $self = shift;
@@ -501,132 +468,12 @@ sub traverse_changesets {
     }
 }
 
-use Path::Class;
-use Digest::SHA1 qw(sha1 sha1_hex);
-use YAML::Syck;
-
 =head2 export_to { path => $PATH } 
 
 This routine will export a copy of this prophet database replica to a flat file on disk suitable for 
 publishing via HTTP or over a local filesystem for other Prophet replicas to clone or incorporate changes from.
 
-
-=head3 text-dump replica format
-
-=head4 overview
- 
- $URL
-    /<db-uuid>/
-        /replica-uuid
-        /latest-sequence-no
-        /replica-version
-        /cas/records/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
-        /cas/changesets/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
-        /records (optional?)
-            /<record type> (for resolution is actually _prophet-resolution-<cas-key>)
-                /<record uuid> which is a file containing a list of 0 or more rows
-                    last-changed-sequence-no : cas key
-                                    
-        /changesets.idx
-    
-            index which has records:
-                each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-            ...
-    
-        /resolutions/
-            /replica-uuid
-            /latest-sequence-no
-            /cas/<substr(sha1,0,1)>/substr(sha1,1,1)/<sha1>
-            /content (optional?)
-                /_prophet-resolution-<cas-key>   (cas-key == a hash the conflicting change)
-                    /<record uuid>  (record uuid == the originating replica)
-                        last-changed-sequence-no : <cas key to the content of the resolution>
-                                        
-            /changesets.idx
-                index which has records:
-                    each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-                ...
-
-
-Inside the top level directory for the mirror, you'll find a directory named as B<a hex-encoded UUID>.
-This directory is the root of the published replica. The uuid uniquely identifes the database being replicated.
-All replicas of this database will share the same UUID.
-
-Inside the B<<db-uuid>> directory, are a set of files and directories that make up the actual content of the database replica:
-
-=over 2
-
-=item C<replica-uuid>
-
-Contains the replica's hex-encoded UUID.
-
-=item C<replica-version>
-
-Contains a single integer that defines the replica format.
-
-The current replica version is 1.
-
-=item C<latest-sequence-no>
-
-Contains a single integer, the replica's most recent sequence number.
-
-=item C<cas/records>
-
-=item C<cas/changesets>
-
-The C<cas> directory holds changesets and records, each keyed by a
-hex-encoded hash of the item's content. Inside the C<cas> directory, you'll find
-a two-level deep directory tree of single-character hex digits. 
-You'll find  the changeset with the sha1 digest  C<f4b7489b21f8d107ad8df78750a410c028abbf6c>
-inside C<cas/changesets/f/4/f4b7489b21f8d107ad8df78750a410c028abbf6c>.
-
-You'll find the record with the sha1 digest C<dd6fb674de879a1a4762d690141cdfee138daf65> inside
-C<cas/records/d/d/dd6fb674de879a1a4762d690141cdfee138daf65>.
-
-
-TODO: define the format for changesets and records
-
-
-=item C<records>
-
-Files inside the C<records> directory are index files which list off all published versions of a record and the key necessary to retrieve the record from the I<content-addressed store>.
-
-Inside the C<records> directory, you'll find directories named for each
-C<type> in your database. Inside each C<type> directory, you'll find a two-level directory tree of single hexadecimal digits. You'll find the record with the type <Foo> and the UUID C<29A3CA16-03C5-11DD-9AE0-E25CFCEE7EC4> stored in 
-
- records/Foo/2/9/29A3CA16-03C5-11DD-9AE0-E25CFCEE7EC4
-
-
-The format of record files is:
-
-    <unsigned-long-int: last-changed-sequence-no><40 chars of hex: cas key>
-
-The file is sorted in asecnding order by revision id.
-
-
-=item C<changesets.idx>
-
-The C<changesets.idx> file lists each changeset in this replica and
-provides an index into the B<content-addressed storage> to fetch
-the content of the changeset.
-
-The format of record files is:
-
-    <unsigned-long-int: sequence-no><16 bytes: changeset original source uuid><unsigned-long-int: changeset original source sequence no><16 bytes: cas key - sha1 sum of the changeset's content>
-
-The file is sorted in ascending order by revision id.
-
-
-=item C<resolutions>
-
-=over 2
-
-=item TODO DOC RESOLUTIONS
-
-
-=back
-
-=back
+See C<Prophet::ReplicaExporter>
 
 =cut
 
@@ -638,8 +485,6 @@ sub export_to {
     my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, replica => $self});
     $exporter->export();
 }
-
-
 
 
 =head1 methods to be implemented by a replica backend
@@ -674,4 +519,305 @@ Returns a Prophet::ChangeSet object for changeset # C<SEQUENCE_NO>
 sub fetch_changeset {} 
 
 
+
+
+
+
+
+
+=head2  can_write_changesets
+
+Returns true if this source is one we know how to write to (and have permission to write to)
+
+Returns false otherwise
+
+=cut
+
+
+
+
+
+
+sub can_read_records { undef }
+sub can_write_records { undef }
+sub can_read_changesets { undef }
+sub can_write_changesets { undef } 
+
+
+
+=head1 CODE BELOW THIS LINE USED TO BE IN HANDLE
+
+
+
+
+=head2 record_resolutions Prophet::ChangeSet
+
+Given a resolution changeset
+
+record all the resolution changesets as well as resolution records in the local resolution database;
+
+Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
+
+=cut
+
+sub record_resolutions {
+    my $self       = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+
+        
+        $self->_unimplemented("record_resolutions (since there is no writable handle)") unless ($self->can_write_changesets);
+
+       my $res_handle =  $self->ressource ? $self->ressource: $self;
+
+
+    return unless $changeset->changes;
+
+    $self->begin_edit();
+    $self->record_changeset($changeset);
+    $res_handle->record_resolution($_) for $changeset->changes;
+    $self->commit_edit();
+}
+
+=head2 record_resolution Prophet::Change
+ 
+Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
+
+=cut
+
+sub record_resolution {
+    my $self      = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+
+    return 1 if $self->node_exists(
+        uuid => $self->uuid,
+        type => '_prophet_resolution-' . $change->resolution_cas
+    );
+
+    $self->create_node(
+        uuid  => $self->uuid,
+        type  => '_prophet_resolution-' . $change->resolution_cas,
+        props => {
+            _meta => $change->change_type,
+            map { $_->name => $_->new_value } $change->prop_changes
+        }
+    );
+}
+
+
+
+
+
+=head1 Routines dealing with integrating changesets into a replica
+
+=head2 record_changeset Prophet::ChangeSet
+
+Inside an edit (transaction), integrate all changes in this transaction
+and then call the _post_process_integrated_changeset() hook
+
+=cut
+
+sub record_changeset {
+    my $self      = shift;
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
+    $self->_unimplemented ('record_changeset') unless ($self->can_write_changesets);
+    eval {
+        my $inside_edit = $self->current_edit ? 1 : 0;
+        $self->begin_edit() unless ($inside_edit);
+        $self->_integrate_change($_) for ( $changeset->changes );
+        $self->_post_process_integrated_changeset($changeset);
+        $self->commit_edit() unless ($inside_edit);
+    };
+    die($@) if ($@);
+}
+
+sub _integrate_change {
+    my $self   = shift;
+    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+
+    my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
+    if ( $change->change_type eq 'add_file' ) {
+        $self->create_node( type  => $change->node_type, uuid  => $change->node_uuid, props => \%new_props);
+    } elsif ( $change->change_type eq 'add_dir' ) {
+    } elsif ( $change->change_type eq 'update_file' ) {
+        $self->set_node_props( type  => $change->node_type, uuid  => $change->node_uuid, props => \%new_props);
+    } elsif ( $change->change_type eq 'delete' ) {
+        $self->delete_node( type => $change->node_type, uuid => $change->node_uuid);
+    } else {
+        Carp::confess( " I have never heard of the change type: " . $change->change_type );
+    }
+
+}
+
+
+
+
+
+
+
+=head2 record_changeset_integration L<Prophet::ChangeSet>
+
+This routine records the immediately upstream and original source
+uuid and sequence numbers for this changeset. Prophet uses this
+data to make sane choices about later replay and merge operations
+
+
+=cut
+
+sub record_changeset_integration {
+    my $self = shift;
+    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+
+    # Record a merge ticket for the changeset's "original" source
+    $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no );
+
+}
+sub _record_merge_ticket {
+    my $self = shift;
+    my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
+    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no );
+}
+
+
+
+
+
+
+=head1 metadata storage routines 
+
+=cut 
+=head2 metadata_storage $RECORD_TYPE, $PROPERTY_NAME
+
+Returns a function which takes a UUID and an optional value to get (or set) metadata rows in a metadata table.
+We use this to record things like merge tickets
+
+
+=cut
+sub metadata_storage {
+    my $self = shift;
+    my ( $type, $prop_name ) = validate_pos( @_, 1, 1 );
+    return sub {
+        my $uuid = shift;
+        if (@_) {
+            return $self->_record_metadata_for( $type, $uuid, $prop_name, @_ );
+        }
+        return $self->_retrieve_metadata_for( $type, $uuid, $prop_name );
+
+    };
+}
+sub _retrieve_metadata_for {
+    my $self = shift;
+    my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
+
+    my $entry = Prophet::Record->new( handle => $self, type => $name );
+    $entry->load( uuid => $source_uuid );
+    return eval { $entry->prop($prop_name) };
+
+}
+sub _record_metadata_for {
+    my $self = shift;
+    my ( $name, $source_uuid, $prop_name, $content ) = validate_pos( @_, 1, 1, 1, 1 );
+
+    my $props = eval { $self->get_node_props( uuid => $source_uuid, type => $name ) };
+
+    # XXX: do set-prop when exists, and just create new node with all props is probably better
+    unless ( $props->{$prop_name} ) {
+        eval { $self->create_node( uuid => $source_uuid, type => $name, props => {} ) };
+    }
+
+    $self->set_node_props(
+        uuid  => $source_uuid,
+        type  => $name,
+        props => { $prop_name => $content }
+    );
+}
+
+
+=head1 The following functions need to be implemented by any Prophet backing store.
+
+=head2 uuid
+
+Returns this replica's UUID
+
+=head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
+
+Create a new record of type C<$type> with uuid C<$uuid>  within the current replica.
+
+Sets the record's properties to the key-value hash passed in as the C<props> argument.
+
+If called from within an edit, it uses the current edit. Otherwise it manufactures and finalizes one of its own.
+
+
+
+=head2 delete_node {uuid => $uuid, type => $type }
+
+Deletes the node C<$uuid> of type C<$type> from the current replica. 
+
+Manufactures its own new edit if C<$self->current_edit> is undefined.
+
+=head2 set_node_props { uuid => $uuid, type => $type, props => {hash of kv pairs }}
+
+
+Updates the record of type C<$type> with uuid C<$uuid> to set each property defined by the props hash. It does NOT alter any property not defined by the props hash.
+
+Manufactures its own current edit if none exists.
+
+
+=head2 get_node_props {uuid => $uuid, type => $type, root => $root }
+
+Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
+
+'root' is an optional argument which you can use to pass in an alternate historical version of the replica to inspect.  Code to look at the immediately previous version of a record might look like:
+
+    $handle->get_node_props(
+        type => $record->type,
+        uuid => $record->uuid,
+        root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
+    );
+
+=head2 node_exists {uuid => $uuid, type => $type, root => $root }
+
+Returns true if the node in question exists. False otherwise
+
+
+=head2 enumerate_nodes { type => $type }
+
+Returns a reference to a list of all the records of type $type
+
+=head2 enumerate_nodes
+
+Returns a reference to a list of all the known types in your Prophet database
+
+
+=head2 type_exists { type => $type }
+
+Returns true if we have any nodes of type C<$type>
+
+
+
+=cut
+
+=head2 The following functions need to be implemented by any _writable_ prophet backing store
+
+=cut
+
+
+
+=head2 The following optional routines are provided for you to override with backing-store specific behaviour
+
+
+=head3 _post_process_integrated_changeset Prophet::ChangeSet
+
+Called after the replica has integrated a new changeset but before closing the current transaction/edit.
+
+The SVN backend, for example, uses this to record author metadata about this changeset.
+
+=cut
+sub _post_process_integrated_changeset {
+    return 1;
+}
+
+
+
+
 1;
+

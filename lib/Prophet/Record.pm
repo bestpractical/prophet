@@ -24,7 +24,6 @@ sub declared_props {
 }
 
 use Params::Validate;
-use Prophet::HistoryEntry;
 use Data::UUID;
 use List::MoreUtils qw/uniq/;
 my $UUIDGEN = Data::UUID->new();
@@ -33,7 +32,7 @@ use constant collection_class => 'Prophet::Collection';
 
 =head1 METHODS
 
-=head2 new  { handle => Prophet::Handle, type => $type }
+=head2 new  { handle => Prophet::Replica, type => $type }
 
 Instantiates a new, empty L<Prophet::Record/> of type $type.
 

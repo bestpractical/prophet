@@ -227,7 +227,7 @@ Returns a hash of key-value pairs of the form
 sub replica_merge_tickets {
     my $self    = shift;
     my $cli     = Prophet::CLI->new();
-    my $tickets = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Handle::MERGETICKET_METATYPE );
+    my $tickets = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
     $tickets->matching( sub {1} );
     return { map { $_->uuid => $_->prop('last-changeset') } @{ $tickets->as_array_ref } };
 

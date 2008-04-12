@@ -6,13 +6,11 @@ use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
 use LWP::Simple ();
 
-use Prophet::Handle;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
 __PACKAGE__->mk_accessors(qw/url db_uuid _uuid/);
 
-our $DEBUG = $Prophet::Handle::DEBUG;
 
 use constant scheme => 'prophet';
 

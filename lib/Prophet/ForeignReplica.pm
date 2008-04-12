@@ -13,8 +13,15 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 =cut
 
+sub setup {
+    my $self = shift;
+    my $cli = Prophet::CLI->new();
+
+    $self->state_handle( Prophet::Replica->new({ url => "svn:".$cli->app_handle->handle->url, db_uuid => $self->state_db_uuid }) );
+}
+
 sub conflicts_from_changeset              { return; }
-sub accepts_changesets                    {1}
+sub can_write_changesets                    {1}
 
 sub record_resolutions { die "not for foreign replicas" }
 
@@ -27,6 +34,12 @@ sub record_changeset {
         my $result = $self->_integrate_change( $change, $changeset );
     }
 }
+
+# XXX TODO = or do these ~always stay stubbed?
+sub begin_edit {}
+sub commit_edit{}
+
+
 
 use Data::UUID 'NameSpace_DNS';
 
