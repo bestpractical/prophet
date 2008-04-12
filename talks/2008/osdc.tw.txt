@@ -1,5 +1,5 @@
 Step 3: Prophet
----
+----
  A semirelational, 
  peer to peer replicated, 
  disconnected,
@@ -51,12 +51,6 @@ self-healing conflict resolution
 * Prophet remembers all conflict resolutions
 * Prophet can detect identical conflicts
 * Prophet can use your peers' resolutions as 'votes' for the winner in a conflict
-----
-HOW DID WE GET HERE?
-----
-* INSERT WEB 2.0 IS SCARY RANT
-----
-WHERE IS HERE, ANYWAY?
 ----
 HAVE YOU BUILT ANYTHING WITH IT?
 ----
@@ -149,6 +143,54 @@ Trading Card Database
 ----
 Ideas?
 ----
+----
+HOW IS PROPHET BUILT
+----
+Some terminology
+----
+Database
+----
+Replica
+----
+Foreign Replica
+----
+Record Type (or just 'Type')
+----
+Record
+----
+Change Set
+----
+Change
+----
+Property Change
+----
+Conflict
+----
+Nullifcation Change Set
+----
+Resolution Change Set
+----
+Merge
+----
+Merge Ticket
+----
+PROPHET COMPONENTS
+----
+Replica Backends
+----
+- The Record Store
+----
+- The Changeset Store
+----
+Synchronization
+----
+ - Publish
+ - Pull
+ - Push
+----
+Conflicts and Resolutions
+----
+
 HOW DOES IT SCALE?
 ----
 * Vertical scale is boring
@@ -173,11 +215,23 @@ WHAT ARE YOUR PLANS?
 ----
 (AKA: What sucks about Prophet?)
 ----
-* Search Indexing
+* Search Indexes
+* Full Text Search
 * Query language
 * Non-subversion native replica format
 * Enhanced REST Server
 * Jifty, Catalyst, Rails models?
+----
+PROJECT STATS
+----
+Prophet is YOUNG
+----
+Many, many hours of design
+----
+About 10 days of two hackers hacking so far.
+----
+Prophet: 4837 lines of code and doc, 1455 lines of tests
+sd:      1479 lines of code and doc,  446 lines of tests
 ----
 WHERE DO I GET A COPY?
 ----
