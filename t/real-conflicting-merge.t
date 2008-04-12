@@ -105,7 +105,7 @@ as_alice {
 
     $target->import_changesets(
         from  => $source,
-        resdb => $target->ressource->prophet_handle,
+        resdb => $target->ressource
     );
 
     lives_and {
