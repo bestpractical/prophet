@@ -7,11 +7,9 @@ my $cli = Prophet::CLI->new();
 my $cmd = shift @ARGV;
 $cli->parse_record_cmd_args();
 
-if (my $sub = $cli->can('do_'.$cmd)) {
+if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
     $sub->($cli);
-    } else {
+} else {
     die "I don't know how to do the $cmd";
-    }
+}
 
-
-    

@@ -6,8 +6,8 @@ use strict;
 use Prophet::Test tests => 9;
 
 as_alice {
-    run_ok( 'prophet-node-create', [qw(--type Bug --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet-node-search', [qw(--type Bug --regex .)], [qr/new/], " Found our record" );
+    run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 
     # update the node
     # show the node history
@@ -15,15 +15,14 @@ as_alice {
 };
 
 as_bob {
-    run_ok( 'prophet-node-create', [qw(--type Bug --status open --from bob )], "Created a record as bob" );
-    run_output_matches( 'prophet-node-search', [qw(--type Bug --regex .)], [qr/open/], " Found our record" );
+    run_ok( 'prophet', [qw(create --type Bug --status open --from bob )], "Created a record as bob" );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/], " Found our record" );
 
     # update the node
     # show the node history
     # show the node
 
 };
-
 
 my $alice = Prophet::Replica->new( { url => repo_uri_for('alice') } );
 my $bob   = Prophet::Replica->new( { url => repo_uri_for('bob') } );
@@ -37,7 +36,7 @@ my $changesets = $bob->new_changesets_for($alice);
 
 my $openbug = '';
 as_bob {
-    my ( $ret, $stdout, $stderr ) = run_script( 'prophet-node-search', [qw(--type Bug --regex open)] );
+    my ( $ret, $stdout, $stderr ) = run_script( 'prophet', [qw(search --type Bug --regex open)] );
     if ( $stdout =~ /^(.*?)\s/ ) {
         $openbug = $1;
     }
@@ -100,8 +99,8 @@ as_alice {
 my $last_id;
 
 as_bob {
-    run_ok( 'prophet-node-create', [qw(--type Bug --status new --from bob )], "Created a record as bob" );
-    my ( $ret, $stdout, $stderr ) = run_script( 'prophet-node-search', [qw(--type Bug --regex new)] );
+    run_ok( 'prophet', [qw(create --type Bug --status new --from bob )], "Created a record as bob" );
+    my ( $ret, $stdout, $stderr ) = run_script( 'prophet', [qw(search --type Bug --regex new)] );
     if ( $stdout =~ /^(.*?)\s/ ) {
         $last_id = $1;
     }

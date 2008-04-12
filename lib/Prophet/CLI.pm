@@ -47,7 +47,7 @@ sub handle {
     return $self->_handle();
 }
 
-=head2 hesdb_handle
+=head2 resdb_handle
 
 =cut
 
@@ -231,7 +231,12 @@ sub do_search {
     );
 
     for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
+        if($_->summary_props) {
         print $_->format_summary . "\n";
+        } else {
+            # XXX OLD HACK TO MAKE TESTS PASS
+        printf ("%s %s %s \n", $_->uuid, $_->prop( 'summary')||"(no summary)", $_->prop('status')||'(no status)');
+        }
     }
 }
 
