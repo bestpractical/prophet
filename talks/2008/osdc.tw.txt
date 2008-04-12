@@ -1,0 +1,145 @@
+Step 3: Prophet
+---
+ A semirelational, 
+ peer to peer replicated, 
+ disconnected,
+ versioned,
+ property database with
+ self-healing conflict
+ resolution
+----
+WHAT ARE ALL THOSE BUZZWORDS?
+----
+semirelational
+----
+* Joins are expensive
+* Joins are discouraged
+----
+peer-to-peer replicated
+----
+* Update any replica
+* Pull from any replica
+* Push _to_ any replica
+* Changes will propagate
+----
+disconnected
+----
+* Real-time replication is hard to scale
+* Real-time replication only works in the cloud
+* I don't live in the cloud
+  (Except when I go hiking)
+* I want my data when I'm offline
+* Prophet works offline.
+* Prophet sync isn't time-constrained
+----
+versioned
+----
+* Compare a record to any point in the past
+* Full changelog
+* Undo changes
+* Use history to be smart
+----
+property database
+----
+* Records can have validation and canonicalization
+* Records do not NEED canonicalization and validation
+* Records of the same type do not need to have the same properties
+* Add and remove 'columns' at will
+----
+self-healing conflict resolution
+----
+* Prophet remembers all conflict resolutions
+* Prophet can detect identical conflicts
+* Prophet can use your peers' resolutions as 'votes' for the winner in a conflict
+----
+HOW DID WE GET HERE?
+----
+* INSERT WEB 2.0 IS SCARY RANT
+----
+WHERE IS HERE, ANYWAY?
+----
+HAVE YOU BUILT ANYTHING WITH IT?
+----
+sd
+----
+A bug tracker: 'simple defects'
+----
+ ./bin/sd ticket create --summary "Can't sync sd with Google Code" --status new
+ Created ticket 93BF979E-08C1-11DD-94C3-D4B1FCEE7EC4
+----
+ ./bin/sd ticket search --regex .
+ 93BF979E-08C1-11DD-94C3-D4B1FCEE7EC4 Can't sync sd with Google Code new
+----
+ ./bin/sd ticket update --uuid 93BF979E-08C1-11DD-94C3-D4B1FCEE7EC4 --status resolved
+----
+ ./bin/sd ticket search --regex .
+ 93BF979E-08C1-11DD-94C3-D4B1FCEE7EC4 Can't sync sd with Google Code resolved
+----
+ Bugs on my laptop alone isn't interesting.
+----
+Syncable!
+----
+ ./bin/sd publish /tmp/mybugs
+ scp -rvp /tmp/mybugs myserver.com:public_html/sd_replica
+----
+ Bob:
+ ./bin/sd pull prophet:http://myserver.com/~clkao/sd_replica
+----
+Same thing over svn protocol 
+(svn also supports push)
+----
+"My project uses another bug tracker!"
+----
+Actually, mine use two:
+RT and Hiveminder.com
+----
+Wrote an RT Replica type for SD in an afternoon.
+(Using only the public REST API)
+----
+Mirror an RT instance into SD
+----
+Share it with your peers using prophet
+----
+Sync changes back from your peers to RT
+----
+Wrote the same thing for Hiveminder
+(Using only the public REST API)
+----
+Now I can sync with RT or Hiveminder
+----
+Now, I can sync BETWEEN RT *AND* Hiveminder
+----
+(Or two RTs)
+----
+We need more replica definitions:
+----
+Trac
+----
+Google Code
+----
+SourceForge
+----
+Bugzilla
+----
+Jira
+----
+GForge
+----
+debbugs
+----
+What else?
+----
+WHAT CAN I DO WITH PROPHET?
+----
+HOW DOES IT SCALE?
+----
+WHAT ARE YOUR PLANS?
+----
+(AKA: What sucks about Prophet?)
+----
+WHERE DO I GET A COPY?
+----
+CAN I HELP?
+----
+HOW CAN I HELP?
+
