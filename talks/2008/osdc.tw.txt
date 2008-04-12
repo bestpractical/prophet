@@ -131,15 +131,63 @@ What else?
 ----
 WHAT CAN I DO WITH PROPHET?
 ----
+All your "small" databases
+----
+All the databases you want while offline.
+----
+Customer Relationship Management
+----
+Bug tracking
+----
+Sales Orders
+----
+Phone book
+----
+Blog
+----
+Trading Card Database
+----
+Ideas?
+----
 HOW DOES IT SCALE?
+----
+* Vertical scale is boring
+* Designed to scale to many peers
+* Prophet is designed for peer to peer applications
+* You are not Google
+  (Most of you are not Google. Hi, Googlers!)
+----
+* Current target is databases of O(50k) records
+----
+* No reason Prophet replicas _can't_ scale.
+* We just have a political agenda. 
+* Web 2.0 is not Open Source.
+* Your data should not be 'exportable' from the cloud.
+* You should ALWAYS have full control.
+* So we dont need to store 10 billion records in one database.
+* (Or do you have 10 billion bugs/customer contacts/sales orders?)
+----
+(That said, we'd love to see a high-performance, scalable prophet replica store)
 ----
 WHAT ARE YOUR PLANS?
 ----
 (AKA: What sucks about Prophet?)
 ----
+* Search Indexing
+* Query language
+* Non-subversion native replica format
+* Enhanced REST Server
+* Jifty, Catalyst, Rails models?
+----
 WHERE DO I GET A COPY?
+----
+svn: http://code.bestpractical.com/bps-public/Prophet/
+svn: http://code.bestpractical.com/bps-public/sd/
 ----
 CAN I HELP?
 ----
+YES!
+----
 HOW CAN I HELP?
-
+----
+prophet-request@lists.bestpractical.com
