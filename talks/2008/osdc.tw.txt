@@ -35,12 +35,14 @@ disconnected
 versioned
 ----
 * Compare a record to any point in the past
-* Full changelog
+* All changes fully logged
 * Undo changes
 * Use history to be smart
 ----
 property database
 ----
+* Atomic changes
+    - 'create', 'read', 'update', 'delete', 'search'
 * Records can have validation and canonicalization
 * Records do not NEED canonicalization and validation
 * Records of the same type do not need to have the same properties
@@ -174,23 +176,60 @@ Merge
 ----
 Merge Ticket
 ----
-PROPHET COMPONENTS
+REPLICA BACKENDS
 ----
-Replica Backends
-----
-- The Record Store
+The Record Store
+    Stores indivdual records by type
 ----
 - The Changeset Store
+    Stores each atomic change to a set of records
+    Replaying all changesets will create an exact clone of the replica
 ----
-Synchronization
+Current "native" replica backends
+    - Subversion: The initial backend. Slow, Steady, Robust. 
+                  Supports remote sync
+
+    - Filesystem: Readable. Flat files. Compact. Fast.
+                  Currently export-only. (Update coming soon!) 
+    - HTTP:       Flat-files, Currently read-only.
+                  Same format as the filesystem replica type.
 ----
- - Publish
- - Pull
- - Push
+"Foriegn" replica backends
+    - All current examples are in SD
+----
+SYNCHRONIZATION
+----
+Publish
+    Serialize and export all of a replica's resolutions and changesets
+Pull
+    Integrate unseen resolutions and then unseen changesets from a replica
+Push
+    Integrate new resolutions and changesets into a replica
 ----
 Conflicts and Resolutions
 ----
-
+When a new changeset would conflict, Prophet:
+    - Figures out the best resolution to the conflict
+    - "Nullifies" the conflict so the changeset can be cleanly integrated
+    - Integrates the conflicting changeset
+    - Records the resolution as a new changeset 
+    - Records the resolution decision in a resolution database
+----
+"Figure out the best resolution"  
+----
+Prophet has clever ways to figure out the best resolution.
+(as well as a few really stupid ones)
+- If there are previous resolutions for the same conflict AND
+  a majority of them agree, use that
+- If the merger has specified a "prefer this side" choice, use that
+- Prompt the user to make a decision, giving them info about previous decisions
+  for this conflict
+----
+We don't have a proof for the algorithm
+----
+We do have dozens of runs of randomized testing.
+So far, it always stabilizes sanely.
+----
 HOW DOES IT SCALE?
 ----
 * Vertical scale is boring
