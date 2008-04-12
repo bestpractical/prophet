@@ -54,7 +54,7 @@ for ( @{ $arena->chickens } ) {
         sub {
             warn "==> hi";
             my $cli     = Prophet::CLI->new();
-            my $handle  = $cli->handle;
+            my $handle  = $cli->app_handle->handle;
             my $records = Prophet::Collection->new(
                 handle => $handle,
                 type   => 'Scratch'

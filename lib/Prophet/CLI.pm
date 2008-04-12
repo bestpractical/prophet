@@ -3,11 +3,10 @@ use strict;
 
 package Prophet::CLI;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/app_class record_class type uuid _handle _resdb_handle/);
+__PACKAGE__->mk_accessors(qw/app_class record_class type uuid app_handle/);
 
 use Path::Class;
 use Prophet;
-use Prophet::Handle;
 use Prophet::Record;
 use Prophet::Collection;
 use Prophet::Replica;
@@ -25,52 +24,13 @@ sub new {
     }
 
 
-    # Initialize our handle and resolution db handle
-
-    $self->handle;
-    $self->resdb_handle;
-
+    my $app_class = $self->app_class || 'Prophet::App';
+    $app_class->require();# unless exists $INC{$app_class_path};
+    $self->app_handle($app_class->new);
     return $self;
 }
 
-=head2 handle
 
-
-=cut
-
-sub handle {
-    my $self = shift;
-    unless ( $self->_handle ) {
-        my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' );
-        $self->_handle( Prophet::Handle->new( repository => $root ) );
-    }
-    return $self->_handle();
-}
-
-=head2 resdb_handle
-
-=cut
-
-sub resdb_handle {
-    my $self = shift;
-    unless ( $self->_resdb_handle ) {
-        my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
-        $self->_resdb_handle( Prophet::Handle->new( repository => $root ) );
-    }
-    return $self->_resdb_handle();
-}
-
-=head2 get_handle_for_replica($replica, $db_root)
-
-for a foreign $replica, this returns a Prophet::Handle for local storage that are based in db_root
-
-=cut
-
-sub get_handle_for_replica {
-    my ( $self, $replica, $db_uuid ) = @_;
-    my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) . '/_prophet_replica/' . $replica->uuid;
-    return Prophet::Handle->new( repository => $root, db_uuid => $db_uuid );
-}
 
 =head2 _record_cmd
 
@@ -195,7 +155,7 @@ sub args {
 sub _get_record {
     my $self = shift;
     return $self->record_class->new(
-        {   handle => $self->handle,
+        {   handle => $self->app_handle->handle,
             type   => $self->type,
         }
     );
@@ -220,7 +180,7 @@ sub do_search {
     }
     my $record = $self->_get_record;
     $record->collection_class->require;
-    my $records = $record->collection_class->new( handle => $self->handle, type => $self->type );
+    my $records = $record->collection_class->new( handle => $self->app_handle->handle, type => $self->type );
     $records->matching(
         sub {
             my $item  = shift;
@@ -277,7 +237,7 @@ sub do_show {
 
 sub do_push {
     my $self         = shift;
-    my $source_me    = Prophet::Replica->new( { url => "svn:file://" . $self->handle->repo_path } );
+    my $source_me    = Prophet::Replica->new( { url => "svn:file://" . $self->app_handle->handle->repo_path } );
     my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
@@ -287,14 +247,14 @@ sub do_push {
 
 sub do_export {
     my $self      = shift;
-    my $source_me = Prophet::Replica->new( { url => "svn:file://" . $self->handle->repo_path } );
+    my $source_me = Prophet::Replica->new( { url => "svn:file://" . $self->app_handle->handle->repo_path } );
     my $path      = $self->args->{'path'};
     $source_me->export_to( path => $path );
 }
 
 sub do_pull {
     my $self         = shift;
-    my $source_me    = Prophet::Replica->new( { url => "svn:file://" . $self->handle->repo_path } );
+    my $source_me    = Prophet::Replica->new( { url => "svn:file://" . $self->app_handle->handle->repo_path } );
     my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
@@ -309,7 +269,7 @@ sub do_server {
     my $opts = $self->args();
     require Prophet::Server::REST;
     my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080 );
-    $server->prophet_handle( $self->handle );
+    $server->prophet_handle( $self->app_handle->handle );
     $server->run;
 }
 
@@ -344,7 +304,7 @@ sub _do_merge {
 
     $target->import_changesets(
         from  => $source,
-        resdb => $self->resdb_handle,
+        resdb => $self->app_handle->resdb_handle,
         $ENV{'PROPHET_RESOLVER'}
         ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
         : ( ( $opts->{'prefer'} eq 'to'   ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' ) : () ),

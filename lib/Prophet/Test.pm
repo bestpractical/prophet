@@ -211,7 +211,7 @@ sub repo_uri_for {
 sub replica_uuid {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
-    return $cli->handle->uuid;
+    return $cli->app_handle->handle->uuid;
 }
 
 =head2 replica_merge_tickets
@@ -227,7 +227,7 @@ Returns a hash of key-value pairs of the form
 sub replica_merge_tickets {
     my $self    = shift;
     my $cli     = Prophet::CLI->new();
-    my $tickets = Prophet::Collection->new( handle => $cli->handle, type => $Prophet::Handle::MERGETICKET_METATYPE );
+    my $tickets = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Handle::MERGETICKET_METATYPE );
     $tickets->matching( sub {1} );
     return { map { $_->uuid => $_->prop('last-changeset') } @{ $tickets->as_array_ref } };
 
@@ -235,7 +235,7 @@ sub replica_merge_tickets {
 
 sub replica_last_rev {
     my $cli = Prophet::CLI->new();
-    return $cli->handle->repo_handle->fs->youngest_rev;
+    return $cli->app_handle->handle->repo_handle->fs->youngest_rev;
 }
 
 =head2 as_user USERNAME CODEREF

@@ -14,7 +14,7 @@ use JSON;
 my $ua  = Test::WWW::Mechanize->new();
 my $cli = Prophet::CLI->new();
 my $s   = Prophet::TestServer->new();
-$s->prophet_handle( $cli->handle );
+$s->prophet_handle( $cli->app_handle->handle );
 
 my $url_root = $s->started_ok("start up my web server");
 
@@ -25,7 +25,7 @@ sub url {
 $ua->get_ok( url('records.json') );
 is( $ua->content, '[]' );
 
-my $car = Prophet::Record->new( handle => $cli->handle, type => 'Cars' );
+my $car = Prophet::Record->new( handle => $cli->app_handle->handle, type => 'Cars' );
 my ($uuid) = $car->create( props => { wheels => 4, windshields => 1 } );
 ok( $uuid, "Created record $uuid" );
 
@@ -56,7 +56,7 @@ if ( $ua->uri =~ /Cars\/(.*)\.json/ ) {
     ok( 0, "Failed to get the new record's uri" );
 }
 
-my $car2 = Prophet::Record->new( handle => $cli->handle, type => 'Cars' );
+my $car2 = Prophet::Record->new( handle => $cli->app_handle->handle, type => 'Cars' );
 $car2->load( uuid => $new_uuid );
 is_deeply( $car2->get_props, { wheels => 3, seatbelts => 'sure!' }, "The thing we created remotely worked just great" );
 

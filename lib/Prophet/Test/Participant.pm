@@ -140,8 +140,8 @@ sub dump_state {
 
     my $state;
 
-    my $nodes  = Prophet::Collection->new( handle => $cli->handle, type => 'Scratch' );
-    my $merges = Prophet::Collection->new( handle => $cli->handle, type => $Prophet::Handle::MERGETICKET_METATYPE );
+    my $nodes  = Prophet::Collection->new( handle => $cli->app_handle->handle, type => 'Scratch' );
+    my $merges = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Handle::MERGETICKET_METATYPE );
     my $resolutions = Prophet::Collection->new( handle => $cli->resdb_handle, type => '_prophet_resolution' );
 
     $nodes->matching( sub       {1} );
