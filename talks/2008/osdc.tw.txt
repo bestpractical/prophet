@@ -51,7 +51,7 @@ property database
 self-healing conflict resolution
 ----
 * Prophet remembers all conflict resolutions
-* Prophet can detect identical conflicts
+* Prophet detects identical conflicts
 * Prophet can use your peers' resolutions as 'votes' for the winner in a conflict
 ----
 HAVE YOU BUILT ANYTHING WITH IT?
@@ -239,8 +239,8 @@ HOW DOES IT SCALE?
   (Most of you are not Google. Hi, Googlers!)
 ----
 * Current target is databases of O(50k) records
-----
 * No reason Prophet replicas _can't_ scale.
+----
 * We just have a political agenda. 
 * Web 2.0 is not Open Source.
 * Your data should not be 'exportable' from the cloud.
