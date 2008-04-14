@@ -14,17 +14,17 @@ Prophet::Change
 
 =head1 DESCRIPTION
 
-This class encapsulates a change to a single node in a Prophet replica.
+This class encapsulates a change to a single record in a Prophet replica.
 
 =head1 METHODS
 
 =head2 record_type
 
-The record type for the node.
+The record type for the record.
 
 =head2 record_uuid
 
-The UUID of the node being changed
+The UUID of the record being changed
 
 =head2 change_type
 

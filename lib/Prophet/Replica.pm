@@ -156,7 +156,7 @@ sub integrate_changeset {
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
-    # merge tickets that describe merges from the local node
+    # merge tickets that describe merges from the local record
 
     # When we integrate changes, sometimes we will get handed changes we already know about.
     #   - changes from local
@@ -719,7 +719,7 @@ sub _record_metadata_for {
 
     my $props = eval { $self->get_record_props( uuid => $source_uuid, type => $name ) };
 
-    # XXX: do set-prop when exists, and just create new node with all props is probably better
+    # XXX: do set-prop when exists, and just create new record with all props is probably better
     unless ( $props->{$prop_name} ) {
         eval { $self->create_record( uuid => $source_uuid, type => $name, props => {} ) };
     }
@@ -750,7 +750,7 @@ If called from within an edit, it uses the current edit. Otherwise it manufactur
 
 =head2 delete_record {uuid => $uuid, type => $type }
 
-Deletes the node C<$uuid> of type C<$type> from the current replica. 
+Deletes the record C<$uuid> of type C<$type> from the current replica. 
 
 Manufactures its own new edit if C<$self->current_edit> is undefined.
 
@@ -776,7 +776,7 @@ Returns a hashref of all properties for the record of type $type with uuid C<$uu
 
 =head2 record_exists {uuid => $uuid, type => $type, root => $root }
 
-Returns true if the node in question exists. False otherwise
+Returns true if the record in question exists. False otherwise
 
 
 =head2 list_records { type => $type }

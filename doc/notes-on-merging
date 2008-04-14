@@ -98,7 +98,7 @@ what if B<-> C sync before A<->B and A<->C sync.
 
 in the worst case, assume they decide on "Y beats Z"
 
-Do we need a 4th node for the pessimal case here?
+Do we need a 4th record for the pessimal case here?
 
 Then A<->C sync.
 

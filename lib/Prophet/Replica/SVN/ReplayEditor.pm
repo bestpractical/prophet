@@ -171,7 +171,7 @@ sub close_directory {
 =head2 change_file_prop ($baton, $name, $value,$pool)
 
 Called by Subversion when a file property changes. All Subversion
-tells us is that 'the current node's property called $name has
+tells us is that 'the current record's property called $name has
 changed to $value'. This routine roots around and builds a delta
 from the previous value to the new value.
 
@@ -190,7 +190,7 @@ sub change_file_prop {
 =head2 change_dir_prop ($baton, $name, $value,$pool)
 
 Called by Subversion when a directory property changes. All Subversion
-tells us is that 'the current node's property called $name has
+tells us is that 'the current record's property called $name has
 changed to $value'. This routine roots around and builds a delta
 from the previous value to the new value.
 

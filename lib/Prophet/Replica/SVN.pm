@@ -126,7 +126,7 @@ sub _recode_changeset {
         }
     );
 
-    # add each node's changes to the changeset
+    # add each record's changes to the changeset
     for my $path ( keys %{ $entry->{'paths'} } ) {
         if ( $path =~ qr|^(.+)/(.*?)/(.*?)$| ) {
             my ( $prefix, $type, $record ) = ( $1, $2, $3 );
@@ -173,13 +173,13 @@ use constant can_read_changesets => 1;
 use constant can_write_changesets => 1;
 
 
-=head2 current_root
+=head2 _current_root
 
 Returns a handle to the svn filesystem's HEAD
 
 =cut
 
-sub current_root {
+sub _current_root {
     my $self = shift;
     $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev );
 }
@@ -191,9 +191,9 @@ use constant CREATED_DB_UUID       => 3;
 sub _determine_db_uuid {
     my $self = shift;
     return USER_PROVIDED_DB_UUID if $self->db_uuid;
-    my @known_replicas = keys %{ $self->current_root->dir_entries("/") };
+    my @known_replicas = keys %{ $self->_current_root->dir_entries("/") };
 
-    for my $key ( keys %{ $self->current_root->dir_entries("/") } ) {
+    for my $key ( keys %{ $self->_current_root->dir_entries("/") } ) {
         if ( $key =~ /^_prophet-/ ) {
             $self->db_uuid($key);
             return DETECTED_DB_UUID;
@@ -235,7 +235,7 @@ sub _create_nonexistent_dir {
     my $self = shift;
     my $dir  = shift;
     my $pool = SVN::Pool->new_default;
-    my $root = $self->current_edit ? $self->current_edit->root : $self->current_root;
+    my $root = $self->current_edit ? $self->current_edit->root : $self->_current_root;
 
     unless ( $root->is_dir($dir) ) {
         my $inside_edit = $self->current_edit ? 1 : 0;
@@ -327,7 +327,7 @@ sub _set_record_props {
 
 =head2 delete_record {uuid => $uuid, type => $type }
 
-Deletes the node C<$uuid> of type C<$type> from the current replica. 
+Deletes the record C<$uuid> of type C<$type> from the current replica. 
 
 Manufactures its own new edit if C<$self->current_edit> is undefined.
 
@@ -371,26 +371,16 @@ sub set_record_props {
 
 }
 
-=head2 get_record_props {uuid => $uuid, type => $type, root => $root }
+=head2 get_record_props {uuid => $uuid, type => $type }
 
 Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
-
-'root' is an optional argument which you can use to pass in an alternate historical version of the replica to inspect.  Code to look at the immediately previous version of a record might look like:
-
-    $handle->get_record_props(
-        type => $record->type,
-        uuid => $record->uuid,
-        root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
-    );
-
 
 =cut
 
 sub get_record_props {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
-    my $root = $args{'root'} || $self->current_root;
-    return $root->node_proplist( $self->_file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
+    my %args = validate( @_, { uuid => 1, type => 1 } );
+    return $self->_current_root->node_proplist( $self->_file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 }
 
 =head2 _file_for { uuid => $UUID, type => $type }
@@ -418,7 +408,7 @@ sub _directory_for_type {
 
 =head2 record_exists {uuid => $uuid, type => $type, root => $root }
 
-Returns true if the node in question exists. False otherwise
+Returns true if the record in question exists. False otherwise
 
 =cut
 
@@ -426,7 +416,7 @@ sub record_exists {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
 
-    my $root = $args{'root'} || $self->current_root;
+    my $root = $args{'root'} || $self->_current_root;
     return $root->check_path( $self->_file_for( uuid => $args{'uuid'}, type => $args{'type'} ) );
 
 }
@@ -440,7 +430,7 @@ Returns a reference to a list of all the records of type $type
 sub list_records {
     my $self = shift;
     my %args = validate( @_ => { type => 1 } );
-    return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' ) } ];
+    return [ keys %{ $self->_current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' ) } ];
 }
 
 =head2 list_types
@@ -451,7 +441,7 @@ Returns a reference to a list of all the known types in your Prophet database
 
 sub list_types {
     my $self = shift;
-    return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' ) } ];
+    return [ keys %{ $self->_current_root->dir_entries( $self->db_uuid . '/' ) } ];
 }
 
 
@@ -466,7 +456,7 @@ sub type_exists {
     my $self = shift;
     my %args = validate( @_, { type => 1, root => undef } );
 
-    my $root = $args{'root'} || $self->current_root;
+    my $root = $args{'root'} || $self->_current_root;
     return $root->check_path( $self->_directory_for_type( type => $args{'type'}, ) );
 
 }

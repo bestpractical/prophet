@@ -69,10 +69,10 @@ Record Types are uniquely identified with a textual name and a UUID
 =head2 Conflict
     A Conflict occurs when a Changeset is being applied and the current state of a Replica meets any of the following criteria:
 
-        * The Replica already contains a node marked as "created" in the changeset
-        * The Replica doesn't contain a node marked as "deleted" in the changeset
-        * The Replica doesn't contain a node marked as "updated" in the changeset
-        * The Replica contains a node marked as "updated" in the changeset, but the current state of the properties on the node does not match the "old" state of the node in the changeset.
+        * The Replica already contains a record marked as "created" in the changeset
+        * The Replica doesn't contain a record marked as "deleted" in the changeset
+        * The Replica doesn't contain a record marked as "updated" in the changeset
+        * The Replica contains a record marked as "updated" in the changeset, but the current state of the properties on the record does not match the "old" state of the record in the changeset.
     
 =head2 Resolution
     When the local Replica 

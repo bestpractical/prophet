@@ -9,18 +9,18 @@ as_alice {
     run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 
-    # update the node
-    # show the node history
-    # show the node
+    # update the record
+    # show the record history
+    # show the record
 };
 
 as_bob {
     run_ok( 'prophet', [qw(create --type Bug --status open --from bob )], "Created a record as bob" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/], " Found our record" );
 
-    # update the node
-    # show the node history
-    # show the node
+    # update the record
+    # show the record history
+    # show the record
 
 };
 
@@ -94,18 +94,18 @@ as_alice {
 
 }
 
-# create 1 node
-# search for the node
+# create 1 record
+# search for the record
 #
 # clone the replica to a second replica
 # compare the second replica to the first replica
 #   search
-#   node history
-#   node basics
+#   record history
+#   record basics
 #
 # update the first replica
 # merge the first replica to the second replica
-#   does node history on the second replica reflect the first replica
+#   does record history on the second replica reflect the first replica
 
 # merge the second replica to the first replica
 # ensure that no new transactions aside from a merge ticket are added to the first replica

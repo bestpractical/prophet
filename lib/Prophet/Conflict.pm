@@ -87,7 +87,7 @@ sub _generate_change_conflicts {
 
     my $file_exists = $self->prophet_handle->record_exists( uuid => $change->record_uuid, type => $change->record_type );
 
-    # It's ok to delete a node that exists
+    # It's ok to delete a record that exists
     if ( $change->change_type eq 'delete' && !$file_exists ) {
         $file_op_conflict = "delete_missing_file";
     } elsif ( $change->change_type eq 'update_file' && !$file_exists ) {
@@ -121,7 +121,7 @@ sub _generate_change_conflicts {
 
 =head2 _generate_prop_change_conflicts Prophet::Change %hash_of_current_properties
 
-Given a change and the current state of a node, returns an array of Prophet::ConflictingPropChange objects describing conflicts which would occur if the change were applied
+Given a change and the current state of a record, returns an array of Prophet::ConflictingPropChange objects describing conflicts which would occur if the change were applied
 
 
 =cut
