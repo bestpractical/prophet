@@ -352,7 +352,7 @@ sub remove_redundant_data {
     # XXX: encapsulation
     $changeset->{changes} = [
         grep { $self->is_resdb || $_->record_type ne '_prophet_resolution' }
-            grep { !( $_->record_type eq $MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
+            grep { !( $_->record_type eq $MERGETICKET_METATYPE && $_->record_uuid eq $self->uuid ) }
             $changeset->changes
     ];
 }
@@ -593,7 +593,7 @@ sub record_resolution {
         type => '_prophet_resolution-' . $change->resolution_cas
     );
 
-    $self->create_node(
+    $self->create_record(
         uuid  => $self->uuid,
         type  => '_prophet_resolution-' . $change->resolution_cas,
         props => {
@@ -636,12 +636,12 @@ sub _integrate_change {
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {
-        $self->create_node( type  => $change->record_type, uuid  => $change->node_uuid, props => \%new_props);
+        $self->create_record( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'add_dir' ) {
     } elsif ( $change->change_type eq 'update_file' ) {
-        $self->set_node_props( type  => $change->record_type, uuid  => $change->node_uuid, props => \%new_props);
+        $self->set_record_props( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'delete' ) {
-        $self->delete_node( type => $change->record_type, uuid => $change->node_uuid);
+        $self->delete_record( type => $change->record_type, uuid => $change->record_uuid);
     } else {
         Carp::confess( " I have never heard of the change type: " . $change->change_type );
     }
@@ -717,14 +717,14 @@ sub _record_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name, $content ) = validate_pos( @_, 1, 1, 1, 1 );
 
-    my $props = eval { $self->get_node_props( uuid => $source_uuid, type => $name ) };
+    my $props = eval { $self->get_record_props( uuid => $source_uuid, type => $name ) };
 
     # XXX: do set-prop when exists, and just create new node with all props is probably better
     unless ( $props->{$prop_name} ) {
-        eval { $self->create_node( uuid => $source_uuid, type => $name, props => {} ) };
+        eval { $self->create_record( uuid => $source_uuid, type => $name, props => {} ) };
     }
 
-    $self->set_node_props(
+    $self->set_record_props(
         uuid  => $source_uuid,
         type  => $name,
         props => { $prop_name => $content }
@@ -738,7 +738,7 @@ sub _record_metadata_for {
 
 Returns this replica's UUID
 
-=head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
+=head2 create_record { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
 
 Create a new record of type C<$type> with uuid C<$uuid>  within the current replica.
 
@@ -748,13 +748,13 @@ If called from within an edit, it uses the current edit. Otherwise it manufactur
 
 
 
-=head2 delete_node {uuid => $uuid, type => $type }
+=head2 delete_record {uuid => $uuid, type => $type }
 
 Deletes the node C<$uuid> of type C<$type> from the current replica. 
 
 Manufactures its own new edit if C<$self->current_edit> is undefined.
 
-=head2 set_node_props { uuid => $uuid, type => $type, props => {hash of kv pairs }}
+=head2 set_record_props { uuid => $uuid, type => $type, props => {hash of kv pairs }}
 
 
 Updates the record of type C<$type> with uuid C<$uuid> to set each property defined by the props hash. It does NOT alter any property not defined by the props hash.
@@ -762,13 +762,13 @@ Updates the record of type C<$type> with uuid C<$uuid> to set each property defi
 Manufactures its own current edit if none exists.
 
 
-=head2 get_node_props {uuid => $uuid, type => $type, root => $root }
+=head2 get_record_props {uuid => $uuid, type => $type, root => $root }
 
 Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
 
 'root' is an optional argument which you can use to pass in an alternate historical version of the replica to inspect.  Code to look at the immediately previous version of a record might look like:
 
-    $handle->get_node_props(
+    $handle->get_record_props(
         type => $record->type,
         uuid => $record->uuid,
         root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
@@ -779,18 +779,18 @@ Returns a hashref of all properties for the record of type $type with uuid C<$uu
 Returns true if the node in question exists. False otherwise
 
 
-=head2 list_nodes { type => $type }
+=head2 list_records { type => $type }
 
 Returns a reference to a list of all the records of type $type
 
-=head2 list_nodes
+=head2 list_records
 
 Returns a reference to a list of all the known types in your Prophet database
 
 
 =head2 type_exists { type => $type }
 
-Returns true if we have any nodes of type C<$type>
+Returns true if we have any records of type C<$type>
 
 
 

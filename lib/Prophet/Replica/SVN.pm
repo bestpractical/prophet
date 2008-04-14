@@ -132,7 +132,7 @@ sub _recode_changeset {
             my ( $prefix, $type, $record ) = ( $1, $2, $3 );
             my $change = Prophet::Change->new(
                 {   record_type   => $type,
-                    node_uuid   => $record,
+                    record_uuid   => $record,
                     change_type => $entry->{'paths'}->{$path}->{fs_operation}
                 }
             );
@@ -278,7 +278,7 @@ sub commit_edit {
 
 }
 
-=head2 create_node { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
+=head2 create_record { type => $TYPE, uuid => $uuid, props => { key-value pairs }}
 
 Create a new record of type C<$type> with uuid C<$uuid>  within the current replica.
 
@@ -288,7 +288,7 @@ If called from within an edit, it uses the current edit. Otherwise it manufactur
 
 =cut
 
-sub create_node {
+sub create_record {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
@@ -305,7 +305,7 @@ sub create_node {
         # print $stream Dumper( $args{'props'} );
         close $stream;
     }
-    $self->_set_node_props(
+    $self->_set_record_props(
         uuid  => $args{uuid},
         props => $args{props},
         type  => $args{'type'}
@@ -314,7 +314,7 @@ sub create_node {
 
 }
 
-sub _set_node_props {
+sub _set_record_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
@@ -325,7 +325,7 @@ sub _set_node_props {
     }
 }
 
-=head2 delete_node {uuid => $uuid, type => $type }
+=head2 delete_record {uuid => $uuid, type => $type }
 
 Deletes the node C<$uuid> of type C<$type> from the current replica. 
 
@@ -333,7 +333,7 @@ Manufactures its own new edit if C<$self->current_edit> is undefined.
 
 =cut
 
-sub delete_node {
+sub delete_record {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
 
@@ -345,7 +345,7 @@ sub delete_node {
     return 1;
 }
 
-=head2 set_node_props { uuid => $uuid, type => $type, props => {hash of kv pairs }}
+=head2 set_record_props { uuid => $uuid, type => $type, props => {hash of kv pairs }}
 
 
 Updates the record of type C<$type> with uuid C<$uuid> to set each property defined by the props hash. It does NOT alter any property not defined by the props hash.
@@ -354,7 +354,7 @@ Manufactures its own current edit if none exists.
 
 =cut
 
-sub set_node_props {
+sub set_record_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
@@ -362,7 +362,7 @@ sub set_node_props {
     $self->begin_edit() unless ($inside_edit);
 
     my $file = $self->_file_for( uuid => $args{uuid}, type => $args{'type'} );
-    $self->_set_node_props(
+    $self->_set_record_props(
         uuid  => $args{uuid},
         props => $args{props},
         type  => $args{'type'}
@@ -371,13 +371,13 @@ sub set_node_props {
 
 }
 
-=head2 get_node_props {uuid => $uuid, type => $type, root => $root }
+=head2 get_record_props {uuid => $uuid, type => $type, root => $root }
 
 Returns a hashref of all properties for the record of type $type with uuid C<$uuid>.
 
 'root' is an optional argument which you can use to pass in an alternate historical version of the replica to inspect.  Code to look at the immediately previous version of a record might look like:
 
-    $handle->get_node_props(
+    $handle->get_record_props(
         type => $record->type,
         uuid => $record->uuid,
         root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
@@ -386,7 +386,7 @@ Returns a hashref of all properties for the record of type $type with uuid C<$uu
 
 =cut
 
-sub get_node_props {
+sub get_record_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
     my $root = $args{'root'} || $self->current_root;
@@ -431,13 +431,13 @@ sub record_exists {
 
 }
 
-=head2 list_nodes { type => $type }
+=head2 list_records { type => $type }
 
 Returns a reference to a list of all the records of type $type
 
 =cut
 
-sub list_nodes {
+sub list_records {
     my $self = shift;
     my %args = validate( @_ => { type => 1 } );
     return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' ) } ];
@@ -457,7 +457,7 @@ sub list_types {
 
 =head2 type_exists { type => $type }
 
-Returns true if we have any nodes of type C<$type>
+Returns true if we have any records of type C<$type>
 
 =cut
 

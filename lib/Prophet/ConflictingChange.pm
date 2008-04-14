@@ -9,7 +9,7 @@ use base qw/Class::Accessor/;
 use Storable 'dclone';
 
 # change_type is one of: add_file add_dir update delete
-__PACKAGE__->mk_accessors(qw/record_type node_uuid source_record_exists target_record_exists change_type file_op_conflict/);
+__PACKAGE__->mk_accessors(qw/record_type record_uuid source_record_exists target_record_exists change_type file_op_conflict/);
 
 =head2 prop_conflicts
 

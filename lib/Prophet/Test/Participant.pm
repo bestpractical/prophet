@@ -140,15 +140,15 @@ sub dump_state {
 
     my $state;
 
-    my $nodes  = Prophet::Collection->new( handle => $cli->app_handle->handle, type => 'Scratch' );
+    my $records  = Prophet::Collection->new( handle => $cli->app_handle->handle, type => 'Scratch' );
     my $merges = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
     my $resolutions = Prophet::Collection->new( handle => $cli->resdb_handle, type => '_prophet_resolution' );
 
-    $nodes->matching( sub       {1} );
+    $records->matching( sub       {1} );
     $resolutions->matching( sub {1} );
     $merges->matching( sub      {1} );
 
-    %{ $state->{nodes} }       = map { $_->uuid => $_->get_props } @{ $nodes->as_array_ref };
+    %{ $state->{records} }       = map { $_->uuid => $_->get_props } @{ $records->as_array_ref };
     %{ $state->{merges} }      = map { $_->uuid => $_->get_props } @{ $merges->as_array_ref };
     %{ $state->{resolutions} } = map { $_->uuid => $_->get_props } @{ $resolutions->as_array_ref };
 

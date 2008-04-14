@@ -100,7 +100,7 @@ sub as_hash {
 
     for my $change ( $self->changes ) {
 
-        $as_hash->{changes}->{ $change->node_uuid } = $change->as_hash;
+        $as_hash->{changes}->{ $change->record_uuid } = $change->as_hash;
     }
     return $as_hash;
 }

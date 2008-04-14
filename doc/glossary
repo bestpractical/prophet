@@ -83,7 +83,7 @@ Record Types are uniquely identified with a textual name and a UUID
 
 =head2 Node
 
-Too many things get called nodes
+Too many things get called records
 
 =head2 revision
 

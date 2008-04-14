@@ -302,10 +302,10 @@ sub serialize_conflict {
     my $conflicts;
     for my $change ( @{ $conflict_obj->conflicting_changes } ) {
         $conflicts->{meta} = { original_source_uuid => $conflict_obj->changeset->original_source_uuid };
-        $conflicts->{records}->{ $change->node_uuid } = { change_type => $change->change_type, };
+        $conflicts->{records}->{ $change->record_uuid } = { change_type => $change->change_type, };
 
         for my $propchange ( @{ $change->prop_conflicts } ) {
-            $conflicts->{records}->{ $change->node_uuid }->{props}->{ $propchange->name } = {
+            $conflicts->{records}->{ $change->record_uuid }->{props}->{ $propchange->name } = {
                 source_old => $propchange->source_old_value,
                 source_new => $propchange->source_new_value,
                 target_old => $propchange->target_value

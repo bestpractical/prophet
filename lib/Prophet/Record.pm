@@ -115,7 +115,7 @@ sub create {
 
     $self->uuid($uuid);
 
-    $self->handle->create_node(
+    $self->handle->create_record(
         props => $args{'props'},
         uuid  => $self->uuid,
         type  => $self->type
@@ -170,7 +170,7 @@ sub set_props {
 
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} );
-    $self->handle->set_node_props( type => $self->type, uuid => $self->uuid, props => $args{'props'} );
+    $self->handle->set_record_props( type => $self->type, uuid => $self->uuid, props => $args{'props'} );
 }
 
 =head2 get_props
@@ -181,7 +181,7 @@ Returns a hash of this record's properties as currently set in the database.
 
 sub get_props {
     my $self = shift;
-    return $self->handle->get_node_props( uuid => $self->uuid, type => $self->type );
+    return $self->handle->get_record_props( uuid => $self->uuid, type => $self->type );
 }
 
 =head2 prop $name
@@ -208,7 +208,7 @@ TODO: how is this different than setting it to an empty value?
 sub delete_prop {
     my $self = shift;
     my %args = validate( @_, { name => 1 } );
-    $self->handle->delete_node_prop( uuid => $self->uuid, name => $args{'name'} );
+    $self->handle->delete_record_prop( uuid => $self->uuid, name => $args{'name'} );
 }
 
 =head2 delete
@@ -219,7 +219,7 @@ Deletes this record from the database. (Note that it does _not_ purge historical
 
 sub delete {
     my $self = shift;
-    $self->handle->delete_node( type => $self->type, uuid => $self->uuid );
+    $self->handle->delete_record( type => $self->type, uuid => $self->uuid );
 
 }
 
