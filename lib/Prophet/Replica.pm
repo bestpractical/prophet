@@ -238,6 +238,7 @@ sub record_changeset_and_integration {
     my $self      = shift;
     my $changeset = shift;
 
+    Carp::cluck;
     $self->begin_edit;
     $self->record_changeset($changeset);
 
