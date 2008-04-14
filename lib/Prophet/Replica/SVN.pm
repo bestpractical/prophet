@@ -56,7 +56,7 @@ sub setup {
 
     my $res_url = "svn:" . $self->url;
     $res_url =~ s/(\_res|)$/_res/;
-    $self->ressource( __PACKAGE__->new( { url => $res_url, is_resdb => 1 } ) );
+    $self->resolution_db_handle( __PACKAGE__->new( { url => $res_url, is_resdb => 1 } ) );
 }
 
 sub state_handle { return shift }  #XXX TODO better way to handle this?

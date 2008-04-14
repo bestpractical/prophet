@@ -30,7 +30,7 @@ sub setup {
 
     unless ( $self->is_resdb ) {
 
-        #        $self->ressource( __PACKAGE__->new( { url => $self->{url}.'/resolutions', is_resdb => 1 } ) );
+        #        $self->resolution_db_handle( __PACKAGE__->new( { url => $self->{url}.'/resolutions', is_resdb => 1 } ) );
     }
 }
 

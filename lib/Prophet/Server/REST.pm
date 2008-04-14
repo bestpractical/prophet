@@ -13,8 +13,7 @@ sub prophet_handle {
 }
 
 sub handle_request {
-    my $self = shift;
-    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
+    my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server::REST'} ,  { isa => 'CGI' } );
     my $http_status;
     if ( my $sub = $self->can( 'handle_request_' . lc( $cgi->request_method ) ) ) {
         $http_status = $sub->( $self, $cgi );

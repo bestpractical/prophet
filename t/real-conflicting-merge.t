@@ -105,7 +105,7 @@ as_alice {
 
     $target->import_changesets(
         from  => $source,
-        resdb => $target->ressource
+        resdb => $target->resolution_db_handle
     );
 
     lives_and {

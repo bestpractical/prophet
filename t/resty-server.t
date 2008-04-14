@@ -11,9 +11,11 @@ BEGIN {
 use Prophet::Test tests => 25;
 use Test::WWW::Mechanize;
 use JSON;
+
 my $ua  = Test::WWW::Mechanize->new();
 my $cli = Prophet::CLI->new();
 my $s   = Prophet::TestServer->new();
+
 $s->prophet_handle( $cli->app_handle->handle );
 
 my $url_root = $s->started_ok("start up my web server");

@@ -7,7 +7,7 @@ use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
 
-__PACKAGE__->mk_accessors(qw(state_handle ressource is_resdb db_uuid url));
+__PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb db_uuid url));
 
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 1, except => qr/Prophet::Replica::(.*)::/;
@@ -121,11 +121,11 @@ sub import_resolutions_from_remote_replica {
     );
     my $source = $args{'from'};
 
-    return unless $self->ressource;
-    return unless $source->ressource;
+    return unless $self->resolution_db_handle;
+    return unless $source->resolution_db_handle;
 
-    $self->ressource->import_changesets(
-        from     => $source->ressource,
+    $self->resolution_db_handle->import_changesets(
+        from     => $source->resolution_db_handle,
         resolver => sub { die "nono not yet" }
 
     );
@@ -197,7 +197,7 @@ sub integrate_changeset {
         # integrate the conflict resolution change
         $self->record_resolutions( $conflict->resolution_changeset );
 
-        #            $self->ressource ? $self->ressource->prophet_handle : $self->prophet_handle );
+        #            $self->resolution_db_handle ? $self->resolution_db_handle->prophet_handle : $self->prophet_handle );
         $args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict )
             if ( $args{'reporting_callback'} );
 
@@ -567,7 +567,9 @@ sub record_resolutions {
         
         $self->_unimplemented("record_resolutions (since there is no writable handle)") unless ($self->can_write_changesets);
 
-       my $res_handle =  $self->ressource ? $self->ressource: $self;
+        # If we have a resolution db handle, record the resolutions there.
+        # Otherwise, record them locally
+       my $res_handle =  $self->resolution_db_handle || $self;
 
 
     return unless $changeset->changes;
