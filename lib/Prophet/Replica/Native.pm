@@ -11,7 +11,6 @@ use Prophet::Conflict;
 
 __PACKAGE__->mk_accessors(qw/url db_uuid _uuid/);
 
-
 use constant scheme => 'prophet';
 
 =head2 setup
@@ -30,7 +29,7 @@ sub setup {
 
     unless ( $self->is_resdb ) {
 
-        #        $self->resolution_db_handle( __PACKAGE__->new( { url => $self->{url}.'/resolutions', is_resdb => 1 } ) );
+      #        $self->resolution_db_handle( __PACKAGE__->new( { url => $self->{url}.'/resolutions', is_resdb => 1 } ) );
     }
 }
 
@@ -71,10 +70,8 @@ sub traverse_changesets {
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-
-    my $latest = LWP::Simple::get( $self->url . '/latest-sequence-no' );
-
-    my $chgidx = LWP::Simple::get( $self->url . '/changesets.idx' );
+    my $latest    = $self->most_recent_changeset();
+    my $chgidx    = LWP::Simple::get( $self->url . '/changesets.idx' );
 
     for my $rev ( $first_rev .. $latest ) {
         my ( $seq, $orig_uuid, $orig_seq, $key )
@@ -83,28 +80,31 @@ sub traverse_changesets {
 
         # XXX: deserialize the changeset content from the cas with $key
         my $casfile = $self->url . '/cas/changesets/' . substr( $key, 0, 1 ) . '/' . substr( $key, 1, 1 ) . '/' . $key;
-
-        my $content = YAML::Syck::Load( LWP::Simple::get($casfile) );
-
-        my $changeset = Prophet::ChangeSet->new_from_hashref($content);
-        $changeset->source_uuid( $self->uuid );
-        $changeset->sequence_no($seq);
-        $changeset->original_source_uuid($orig_uuid);
-        $changeset->original_sequence_no($orig_seq);
+        my $changeset = $self->_deserialize_changeset(
+            content              => LWP::Simple::get($casfile),
+            original_source_uuid => $orig_uuid,
+            original_sequence_no => $orig_seq,
+            sequence_no          => $seq
+        );
         $args{callback}->($changeset);
     }
 }
 
-sub record_integration_changeset {
-    die 'readonly';
+sub most_recent_changeset {
+    my $self = shift;
+    return LWP::Simple::get( $self->url . '/latest-sequence-no' );
 }
 
-sub record_changes {
-    die 'readonly';
-}
+sub _deserialize_changeset {
+    my $self = shift;
 
-sub record_resolutions {
-    die 'readonly';
+    my %args = validate( @_, { content => 1, original_sequence_no => 1, original_source_uuid => 1, sequence_no => 1 } );
+    my $content_struct = YAML::Syck::Load( $args{content} );
+    my $changeset      = Prophet::ChangeSet->new_from_hashref($content_struct);
+    $changeset->source_uuid( $self->uuid );
+    $changeset->sequence_no( $args{'sequence_no'} );
+    $changeset->original_source_uuid( $args{'original_source_uuid'} );
+    $changeset->original_sequence_no( $args{'original_sequence_no'} );
+    return $changeset;
 }
-
 1;

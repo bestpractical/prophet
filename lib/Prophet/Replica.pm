@@ -470,7 +470,7 @@ sub export_to {
     my %args = validate( @_, { path => 1, } );
     Prophet::ReplicaExporter->require();
 
-    my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, replica => $self});
+    my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, source_replica => $self});
     $exporter->export();
 }
 
@@ -551,14 +551,10 @@ Called ONLY on local resolution creation. (Synced resolutions are just synced as
 sub record_resolutions {
     my $self       = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-
-        
         $self->_unimplemented("record_resolutions (since there is no writable handle)") unless ($self->can_write_changesets);
-
         # If we have a resolution db handle, record the resolutions there.
         # Otherwise, record them locally
-       my $res_handle =  $self->resolution_db_handle || $self;
-
+    my $res_handle =  $self->resolution_db_handle || $self;
 
     return unless $changeset->changes;
 
