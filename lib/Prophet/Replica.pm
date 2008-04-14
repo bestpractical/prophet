@@ -351,8 +351,8 @@ sub remove_redundant_data {
 
     # XXX: encapsulation
     $changeset->{changes} = [
-        grep { $self->is_resdb || $_->node_type ne '_prophet_resolution' }
-            grep { !( $_->node_type eq $MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
+        grep { $self->is_resdb || $_->record_type ne '_prophet_resolution' }
+            grep { !( $_->record_type eq $MERGETICKET_METATYPE && $_->node_uuid eq $self->uuid ) }
             $changeset->changes
     ];
 }
@@ -588,7 +588,7 @@ sub record_resolution {
     my $self      = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
 
-    return 1 if $self->node_exists(
+    return 1 if $self->record_exists(
         uuid => $self->uuid,
         type => '_prophet_resolution-' . $change->resolution_cas
     );
@@ -636,12 +636,12 @@ sub _integrate_change {
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {
-        $self->create_node( type  => $change->node_type, uuid  => $change->node_uuid, props => \%new_props);
+        $self->create_node( type  => $change->record_type, uuid  => $change->node_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'add_dir' ) {
     } elsif ( $change->change_type eq 'update_file' ) {
-        $self->set_node_props( type  => $change->node_type, uuid  => $change->node_uuid, props => \%new_props);
+        $self->set_node_props( type  => $change->record_type, uuid  => $change->node_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'delete' ) {
-        $self->delete_node( type => $change->node_type, uuid => $change->node_uuid);
+        $self->delete_node( type => $change->record_type, uuid => $change->node_uuid);
     } else {
         Carp::confess( " I have never heard of the change type: " . $change->change_type );
     }
@@ -774,7 +774,7 @@ Returns a hashref of all properties for the record of type $type with uuid C<$uu
         root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
     );
 
-=head2 node_exists {uuid => $uuid, type => $type, root => $root }
+=head2 record_exists {uuid => $uuid, type => $type, root => $root }
 
 Returns true if the node in question exists. False otherwise
 

@@ -85,7 +85,7 @@ sub _generate_change_conflicts {
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
     my $file_op_conflict = '';
 
-    my $file_exists = $self->prophet_handle->node_exists( uuid => $change->node_uuid, type => $change->node_type );
+    my $file_exists = $self->prophet_handle->record_exists( uuid => $change->node_uuid, type => $change->record_type );
 
     # It's ok to delete a node that exists
     if ( $change->change_type eq 'delete' && !$file_exists ) {
@@ -101,9 +101,9 @@ sub _generate_change_conflicts {
     }
 
     my $change_conflict = Prophet::ConflictingChange->new(
-        {   node_type          => $change->node_type,
+        {   record_type          => $change->record_type,
             node_uuid          => $change->node_uuid,
-            target_node_exists => $file_exists,
+            target_record_exists => $file_exists,
             change_type        => $change->change_type,
             file_op_conflict   => $file_op_conflict
         }
@@ -111,7 +111,7 @@ sub _generate_change_conflicts {
 
     if ($file_exists) {
         my $current_state
-            = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->node_type );
+            = $self->prophet_handle->get_node_props( uuid => $change->node_uuid, type => $change->record_type );
 
         push @{ $change_conflict->prop_conflicts }, $self->_generate_prop_change_conflicts( $change, $current_state );
     }
@@ -186,7 +186,7 @@ sub generate_nullification_changeset {
 
     for my $conflict ( @{ $self->conflicting_changes } ) {
         my $nullify_conflict
-            = Prophet::Change->new( { node_type => $conflict->node_type, node_uuid => $conflict->node_uuid } );
+            = Prophet::Change->new( { record_type => $conflict->record_type, node_uuid => $conflict->node_uuid } );
 
         if ( $conflict->file_op_conflict eq "delete_missing_file" ) {
             $nullify_conflict->change_type('add_file');

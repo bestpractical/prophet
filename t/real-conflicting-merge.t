@@ -152,7 +152,7 @@ sub check_bob_final_state_ok {
         [   {   changes => {
                     $record_id => {
                         change_type  => 'update_file',
-                        node_type    => 'Bug',
+                        record_type    => 'Bug',
                         prop_changes => {
                             status => {
                                 old_value => 'stalled',
@@ -178,7 +178,7 @@ sub check_bob_final_state_ok {
                 original_source_uuid => as_alice { replica_uuid() },
                 changes              => {
                     $record_id => {
-                        node_type    => 'Bug',
+                        record_type    => 'Bug',
                         change_type  => 'update_file',
                         prop_changes => {
                             status => { old_value => 'new', new_value => 'open' }
@@ -189,7 +189,7 @@ sub check_bob_final_state_ok {
                     as_alice {
                         replica_uuid();
                     } => {
-                        node_type    => '_merge_tickets',
+                        record_type    => '_merge_tickets',
                         change_type  => 'update_file',
                         prop_changes => {
                             'last-changeset' => {
@@ -211,7 +211,7 @@ sub check_bob_final_state_ok {
                 original_source_uuid => replica_uuid(),
                 changes              => {
                     $record_id => {
-                        node_type    => 'Bug',
+                        record_type    => 'Bug',
                         change_type  => 'update_file',
                         prop_changes => {
                             status => { old_value => 'open', new_value => 'stalled' }

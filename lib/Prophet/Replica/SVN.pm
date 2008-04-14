@@ -131,7 +131,7 @@ sub _recode_changeset {
         if ( $path =~ qr|^(.+)/(.*?)/(.*?)$| ) {
             my ( $prefix, $type, $record ) = ( $1, $2, $3 );
             my $change = Prophet::Change->new(
-                {   node_type   => $type,
+                {   record_type   => $type,
                     node_uuid   => $record,
                     change_type => $entry->{'paths'}->{$path}->{fs_operation}
                 }
@@ -416,13 +416,13 @@ sub _directory_for_type {
 
 }
 
-=head2 node_exists {uuid => $uuid, type => $type, root => $root }
+=head2 record_exists {uuid => $uuid, type => $type, root => $root }
 
 Returns true if the node in question exists. False otherwise
 
 =cut
 
-sub node_exists {
+sub record_exists {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1, root => undef } );
 

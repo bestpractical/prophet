@@ -115,7 +115,7 @@ as_bob {
             changes              => {
                 $record_id => {
                     change_type  => 'update_file',
-                    node_type    => 'Bug',
+                    record_type    => 'Bug',
                     prop_changes => { status => { old_value => 'stalled', new_value => 'new' } }
                     }
 
@@ -151,14 +151,14 @@ as_bob {
             original_source_uuid => replica_uuid_for('alice'),
             changes              => {
                 $record_id => {
-                    node_type    => 'Bug',
+                    record_type    => 'Bug',
                     change_type  => 'update_file',
                     prop_changes => { status => { old_value => 'new', new_value => 'stalled' } }
                 },
 
                 replica_uuid_for('alice') => {
                     change_type  => 'update_file',
-                    node_type    => '_merge_tickets',
+                    record_type    => '_merge_tickets',
                     prop_changes => {
                         'last-changeset' => {
                             old_value => as_alice { replica_last_rev() - 1 },

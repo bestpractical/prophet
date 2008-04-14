@@ -105,7 +105,7 @@ sub load_record {
 
     my $record = Prophet::Record->new( handle => $self->prophet_handle, type => $args{type} );
     if ( $args{'uuid'} ) {
-        return undef unless ( $self->prophet_handle->node_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
+        return undef unless ( $self->prophet_handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
         $record->load( uuid => $args{uuid} );
     }
     return $record;

@@ -11,7 +11,7 @@ sub run {
 
     my $resolution = Prophet::Change->new_from_conflict($conflicting_change);
     print "Oh no! There's a conflict between this replica and the one you're syncing from:\n";
-    print $conflicting_change->node_type . " " . $conflicting_change->node_uuid . "\n";
+    print $conflicting_change->record_type . " " . $conflicting_change->node_uuid . "\n";
 
     for my $prop_conflict ( @{ $conflicting_change->prop_conflicts } ) {
 

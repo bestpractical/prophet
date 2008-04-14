@@ -78,7 +78,7 @@ is_deeply(
                             'old_value' => undef
                         }
                     },
-                    'node_type' => 'Bug'
+                    'record_type' => 'Bug'
                 }
             },
             'is_nullification' => undef,
@@ -130,7 +130,7 @@ is_deeply(
                             'old_value' => undef
                         }
                     },
-                    'node_type' => 'Bug'
+                    'record_type' => 'Bug'
                 }
             },
             'is_nullification' => undef,

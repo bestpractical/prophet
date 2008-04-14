@@ -6,7 +6,7 @@ use base qw/Class::Accessor/;
 
 use Prophet::PropChange;
 use Params::Validate;
-__PACKAGE__->mk_accessors(qw/node_type node_uuid change_type resolution_cas/);
+__PACKAGE__->mk_accessors(qw/record_type node_uuid change_type resolution_cas/);
 
 =head1 NAME
 
@@ -18,7 +18,7 @@ This class encapsulates a change to a single node in a Prophet replica.
 
 =head1 METHODS
 
-=head2 node_type
+=head2 record_type
 
 The record type for the node.
 
@@ -53,7 +53,7 @@ sub new_from_conflict {
         {   is_resolution  => 1,
             resolution_cas => $conflict->cas_key,
             change_type    => $conflict->change_type,
-            node_type      => $conflict->node_type,
+            record_type      => $conflict->record_type,
             node_uuid      => $conflict->node_uuid
         }
     );
@@ -88,7 +88,7 @@ sub as_hash {
     }
 
     return {
-        node_type    => $self->node_type,
+        record_type    => $self->record_type,
         change_type  => $self->change_type,
         prop_changes => $props
 
@@ -100,7 +100,7 @@ sub new_from_hashref {
     my $uuid    = shift;
     my $hashref = shift;
     my $self    = $class->new(
-        { node_type => $hashref->{'node_type'}, node_uuid => $uuid, change_type => $hashref->{'change_type'} } );
+        { record_type => $hashref->{'record_type'}, node_uuid => $uuid, change_type => $hashref->{'change_type'} } );
     foreach my $prop ( keys %{ $hashref->{'prop_changes'} } ) {
         $self->add_prop_change(
             name => $prop,
