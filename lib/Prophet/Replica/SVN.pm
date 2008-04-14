@@ -206,7 +206,7 @@ sub _determine_db_uuid {
     return CREATED_DB_UUID;
 }
 
-sub _post_process_integrated_changeset {
+sub _after_record_changes {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 

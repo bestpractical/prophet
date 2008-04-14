@@ -27,7 +27,7 @@ sub record_resolutions { die "not for foreign replicas" }
 
 sub import_resolutions_from_remote_source { warn 'no resdb'; return }
 
-sub record_changeset {
+sub record_changes {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
     for my $change ( $changeset->changes ) {

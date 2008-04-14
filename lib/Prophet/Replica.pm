@@ -189,7 +189,7 @@ sub integrate_changeset {
 
      # IMPORTANT: these should be an atomic unit. dying here would be poor.  BUT WE WANT THEM AS THREEDIFFERENT SVN REVS
      # integrate the nullification change
-        $self->record_changeset( $conflict->nullification_changeset );
+        $self->record_changes( $conflict->nullification_changeset );
 
         # integrate the original change
         $self->record_changeset_and_integration($changeset);
@@ -214,18 +214,6 @@ Given a L<Prophet::ChangeSet>, integrates each and every change within that chan
 
 This routine also records that we've seen this changeset (and hence everything before it) from both the peer who sent it to us AND the replica who originally created it.
 
-THIS OLD VERSION OF THE ROUTINE CAME FROM HANDLE
-
-sub integrate_changeset {
-    my $self      = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-
-    $self->begin_edit();
-    $self->record_changeset($changeset);
-    $self->record_changeset_integration($changeset);
-    $self->commit_edit();
-}
-
 =cut
 
 
@@ -240,7 +228,7 @@ sub record_changeset_and_integration {
 
     Carp::cluck;
     $self->begin_edit;
-    $self->record_changeset($changeset);
+    $self->record_changes($changeset);
 
     my $state_handle = $self->state_handle;
     my $inside_edit = $state_handle->current_edit ? 1 : 0;
@@ -575,7 +563,7 @@ sub record_resolutions {
     return unless $changeset->changes;
 
     $self->begin_edit();
-    $self->record_changeset($changeset);
+    $self->record_changes($changeset);
     $res_handle->record_resolution($_) for $changeset->changes;
     $self->commit_edit();
 }
@@ -611,22 +599,22 @@ sub record_resolution {
 
 =head1 Routines dealing with integrating changesets into a replica
 
-=head2 record_changeset Prophet::ChangeSet
+=head2 record_changes Prophet::ChangeSet
 
 Inside an edit (transaction), integrate all changes in this transaction
-and then call the _post_process_integrated_changeset() hook
+and then call the _after_record_changes() hook
 
 =cut
 
-sub record_changeset {
+sub record_changes {
     my $self      = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-    $self->_unimplemented ('record_changeset') unless ($self->can_write_changesets);
+    $self->_unimplemented ('record_changes') unless ($self->can_write_changesets);
     eval {
         my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit() unless ($inside_edit);
         $self->_integrate_change($_) for ( $changeset->changes );
-        $self->_post_process_integrated_changeset($changeset);
+        $self->_after_record_changes($changeset);
         $self->commit_edit() unless ($inside_edit);
     };
     die($@) if ($@);
@@ -807,14 +795,14 @@ Returns true if we have any records of type C<$type>
 =head2 The following optional routines are provided for you to override with backing-store specific behaviour
 
 
-=head3 _post_process_integrated_changeset Prophet::ChangeSet
+=head3 _after_record_changes Prophet::ChangeSet
 
 Called after the replica has integrated a new changeset but before closing the current transaction/edit.
 
 The SVN backend, for example, uses this to record author metadata about this changeset.
 
 =cut
-sub _post_process_integrated_changeset {
+sub _after_record_changes {
     return 1;
 }
 

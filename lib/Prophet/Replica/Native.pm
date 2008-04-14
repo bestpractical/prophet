@@ -99,7 +99,7 @@ sub record_integration_changeset {
     die 'readonly';
 }
 
-sub record_changeset {
+sub record_changes {
     die 'readonly';
 }
 
