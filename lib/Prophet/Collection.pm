@@ -57,7 +57,7 @@ sub matching {
     # find all items,
     Carp::cluck unless defined $self->type;
 
-    my $nodes = $self->handle->enumerate_nodes( type => $self->type );
+    my $nodes = $self->handle->list_nodes( type => $self->type );
 
     # run coderef against each item;
     # if it matches, add it to _items

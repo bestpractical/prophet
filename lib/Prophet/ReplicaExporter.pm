@@ -174,7 +174,7 @@ sub export {
 
     $self->_init_export_metadata( root => $replica_root );
 
-    foreach my $type ( @{ $self->replica->enumerate_types } ) {
+    foreach my $type ( @{ $self->replica->list_types } ) {
         $self->export_records(
             type    => $type,
             root    => $replica_root,

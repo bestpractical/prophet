@@ -431,25 +431,25 @@ sub node_exists {
 
 }
 
-=head2 enumerate_nodes { type => $type }
+=head2 list_nodes { type => $type }
 
 Returns a reference to a list of all the records of type $type
 
 =cut
 
-sub enumerate_nodes {
+sub list_nodes {
     my $self = shift;
     my %args = validate( @_ => { type => 1 } );
     return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' . $args{type} . '/' ) } ];
 }
 
-=head2 enumerate_types
+=head2 list_types
 
 Returns a reference to a list of all the known types in your Prophet database
 
 =cut
 
-sub enumerate_types {
+sub list_types {
     my $self = shift;
     return [ keys %{ $self->current_root->dir_entries( $self->db_uuid . '/' ) } ];
 }

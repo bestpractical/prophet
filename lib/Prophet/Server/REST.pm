@@ -32,7 +32,7 @@ sub handle_request_get {
     if ( $p =~ m|^/records\.json$| ) {
         $self->_send_content(
             content_type => 'text/x-json',
-            content      => to_json( $self->prophet_handle->enumerate_types )
+            content      => to_json( $self->prophet_handle->list_types )
         );
 
     } elsif ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {

@@ -5,7 +5,6 @@ package Prophet::CLI;
 use base qw/Class::Accessor/;
 __PACKAGE__->mk_accessors(qw/app_class record_class type uuid app_handle/);
 
-use Path::Class;
 use Prophet;
 use Prophet::Record;
 use Prophet::Collection;

@@ -779,11 +779,11 @@ Returns a hashref of all properties for the record of type $type with uuid C<$uu
 Returns true if the node in question exists. False otherwise
 
 
-=head2 enumerate_nodes { type => $type }
+=head2 list_nodes { type => $type }
 
 Returns a reference to a list of all the records of type $type
 
-=head2 enumerate_nodes
+=head2 list_nodes
 
 Returns a reference to a list of all the known types in your Prophet database
 
