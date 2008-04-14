@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-package Prophet::Replica::HTTP;
+package Prophet::Replica::Native;
 use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
 use LWP::Simple ();
