@@ -85,23 +85,23 @@ sub uuid {
 sub _write_record {
     my $self = shift;
     my %args = validate( @_, { record => { isa => 'Prophet::Record' }, } );
+    $self->_write_serialized_record( type => $args{'record'}->type, uuid => $args{'record'}->uuid, props => $args{'record'}->get_props);
+}
 
-    my $record_dir = dir( $self->fs_root, 'records', $args{'record'}->type );
-    make_tiered_dirs($record_dir) unless -d $record_dir;
-    my $content = YAML::Syck::Dump( $args{'record'}->get_props );
+sub _write_serialized_record {
+    my $self = shift;
+    my %args = validate( @_, { type => 1, uuid => 1, props =>1});
+
+    my $record_root = dir( $self->fs_root, $self->_record_type_root($args{'type'}));
+    make_tiered_dirs($record_root) unless -d $record_root;
+
+    my $content = YAML::Syck::Dump( $args{'props'});
     my ($cas_key) = $self->_write_to_cas(
         content_ref => \$content,
-        cas_dir     => $self->record_cas_dir
-    );
+        cas_dir     => $self->record_cas_dir);
+    my $idx_filename = $self->_record_index_filename(uuid =>$args{uuid}, type => $args{type});
 
-    my $idx_filename = file(
-        $record_dir,
-        substr( $args{record}->uuid, 0, 1 ),
-        substr( $args{record}->uuid, 1, 1 ),
-        $args{record}->uuid
-    );
-
-    open( my $record_index, ">>", $idx_filename ) || die $!;
+    open( my $record_index, ">>", file($self->fs_root, $idx_filename) ) || die $!;
 
     # XXX TODO: skip if the index already has this version of the record;
     # XXX TODO FETCH THAT
@@ -112,6 +112,42 @@ sub _write_record {
     close $record_index;
 }
 
+
+use constant RECORD_INDEX_SIZE => (4+ 20);
+sub _read_serialized_record {
+    my $self = shift;
+    my %args = validate( @_, { type => 1, uuid => 1} ) ;
+    my $idx_filename = $self->_record_index_filename(uuid =>$args{uuid}, type => $args{type});
+    return undef unless -f $idx_filename;
+    my $index = $self->_read_file($idx_filename);
+    
+    
+    # XXX TODO THIS CODE IS FUCKING HACKY AND SHOULD BE SHOT; 
+    my $count = length($index) / RECORD_INDEX_SIZE;
+
+        my ( $seq,$key ) = unpack( 'NH40', substr( $index, ( $count - 1 ) * RECORD_INDEX_SIZE, RECORD_INDEX_SIZE ) );
+        # XXX: deserialize the changeset content from the cas with $key
+        my $casfile = file ($self->record_cas_dir, substr( $key, 0, 1 ), substr( $key, 1, 1 ) , $key);
+        # That's the props
+        return YAML::Syck::Load($self->_read_file($casfile));
+}
+
+
+
+
+sub _record_index_filename {
+    my $self = shift;
+    my %args = validate(@_,{ uuid =>1 ,type => 1});
+    return file( $self->_record_type_root($args{'type'}) , substr( $args{uuid}, 0, 1 ), substr( $args{uuid}, 1, 1 ), $args{uuid});
+}
+
+sub _record_type_root {
+    my $self = shift;
+    my $type = shift; 
+    return dir( 'records', $type);
+}
+
+
 sub _write_changeset {
     my $self = shift;
     my %args = validate( @_, { index_handle => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
@@ -120,8 +156,6 @@ sub _write_changeset {
     my $fh        = $args{'index_handle'};
 
     my $hash_changeset = $changeset->as_hash;
-    delete $hash_changeset->{'sequence_no'};
-    delete $hash_changeset->{'source_uuid'};
 
     my $content = YAML::Syck::Dump($hash_changeset);
     my $cas_key = $self->_write_to_cas( content_ref => \$content, cas_dir => $self->changeset_cas_dir );
@@ -171,7 +205,7 @@ sub traverse_changesets {
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
 
         # XXX: deserialize the changeset content from the cas with $key
-        my $casfile = '/cas/changesets/' . substr( $key, 0, 1 ) . '/' . substr( $key, 1, 1 ) . '/' . $key;
+        my $casfile = file ($self->changeset_cas_dir, substr( $key, 0, 1 ), substr( $key, 1, 1 ) , $key);
         my $changeset = $self->_deserialize_changeset(
             content              => $self->_read_file($casfile),
             original_source_uuid => $orig_uuid,
@@ -192,10 +226,12 @@ sub latest_sequence_no {
 
 sub _deserialize_changeset {
     my $self = shift;
-
     my %args = validate( @_, { content => 1, original_sequence_no => 1, original_source_uuid => 1, sequence_no => 1 } );
     my $content_struct = YAML::Syck::Load( $args{content} );
     my $changeset      = Prophet::ChangeSet->new_from_hashref($content_struct);
+    # Don't need to do this, since we clobber them below
+    #delete $hash_changeset->{'sequence_no'};
+    #delete $hash_changeset->{'source_uuid'};
     $changeset->source_uuid( $self->uuid );
     $changeset->sequence_no( $args{'sequence_no'} );
     $changeset->original_source_uuid( $args{'original_source_uuid'} );
@@ -246,6 +282,11 @@ sub _write_file {
     close $file || die $!;
 }
 
+sub _file_exists {
+    my $self = shift;
+    my ($file) = validate_pos( @_, 1 );
+    return -f file($self->fs_path, $file);
+}
 sub _read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
@@ -264,12 +305,15 @@ sub begin_edit {
 sub commit_edit {
 }
 sub create_record {
+    my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
+    $self->_write_serialized_record( type => $args{'type'}, uuid => $args{'uuid'}, props => $args{'props'});
 
 }
 sub delete_record {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
+    # Write out an entry to the record's index file marking it as a special deleted uuid?
 }
 sub set_record_props {
     my $self = shift;
@@ -279,10 +323,13 @@ sub set_record_props {
 sub get_record_props {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
+    return $self->_read_serialized_record(uuid => $args{'uuid'}, type => $args{'type'});
 }
 sub record_exists {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1} );
+    return $self->_file_exists($self->_record_index_filename( type => $args{'type'}, uuid => $args{'uuid'}));
+    # TODO, check that the index file doesn't have a 'deleted!' note
 }
 sub list_records {
     my $self = shift;
@@ -294,5 +341,6 @@ sub list_types {
 sub type_exists {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
+    return $self->_file_exists($self->_record_type_root( $args{'type'}));
 }
 1;
