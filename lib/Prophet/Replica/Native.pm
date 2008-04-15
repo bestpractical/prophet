@@ -13,7 +13,7 @@ use Prophet::ChangeSet;
 use Prophet::Conflict;
 
 __PACKAGE__->mk_accessors(qw/url db_uuid _uuid/);
-__PACKAGE__->mk_accessors( qw(fs_root target_replica cas_root record_cas_dir changeset_cas_dir record_dir));
+__PACKAGE__->mk_accessors(qw(fs_root target_replica cas_root record_cas_dir changeset_cas_dir record_dir));
 
 use constant scheme => 'prophet';
 
@@ -38,36 +38,35 @@ sub setup {
     }
 }
 
-
 sub initialize {
     my $self = shift;
-    my %args = validate(@_, { db_uuid => 0});
+    my %args = validate( @_, { db_uuid => 0 } );
 
     $self->cas_root( dir( $self->fs_root => 'cas' ) );
     $self->record_cas_dir( dir( $self->cas_root => 'records' ) );
     $self->changeset_cas_dir( dir( $self->cas_root => 'changesets' ) );
     $self->record_dir( dir( $self->fs_root => 'records' ) );
 
-    _mkdir($_) for (  $self->fs_root, $self->record_dir, $self->cas_root );
+    _mkdir($_) for ( $self->fs_root, $self->record_dir, $self->cas_root );
     make_tiered_dirs( $self->record_cas_dir );
     make_tiered_dirs( $self->changeset_cas_dir );
 
     $self->set_latest_sequence_no("1");
-    $self->set_replica_uuid(Data::UUID->new->create_str);
-    $self->_output_oneliner_file( path => file( $self->fs_root, 'replica-version' ), content => '1' );
+    $self->set_replica_uuid( Data::UUID->new->create_str );
+    $self->_write_file( path => file( $self->fs_root, 'replica-version' ), content => '1' );
 }
 
 sub set_replica_uuid {
-    my $self  = shift;
+    my $self = shift;
     my $uuid = shift;
-    $self->_output_oneliner_file( path    => file( $self->fs_root, 'replica-uuid' ), content => $uuid);
+    $self->_write_file( path => file( $self->fs_root, 'replica-uuid' ), content => $uuid );
 
 }
 
 sub set_latest_sequence_no {
     my $self = shift;
-    my $id = shift;
-    $self->_output_oneliner_file( path    => file( $self->fs_root, 'latest-sequence-no' ), content => scalar($id));
+    my $id   = shift;
+    $self->_write_file( path => file( $self->fs_root, 'latest-sequence-no' ), content => scalar($id) );
 }
 
 =head2 uuid
@@ -79,17 +78,13 @@ Return the replica SVN repository's UUID
 sub uuid {
     my $self = shift;
 
-    $self->_uuid( LWP::Simple::get( $self->url . '/replica-uuid' ) ) unless $self->_uuid;
+    $self->_uuid( $self->_read_file('/replica-uuid') ) unless $self->_uuid;
     return $self->_uuid;
 }
 
 sub _write_record {
     my $self = shift;
-    my %args = validate(
-        @_,
-        {   record     => { isa => 'Prophet::Record' },
-        }
-    );
+    my %args = validate( @_, { record => { isa => 'Prophet::Record' }, } );
 
     my $record_dir = dir( $self->fs_root, 'records', $args{'record'}->type );
     make_tiered_dirs($record_dir) unless -d $record_dir;
@@ -99,7 +94,8 @@ sub _write_record {
         cas_dir     => $self->record_cas_dir
     );
 
-    my $idx_filename = file( $record_dir,
+    my $idx_filename = file(
+        $record_dir,
         substr( $args{record}->uuid, 0, 1 ),
         substr( $args{record}->uuid, 1, 1 ),
         $args{record}->uuid
@@ -144,11 +140,9 @@ sub _write_changeset {
 
 }
 
-=head2 fetch_changesets { after => SEQUENCE_NO } 
+=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
 
-Fetch all changesets from the source. 
-
-Returns a reference to an array of L<Prophet::ChangeSet/> objects.
+Walks through all changesets after $after, calling $callback on each.
 
 
 =cut
@@ -167,9 +161,9 @@ sub traverse_changesets {
         }
     );
 
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
+    my $first_rev = ( $args{'after'}+1) || 1;
     my $latest    = $self->latest_sequence_no();
-    my $chgidx    = LWP::Simple::get( $self->url . '/changesets.idx' );
+    my $chgidx    = $self->_read_file('/changesets.idx');
 
     for my $rev ( $first_rev .. $latest ) {
         my ( $seq, $orig_uuid, $orig_seq, $key )
@@ -177,9 +171,9 @@ sub traverse_changesets {
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
 
         # XXX: deserialize the changeset content from the cas with $key
-        my $casfile = $self->url . '/cas/changesets/' . substr( $key, 0, 1 ) . '/' . substr( $key, 1, 1 ) . '/' . $key;
+        my $casfile = '/cas/changesets/' . substr( $key, 0, 1 ) . '/' . substr( $key, 1, 1 ) . '/' . $key;
         my $changeset = $self->_deserialize_changeset(
-            content              => LWP::Simple::get($casfile),
+            content              => $self->_read_file($casfile),
             original_source_uuid => $orig_uuid,
             original_sequence_no => $orig_seq,
             sequence_no          => $seq
@@ -188,9 +182,12 @@ sub traverse_changesets {
     }
 }
 
+
+
+
 sub latest_sequence_no {
     my $self = shift;
-    return LWP::Simple::get( $self->url . '/latest-sequence-no' );
+    $self->_read_file('/latest-sequence-no');
 }
 
 sub _deserialize_changeset {
@@ -236,19 +233,66 @@ sub _write_to_cas {
     my $fingerprint = sha1_hex($content);
     my $content_filename
         = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
-    open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
-    print $output $content || die $!;
-    close $output;
+
+    $self->_write_file( path => $content_filename, content => $content );
     return $fingerprint;
 }
 
-sub _output_oneliner_file {
+sub _write_file {
     my $self = shift;
     my %args = validate( @_, { path => 1, content => 1 } );
-
     open( my $file, ">", $args{'path'} ) || die $!;
-    print $file $args{'content'} || die "Could not write to ".$args{'path'} . " " . $!;
+    print $file $args{'content'} || die "Could not write to " . $args{'path'} . " " . $!;
     close $file || die $!;
 }
 
+sub _read_file {
+    my $self = shift;
+    my ($file) = validate_pos( @_, 1 );
+    LWP::Simple::get( $self->url . $file );
+}
+
+sub state_handle { return shift }  #XXX TODO better way to handle this?
+sub record_changeset_integration {
+    my ($self, $changeset) = validate_pos( @_, 1, { isa => 'Prophet::ChangeSet' } );
+
+    $self->_set_original_source_metadata($changeset);
+    return $self->SUPER::record_changeset_integration($changeset);
+}
+sub begin_edit {
+}
+sub commit_edit {
+}
+sub create_record {
+    my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
+
+}
+sub delete_record {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, type => 1 } );
+}
+sub set_record_props {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
+
+}
+sub get_record_props {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, type => 1 } );
+}
+sub record_exists {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, type => 1} );
+}
+sub list_records {
+    my $self = shift;
+    my %args = validate( @_ => { type => 1 } );
+}
+sub list_types {
+    my $self = shift;
+}
+sub type_exists {
+    my $self = shift;
+    my %args = validate( @_, { type => 1 } );
+}
 1;

@@ -96,7 +96,29 @@ sub latest_sequence_no {
     $self->ra->get_latest_revnum;
 }
 
-sub fetch_changeset {
+
+sub traverse_changesets {
+    my $self = shift;
+    my %args = validate( @_,
+        {   after    => 1,
+            callback => 1,
+        }
+    );
+
+    my $first_rev = ( $args{'after'} + 1 ) || 1;
+    my $last_rev = $self->latest_sequence_no();
+
+
+    die "you must implement latest_sequence_no in " . ref($self) . ", or override traverse_changesets"
+        unless defined $last_rev;
+
+    for my $rev ( $first_rev .. $self->latest_sequence_no ) {
+        $args{callback}->( $self->_fetch_changeset($rev) );
+    }
+}
+
+
+sub _fetch_changeset {
     my $self   = shift;
     my $rev    = shift;
     my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );

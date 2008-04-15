@@ -435,27 +435,6 @@ sub fetch_changesets {
     return \@results;
 }
 
-sub traverse_changesets {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   after    => 1,
-            callback => 1,
-        }
-    );
-
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $last_rev = $self->latest_sequence_no();
-
-
-    die "you must implement latest_sequence_no in " . ref($self) . ", or override traverse_changesets"
-        unless defined $last_rev;
-
-    for my $rev ( $first_rev .. $self->latest_sequence_no ) {
-        $args{callback}->( $self->fetch_changeset($rev) );
-    }
-}
-
 =head2 export_to { path => $PATH } 
 
 This routine will export a copy of this prophet database replica to a flat file on disk suitable for 
@@ -498,14 +477,16 @@ Returns the sequence # of the most recently committed changeset
 
 sub latest_sequence_no {return undef }
 
-=head2 fetch_changeset SEQUENCE_NO
+=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub {} }
 
-Returns a Prophet::ChangeSet object for changeset # C<SEQUENCE_NO>
+Walk through each changeset in the replica after SEQUENCE_NO, calling the C<callback> for each one in turn.
+
 
 =cut
 
-sub fetch_changeset {} 
+sub traverse_changesets {
 
+}
 
 
 
