@@ -264,7 +264,7 @@ sub last_changeset_from_source {
 
     my $filename = join( "/", $self->db_uuid, $MERGETICKET_METATYPE, $source );
     my ( $rev_fetched, $props )
-        = eval { $self->ra->get_file( $filename, $self->most_recent_changeset, $stream, $pool ); };
+        = eval { $self->ra->get_file( $filename, $self->latest_sequence_no, $stream, $pool ); };
 
     # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
     # because we want to be able to sync to a remote replica someday.
@@ -445,13 +445,13 @@ sub traverse_changesets {
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $last_rev = $self->most_recent_changeset();
+    my $last_rev = $self->latest_sequence_no();
 
 
-    die "you must implement most_recent_changeset in " . ref($self) . ", or override traverse_changesets"
+    die "you must implement latest_sequence_no in " . ref($self) . ", or override traverse_changesets"
         unless defined $last_rev;
 
-    for my $rev ( $first_rev .. $self->most_recent_changeset ) {
+    for my $rev ( $first_rev .. $self->latest_sequence_no ) {
         $args{callback}->( $self->fetch_changeset($rev) );
     }
 }
@@ -490,13 +490,13 @@ Returns this replica's uuid
 
 sub uuid {}
 
-=head2 most_recent_changeset
+=head2 latest_sequence_no
 
 Returns the sequence # of the most recently committed changeset
 
 =cut
 
-sub most_recent_changeset {return undef }
+sub latest_sequence_no {return undef }
 
 =head2 fetch_changeset SEQUENCE_NO
 

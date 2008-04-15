@@ -15,7 +15,7 @@ sub state_handle { return shift }  #XXX TODO better way to handle this?
 sub uuid {
     my $self = shift;
 }
-sub most_recent_changeset {
+sub latest_sequence_no {
     my $self = shift;
 }
 sub fetch_changeset {

@@ -90,7 +90,7 @@ sub uuid {
     return $self->repo_handle->fs->get_uuid;
 }
 
-sub most_recent_changeset {
+sub latest_sequence_no {
     my $self = shift;
     Carp::cluck unless ($self->ra);
     $self->ra->get_latest_revnum;

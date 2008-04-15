@@ -52,7 +52,7 @@ sub initialize {
     make_tiered_dirs( $self->record_cas_dir );
     make_tiered_dirs( $self->changeset_cas_dir );
 
-    $self->set_most_recent_changeset_no("1");
+    $self->set_latest_sequence_no("1");
     $self->set_replica_uuid(Data::UUID->new->create_str);
     $self->_output_oneliner_file( path => file( $self->fs_root, 'replica-version' ), content => '1' );
 }
@@ -64,7 +64,7 @@ sub set_replica_uuid {
 
 }
 
-sub set_most_recent_changeset_no {
+sub set_latest_sequence_no {
     my $self = shift;
     my $id = shift;
     $self->_output_oneliner_file( path    => file( $self->fs_root, 'latest-sequence-no' ), content => scalar($id));
@@ -168,7 +168,7 @@ sub traverse_changesets {
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $latest    = $self->most_recent_changeset();
+    my $latest    = $self->latest_sequence_no();
     my $chgidx    = LWP::Simple::get( $self->url . '/changesets.idx' );
 
     for my $rev ( $first_rev .. $latest ) {
@@ -188,7 +188,7 @@ sub traverse_changesets {
     }
 }
 
-sub most_recent_changeset {
+sub latest_sequence_no {
     my $self = shift;
     return LWP::Simple::get( $self->url . '/latest-sequence-no' );
 }

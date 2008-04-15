@@ -180,7 +180,7 @@ sub export_resolutions {
 
 sub _init_export_metadata {
     my $self = shift;
-    $self->target_replica->set_most_recent_changeset_no( $self->source_replica->most_recent_changeset );
+    $self->target_replica->set_latest_sequence_no( $self->source_replica->latest_sequence_no );
     $self->target_replica->set_replica_uuid( $self->source_replica->uuid );
 
 }
