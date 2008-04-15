@@ -5,12 +5,10 @@ package Prophet::ReplicaExporter;
 use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use Path::Class;
-use Digest::SHA1 qw(sha1 sha1_hex);
-use YAML::Syck;
 use UNIVERSAL::require;
 
 __PACKAGE__->mk_accessors(
-    qw( source_replica target_path    fs_root cas_root record_cas_dir changeset_cas_dir record_dir));
+    qw( source_replica target_path  fs_root target_replica cas_root record_cas_dir changeset_cas_dir record_dir));
 
 =head1 NAME
 
@@ -158,8 +156,13 @@ The file is sorted in ascending order by revision id.
 
 sub export {
     my $self = shift;
-    
-    $self->_initialize_replica( db_uuid => $self->source_replica->db_uuid );
+
+    $self->target_replica(
+        Prophet::Replica->new(
+            { url => "prophet:file://" . $self->target_path . "/" . $self->source_replica->db_uuid }
+        )
+    );
+    $self->target_replica->initialize();
     $self->_init_export_metadata();
     $self->export_records( type => $_ ) for ( @{ $self->source_replica->list_types } );
     $self->export_changesets();
@@ -175,177 +178,36 @@ sub export_resolutions {
     # ...
 }
 
-sub _initialize_replica {
-    my $self = shift;
-    my %args = validate(@_, { db_uuid => 0});
-
-    $self->fs_root( dir( $self->target_path, $args{'db_uuid'} || Data::UUID->new->create_str()  ));
-    $self->cas_root( dir( $self->fs_root => 'cas' ) );
-    $self->record_cas_dir( dir( $self->cas_root => 'records' ) );
-    $self->changeset_cas_dir( dir( $self->cas_root => 'changesets' ) );
-    $self->record_dir( dir( $self->fs_root => 'records' ) );
-
-    _mkdir($_) for ( $self->target_path, $self->fs_root, $self->record_dir, $self->cas_root );
-    make_tiered_dirs( $self->record_cas_dir );
-    make_tiered_dirs( $self->changeset_cas_dir );
-
-    $self->_set_most_recent_changeset_no("1");
-    $self->_set_replica_uuid(Data::UUID->new->create_str);
-    $self->_output_oneliner_file( path => file( $self->fs_root, 'replica-version' ), content => '1' );
-}
-
 sub _init_export_metadata {
     my $self = shift;
-    $self->_set_most_recent_changeset_no($self->source_replica->most_recent_changeset);
-    $self->_set_replica_uuid( $self->source_replica->uuid);
+    $self->target_replica->set_most_recent_changeset_no( $self->source_replica->most_recent_changeset );
+    $self->target_replica->set_replica_uuid( $self->source_replica->uuid );
 
-}
-
-sub _set_replica_uuid {
-    my $self  = shift;
-    my $uuid = shift;
-    $self->_output_oneliner_file( path    => file( $self->fs_root, 'replica-uuid' ), content => $uuid);
-
-}
-
-sub _set_most_recent_changeset_no {
-    my $self = shift;
-    my $id = shift;
-    $self->_output_oneliner_file( path    => file( $self->fs_root, 'latest-sequence-no' ), content => scalar($id));
 }
 
 sub export_records {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
 
-    make_tiered_dirs( dir( $self->fs_root => 'records' => $args{'type'} ) );
-
     my $collection = Prophet::Collection->new(
         handle => $self->source_replica,
         type   => $args{type}
     );
     $collection->matching( sub {1} );
-    $self->_write_record(
-        record     => $_
-    ) for @$collection;
+    $self->target_replica->_write_record( record => $_ ) for @$collection;
 
-}
-
-sub _write_record {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   record     => { isa => 'Prophet::Record' },
-        }
-    );
-
-    my $record_dir = dir( $self->fs_root, 'records', $args{'record'}->type );
-    my $content = YAML::Syck::Dump( $args{'record'}->get_props );
-    my ($cas_key) = $self->_write_to_cas(
-        content_ref => \$content,
-        cas_dir     => $self->record_cas_dir
-    );
-
-    my $idx_filename = file( $record_dir,
-        substr( $args{record}->uuid, 0, 1 ),
-        substr( $args{record}->uuid, 1, 1 ),
-        $args{record}->uuid
-    );
-
-    open( my $record_index, ">>", $idx_filename ) || die $!;
-
-    # XXX TODO: skip if the index already has this version of the record;
-    # XXX TODO FETCH THAT
-    my $record_last_changed_changeset = 1;
-
-    my $index_row = pack( 'NH40', $record_last_changed_changeset, $cas_key );
-    print $record_index $index_row || die $!;
-    close $record_index;
 }
 
 sub export_changesets {
     my $self = shift;
 
-    open( my $cs_file, ">" . file( $self->fs_root, 'changesets.idx' ) ) || die $!;
+    open( my $cs_file, ">" . file( $self->target_replica->fs_root, 'changesets.idx' ) ) || die $!;
 
     foreach my $changeset ( @{ $self->source_replica->fetch_changesets( after => 0 ) } ) {
-        $self->_write_changeset( index_handle => $cs_file, changeset => $changeset );
+        $self->target_replica->_write_changeset( index_handle => $cs_file, changeset => $changeset );
 
     }
     close($cs_file);
-}
-
-sub _write_changeset {
-    my $self = shift;
-    my %args = validate( @_, { index_handle => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
-
-    my $changeset = $args{'changeset'};
-    my $fh        = $args{'index_handle'};
-
-    my $hash_changeset = $changeset->as_hash;
-    delete $hash_changeset->{'sequence_no'};
-    delete $hash_changeset->{'source_uuid'};
-
-    my $content = YAML::Syck::Dump($hash_changeset);
-    my $cas_key = $self->_write_to_cas( content_ref => \$content, cas_dir => $self->changeset_cas_dir );
-
-    # XXX TODO we should only actually be encoding the sha1 of content once
-    # and then converting. this is wasteful
-
-    my $packed_cas_key = sha1($content);
-
-    my $changeset_index_line = pack( 'Na16Na20',
-        $changeset->sequence_no,
-        Data::UUID->new->from_string( $changeset->original_source_uuid ),
-        $changeset->original_sequence_no,
-        $packed_cas_key );
-    print $fh $changeset_index_line || die $!;
-
-}
-
-sub _mkdir {
-    my $path = shift;
-    unless ( -d $path ) {
-        mkdir($path) || die $@;
-    }
-    unless ( -w $path ) {
-        die "$path not writable";
-    }
-
-}
-
-sub make_tiered_dirs {
-    my $base = shift;
-    _mkdir( dir($base) );
-    for my $a ( 0 .. 9, 'a' .. 'f' ) {
-        _mkdir( dir( $base => $a ) );
-        for my $b ( 0 .. 9, 'a' .. 'f' ) {
-            _mkdir( dir( $base => $a => $b ) );
-        }
-    }
-
-}
-
-sub _write_to_cas {
-    my $self        = shift;
-    my %args        = validate( @_, { content_ref => 1, cas_dir => 1 } );
-    my $content     = ${ $args{'content_ref'} };
-    my $fingerprint = sha1_hex($content);
-    my $content_filename
-        = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
-    open( my $output, ">", $content_filename ) || die "Could not open $content_filename";
-    print $output $content || die $!;
-    close $output;
-    return $fingerprint;
-}
-
-sub _output_oneliner_file {
-    my $self = shift;
-    my %args = validate( @_, { path => 1, content => 1 } );
-
-    open( my $file, ">", $args{'path'} ) || die $!;
-    print $file $args{'content'} || die "Could not write to ".$args{'path'} . " " . $!;
-    close $file || die $!;
 }
 
 1;
