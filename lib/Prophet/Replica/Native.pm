@@ -42,14 +42,14 @@ sub initialize {
     my $self = shift;
     my %args = validate( @_, { db_uuid => 0 } );
 
-    $self->cas_root( dir( $self->fs_root => 'cas' ) );
+    $self->cas_root( dir( 'cas' ) );
     $self->record_cas_dir( dir( $self->cas_root => 'records' ) );
     $self->changeset_cas_dir( dir( $self->cas_root => 'changesets' ) );
-    $self->record_dir( dir( $self->fs_root => 'records' ) );
+    $self->record_dir( dir( 'records' ) );
 
-    _mkdir($_) for ( $self->fs_root, $self->record_dir, $self->cas_root );
-    make_tiered_dirs( $self->record_cas_dir );
-    make_tiered_dirs( $self->changeset_cas_dir );
+    _mkdir(dir($self->fs_root, $_)) for ('', $self->record_dir, $self->cas_root );
+    $self->make_tiered_dirs( $self->record_cas_dir );
+    $self->make_tiered_dirs( $self->changeset_cas_dir );
 
     $self->set_latest_sequence_no("1");
     $self->set_replica_uuid( Data::UUID->new->create_str );
@@ -92,8 +92,8 @@ sub _write_serialized_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 1, props =>1});
 
-    my $record_root = dir( $self->fs_root, $self->_record_type_root($args{'type'}));
-    make_tiered_dirs($record_root) unless -d $record_root;
+    my $record_root = dir( $self->_record_type_root($args{'type'}));
+    $self->make_tiered_dirs($record_root) unless -d dir($self->fs_root, $record_root);
 
     my $content = YAML::Syck::Dump( $args{'props'});
     my ($cas_key) = $self->_write_to_cas(
@@ -144,7 +144,7 @@ sub _record_index_filename {
 sub _record_type_root {
     my $self = shift;
     my $type = shift; 
-    return dir( 'records', $type);
+    return dir($self->record_dir, $type);
 }
 
 
@@ -251,12 +251,13 @@ sub _mkdir {
 }
 
 sub make_tiered_dirs {
+    my $self = shift;
     my $base = shift;
-    _mkdir( dir($base) );
+    _mkdir( dir($self->fs_root, $base) );
     for my $a ( 0 .. 9, 'a' .. 'f' ) {
-        _mkdir( dir( $base => $a ) );
+        _mkdir( dir( $self->fs_root, $base => $a ) );
         for my $b ( 0 .. 9, 'a' .. 'f' ) {
-            _mkdir( dir( $base => $a => $b ) );
+            _mkdir( dir($self->fs_root,  $base => $a => $b ) );
         }
     }
 
@@ -268,7 +269,7 @@ sub _write_to_cas {
     my $content     = ${ $args{'content_ref'} };
     my $fingerprint = sha1_hex($content);
     my $content_filename
-        = file( $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
+        = file( $self->fs_root, $args{'cas_dir'}, substr( $fingerprint, 0, 1 ), substr( $fingerprint, 1, 1 ), $fingerprint );
 
     $self->_write_file( path => $content_filename, content => $content );
     return $fingerprint;
@@ -315,10 +316,19 @@ sub delete_record {
     my %args = validate( @_, { uuid => 1, type => 1 } );
     # Write out an entry to the record's index file marking it as a special deleted uuid?
 }
-sub set_record_props {
-    my $self = shift;
-    my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
+sub set_record_props {
+    my $self      = shift;
+    my %args      = validate( @_, { uuid => 1, props => 1, type => 1 } );
+    my %old_props = $self->get_record_props( uuid => $args{'uuid'}, type => $args{'type'} );
+    foreach my $prop ( %{ $args{props} } ) {
+        if ( !defined $args{props}->{$prop} ) {
+            delete $old_props{$prop};
+        } else {
+            $old_props{$prop} = $args{props}->{$prop};
+        }
+    }
+    $self->_write_serialized_record( type => $args{'type'}, uuid => $args{'uuid'}, props => \%old_props );
 }
 sub get_record_props {
     my $self = shift;
@@ -334,9 +344,14 @@ sub record_exists {
 sub list_records {
     my $self = shift;
     my %args = validate( @_ => { type => 1 } );
+    my @records = File::Find::Rule->file->in(dir($self->fs_root,$self->_record_type_root($args{'type'})))->maxdepth(3);
+    die "have not yet dealt with what's in ".@records;
 }
 sub list_types {
     my $self = shift;
+    my @types = File::Find::Rule->file->in(dir($self->fs_root, $self->record_dir))->maxdepth(1);
+    die "have not post-processed ".@types;
+
 }
 sub type_exists {
     my $self = shift;

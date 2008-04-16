@@ -8,7 +8,7 @@ use Path::Class;
 use UNIVERSAL::require;
 
 __PACKAGE__->mk_accessors(
-    qw( source_replica target_path  fs_root target_replica cas_root record_cas_dir changeset_cas_dir record_dir));
+    qw( source_replica target_path target_replica));
 
 =head1 NAME
 
