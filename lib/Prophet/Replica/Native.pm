@@ -61,6 +61,10 @@ sub _probe_or_create_db {
 }
 
 
+use constant can_read_records => 1;
+use constant can_read_changesets => 1;
+sub can_write_changesets { return (shift->fs_root ? 1 : 0) }
+sub can_write_records { return (shift->fs_root ? 1 : 0) }
 
 
 sub initialize {
@@ -237,7 +241,6 @@ sub traverse_changesets {
         my ( $seq, $orig_uuid, $orig_seq, $key )
             = unpack( 'Na16NH40', substr( $chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE ) );
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
-
         # XXX: deserialize the changeset content from the cas with $key
         my $casfile = file ($self->changeset_cas_dir, substr( $key, 0, 1 ), substr( $key, 1, 1 ) , $key);
         my $changeset = $self->_deserialize_changeset(

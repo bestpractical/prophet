@@ -3,10 +3,11 @@ use strict;
 use Test::More  tests => 7;
 use File::Temp qw'tempdir';
 use lib 't/lib';
+my $SCHEME = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
 
 use_ok('Prophet::Replica');
 my $REPO = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
-my $cxn = Prophet::Replica->new( {url  => "svn:file://$REPO"} );
+my $cxn = Prophet::Replica->new( {url  => "$SCHEME:file://$REPO"} );
 isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 use_ok('TestApp::Bug');
 
