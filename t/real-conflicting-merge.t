@@ -51,8 +51,7 @@ as_alice {
 # This conflict, we can autoresolve
 
 as_bob {
-    use_ok('Prophet::Replica::SVN');
-
+    use_ok('Prophet::Replica');
     my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
     my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 

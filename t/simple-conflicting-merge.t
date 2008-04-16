@@ -55,7 +55,7 @@ as_bob {
     # XXX TODO: this should actually fail right now.
     # in perl code, we're going to run the merge (just as prophet-merge does)
 
-    use_ok('Prophet::Replica::SVN');
+    use_ok('Prophet::Replica');
 
     my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
     my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
