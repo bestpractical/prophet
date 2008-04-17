@@ -15,7 +15,7 @@ sub run {
     } elsif ( $conflicting_change->file_op_conflict eq 'delete_missing_file' ) {
         return $resolution;
     } elsif ( $conflicting_change->file_op_conflict ) {
-        die YAML::Dump( $conflict, $conflicting_change );
+        die YAML::Syck::Dump( $conflict, $conflicting_change );
     }
 
     for my $prop_change ( @{ $conflicting_change->prop_conflicts } ) {

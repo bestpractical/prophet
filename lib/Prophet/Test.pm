@@ -237,7 +237,7 @@ sub replica_merge_tickets {
 
 sub replica_last_rev {
     my $cli = Prophet::CLI->new();
-    return $cli->app_handle->handle->repo_handle->fs->youngest_rev;
+    return $cli->app_handle->handle->latest_sequence_no;
 }
 
 =head2 as_user USERNAME CODEREF

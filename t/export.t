@@ -22,8 +22,10 @@ as_bob {
 
     run_ok( 'prophet', [qw(create --type Dummy --ignore yes)], "Created a dummy record" );
 
-    run_ok( 'prophet', [ 'merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    diag repo_uri_for('bob');
+    diag repo_uri_for('alice');
 
+    run_ok( 'prophet', [ 'merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
     like( $out, qr/new/, "We have the one record from alice" );
@@ -60,6 +62,8 @@ as_bob {
 
     # XXX: compare the changeset structure
     is( lc( $changesets->[-1]->{source_uuid} ), lc( $changesets->[-1]->{original_source_uuid} ) );
+
+
 
 };
 

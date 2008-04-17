@@ -31,7 +31,8 @@ sub handle {
     my $self = shift;
     unless ( $self->_handle() ) {
         my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' );
-        $self->_handle( Prophet::Replica->new( { url => 'svn:file://' . $root } ) );
+        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
+        $self->_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
     }
     return $self->_handle();
 }
@@ -44,7 +45,8 @@ sub resdb_handle {
     my $self = shift;
     unless ( $self->_resdb_handle ) {
         my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
-        $self->_resdb_handle( Prophet::Replica->new( { url => 'svn:file://' . $root } ) );
+        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
+        $self->_resdb_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
     }
     return $self->_resdb_handle();
 }

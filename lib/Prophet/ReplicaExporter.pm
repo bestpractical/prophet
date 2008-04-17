@@ -191,8 +191,7 @@ sub export_records {
 
     my $collection = Prophet::Collection->new(
         handle => $self->source_replica,
-        type   => $args{type}
-    );
+        type   => $args{type});
     $collection->matching( sub {1} );
     $self->target_replica->_write_record( record => $_ ) for @$collection;
 
@@ -201,8 +200,7 @@ sub export_records {
 sub export_changesets {
     my $self = shift;
 
-    open( my $cs_file, ">" . file( $self->target_replica->fs_root, 'changesets.idx' ) ) || die $!;
-
+    my $cs_file = $self->target_replica->_get_changeset_index_handle();
     foreach my $changeset ( @{ $self->source_replica->fetch_changesets( after => 0 ) } ) {
         $self->target_replica->_write_changeset( index_handle => $cs_file, changeset => $changeset );
 

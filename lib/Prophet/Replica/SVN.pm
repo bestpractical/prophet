@@ -17,7 +17,7 @@ require Prophet::Replica::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url ra repo_path repo_handle current_edit _pool/);
+__PACKAGE__->mk_accessors(qw/url ra fs_root repo_handle current_edit _pool/);
 
 
 use constant scheme => 'svn';
@@ -65,13 +65,13 @@ sub state_handle { return shift }  #XXX TODO better way to handle this?
 sub _setup_repo_connection {
     my $self = shift;
     my %args = validate( @_, { repository => 1, db_uuid => 0 } );
-    $self->repo_path( $args{'repository'} );
+    $self->fs_root( $args{'repository'} );
     $self->db_uuid( $args{'db_uuid'} ) if ( $args{'db_uuid'} );
     
-    my $repos = eval { SVN::Repos::open( $self->repo_path ); };
+    my $repos = eval { SVN::Repos::open( $self->fs_root ); };
     # If we couldn't open the repository handle, we should create it
-    if ( $@ && !-d $self->repo_path ) {
-        $repos = SVN::Repos::create( $self->repo_path, undef, undef, undef, undef, $self->_pool );
+    if ( $@ && !-d $self->fs_root ) {
+        $repos = SVN::Repos::create( $self->fs_root, undef, undef, undef, undef, $self->_pool );
     }
     $self->repo_handle($repos);
     $self->_determine_db_uuid;
@@ -113,7 +113,9 @@ sub traverse_changesets {
         unless defined $last_rev;
 
     for my $rev ( $first_rev .. $self->latest_sequence_no ) {
-        $args{callback}->( $self->_fetch_changeset($rev) );
+            my $changeset = $self->_fetch_changeset($rev);
+            next if $changeset->is_empty;;
+        $args{callback}->( $changeset);
     }
 }
 

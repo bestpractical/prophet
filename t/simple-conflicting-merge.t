@@ -134,6 +134,7 @@ as_bob {
     $applied_as_hash->{$_} = undef for qw(sequence_no source_uuid original_source_uuid original_sequence_no);
     is_deeply( $applied_as_hash, $null_as_hash );
 
+
     # is the most recent change:
     my $from_alice = shift @changesets;
 
