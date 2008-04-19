@@ -5,15 +5,13 @@ package Prophet::Replica::SVN;
 use base qw/Prophet::Replica/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
+ 
 
 use Data::UUID;
 
-use SVN::Core; use SVN::Ra; use SVN::Delta; use SVN::Repos; use SVN::Fs;
 
 
 # require rather than use to make them late-binding
-require Prophet::Replica::SVN::ReplayEditor;
-require Prophet::Replica::SVN::Util;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
@@ -31,6 +29,7 @@ Open a connection to the SVN source identified by C<$self->url>.
 
 sub _get_ra {
     my $self = shift;
+    require Prophet::Replica::SVN::Util;
     my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::SVN::Util->get_auth_providers );
     my $config = Prophet::Replica::SVN::Util->svnconfig;
     return SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->_pool );
@@ -38,12 +37,13 @@ sub _get_ra {
 
 sub setup {
     my $self = shift;
-
+   require SVN::Core; require SVN::Ra; require SVN::Delta; require SVN::Repos; require SVN::Fs;
     $self->_pool(SVN::Pool->new);
     if ( $self->url =~ /^file:\/\/(.*)$/ ) {
         $self->_setup_repo_connection( repository => $1 );
         #$self->state_handle( $self->prophet_handle ); XXX DO THIS RIGHT
     }
+
 
     
     $self->ra( $self->_get_ra );
@@ -114,7 +114,6 @@ sub traverse_changesets {
 
     for my $rev ( $first_rev .. $self->latest_sequence_no ) {
             my $changeset = $self->_fetch_changeset($rev);
-            next if $changeset->is_empty;;
         $args{callback}->( $changeset);
     }
 }
@@ -123,6 +122,8 @@ sub traverse_changesets {
 sub _fetch_changeset {
     my $self   = shift;
     my $rev    = shift;
+
+    require Prophet::Replica::SVN::ReplayEditor;
     my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
     $editor->ra( $self->_get_ra );
     my $pool = SVN::Pool->new_default;
@@ -238,16 +239,8 @@ sub _after_record_changes {
     $self->current_edit->change_prop( 'prophet:special-type' => 'resolution' )    if ( $changeset->is_resolution );
 }
 
-sub record_changeset_integration {
-    my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    $self->_set_original_source_metadata($changeset);
-    return $self->SUPER::record_changeset_integration($changeset);
-
-}
-
-sub _set_original_source_metadata {
+sub _set_original_source_metadata_for_current_edit {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
