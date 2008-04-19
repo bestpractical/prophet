@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 9;
+use Prophet::Test tests => 12;
 
 as_alice {
     run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
@@ -40,6 +40,8 @@ as_bob {
     if ( $stdout =~ /^(.*?)\s/ ) {
         $openbug = $1;
     }
+    is($bob->last_changeset_from_source($alice->uuid) => 0);
+
 };
 
 is_deeply(
@@ -93,7 +95,9 @@ as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
+    is($alice->last_changeset_from_source($bob->uuid) => 0);
     run_ok( 'prophet', [ 'merge', '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
+    is($alice->last_changeset_from_source($bob->uuid) => $bob->latest_sequence_no);
 };
 
 my $last_id;
