@@ -43,6 +43,8 @@ sub handle {
 
 sub resdb_handle {
     my $self = shift;
+   
+    return ($self->handle->resolution_db_handle) if ($self->handle->resolution_db_handle);
     unless ( $self->_resdb_handle ) {
         my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
         my $type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
@@ -50,6 +52,7 @@ sub resdb_handle {
     }
     return $self->_resdb_handle();
 }
+
 
 
 1;
