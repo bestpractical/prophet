@@ -10,13 +10,16 @@ use UNIVERSAL::require;
 __PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb db_uuid url));
 
 use constant state_db_uuid => 'state';
-use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 1, except => qr/Prophet::Replica::(.*)::/;
+use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
 
 our $REPLICA_TYPE_MAP = {};
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
- __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) for ( __PACKAGE__->core_replica_types);
-
+ for ( __PACKAGE__->core_replica_types) {
+    $_->require; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
+    # and tries to load Prophet::Replica::SVN::ReplayEditor;
+    __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) 
+ }
 =head1 NAME
 
 Prophet::Replica
@@ -197,9 +200,7 @@ sub integrate_changeset {
         # integrate the conflict resolution change
         $self->record_resolutions( $conflict->resolution_changeset );
 
-        #            $self->resolution_db_handle ? $self->resolution_db_handle->prophet_handle : $self->prophet_handle );
-        $args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict )
-            if ( $args{'reporting_callback'} );
+        $args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict ) if ( $args{'reporting_callback'} );
 
     } else {
         $self->record_changeset_and_integration($changeset);
@@ -231,6 +232,7 @@ sub record_changeset_and_integration {
 
     my $state_handle = $self->state_handle;
     my $inside_edit = $state_handle->current_edit ? 1 : 0;
+
     $state_handle->begin_edit() unless ($inside_edit);
     $state_handle->record_changeset_integration($changeset);
     $state_handle->commit_edit() unless ($inside_edit);
@@ -249,10 +251,9 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    return $self->state_handle->_retrieve_metadata_for( $MERGETICKET_METATYPE, $source,
-        'last-changeset' )
-        || 0;
-
+    my $last =  $self->state_handle->_retrieve_metadata_for( $MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
+    debug("I am ".$self->uuid. " - $last is the last change I know about from $source"); 
+    return $last;
     # XXXX the code below is attempting to get the content over ra so we
     # can deal with remote svn repo. however this also assuming the
     # remote is having the same prophet_handle->db_rot
@@ -342,6 +343,8 @@ sub remove_redundant_data {
             grep { !( $_->record_type eq $MERGETICKET_METATYPE && $_->record_uuid eq $self->uuid ) }
             $changeset->changes
     ];
+
+
 }
 
 =head2 traverse_new_changesets ( for => $replica, callback => sub { my $changeset = shift; ... } )
@@ -486,13 +489,6 @@ Walk through each changeset in the replica after SEQUENCE_NO, calling the C<call
 sub traverse_changesets {
 
 }
-
-
-
-
-
-
-
 =head2  can_write_changesets
 
 Returns true if this source is one we know how to write to (and have permission to write to)
@@ -500,11 +496,6 @@ Returns true if this source is one we know how to write to (and have permission 
 Returns false otherwise
 
 =cut
-
-
-
-
-
 
 sub can_read_records { undef }
 sub can_write_records { undef }
@@ -543,13 +534,11 @@ sub record_resolutions {
     $res_handle->record_resolution($_) for $changeset->changes;
     $self->commit_edit();
 }
-
 =head2 record_resolution Prophet::Change
  
 Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
 
 =cut
-
 sub record_resolution {
     my $self      = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
@@ -568,10 +557,6 @@ sub record_resolution {
         }
     );
 }
-
-
-
-
 
 =head1 Routines dealing with integrating changesets into a replica
 
@@ -613,13 +598,6 @@ sub _integrate_change {
     }
 
 }
-
-
-
-
-
-
-
 =head2 record_changeset_integration L<Prophet::ChangeSet>
 
 This routine records the immediately upstream and original source
@@ -628,25 +606,22 @@ data to make sane choices about later replay and merge operations
 
 
 =cut
-
 sub record_changeset_integration {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
+
+    $self->_set_original_source_metadata_for_current_edit($changeset);
 
     # Record a merge ticket for the changeset's "original" source
     $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no );
 
 }
+
 sub _record_merge_ticket {
     my $self = shift;
     my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
     return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no );
 }
-
-
-
-
-
 
 =head1 metadata storage routines 
 
@@ -761,13 +736,9 @@ Returns true if we have any records of type C<$type>
 
 
 =cut
-
 =head2 The following functions need to be implemented by any _writable_ prophet backing store
 
 =cut
-
-
-
 =head2 The following optional routines are provided for you to override with backing-store specific behaviour
 
 
@@ -782,8 +753,11 @@ sub _after_record_changes {
     return 1;
 }
 
+sub _set_original_source_metadata_for_current_edit  {}
 
-
+sub debug {
+    warn shift if $ENV{'PROPHET_DEBUG'};
+}
 
 1;
 
