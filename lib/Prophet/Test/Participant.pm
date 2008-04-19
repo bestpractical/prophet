@@ -170,6 +170,7 @@ sub call_func_ok {
     my @ret;
     lives_and {
         @ret = call_func(@args);
+        diag("As ".$ENV{'PROPHET_USER'}. " ".join(' ',@{$args[0]}));
         ok( 1, join( " ", $ENV{'PROPHET_USER'}, @{ $args[0] } ) );
     };
     return @ret;
@@ -190,7 +191,9 @@ sub call_func {
     my $old_fh = select($str_fh);
 
     my $ret;
-    my $pool = SVN::Pool->new_default;
+    if (my $p = SVN::Pool->can('new_default')) {
+        $p->('SVN::Pool');    
+    };
     if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
 
         # in_gladiator
