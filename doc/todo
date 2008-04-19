@@ -3,19 +3,15 @@ Todo
     - document sd & replica format
 
 
+    - native replica type isn't properly transactional. aborting at the wrong time will cause great sadness and possible corruption
 
-    - turn fetch_changesets streamy
 
-    - write tests for RT-prophet-prophet-hiveminder sync - mostly done
       - make merge aware of database uuids
                 - and does it mean if the db is initialized with a pull, it uses the same UUID
                 - yes. in general, dbs should be initialized with pull or be new projects
                 - merging between replicas with different uuids should require a 'force' argument of some kind.
 
      "publish my changes for remote pulling"    - mostly done. needs test and cleanup, "publish" scp wrapper
-
-    - use a filesystem style prophet replica 'directly' (needs a handle subclass?)
-    - resdb export and sync
 
     - move merge-ticket logic out of handle and only provides metadata storage
     - validation on bug tracker fields	- severity
