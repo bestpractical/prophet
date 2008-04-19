@@ -2,7 +2,9 @@ use warnings;
 use strict;
 
 package Prophet::Replica::SVN::ReplayEditor;
+use SVN::Delta;
 use base qw/SVN::Delta::Editor/;
+
 
 =head1 NAME
 
