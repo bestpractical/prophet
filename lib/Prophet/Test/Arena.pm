@@ -16,6 +16,15 @@ sub setup {
     my @names = ref $count ? @$count : Acme::MetaSyntactic->new->name( pause_id => $count );
 
     my @chickens = map { Prophet::Test::Participant->new( { name => $_, arena => $self } ) } @names;
+    
+    for my $c (@chickens) {
+
+        as_user($c => sub { 
+                    my $p = Prophet::CLI->new();
+                    diag($c => $p->app_handle->handle->uuid);
+            });
+    }
+    
     $self->chickens(@chickens);
 }
 
@@ -88,6 +97,7 @@ sub step {
     my $step_name = shift || undef;
     for my $chicken ( @{ $self->chickens } ) {
 
+        diag(" as ".$chicken->name. ": $step_name");
         # walk the arena, noting the type of each value
         as_user( $chicken->name, sub { $chicken->take_one_step($step_name) } );
         die if ( grep { !$_ } $TB->summary );
