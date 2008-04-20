@@ -45,23 +45,8 @@ as_bob {
 };
 
 is_deeply(
-    [ map { $_->as_hash } @$changesets ],
-    [   {   'sequence_no'          => 1,
-            'original_sequence_no' => 1,
-            'is_empty'             => 1,
-            'is_nullification'     => undef,
-            'original_source_uuid' => replica_uuid_for('bob'),
-            'is_resolution'        => undef,
-            'source_uuid'          => replica_uuid_for('bob')
-        },
-        {   'sequence_no'          => 2,
-            'original_sequence_no' => 2,
-            'is_empty'             => 1,
-            'is_nullification'     => undef,
-            'original_source_uuid' => replica_uuid_for('bob'),
-            'is_resolution'        => undef,
-            'source_uuid'          => replica_uuid_for('bob')
-        },
+    [ map { $_->as_hash } grep { !$_->is_empty}  @$changesets ],
+    [ 
         {   'sequence_no'          => 3,
             'original_sequence_no' => 3,
             'original_source_uuid' => replica_uuid_for('bob'),
@@ -112,7 +97,7 @@ as_bob {
 
 $changesets = $bob->new_changesets_for($alice);
 
-my @changes = map { $_->as_hash } @$changesets;
+my @changes = map { $_->as_hash } grep {!$_->is_empty} @$changesets;
 
 is_deeply(
     \@changes,

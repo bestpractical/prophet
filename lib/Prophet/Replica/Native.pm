@@ -41,7 +41,7 @@ sub setup {
     $self->_probe_or_create_db();
 
 
-    $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
+    # $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
 
     $self->resolution_db_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}.'/resolutions', is_resdb => 1 } ) )
         unless ( $self->is_resdb || $self->is_state_handle);
@@ -52,7 +52,7 @@ sub setup {
 
 }
 
-#sub state_handle { return shift; }
+sub state_handle { return shift; }
 
 sub _probe_or_create_db {
     my $self = shift;
@@ -91,10 +91,6 @@ sub initialize {
         path    => 'replica-version',
         content => '1'
     );
-    for(1..2) { # XXXX HORRIBLE HACK TO WORK AROUND THE FACT THAT SVN RECORDS EMPTY CHANGESETS
-        # $self->begin_edit;
-        #  $self->commit_edit;
-    }
 }
 
 
