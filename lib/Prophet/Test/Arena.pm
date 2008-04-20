@@ -19,7 +19,7 @@ sub setup {
     
     for my $c (@chickens) {
 
-        as_user($c => sub { 
+        as_user($c->name => sub { 
                     my $p = Prophet::CLI->new();
                     diag($c => $p->app_handle->handle->uuid);
             });
