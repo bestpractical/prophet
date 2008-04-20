@@ -42,7 +42,7 @@ as_bob {
         'content is correct'
     );
 
-    my $path = Path::Class::dir->new( tempdir( CLEANUP => $ENV{TEST_VERBOSE} ) );
+    my $path = Path::Class::dir->new( tempdir( CLEANUP => ! $ENV{TEST_VERBOSE} ) );
 
     run_ok( 'prophet', [ 'export', '--path', $path ] );
     my $cli = Prophet::CLI->new;
@@ -57,12 +57,12 @@ as_bob {
     my $latest = $path->file('latest-sequence-no')->slurp;
     is( $latest, 5 );
     use_ok('Prophet::Replica::Native');
+    diag("Checking changesets in $path");
     my $changesets = Prophet::Replica->new( { url => 'prophet:file://' . $path } )->fetch_changesets( after => 0 );
     is( $#{$changesets}, 4, "We found a total of 5 changesets" );
 
     # XXX: compare the changeset structure
     is( lc( $changesets->[-1]->{source_uuid} ), lc( $changesets->[-1]->{original_source_uuid} ) );
-
 
 
 };

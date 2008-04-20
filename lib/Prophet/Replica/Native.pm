@@ -20,8 +20,8 @@ __PACKAGE__->mk_accessors(
 
 use constant scheme            => 'prophet';
 use constant cas_root          => 'cas';
-use constant record_cas_dir    => dir( cas_root => 'records' );
-use constant changeset_cas_dir => dir( cas_root => 'changesets' );
+use constant record_cas_dir    => dir( __PACKAGE__->cas_root => 'records' );
+use constant changeset_cas_dir => dir( __PACKAGE__->cas_root => 'changesets' );
 use constant record_dir        => 'records';
 use constant changeset_index   => 'changesets.idx';
 
@@ -33,7 +33,6 @@ Open a connection to the SVN source identified by C<$self->url>.
 
 sub setup {
     my $self = shift;
-
     $self->{url}
         =~ s/^prophet://;  # url-based constructor in ::replica should do better
     $self->{url} =~ s{/$}{};
@@ -42,11 +41,18 @@ sub setup {
     $self->_probe_or_create_db();
 
 
+    $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
 
     $self->resolution_db_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}.'/resolutions', is_resdb => 1 } ) )
-        unless ( $self->is_resdb );
+        unless ( $self->is_resdb || $self->is_state_handle);
+
+#    warn "I AM ".$ENV{'PROPHET_USER'};
+#    warn $self->uuid;
+#    warn $self->state_handle->uuid unless ($self->is_state_handle);
 
 }
+
+#sub state_handle { return shift; }
 
 sub _probe_or_create_db {
     my $self = shift;
@@ -75,7 +81,6 @@ sub can_write_records    { return ( shift->fs_root ? 1 : 0 ) }
 sub initialize {
     my $self = shift;
     my %args = validate( @_, { db_uuid => 0 } );
-
      dir( $self->fs_root, $_ )->mkpath
         for ($self->record_dir, $self->cas_root, $self->record_cas_dir, $self->changeset_cas_dir );
 
@@ -87,8 +92,8 @@ sub initialize {
         content => '1'
     );
     for(1..2) { # XXXX HORRIBLE HACK TO WORK AROUND THE FACT THAT SVN RECORDS EMPTY CHANGESETS
-    $self->begin_edit;
-    $self->commit_edit;
+        # $self->begin_edit;
+        #  $self->commit_edit;
     }
 }
 
@@ -142,7 +147,6 @@ sub set_replica_uuid {
 sub db_uuid {
     my $self = shift;
     $self->_db_uuid( $self->_read_file('database-uuid') ) unless $self->_db_uuid;
-    debug($self->_db_uuid);
     return $self->_db_uuid;
 }
 
@@ -276,6 +280,11 @@ sub _write_changeset {
 
     my $hash_changeset = $changeset->as_hash;
 
+
+    # Don't need to do this, since we clobber them below
+    delete $hash_changeset->{'sequence_no'};
+    delete $hash_changeset->{'source_uuid'};
+
     my $content = YAML::Syck::Dump($hash_changeset);
     my $cas_key = $self->_write_to_cas(
         content_ref => \$content,
@@ -325,7 +334,9 @@ sub traverse_changesets {
         my $index_record =  substr( $chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
         my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record);
 
+
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
+        debug("REV: $rev - seq $seq - original uuid $orig_uuid, original seq $orig_seq - data key $key");
     
         # XXX: deserialize the changeset content from the cas with $key
         my $casfile = file( $self->changeset_cas_dir, substr( $key, 0, 1 ), substr( $key, 1, 1 ), $key);
@@ -354,9 +365,6 @@ sub _deserialize_changeset {
     my $content_struct = YAML::Syck::Load( $args{content} );
     my $changeset      = Prophet::ChangeSet->new_from_hashref($content_struct);
 
-    # Don't need to do this, since we clobber them below
-    #delete $hash_changeset->{'sequence_no'};
-    #delete $hash_changeset->{'source_uuid'};
     $changeset->source_uuid( $self->uuid );
     $changeset->sequence_no( $args{'sequence_no'} );
     $changeset->original_source_uuid( $args{'original_source_uuid'} );
@@ -436,7 +444,6 @@ sub _read_file {
 }
 }
 
-sub state_handle { return shift }    #XXX TODO better way to handle this?
 
 sub begin_edit {
     my $self = shift;
@@ -459,9 +466,14 @@ sub commit_edit {
     $self->current_edit->original_sequence_no($sequence) unless ($self->current_edit->original_sequence_no);
     $self->current_edit->original_source_uuid($self->uuid) unless ($self->current_edit->original_source_uuid);
     $self->current_edit->sequence_no($sequence);
+    $self->_write_changeset_to_index($self->current_edit);
+}
 
+sub _write_changeset_to_index {
+    my $self = shift;
+    my $changeset = shift;
     my $handle = $self->_get_changeset_index_handle;
-    $self->_write_changeset( index_handle => $handle, changeset => $self->current_edit );
+    $self->_write_changeset( index_handle => $handle, changeset => $changeset);
     close($handle) || die "Failed to close changeset handle: ".$handle;
     $self->current_edit(undef);
 }
@@ -621,6 +633,6 @@ sub type_exists {
 
 
 sub debug {
-    warn shift if $ENV{'PROPHET_DEBUG'};
+    warn $ENV{'PROPHET_USER'}. " ". shift if $ENV{'PROPHET_DEBUG'};
 }
 1;
