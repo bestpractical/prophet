@@ -17,7 +17,7 @@ sub setup {
     my $self = shift;
     my $cli = Prophet::CLI->new();
 
-    $self->state_handle( Prophet::Replica->new({ url => "svn:".$cli->app_handle->handle->url, db_uuid => $self->state_db_uuid }) );
+    $self->state_handle( Prophet::Replica->new({ url => $ENV{'PROPHET_REPLICA_TYPE'} .":".$cli->app_handle->handle->url, db_uuid => $self->state_db_uuid }) );
 }
 
 sub conflicts_from_changeset              { return; }
