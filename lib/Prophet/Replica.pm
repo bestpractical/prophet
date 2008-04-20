@@ -7,7 +7,7 @@ use Params::Validate qw(:all);
 use UNIVERSAL::require;
 
 
-__PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb db_uuid url));
+__PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb is_state_handle db_uuid url));
 
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
@@ -168,10 +168,10 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
 
     return if $changeset->original_source_uuid eq $self->uuid;
+    return if ( $changeset->is_empty or $changeset->is_nullification );
 
     $self->remove_redundant_data($changeset);    #Things we have already seen
 
-    return if ( $changeset->is_empty or $changeset->is_nullification );
 
     if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
@@ -234,10 +234,11 @@ sub record_changeset_and_integration {
     my $inside_edit = $state_handle->current_edit ? 1 : 0;
 
     $state_handle->begin_edit() unless ($inside_edit);
-    $state_handle->record_changeset_integration($changeset);
+    $state_handle->record_integration_of_changeset($changeset);
     $state_handle->commit_edit() unless ($inside_edit);
-    
+    $self->_set_original_source_metadata_for_current_edit($changeset);
     $self->commit_edit;
+    
 
     return;
 }
@@ -252,25 +253,7 @@ sub last_changeset_from_source {
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
     my $last =  $self->state_handle->_retrieve_metadata_for( $MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
-    debug("I am ".$self->uuid. " - $last is the last change I know about from $source"); 
     return $last;
-    # XXXX the code below is attempting to get the content over ra so we
-    # can deal with remote svn repo. however this also assuming the
-    # remote is having the same prophet_handle->db_rot
-    # the code to handle remote svn should be
-    # actually abstracted along when we design the sync prototype
-
-    my ( $stream, $pool );
-
-    my $filename = join( "/", $self->db_uuid, $MERGETICKET_METATYPE, $source );
-    my ( $rev_fetched, $props )
-        = eval { $self->ra->get_file( $filename, $self->latest_sequence_no, $stream, $pool ); };
-
-    # XXX TODO this is hacky as hell and violates abstraction barriers in the name of doing things over the RA
-    # because we want to be able to sync to a remote replica someday.
-
-    return ( $props->{'last-changeset'} || 0 );
-
 }
 
 
@@ -531,15 +514,17 @@ sub record_resolutions {
 
     $self->begin_edit();
     $self->record_changes($changeset);
-    $res_handle->record_resolution($_) for $changeset->changes;
+    $res_handle->_record_resolution($_) for $changeset->changes;
     $self->commit_edit();
 }
-=head2 record_resolution Prophet::Change
+=head2 _record_resolution Prophet::Change
  
 Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
 
 =cut
-sub record_resolution {
+
+
+sub _record_resolution {
     my $self      = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
 
@@ -598,7 +583,7 @@ sub _integrate_change {
     }
 
 }
-=head2 record_changeset_integration L<Prophet::ChangeSet>
+=head2 record_integration_of_changeset L<Prophet::ChangeSet>
 
 This routine records the immediately upstream and original source
 uuid and sequence numbers for this changeset. Prophet uses this
@@ -606,11 +591,9 @@ data to make sane choices about later replay and merge operations
 
 
 =cut
-sub record_changeset_integration {
+sub record_integration_of_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-
-    $self->_set_original_source_metadata_for_current_edit($changeset);
 
     # Record a merge ticket for the changeset's "original" source
     $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no );
@@ -756,7 +739,7 @@ sub _after_record_changes {
 sub _set_original_source_metadata_for_current_edit  {}
 
 sub debug {
-    warn shift if $ENV{'PROPHET_DEBUG'};
+    warn $ENV{'PROPHET_USER'}." ". shift if $ENV{'PROPHET_DEBUG'};
 }
 
 1;
