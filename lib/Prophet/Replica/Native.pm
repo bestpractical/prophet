@@ -279,6 +279,7 @@ sub _write_changeset {
 
     my $hash_changeset = $changeset->as_hash;
 
+    # XXX TODO: we should not be calculating the changeset's sha1 with the 'replica_uuid' and 'sequence_no' inside it. that makes every replica have a different hash for what should be a unique changeset.
 
     my $content = YAML::Syck::Dump($hash_changeset);
     my $cas_key = $self->_write_to_cas(
