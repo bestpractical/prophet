@@ -8,10 +8,10 @@ sub run {
     my $self               = shift;
     my $conflicting_change = shift;
     my $conflict           = shift;
-    #Carp::cluck Dumper($conflict);
-    #use Data::Dumper;
 
-    die "The resolution was not resolved. Sorry dude. (Once Prophet works, you should NEVER see this message)";
+    use YAML::Syck; die 
+    " The resolution was not resolved. Sorry dude. (Once Prophet works, you should NEVER see this message)".
+    YAML::Syck::Dump($conflicting_change, $conflict);
 }
 
 1;
