@@ -157,6 +157,9 @@ sub integrate_changeset {
 
     my $changeset = $args{'changeset'};
 
+
+        $self->log("Considering changeset ".$changeset->original_sequence_no .  " from " . substr($changeset->original_source_uuid,0,6));
+
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
     # merge tickets that describe merges from the local record
@@ -168,12 +171,15 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
 
     return if $changeset->original_source_uuid eq $self->uuid;
-    return if ( $changeset->is_empty or $changeset->is_nullification );
+    return if ($changeset->is_nullification);
 
     $self->remove_redundant_data($changeset);    #Things we have already seen
+    return if ($changeset->is_empty);
+
 
 
     if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
+        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . substr($changeset->original_source_uuid,0,6));
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
@@ -203,6 +209,7 @@ sub integrate_changeset {
         $args{'reporting_callback'}->( changeset => $changeset, conflict => $conflict ) if ( $args{'reporting_callback'} );
 
     } else {
+        $self->log("Integrating changeset ".$changeset->original_sequence_no .  " from " . substr($changeset->original_source_uuid,0,6));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
 
@@ -267,6 +274,8 @@ sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
+    $self->log("Checking to see if we've ever seen changeset " .$changeset->original_sequence_no . " from ".substr($changeset->original_source_uuid,0,6));
+
     # If the changeset originated locally, we never want it
     return 1 if $changeset->original_source_uuid eq $self->uuid;
 
@@ -320,13 +329,23 @@ sub conflicts_from_changeset {
 sub remove_redundant_data {
     my ( $self, $changeset ) = @_;
 
-    # XXX: encapsulation
-    $changeset->{changes} = [
-        grep { $self->is_resdb || $_->record_type ne '_prophet_resolution' }
-            grep { !( $_->record_type eq $MERGETICKET_METATYPE && $_->record_uuid eq $self->uuid ) }
-            $changeset->changes
-    ];
 
+    my @new_changes;
+    foreach my $change ($changeset->changes) {
+            # when would we run into resolution records in a nonresb? XXX
+            next if ($change->record_type eq '_prophet_resolution' && !$self->is_resdb); 
+
+            # never integrate a merge ticket that comes from a foriegn database.
+            # implict merge tickets are the devil and are lies. Merge tickets are always generated locally
+            # by importing a change that originated on that replica
+            # (The actual annoying technical problem is that the locally created merge ticket is written out in a separate transaction 
+            # at ~ the same time as the original imported one is being written.
+            # This makes svn go boom
+            next if( $change->record_type eq $MERGETICKET_METATYPE);# && $change->record_uuid eq $self->uuid );
+            push (@new_changes, $change);
+    }
+    
+    $changeset->changes(\@new_changes);
 
 }
 
@@ -353,6 +372,10 @@ sub traverse_new_changesets {
         #warn "HEY. You should not be merging between two replicas with different database uuids";
         # XXX TODO
     }
+
+
+    $self->log("Evaluating changesets to apply to ".substr($args{'for'}->uuid,0,6). " starting with ".  $args{for}->last_changeset_from_source( $self->uuid ));
+
 
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
@@ -392,6 +415,8 @@ Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>
 sub should_send_changeset {
     my $self = shift;
     my %args = validate( @_, { to => { isa => 'Prophet::Replica' }, changeset => { isa => 'Prophet::ChangeSet' } } );
+    
+    $self->log("Should I send " .$args{changeset}->original_sequence_no . " from ".substr($args{changeset}->original_source_uuid,0,6) . " to " .substr($args{'to'}->uuid, 0, 6));
 
     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
     return undef if $args{'to'}->has_seen_changeset( $args{'changeset'} );
@@ -470,6 +495,9 @@ Walk through each changeset in the replica after SEQUENCE_NO, calling the C<call
 =cut
 
 sub traverse_changesets {
+
+    Carp::confess "Someone has failed to implement a 'traverse_changesets' method for their replica type.";
+
 
 }
 =head2  can_write_changesets
@@ -572,11 +600,15 @@ sub _integrate_change {
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {
+        $self->log("add_file: " .$change->record_type. " " .$change->record_uuid);
         $self->create_record( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'add_dir' ) {
+        $self->log("(IGNORED) add_dir: " .$change->record_type. " " .$change->record_uuid);
     } elsif ( $change->change_type eq 'update_file' ) {
+        $self->log("update_file: " .$change->record_type. " " .$change->record_uuid);
         $self->set_record_props( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'delete' ) {
+        $self->log("delete_file: " .$change->record_type. " " .$change->record_uuid);
         $self->delete_record( type => $change->record_type, uuid => $change->record_uuid);
     } else {
         Carp::confess( " I have never heard of the change type: " . $change->change_type );
@@ -596,15 +628,10 @@ sub record_integration_of_changeset {
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     # Record a merge ticket for the changeset's "original" source
-    $self->_record_merge_ticket( $changeset->original_source_uuid, $changeset->original_sequence_no );
+    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $changeset->original_source_uuid, 'last-changeset', $changeset->original_sequence_no );
 
 }
 
-sub _record_merge_ticket {
-    my $self = shift;
-    my ( $source_uuid, $sequence_no ) = validate_pos( @_, 1, 1 );
-    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $source_uuid, 'last-changeset', $sequence_no );
-}
 
 =head1 metadata storage routines 
 
@@ -628,31 +655,40 @@ sub metadata_storage {
 
     };
 }
+
 sub _retrieve_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
 
     my $entry = Prophet::Record->new( handle => $self, type => $name );
-    $entry->load( uuid => $source_uuid );
-    return eval { $entry->prop($prop_name) };
-
-}
-sub _record_metadata_for {
-    my $self = shift;
-    my ( $name, $source_uuid, $prop_name, $content ) = validate_pos( @_, 1, 1, 1, 1 );
-
-    my $props = eval { $self->get_record_props( uuid => $source_uuid, type => $name ) };
-
-    # XXX: do set-prop when exists, and just create new record with all props is probably better
-    unless ( $props->{$prop_name} ) {
-        eval { $self->create_record( uuid => $source_uuid, type => $name, props => {} ) };
+    unless ( $entry->load( uuid => $source_uuid )) {
+            return undef;    
     }
 
-    $self->set_record_props(
-        uuid  => $source_uuid,
-        type  => $name,
-        props => { $prop_name => $content }
-    );
+    return $entry->prop($prop_name);
+
+}
+
+sub _record_metadata_for {
+    my $self = shift;
+    my ( $name, $source_uuid, $prop_name, $content )
+        = validate_pos( @_, 1, 1, 1, 1 );
+    $self->log( "Storing $content in $prop_name for $name " . substr( $source_uuid, 0, 6 ) );
+
+    if ( !$self->record_exists( type => $name, uuid => $source_uuid ) ) {
+        $self->log( "I don't have a $name for " . substr( $source_uuid, 0, 6 ) . "Creating it" );
+        $self->create_record(
+            uuid => $source_uuid,
+            type => $name, props => { $prop_name => $content }
+        );
+    } else {
+        $self->log( "Setting $prop_name to $content for $name for " . substr( $source_uuid, 0, 6 ) );
+        $self->set_record_props(
+            uuid  => $source_uuid,
+            type  => $name,
+            props => { $prop_name => $content }
+        );
+    }
 }
 
 
@@ -738,9 +774,13 @@ sub _after_record_changes {
 
 sub _set_original_source_metadata_for_current_edit  {}
 
-sub debug {
-    warn $ENV{'PROPHET_USER'}." ". shift if $ENV{'PROPHET_DEBUG'};
+
+sub log {
+    my $self = shift;
+    my ($msg) = validate_pos(@_, 1);
+    print STDERR "# ".substr($self->uuid,0,6)." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
 }
+
 
 1;
 
