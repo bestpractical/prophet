@@ -77,6 +77,9 @@ Return an array of all the changes in the current changeset.
 
 sub changes {
     my $self = shift;
+    if (@_) {
+        $self->{'changes'} = shift;
+    }
     return @{ $self->{'changes'} || [] };
 }
 
