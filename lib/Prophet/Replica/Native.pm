@@ -177,6 +177,9 @@ sub _write_serialized_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 1, props => 1 } );
 
+    for ( keys %{$args{'props'}}) {
+         delete $args{'props'}->{$_} if (!defined $args{'props'}->{$_} || $args{'props'}->{$_} eq '');
+    }
     my $content = YAML::Syck::Dump( $args{'props'} );
     my ($cas_key) = $self->_write_to_cas(
         content_ref => \$content,
@@ -246,7 +249,7 @@ sub _read_serialized_record {
     );
 
     # That's the props
-    return YAML::Syck::Load( $self->_read_file($casfile) );
+    return  YAML::Syck::Load( $self->_read_file($casfile) );
 }
 
 sub _record_index_filename {
@@ -276,10 +279,6 @@ sub _write_changeset {
 
     my $hash_changeset = $changeset->as_hash;
 
-
-    # Don't need to do this, since we clobber them below
-    delete $hash_changeset->{'sequence_no'};
-    delete $hash_changeset->{'source_uuid'};
 
     my $content = YAML::Syck::Dump($hash_changeset);
     my $cas_key = $self->_write_to_cas(
@@ -321,18 +320,18 @@ sub traverse_changesets {
             callback => 1,
         }
     );
-
     my $first_rev = ( $args{'after'} + 1 ) || 1;
     my $latest    = $self->latest_sequence_no();
     my $chgidx    = $self->_read_file( $self->changeset_index );
    
+    $self->log("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {
         my $index_record =  substr( $chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
         my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record);
 
 
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
-        debug("REV: $rev - seq $seq - original uuid $orig_uuid, original seq $orig_seq - data key $key");
+        $self->log("REV: $rev - seq $seq - originally $orig_seq from ".substr( $orig_uuid,0,6)  ." data key $key");
     
         # XXX: deserialize the changeset content from the cas with $key
         my $casfile = file( $self->changeset_cas_dir, substr( $key, 0, 1 ), substr( $key, 1, 1 ), $key);
@@ -628,7 +627,4 @@ sub type_exists {
 }
 
 
-sub debug {
-    warn $ENV{'PROPHET_USER'}. " ". shift if $ENV{'PROPHET_DEBUG'};
-}
 1;
