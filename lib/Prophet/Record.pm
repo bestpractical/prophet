@@ -135,6 +135,7 @@ sub load {
     my %args = validate( @_, { uuid => 1 } );
     $self->uuid( $args{uuid} );
 
+    return $self->handle->record_exists( uuid => $self->uuid, type => $self->type );
 }
 
 =head2 set_prop { name => $name, value => $value }
