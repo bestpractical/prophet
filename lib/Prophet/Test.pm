@@ -16,9 +16,6 @@ use Params::Validate ':all';
 
 use Prophet::CLI;
 
-use constant DEFAULT_REPLICA_TYPE => 'svn';
-
-
 our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
 diag( "Replicas can be found in" . $REPO_BASE );
@@ -207,7 +204,7 @@ sub repo_uri_for {
     my $path = repo_path_for($username);
     $path =~ s{^|\\}{/}g if IS_WIN32;
 
-    return ($ENV{'PROPHET_REPLICA_TYPE'}|| __PACKAGE__->DEFAULT_REPLICA_TYPE) . ':file://' . $path;
+    return ($ENV{'PROPHET_REPLICA_TYPE'}|| Prophet::App->DEFAULT_REPLICA_TYPE) . ':file://' . $path;
 }
 
 sub replica_uuid {

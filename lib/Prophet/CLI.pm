@@ -234,8 +234,7 @@ sub do_show {
 
 sub do_push {
     my $self         = shift;
-    my $replica_type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
-    my $source_me    = Prophet::Replica->new( { url => $replica_type. ":file://" . $self->app_handle->handle->fs_root } );
+    my $source_me    = $self->app_handle->handle;
     my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
@@ -245,21 +244,16 @@ sub do_push {
 
 sub do_export {
     my $self      = shift;
-    my $replica_type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
-    my $source_me = Prophet::Replica->new( { url => $replica_type.":file://" . $self->app_handle->handle->fs_root } );
-    my $path      = $self->args->{'path'};
-    $source_me->export_to( path => $path );
+    $self->app_handle->handle->export_to( path => $self->args->{path} );
 }
 
 sub do_pull {
     my $self         = shift;
-    my $replica_type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
-    my $source_me    = Prophet::Replica->new( { url => $replica_type. ":file://" . $self->app_handle->handle->fs_root } );
     my $other        = shift @ARGV;
     my $source_other = Prophet::Replica->new( { url => $other } );
-    my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
+    $self->app_handle->handle->import_resolutions_from_remote_replica( from => $source_other );
 
-    $self->_do_merge( $source_other, $source_me );
+    $self->_do_merge( $source_other, $self->app_handle->handle );
 
 }
 

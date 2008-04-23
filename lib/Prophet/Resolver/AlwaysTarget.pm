@@ -3,6 +3,7 @@ use strict;
 
 package Prophet::Resolver::AlwaysTarget;
 use base qw/Prophet::Resolver/;
+use Data::Dumper;
 
 sub run {
     my $self               = shift;
@@ -15,7 +16,7 @@ sub run {
     } elsif ( $conflicting_change->file_op_conflict eq 'delete_missing_file' ) {
         return $resolution;
     } elsif ( $conflicting_change->file_op_conflict ) {
-        die YAML::Syck::Dump( $conflict, $conflicting_change );
+        die Dumper($conflict,$conflicting_change);
     }
 
     for my $prop_change ( @{ $conflicting_change->prop_conflicts } ) {

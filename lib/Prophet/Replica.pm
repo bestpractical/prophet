@@ -1,10 +1,12 @@
 use warnings;
 use strict;
 
+
 package Prophet::Replica;
 use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
+use Data::UUID;
 
 
 __PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb is_state_handle db_uuid url));

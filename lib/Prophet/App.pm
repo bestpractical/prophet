@@ -6,6 +6,9 @@ use base qw/Class::Accessor/;
 use Path::Class;
 __PACKAGE__->mk_accessors(qw/_resdb_handle/);
 
+use constant DEFAULT_REPLICA_TYPE => 'prophet';
+
+
 sub _handle {
     my $self = shift;
     $self->{_handle} = shift if (@_);
@@ -31,7 +34,7 @@ sub handle {
     my $self = shift;
     unless ( $self->_handle() ) {
         my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' );
-        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
+        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
         $self->_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
     }
     return $self->_handle();
@@ -47,7 +50,7 @@ sub resdb_handle {
     return ($self->handle->resolution_db_handle) if ($self->handle->resolution_db_handle);
     unless ( $self->_resdb_handle ) {
         my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
-        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
+        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
         $self->_resdb_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
     }
     return $self->_resdb_handle();

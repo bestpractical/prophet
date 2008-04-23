@@ -1,4 +1,3 @@
-
 use warnings;
 use strict;
 
@@ -6,7 +5,8 @@ package Prophet::ConflictingChange;
 use Prophet::ConflictingPropChange;
 
 use base qw/Class::Accessor/;
-use Storable 'dclone';
+use JSON qw'to_json';
+use Digest::SHA1 'sha1_hex';
 
 # change_type is one of: add_file add_dir update delete
 __PACKAGE__->mk_accessors(qw/record_type record_uuid source_record_exists target_record_exists change_type file_op_conflict/);
@@ -25,33 +25,38 @@ sub prop_conflicts {
 
 }
 
-=head2 neutralize
 
-Returns the clone of the changeset, except hte propchanges will have target_value and source_new_value as a sorted "choices" field of arrayref.
-
-=cut
-
-sub neutralize {
-    my $self   = shift;
-    my $struct = dclone($self);
-    for ( @{ $struct->{prop_conflicts} } ) {
-        $_->{choices} = [ sort ( delete $_->{source_new_value}, delete $_->{target_value} ) ];
+sub as_hash {
+    my $self = shift;
+    my $struct = {
+        map { $_ => $self->$_() } (
+            qw/record_type record_uuid source_record_exists target_record_exists change_type file_op_conflict/
+        )
+    };
+    for ( @{ $self->prop_conflicts } ) {
+        push @{ $struct->{'prop_conflicts'} }, $_->as_hash;
     }
+
     return $struct;
 }
 
-=head2 cas_key
+=head2 fingerprint
 
-returned the key signatured by the content of the conflicting change.
+Returns a fingerprint of the content of this conflicting change
 
 =cut
 
-use YAML::Syck;
-use Digest::MD5 'md5_hex';
 
-sub cas_key {
+sub fingerprint {
     my $self = shift;
-    return md5_hex( YAML::Syck::Dump( $self->neutralize ) );
-}
 
+    my $struct = $self->as_hash;
+    for ( @{ $struct->{prop_conflicts} } ) {
+        $_->{choices} = [ sort ( delete $_->{source_new_value}, delete $_->{target_value} ) ];
+    }
+
+    return  sha1_hex(to_json($struct, {utf8 => 1, canonical => 1}));
+
+
+}
 1;

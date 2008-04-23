@@ -4,7 +4,8 @@ use strict;
 package Prophet::Resolver::FromResolutionDB;
 use base qw/Prophet::Resolver/;
 use Prophet::Change;
-use Digest::MD5 'md5_hex';
+use JSON;
+use Digest::SHA1 'sha1_hex';
 
 sub run {
     my $self               = shift;
@@ -14,7 +15,8 @@ sub run {
 
     my $res = Prophet::Collection->new(
         handle => $resdb,
-        type   => '_prophet_resolution-' . $conflicting_change->cas_key
+        # XXX TODO PULL THIS TYPE FROM A CONSTANT
+        type   => '_prophet_resolution-' . $conflicting_change->fingerprint
     );
     $res->matching( sub {1} );
     return unless @{ $res->as_array_ref };
@@ -25,7 +27,7 @@ sub run {
     my %answer_count;
 
     for my $answer ( @{ $res->as_array_ref } ) {
-        my $key = md5_hex( YAML::Syck::Dump( $answer->get_props ) );
+        my $key = sha1_hex( to_json($answer->get_props, {utf8 => 1, pretty => 1, canonical => 1}));
         $answer_map{$key} ||= $answer;
         $answer_count{$key}++;
     }

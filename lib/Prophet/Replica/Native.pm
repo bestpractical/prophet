@@ -3,15 +3,16 @@ use strict;
 
 package Prophet::Replica::Native;
 use base qw/Prophet::Replica/;
+
 use Params::Validate qw(:all);
 use LWP::Simple ();
-use File::Slurp;
 use Path::Class;
-use Digest::SHA1 qw(sha1 sha1_hex);
-use YAML::Syck;
+use Digest::SHA1 qw(sha1_hex);
+use File::Find::Rule;
+use JSON;
+
 use Prophet::ChangeSet;
 use Prophet::Conflict;
-use File::Find::Rule;
 
 __PACKAGE__->mk_accessors(qw/url _db_uuid _uuid/);
 __PACKAGE__->mk_accessors(
@@ -40,15 +41,19 @@ sub setup {
     $self->fs_root_parent( $self->url =~ m{^file://(.*)/.*?$} );
     $self->_probe_or_create_db();
 
+# $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
 
-    # $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
+    $self->resolution_db_handle(
+        Prophet::Replica->new(
+            {   url      => "prophet:" . $self->{url} . '/resolutions',
+                is_resdb => 1
+            }
+        )
+    ) unless ( $self->is_resdb || $self->is_state_handle );
 
-    $self->resolution_db_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}.'/resolutions', is_resdb => 1 } ) )
-        unless ( $self->is_resdb || $self->is_state_handle);
-
-#    warn "I AM ".$ENV{'PROPHET_USER'};
-#    warn $self->uuid;
-#    warn $self->state_handle->uuid unless ($self->is_state_handle);
+    #    warn "I AM ".$ENV{'PROPHET_USER'};
+    #    warn $self->uuid;
+    #    warn $self->state_handle->uuid unless ($self->is_state_handle);
 
 }
 
@@ -81,10 +86,13 @@ sub can_write_records    { return ( shift->fs_root ? 1 : 0 ) }
 sub initialize {
     my $self = shift;
     my %args = validate( @_, { db_uuid => 0 } );
-     dir( $self->fs_root, $_ )->mkpath
-        for ($self->record_dir, $self->cas_root, $self->record_cas_dir, $self->changeset_cas_dir );
+    dir( $self->fs_root, $_ )->mkpath
+        for (
+        $self->record_dir,     $self->cas_root,
+        $self->record_cas_dir, $self->changeset_cas_dir
+        );
 
-    $self->set_db_uuid($args{'db_uuid'} || Data::UUID->new->create_str);
+    $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_latest_sequence_no("0");
     $self->set_replica_uuid( Data::UUID->new->create_str );
     $self->_write_file(
@@ -92,7 +100,6 @@ sub initialize {
         content => '1'
     );
 }
-
 
 sub latest_sequence_no {
     my $self = shift;
@@ -110,12 +117,10 @@ sub set_latest_sequence_no {
 
 sub _increment_sequence_no {
     my $self = shift;
-    my $seq = $self->latest_sequence_no +1;
+    my $seq  = $self->latest_sequence_no + 1;
     $self->set_latest_sequence_no($seq);
     return $seq;
 }
-
-
 
 =head2 uuid
 
@@ -133,16 +138,16 @@ sub set_replica_uuid {
     my $self = shift;
     my $uuid = shift;
     $self->_write_file(
-        path    =>  'replica-uuid',
+        path    => 'replica-uuid',
         content => $uuid
     );
 
 }
 
-
 sub db_uuid {
     my $self = shift;
-    $self->_db_uuid( $self->_read_file('database-uuid') ) unless $self->_db_uuid;
+    $self->_db_uuid( $self->_read_file('database-uuid') )
+        unless $self->_db_uuid;
     return $self->_db_uuid;
 }
 
@@ -150,14 +155,11 @@ sub set_db_uuid {
     my $self = shift;
     my $uuid = shift;
     $self->_write_file(
-        path    => 'database-uuid' ,
+        path    => 'database-uuid',
         content => $uuid
     );
 
 }
-
-
-
 
 =head1 Internals of record handling
 
@@ -177,13 +179,13 @@ sub _write_serialized_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 1, props => 1 } );
 
-    for ( keys %{$args{'props'}}) {
-         delete $args{'props'}->{$_} if (!defined $args{'props'}->{$_} || $args{'props'}->{$_} eq '');
+    for ( keys %{ $args{'props'} } ) {
+        delete $args{'props'}->{$_}
+            if ( !defined $args{'props'}->{$_} || $args{'props'}->{$_} eq '' );
     }
-    my $content = YAML::Syck::Dump( $args{'props'} );
     my ($cas_key) = $self->_write_to_cas(
-        content_ref => \$content,
-        cas_dir     => $self->record_cas_dir
+        data    => $args{props},
+        cas_dir => $self->record_cas_dir
     );
     $self->_write_record_index_entry(
         uuid    => $args{uuid},
@@ -200,14 +202,16 @@ sub _write_record_index_entry {
         type => $args{type}
     );
 
-    my $index_path = file($self->fs_root, $idx_filename);
+    my $index_path = file( $self->fs_root, $idx_filename );
     $index_path->parent->mkpath;
 
     my $record_index = $index_path->openw;
+
     # XXX TODO: skip if the index already has this version of the record;
     # XXX TODO FETCH THAT
     my $record_last_changed_changeset = 1;
-    my $index_row = pack( 'NH40', $record_last_changed_changeset, $args{cas_key} );
+    my $index_row
+        = pack( 'NH40', $record_last_changed_changeset, $args{cas_key} );
     print $record_index $index_row || die $!;
     close $record_index;
 }
@@ -227,12 +231,13 @@ use constant RECORD_INDEX_SIZE => ( 4 + 20 );
 sub _read_serialized_record {
     my $self         = shift;
     my %args         = validate( @_, { type => 1, uuid => 1 } );
-    my $idx_filename = $self->_record_index_filename( uuid => $args{uuid}, type => $args{type});
-    
-    
+    my $idx_filename = $self->_record_index_filename(
+        uuid => $args{uuid},
+        type => $args{type}
+    );
+
     my $index = $self->_read_file($idx_filename);
     return undef unless $index;
-
 
     # XXX TODO THIS CODE IS FUCKING HACKY AND SHOULD BE SHOT;
     my $count = length($index) / RECORD_INDEX_SIZE;
@@ -249,7 +254,7 @@ sub _read_serialized_record {
     );
 
     # That's the props
-    return  YAML::Syck::Load( $self->_read_file($casfile) );
+    return from_json( $self->_read_file($casfile), { utf8 => 1} );
 }
 
 sub _record_index_filename {
@@ -279,21 +284,21 @@ sub _write_changeset {
 
     my $hash_changeset = $changeset->as_hash;
 
-    # XXX TODO: we should not be calculating the changeset's sha1 with the 'replica_uuid' and 'sequence_no' inside it. that makes every replica have a different hash for what should be a unique changeset.
+# XXX TODO: we should not be calculating the changeset's sha1 with the 'replica_uuid' and 'sequence_no' inside it. that makes every replica have a different hash for what should be the samechangeset.
 
-    my $content = YAML::Syck::Dump($hash_changeset);
+    # These ttwo things should never actually get stored
+   my $seqno = delete $hash_changeset->{'sequence_no'};
+    my $uuid  = delete $hash_changeset->{'replica_uuid'};
+
     my $cas_key = $self->_write_to_cas(
-        content_ref => \$content,
-        cas_dir     => $self->changeset_cas_dir
+        data    => $hash_changeset,
+        cas_dir => $self->changeset_cas_dir
     );
 
-    # XXX TODO we should only actually be encoding the sha1 of content once
-    # and then converting. this is wasteful
-
-    my $packed_cas_key = sha1($content);
+    my $packed_cas_key = pack( 'H40', $cas_key );
 
     my $changeset_index_line = pack( 'Na16Na20',
-        $changeset->sequence_no,
+        $seqno,
         Data::UUID->new->from_string( $changeset->original_source_uuid ),
         $changeset->original_sequence_no,
         $packed_cas_key );
@@ -324,18 +329,25 @@ sub traverse_changesets {
     my $first_rev = ( $args{'after'} + 1 ) || 1;
     my $latest    = $self->latest_sequence_no();
     my $chgidx    = $self->_read_file( $self->changeset_index );
-   
+
     $self->log("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {
-        my $index_record =  substr( $chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
-        my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record);
-
+        my $index_record = substr( $chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE,
+            CHG_RECORD_SIZE );
+        my ( $seq, $orig_uuid, $orig_seq, $key )
+            = unpack( 'Na16NH40', $index_record );
 
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
-        $self->log("REV: $rev - seq $seq - originally $orig_seq from ".substr( $orig_uuid,0,6)  ." data key $key");
-    
+        $self->log( "REV: $rev - seq $seq - originally $orig_seq from "
+                . substr( $orig_uuid, 0, 6 )
+                . " data key $key" );
+
         # XXX: deserialize the changeset content from the cas with $key
-        my $casfile = file( $self->changeset_cas_dir, substr( $key, 0, 1 ), substr( $key, 1, 1 ), $key);
+        my $casfile = file(
+            $self->changeset_cas_dir,
+            substr( $key, 0, 1 ),
+            substr( $key, 1, 1 ), $key
+        );
 
         my $changeset = $self->_deserialize_changeset(
             content              => $self->_read_file($casfile),
@@ -347,7 +359,6 @@ sub traverse_changesets {
     }
 }
 
-
 sub _deserialize_changeset {
     my $self = shift;
     my %args = validate(
@@ -358,7 +369,7 @@ sub _deserialize_changeset {
             sequence_no          => 1
         }
     );
-    my $content_struct = YAML::Syck::Load( $args{content} );
+    my $content_struct = from_json( $args{content} , { utf8 => 1 });
     my $changeset      = Prophet::ChangeSet->new_from_hashref($content_struct);
 
     $changeset->source_uuid( $self->uuid );
@@ -371,20 +382,26 @@ sub _deserialize_changeset {
 sub _get_changeset_index_handle {
     my $self = shift;
 
-    open( my $cs_file, ">>" . file( $self->fs_root, $self->changeset_index ) ) || die $!;
+    open( my $cs_file, ">>" . file( $self->fs_root, $self->changeset_index ) )
+        || die $!;
     return $cs_file;
 }
 
-
 sub _write_to_cas {
-    my $self             = shift;
-    my %args             = validate( @_, { content_ref => 1, cas_dir => 1 } );
-    my $content          = ${ $args{'content_ref'} };
-    my $fingerprint      = sha1_hex($content);
-    my $content_filename = file( $args{'cas_dir'},
+    my $self = shift;
+    my %args = validate( @_,
+        { content_ref => 0, cas_dir => 1, data => 0  } );
+    my $content;
+    if ( $args{'content_ref'} ) {
+        $content = ${ $args{'content_ref'} };
+    } elsif ( $args{'data'} ) {
+        $content = to_json($args{'data'}, { canonical => 1, pretty=> 0, utf8=>1}  );
+    }
+    my $fingerprint = sha1_hex($content);
+    my $content_filename = file(
+        $args{'cas_dir'},
         substr( $fingerprint, 0, 1 ),
-        substr( $fingerprint, 1, 1 ), 
-        $fingerprint
+        substr( $fingerprint, 1, 1 ), $fingerprint
     );
 
     $self->_write_file( path => $content_filename, content => $content );
@@ -395,14 +412,15 @@ sub _write_file {
     my $self = shift;
     my %args = validate( @_, { path => 1, content => 1 } );
 
-    my $file = file($self->fs_root => $args{'path'});
+    my $file = file( $self->fs_root => $args{'path'} );
     my $parent = $file->parent;
-    unless (-d $parent) {
-     $parent->mkpath || die "Failed to create directory ".$file->parent;;
-    } 
+    unless ( -d $parent ) {
+        $parent->mkpath || die "Failed to create directory " . $file->parent;
+    }
 
     my $fh = $file->openw;
-    print $fh scalar($args{'content'}); # can't do "||" as we die if we print 0" || die "Could not write to " . $args{'path'} . " " . $!;
+    print $fh scalar( $args{'content'} )
+        ; # can't do "||" as we die if we print 0" || die "Could not write to " . $args{'path'} . " " . $!;
     close $fh || die $!;
 }
 
@@ -416,61 +434,63 @@ sub _file_exists {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
 
-    if ($self->fs_root) {
-          my $path = file($self->fs_root, $file);
-          if (-f $path ) { return 1}
-          elsif (-d $path ) { return 2}
-          else { return 0 }
+    if ( $self->fs_root ) {
+        my $path = file( $self->fs_root, $file );
+        if    ( -f $path ) { return 1 }
+        elsif ( -d $path ) { return 2 }
+        else               { return 0 }
     } else {
-          return $self->_read_file($file) ? 1 : 0;
+        return $self->_read_file($file) ? 1 : 0;
     }
 }
 
 sub _read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
-    if ($self->fs_root ) {
-        if ( $self->_file_exists($file)) {
-            return scalar file($self->fs_root => $file)->slurp;
+    if ( $self->fs_root ) {
+        if ( $self->_file_exists($file) ) {
+            return scalar file( $self->fs_root => $file )->slurp;
         } else {
             return undef;
         }
-    } else { # http replica 
-    return LWP::Simple::get( $self->url . "/" . $file );
+    } else {    # http replica
+        return LWP::Simple::get( $self->url . "/" . $file );
+    }
 }
-}
-
 
 sub begin_edit {
     my $self = shift;
-    $self->current_edit( Prophet::ChangeSet->new({ source_uuid => $self->uuid }) );
+    $self->current_edit(
+        Prophet::ChangeSet->new( { source_uuid => $self->uuid } ) );
 }
-
 
 sub _set_original_source_metadata_for_current_edit {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    $self->current_edit->original_source_uuid( $changeset->original_source_uuid );
-    $self->current_edit->original_sequence_no( $changeset->original_sequence_no );
+    $self->current_edit->original_source_uuid(
+        $changeset->original_source_uuid );
+    $self->current_edit->original_sequence_no(
+        $changeset->original_sequence_no );
 }
 
-
 sub commit_edit {
-    my $self = shift;
+    my $self     = shift;
     my $sequence = $self->_increment_sequence_no;
-    $self->current_edit->original_sequence_no($sequence) unless ($self->current_edit->original_sequence_no);
-    $self->current_edit->original_source_uuid($self->uuid) unless ($self->current_edit->original_source_uuid);
+    $self->current_edit->original_sequence_no($sequence)
+        unless ( $self->current_edit->original_sequence_no );
+    $self->current_edit->original_source_uuid( $self->uuid )
+        unless ( $self->current_edit->original_source_uuid );
     $self->current_edit->sequence_no($sequence);
-    $self->_write_changeset_to_index($self->current_edit);
+    $self->_write_changeset_to_index( $self->current_edit );
 }
 
 sub _write_changeset_to_index {
-    my $self = shift;
+    my $self      = shift;
     my $changeset = shift;
-    my $handle = $self->_get_changeset_index_handle;
-    $self->_write_changeset( index_handle => $handle, changeset => $changeset);
-    close($handle) || die "Failed to close changeset handle: ".$handle;
+    my $handle    = $self->_get_changeset_index_handle;
+    $self->_write_changeset( index_handle => $handle, changeset => $changeset );
+    close($handle) || die "Failed to close changeset handle: " . $handle;
     $self->current_edit(undef);
 }
 
@@ -482,9 +502,6 @@ sub _after_record_changes {
     $self->current_edit->is_resolution( $changeset->is_resolution );
 }
 
-
-
-
 sub create_record {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
@@ -492,27 +509,28 @@ sub create_record {
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-
     $self->_write_serialized_record(
         type  => $args{'type'},
         uuid  => $args{'uuid'},
         props => $args{'props'}
     );
 
-   my $change =      Prophet::Change->new({
-        record_type => $args{'type'},
-        record_uuid => $args{'uuid'},
-        change_type => 'add_file' });
-
+    my $change = Prophet::Change->new(
+        {   record_type => $args{'type'},
+            record_uuid => $args{'uuid'},
+            change_type => 'add_file'
+        }
+    );
 
     foreach my $name ( keys %{ $args{props} } ) {
         $change->add_prop_change(
             name => $name,
             old  => undef,
-            new  => $args{props}->{$name});
+            new  => $args{props}->{$name}
+        );
     }
 
-    $self->current_edit->add_change(change => $change );
+    $self->current_edit->add_change( change => $change );
 
     $self->commit_edit unless ($inside_edit);
 }
@@ -526,26 +544,30 @@ sub delete_record {
 
 # XXX TODO Write out an entry to the record's index file marking it as a special deleted uuid? - this has lots of ramifications for list, load, exists, create
     $self->_delete_record_index( uuid => $args{uuid}, type => $args{type} );
-   
-    my $change =      Prophet::Change->new({
-        record_type => $args{'type'},
-        record_uuid => $args{'uuid'},
-        change_type => 'delete'} );
-    $self->current_edit->add_change(change => $change );
 
-        $self->commit_edit() unless ($inside_edit);
+    my $change = Prophet::Change->new(
+        {   record_type => $args{'type'},
+            record_uuid => $args{'uuid'},
+            change_type => 'delete'
+        }
+    );
+    $self->current_edit->add_change( change => $change );
+
+    $self->commit_edit() unless ($inside_edit);
     return 1;
 }
 
 sub set_record_props {
-    my $self      = shift;
-    my %args      = validate( @_, { uuid => 1, props => 1, type => 1 } );
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-    my $old_props = $self->get_record_props( uuid => $args{'uuid'},
-        type => $args{'type'} );
+    my $old_props = $self->get_record_props(
+        uuid => $args{'uuid'},
+        type => $args{'type'}
+    );
     my %new_props = %$old_props;
     foreach my $prop ( %{ $args{props} } ) {
         if ( !defined $args{props}->{$prop} ) {
@@ -560,21 +582,23 @@ sub set_record_props {
         props => \%new_props
     );
 
-    my $change =      Prophet::Change->new({
-        record_type => $args{'type'},
-        record_uuid => $args{'uuid'},
-        change_type => 'update_file'} );
-    
+    my $change = Prophet::Change->new(
+        {   record_type => $args{'type'},
+            record_uuid => $args{'uuid'},
+            change_type => 'update_file'
+        }
+    );
+
     foreach my $name ( keys %{ $args{props} } ) {
         $change->add_prop_change(
             name => $name,
             old  => $old_props->{$name},
-            new  => $args{props}->{$name});
+            new  => $args{props}->{$name}
+        );
     }
-    $self->current_edit->add_change(change => $change );
+    $self->current_edit->add_change( change => $change );
 
-
-        $self->commit_edit() unless ($inside_edit);
+    $self->commit_edit() unless ($inside_edit);
 
 }
 
@@ -615,9 +639,10 @@ sub list_records {
 
 sub list_types {
     my $self = shift;
+
     return [ map { my @path = split( qr'/', $_ ); pop @path }
-            File::Find::Rule->mindepth(1)->maxdepth(1)->in( dir( $self->fs_root, $self->record_dir ) ) 
-            ];
+            File::Find::Rule->mindepth(1)->maxdepth(1)
+            ->in( dir( $self->fs_root, $self->record_dir ) ) ];
 
 }
 
@@ -626,6 +651,5 @@ sub type_exists {
     my %args = validate( @_, { type => 1 } );
     return $self->_file_exists( $self->_record_type_root( $args{'type'} ) );
 }
-
 
 1;

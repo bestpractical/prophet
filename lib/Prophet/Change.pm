@@ -51,7 +51,7 @@ sub new_from_conflict {
     my ( $class, $conflict ) = @_;
     my $self = $class->new(
         {   is_resolution  => 1,
-            resolution_cas => $conflict->cas_key,
+            resolution_cas => $conflict->fingerprint,
             change_type    => $conflict->change_type,
             record_type      => $conflict->record_type,
             record_uuid      => $conflict->record_uuid

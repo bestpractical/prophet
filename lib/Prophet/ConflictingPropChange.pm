@@ -35,4 +35,15 @@ The current target-replica value of the property being merged.
 
 =cut
 
+sub as_hash {
+    my $self = shift;
+    my $hashref = {};
+
+    for  (qw(name source_old_value target_value source_new_value)) {
+         $hashref->{$_} = $self->$_()
+    }
+    return $hashref;
+}
+
+
 1;

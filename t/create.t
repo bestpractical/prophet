@@ -4,11 +4,11 @@ use Test::More tests => 23;
 
 use File::Temp qw'tempdir';
 
-my $SCHEME = $ENV{'PROPHET_REPLICA_TYPE'} || 'svn';
-use_ok('Prophet::Replica');
-my $REPO = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
-diag($REPO);
-my $cxn = Prophet::Replica->new({ url => "$SCHEME:file://$REPO" });
+use_ok('Prophet::CLI');
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+my $cli = Prophet::CLI->new();
+my $cxn = $cli->app_handle->handle;
+
 isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 use_ok('Prophet::Record');
 my $record = Prophet::Record->new( handle => $cxn, type => 'Person' );
