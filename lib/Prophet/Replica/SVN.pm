@@ -327,7 +327,7 @@ sub create_record {
         type  => $args{'type'}
     );
     $self->commit_edit() unless ($inside_edit);
-
+    return 1;
 }
 
 sub _set_record_props {

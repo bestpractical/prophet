@@ -599,7 +599,7 @@ sub set_record_props {
     $self->current_edit->add_change( change => $change );
 
     $self->commit_edit() unless ($inside_edit);
-
+    return 1;
 }
 
 sub get_record_props {
@@ -614,6 +614,7 @@ sub get_record_props {
 sub record_exists {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
+    return undef unless $args{'uuid'};
     return $self->_file_exists(
         $self->_record_index_filename(
             type => $args{'type'},

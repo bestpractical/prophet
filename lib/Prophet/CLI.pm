@@ -163,13 +163,11 @@ sub do_create {
 sub do_search {
     my $self = shift;
 
-    my $regex;
-    unless ( $regex = $self->args->{regex} ) {
-        die "Specify a regular expression and we'll search for records matching that regex";
-    }
     my $record = $self->_get_record;
     $record->collection_class->require;
     my $records = $record->collection_class->new( handle => $self->app_handle->handle, type => $self->type );
+
+    if (my  $regex = $self->args->{regex} ) {
     $records->matching(
         sub {
             my $item  = shift;
@@ -178,7 +176,9 @@ sub do_search {
             return 0;
         }
     );
-
+    } else {
+        $records->matching( sub {1});
+    }
     for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
         if($_->summary_props) {
         print $_->format_summary . "\n";
@@ -194,8 +194,14 @@ sub do_update {
 
     my $record = $self->_get_record;
     $record->load( uuid => $self->uuid );
-    $record->set_props( props => $self->args );
+    my $result=    $record->set_props( props => $self->args );
+    if ($result ){
+        print $record->type . " " . $record->uuid . " updated.\n";
 
+    } else {
+        print "SOMETHING BAD HAPPENED ".$record->type . " " . $record->uuid . " not updated.\n";
+
+    }
 }
 
 sub do_delete {
@@ -215,7 +221,11 @@ sub do_show {
     my $self = shift;
 
     my $record = $self->_get_record;
-    $record->load( uuid => $self->uuid );
+    if(!  $record->load( uuid => $self->uuid ) ) {
+        print "Record not found\n";
+        return;
+    }
+    
     print "id: " . $record->uuid . "\n";
     my $props = $record->get_props();
     for ( keys %$props ) {

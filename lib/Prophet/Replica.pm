@@ -552,8 +552,6 @@ sub record_resolutions {
 Called ONLY on local resolution creation. (Synced resolutions are just synced as records)
 
 =cut
-
-
 sub _record_resolution {
     my $self      = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
@@ -572,7 +570,6 @@ sub _record_resolution {
         }
     );
 }
-
 =head1 Routines dealing with integrating changesets into a replica
 
 =head2 record_changes Prophet::ChangeSet
@@ -581,7 +578,6 @@ Inside an edit (transaction), integrate all changes in this transaction
 and then call the _after_record_changes() hook
 
 =cut
-
 sub record_changes {
     my $self      = shift;
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
@@ -595,7 +591,6 @@ sub record_changes {
     };
     die($@) if ($@);
 }
-
 sub _integrate_change {
     my $self   = shift;
     my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
@@ -633,8 +628,6 @@ sub record_integration_of_changeset {
     return $self->_record_metadata_for( $MERGETICKET_METATYPE, $changeset->original_source_uuid, 'last-changeset', $changeset->original_sequence_no );
 
 }
-
-
 =head1 metadata storage routines 
 
 =cut 
@@ -657,7 +650,6 @@ sub metadata_storage {
 
     };
 }
-
 sub _retrieve_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
@@ -670,7 +662,6 @@ sub _retrieve_metadata_for {
     return $entry->prop($prop_name);
 
 }
-
 sub _record_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name, $content )
@@ -692,8 +683,6 @@ sub _record_metadata_for {
         );
     }
 }
-
-
 =head1 The following functions need to be implemented by any Prophet backing store.
 
 =head2 uuid
