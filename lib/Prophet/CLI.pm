@@ -15,14 +15,6 @@ sub new {
     my $self  = $class->SUPER::new(@_);
     $self->record_class('Prophet::Record') unless $self->record_class;
     
-    if($self->app_class) {
-        my $replica_class = $self->app_class."::Replica";
-        my $except = $replica_class."::(.*)::";
-        Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 1, except => qr/$except/);
-        Prophet::Replica->register_replica_scheme(scheme => $_->scheme, class => $_) for ( __PACKAGE__->app_replica_types);
-    }
-
-
     my $app_class = $self->app_class || 'Prophet::App';
     $app_class->require();# unless exists $INC{$app_class_path};
     $self->app_handle($app_class->new);

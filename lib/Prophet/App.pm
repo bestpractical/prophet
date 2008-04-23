@@ -17,6 +17,8 @@ sub _handle {
 
 sub new {
     my $self = shift->SUPER::new(@_);
+   
+    $self->_load_replica_types();
 
     # Initialize our handle and resolution db handle
     $self->handle;
@@ -24,6 +26,17 @@ sub new {
 
     return $self;
 }
+
+sub _load_replica_types {
+    my $self = shift;
+        my $replica_class = ref($self)."::Replica";
+        my $except = $replica_class."::(.*)::";
+        Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
+        for my $package ( $self->app_replica_types) {
+            $package->require;
+        Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package) 
+        }
+    }
 
 =head2 handle
 

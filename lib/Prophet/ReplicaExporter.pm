@@ -7,8 +7,7 @@ use Params::Validate qw(:all);
 use Path::Class;
 use UNIVERSAL::require;
 
-__PACKAGE__->mk_accessors(
-    qw( source_replica target_path target_replica));
+__PACKAGE__->mk_accessors(qw( source_replica target_path target_replica));
 
 =head1 NAME
 
@@ -159,28 +158,29 @@ sub export {
 
     $self->target_replica(
         Prophet::Replica->new(
-            { url => "prophet:file://" . $self->target_path . "/" . $self->source_replica->db_uuid }
+            { url => "prophet:file://" . $self->target_path }
         )
     );
     $self->target_replica->initialize();
     $self->_init_export_metadata();
-    $self->export_records( type => $_ ) for ( @{ $self->source_replica->list_types } );
+    $self->export_records( type => $_ )
+        for ( @{ $self->source_replica->list_types } );
     $self->export_changesets();
 
-    #$self->export_resolutions( path => dir( $fs_root, 'resolutions'), resdb_handle => $args{'resdb_handle'} );
-
-}
-
-sub export_resolutions {
-    my $self    = shift;
-    my $replica = Prophet::Replica->new();
-
-    # ...
+    unless ($self->source_replica->is_resdb) {
+    my $resolutions = Prophet::ReplicaExporter->new(
+        {   target_path => dir($self->target_path, 'resolutions' ),
+            source_replica => $self->source_replica->resolution_db_handle
+        }
+    );
+    $resolutions->export();
+    }
 }
 
 sub _init_export_metadata {
     my $self = shift;
-    $self->target_replica->set_latest_sequence_no( $self->source_replica->latest_sequence_no );
+    $self->target_replica->set_latest_sequence_no(
+        $self->source_replica->latest_sequence_no );
     $self->target_replica->set_replica_uuid( $self->source_replica->uuid );
 
 }
@@ -191,7 +191,8 @@ sub export_records {
 
     my $collection = Prophet::Collection->new(
         handle => $self->source_replica,
-        type   => $args{type});
+        type   => $args{type}
+    );
     $collection->matching( sub {1} );
     $self->target_replica->_write_record( record => $_ ) for @$collection;
 
@@ -201,8 +202,13 @@ sub export_changesets {
     my $self = shift;
 
     my $cs_file = $self->target_replica->_get_changeset_index_handle();
-    foreach my $changeset ( @{ $self->source_replica->fetch_changesets( after => 0 ) } ) {
-        $self->target_replica->_write_changeset( index_handle => $cs_file, changeset => $changeset );
+    foreach my $changeset (
+        @{ $self->source_replica->fetch_changesets( after => 0 ) } )
+    {
+        $self->target_replica->_write_changeset(
+            index_handle => $cs_file,
+            changeset    => $changeset
+        );
 
     }
     close($cs_file);
