@@ -208,7 +208,7 @@ sub do_delete {
     my $self = shift;
 
     my $record = $self->_get_record;
-    $record->load( uuid => $self->uuid );
+    $record->load( uuid => $self->uuid ) || $self->fatal_error("I couldn't find that record");
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
     } else {
@@ -286,7 +286,7 @@ sub do_merge {
 sub _do_merge {
     my ( $self, $source, $target ) = @_;
     if ( $target->uuid eq $source->uuid ) {
-        fatal_error( "You appear to be trying to merge two identical replicas. "
+        $self->fatal_error( "You appear to be trying to merge two identical replicas. "
                 . "Either you're trying to merge a replica to itself or "
                 . "someone did a bad job cloning your database" );
     }
@@ -296,7 +296,7 @@ sub _do_merge {
     $opts->{'prefer'} ||= 'none';
 
     if ( !$target->can_write_changesets) {
-        fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
+        $self->fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
     }
 
     $target->import_changesets(
@@ -311,6 +311,7 @@ sub _do_merge {
 }
 
 sub fatal_error {
+    my $self = shift;
     my $reason = shift;
     die $reason . "\n";
 

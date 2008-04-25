@@ -170,8 +170,9 @@ sub set_props {
     my %args = validate( @_, { props => 1 } );
 
     $self->canonicalize_props( $args{'props'} );
-    $self->validate_props( $args{'props'} );
+    $self->validate_props( $args{'props'} ) || return undef;
     $self->handle->set_record_props( type => $self->type, uuid => $self->uuid, props => $args{'props'} );
+    return 1;
 }
 
 =head2 get_props
@@ -228,11 +229,15 @@ sub validate_props {
     my $self   = shift;
     my $props  = shift;
     my $errors = {};
+    my @errors;
     for my $key ( uniq( keys %$props, $self->declared_props ) ) {
         return undef unless ( $self->_validate_prop_name($key) );
         if ( my $sub = $self->can( 'validate_prop_' . $key ) ) {
-            $sub->( $self, props => $props, errors => $errors ) or die "validation error on $key: $errors->{$key}\n";
+            $sub->( $self, props => $props, errors => $errors ) || push @errors, "Validation error for '$key': $errors->{$key}\n";
         }
+    }
+    if (@errors) {
+        die join('',@errors);   
     }
     return 1;
 }
