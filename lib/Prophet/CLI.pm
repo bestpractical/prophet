@@ -3,7 +3,8 @@ use strict;
 
 package Prophet::CLI;
 use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/app_class record_class type uuid app_handle/);
+__PACKAGE__->mk_accessors(
+    qw/app_class record_class type uuid app_handle primary_commands/);
 
 use Prophet;
 use Prophet::Record;
@@ -14,10 +15,10 @@ sub new {
     my $class = shift;
     my $self  = $class->SUPER::new(@_);
     $self->record_class('Prophet::Record') unless $self->record_class;
-    
-    my $app_class = $self->app_class || 'Prophet::App';
-    $app_class->require();# unless exists $INC{$app_class_path};
-    $self->app_handle($app_class->new);
+
+    $self->app_class || $self->app_class('Prophet::App');
+    $self->app_class->require();    # unless exists $INC{$app_class_path};
+    $self->app_handle( $self->app_class->new );
     return $self;
 }
 
@@ -49,44 +50,77 @@ sub _handle_reference_command {
 sub _record_cmd {
     my ( $self, $type, $record_class ) = @_;
     my $cmd = shift @ARGV or die "record subcommand required";
-    $cmd =~ s/^--//g;
 
     $record_class->require || die $@;
-    if ( $record_class->REFERENCES->{$cmd} ) {
-        return $self->_handle_reference_command( $record_class, $record_class->REFERENCES->{$cmd} );
-    }
-    $cmd = $CMD_MAP{$cmd} if exists $CMD_MAP{$cmd};
-    my $func = $self->can("do_$cmd") or Carp::confess "no such record command $cmd";
+    return $self->_handle_reference_command( $record_class,
+        $record_class->REFERENCES->{$cmd} )
+        if ( $record_class->REFERENCES->{$cmd} );
+
+    my $cmd_obj = $self->_get_cmd_obj();
+
     if ($record_class) {
-        $self->record_class($record_class);
+        $cmd_obj->record_class($record_class);
     } else {
-        $self->record_class('Prophet::Record');
+        $cmd_obj->record_class('Prophet::Record');
         $self->type($type);
     }
-    $self->parse_record_cmd_args();
-    $func->($self);
+    $cmd_obj->run();
 }
 
-=head2 register_types TYPES
+sub _get_cmd_obj {
+    my $self = shift;
 
-Register cmd_C<type> methods if the calling namespace that handles the cli command for each of the record type C<type>.
+    my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $self->primary_commands };
 
-=cut
 
-sub register_types {
-    my $self       = shift;
-    my $model_base = shift;
-    my @types      = (@_);
 
-    my $calling_package = (caller)[0];
-    for my $type (@types) {
-        no strict 'refs';
-        my $class = $model_base . '::' . ucfirst($type);
-        $class->require;
-        *{ $calling_package . "::cmd_" . $type } = sub {
-            $self->_record_cmd( $type => $class );
-        };
+    my @possible_classes;
+    
+    my @to_try = @commands;
+
+    while( @to_try ) {
+        my $cmd = $self->app_class . "::CLI::Command::" . join( '::', map {ucfirst lc $_} @to_try ) ;    # App::SD::CLI::Command::Ticket::Comment::List
+        push @possible_classes, $cmd;
+        shift @to_try; # throw away that top-level "Ticket" option 
     }
+
+   my @extreme_fallback_commands = (     $self->app_class . "::CLI::Command::" . ucfirst(lc( $commands[-1] )),    # App::SD::CLI::Command::List
+        "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),    # Prophet::CLI::Command::List
+        $self->app_class . "::CLI::Comand::NotFound",
+        "Prophet::CLI::Comand::NotFound"
+    );
+
+    my $class;
+
+    for my $try (@possible_classes, @extreme_fallback_commands) {
+        $class = $self->_try_to_load_cmd_class($try);
+        last if $class;
+    }
+
+    die "I don't know how to parse '" . join(" ", @{$self->primary_commands}) ."'. Are you sure that's a valid command?" unless ($class);
+
+    my $command_obj = $class->new(
+        {   cli      => $self,
+            commands => $self->primary_commands,
+            type     => $self->type,
+            uuid     => $self->uuid
+        }
+    );
+    return $command_obj;
+}
+
+sub _try_to_load_cmd_class {
+    my $self = shift;
+    my $class = shift;
+    $class->require;
+    if (my $msg = $@) {
+        my $class_path = $class .".pm";
+        $class_path =~ s/::/\//g;
+        die $msg if $msg !~ /Can't locate $class_path/;
+    }
+    return $class if ( $class->isa('Prophet::CLI::Command') );
+
+    return undef;
 }
 
 =head2 parse_args
@@ -98,6 +132,13 @@ This routine pulls arguments passed on the command line out of ARGV and sticks t
 
 sub parse_args {
     my $self = shift;
+
+    my @primary;
+    push @primary, shift @ARGV while ( $ARGV[0] &&  $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
+
+
+    $self->primary_commands( \@primary );
+
     %{ $self->{'args'} } = @ARGV;
     for my $name ( keys %{ $self->{'args'} } ) {
         die "$name doesn't look like --prop-name" if ( $name !~ /^--/ );
@@ -107,21 +148,22 @@ sub parse_args {
 
 }
 
-=head2 parse_record_cmd_args
+=head2 set_type_and_uuid
 
 When working with individual records, it is often the case that we'll be expecting a --type argument and then a mess of other key-value pairs. 
 
 =cut
 
-sub parse_record_cmd_args {
+sub set_type_and_uuid {
     my $self = shift;
-    $self->parse_args();
 
     if ( my $uuid = delete $self->{args}->{uuid} ) {
         $self->uuid($uuid);
     }
     if ( $self->{args}->{type} ) {
         $self->type( delete $self->{args}->{'type'} );
+    } elsif($self->primary_commands->[-2]) {
+        $self->type($self->primary_commands->[-2]); 
     }
 }
 
@@ -135,22 +177,70 @@ If passed a hashref, sets the args to taht;
 
 sub args {
     my $self = shift;
-
     $self->{'args'} = shift if $_[0];
     return $self->{'args'};
+}
+
+sub run_one_command {
+    my $self = shift;
+    $self->parse_args();
+    $self->set_type_and_uuid();
+    if ( my $cmd_obj = $self->_get_cmd_obj() ) {
+        $cmd_obj->run();
+    }
+}
+
+package Prophet::CLI::Command;
+
+use base qw/Class::Accessor/;
+
+__PACKAGE__->mk_accessors(qw/cli record_class command type uuid/);
+
+# XXX type, uuid are only for record commands
+
+sub fatal_error {
+    my $self   = shift;
+    my $reason = shift;
+    die $reason . "\n";
 
 }
 
 sub _get_record {
     my $self = shift;
-    return $self->record_class->new(
-        {   handle => $self->app_handle->handle,
-            type   => $self->type,
-        }
-    );
+     my $args = { handle => $self->cli->app_handle->handle, type => $self->type } ;
+    if ( $self->record_class ) {
+        return $self->record_class->new( $args);
+    } elsif ( $self->type ) {
+        return $self->_type_to_record_class( $self->type )->new($args);
+    } else { Carp::confess("I was asked to get a record object, but I have neither a type nor a record class")}
+
 }
 
-sub do_create {
+sub _type_to_record_class {
+    my $self = shift;
+    my $type = shift;
+    my $try = $self->cli->app_class . "::Model::" . ucfirst( lc($type) );
+    $try->require;    # don't care about fails
+    return $try if ( $try->isa('Prophet::Record') );
+
+    $try = $self->cli->app_class . "::Record";
+    $try->require;
+    return $try if ( $try->isa('Prophet::Record') );
+    return 'Prophet::Record';
+}
+
+sub args {
+    shift->cli->args(@_);
+}
+
+sub app_handle {
+    shift->cli->app_handle;
+}
+
+package Prophet::CLI::Command::Create;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
     my $self   = shift;
     my $record = $self->_get_record;
 
@@ -160,55 +250,75 @@ sub do_create {
 
 }
 
-sub do_search {
+package Prophet::CLI::Command::Search;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
     $record->collection_class->require;
-    my $records = $record->collection_class->new( handle => $self->app_handle->handle, type => $self->type );
-
-    if (my  $regex = $self->args->{regex} ) {
-    $records->matching(
-        sub {
-            my $item  = shift;
-            my $props = $item->get_props;
-            map { return 1 if $props->{$_} =~ $regex } keys %$props;
-            return 0;
-        }
+    my $records = $record->collection_class->new(
+        handle => $self->app_handle->handle,
+        type   => $self->type
     );
+
+    if ( my $regex = $self->args->{regex} ) {
+        $records->matching(
+            sub {
+                my $item  = shift;
+                my $props = $item->get_props;
+                map { return 1 if $props->{$_} =~ $regex } keys %$props;
+                return 0;
+            }
+        );
     } else {
-        $records->matching( sub {1});
+        $records->matching( sub {1} );
     }
     for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
-        if($_->summary_props) {
-        print $_->format_summary . "\n";
+        if ( $_->summary_props ) {
+            print $_->format_summary . "\n";
         } else {
+
             # XXX OLD HACK TO MAKE TESTS PASS
-        printf ("%s %s %s \n", $_->uuid, $_->prop( 'summary')||"(no summary)", $_->prop('status')||'(no status)');
+            printf( "%s %s %s \n",
+                $_->uuid,
+                $_->prop('summary') || "(no summary)",
+                $_->prop('status')  || '(no status)' );
         }
     }
 }
 
-sub do_update {
+package Prophet::CLI::Command::Update;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
     $record->load( uuid => $self->uuid );
-    my $result=    $record->set_props( props => $self->args );
-    if ($result ){
+    my $result = $record->set_props( props => $self->args );
+    if ($result) {
         print $record->type . " " . $record->uuid . " updated.\n";
 
     } else {
-        print "SOMETHING BAD HAPPENED ".$record->type . " " . $record->uuid . " not updated.\n";
+        print "SOMETHING BAD HAPPENED "
+            . $record->type . " "
+            . $record->uuid
+            . " not updated.\n";
 
     }
 }
 
-sub do_delete {
+package Prophet::CLI::Command::Delete;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
-    $record->load( uuid => $self->uuid ) || $self->fatal_error("I couldn't find that record");
+    $record->load( uuid => $self->uuid )
+        || $self->fatal_error("I couldn't find that record");
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
     } else {
@@ -217,15 +327,18 @@ sub do_delete {
 
 }
 
-sub do_show {
+package Prophet::CLI::Command::Show;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
-    if(!  $record->load( uuid => $self->uuid ) ) {
+    if ( !$record->load( uuid => $self->uuid ) ) {
         print "Record not found\n";
         return;
     }
-    
+
     print "id: " . $record->uuid . "\n";
     my $props = $record->get_props();
     for ( keys %$props ) {
@@ -234,46 +347,14 @@ sub do_show {
 
 }
 
-sub do_push {
-    my $self         = shift;
-    my $source_me    = $self->app_handle->handle;
-    my $other        = shift @ARGV;
-    my $source_other = Prophet::Replica->new( { url => $other } );
-    my $resdb        = $source_me->import_resolutions_from_remote_replica( from => $source_other );
+package Prophet::CLI::Command::Merge;
+use base qw/Prophet::CLI::Command/;
 
-    $self->_do_merge( $source_me, $source_other );
-}
+sub run {
 
-sub do_export {
-    my $self      = shift;
-    $self->app_handle->handle->export_to( path => $self->args->{path} );
-}
-
-sub do_pull {
-    my $self         = shift;
-    my $other        = shift @ARGV;
-    my $source_other = Prophet::Replica->new( { url => $other } );
-    $self->app_handle->handle->import_resolutions_from_remote_replica( from => $source_other );
-
-    $self->_do_merge( $source_other, $self->app_handle->handle );
-
-}
-
-sub do_server {
     my $self = shift;
 
     my $opts = $self->args();
-    require Prophet::Server::REST;
-    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080 );
-    $server->prophet_handle( $self->app_handle->handle );
-    $server->run;
-}
-
-sub do_merge {
-    my $self = shift;
-
-    my $opts = $self->args();
-
 
     my $source = Prophet::Replica->new( { url => $opts->{'from'} } );
     my $target = Prophet::Replica->new( { url => $opts->{'to'} } );
@@ -286,7 +367,8 @@ sub do_merge {
 sub _do_merge {
     my ( $self, $source, $target ) = @_;
     if ( $target->uuid eq $source->uuid ) {
-        $self->fatal_error( "You appear to be trying to merge two identical replicas. "
+        $self->fatal_error(
+                  "You appear to be trying to merge two identical replicas. "
                 . "Either you're trying to merge a replica to itself or "
                 . "someone did a bad job cloning your database" );
     }
@@ -295,8 +377,10 @@ sub _do_merge {
 
     $opts->{'prefer'} ||= 'none';
 
-    if ( !$target->can_write_changesets) {
-        $self->fatal_error( $target->url . " does not accept changesets. Perhaps it's unwritable or something" );
+    if ( !$target->can_write_changesets ) {
+        $self->fatal_error( $target->url
+                . " does not accept changesets. Perhaps it's unwritable or something"
+        );
     }
 
     $target->import_changesets(
@@ -304,17 +388,79 @@ sub _do_merge {
         resdb => $self->app_handle->resdb_handle,
         $ENV{'PROPHET_RESOLVER'}
         ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
-        : ( ( $opts->{'prefer'} eq 'to'   ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' ) : () ),
-            ( $opts->{'prefer'} eq 'from' ? ( resolver_class => 'Prophet::Resolver::AlwaysSource' ) : () )
+        : ( (   $opts->{'prefer'} eq 'to'
+                ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' )
+                : ()
+            ),
+            (   $opts->{'prefer'} eq 'from'
+                ? ( resolver_class => 'Prophet::Resolver::AlwaysSource' )
+                : ()
+            )
         )
     );
 }
 
-sub fatal_error {
-    my $self = shift;
-    my $reason = shift;
-    die $reason . "\n";
+package Prophet::CLI::Command::Push;
+use base qw/Prophet::CLI::Command::Merge/;
 
+sub run {
+    my $self = shift;
+
+    my $source_me    = $self->app_handle->handle;
+    my $other        = shift @ARGV;
+    my $source_other = Prophet::Replica->new( { url => $other } );
+    my $resdb        = $source_me->import_resolutions_from_remote_replica(
+        from => $source_other );
+
+    $self->_do_merge( $source_me, $source_other );
+}
+
+package Prophet::CLI::Command::Export;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
+    my $self = shift;
+
+    $self->app_handle->handle->export_to( path => $self->args->{path} );
+}
+
+package Prophet::CLI::Command::Pull;
+use base qw/Prophet::CLI::Command::Merge/;
+
+sub run {
+
+    my $self         = shift;
+    my $other        = shift @ARGV;
+    my $source_other = Prophet::Replica->new( { url => $other } );
+    $self->app_handle->handle->import_resolutions_from_remote_replica(
+        from => $source_other );
+
+    $self->_do_merge( $source_other, $self->app_handle->handle );
+
+}
+
+package Prophet::CLI::Command::Server;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
+
+    my $self = shift;
+
+    my $opts = $self->args();
+    require Prophet::Server::REST;
+    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080 );
+    $server->prophet_handle( $self->app_handle->handle );
+    $server->run;
+}
+
+package Prophet::CLI::Command::NotFound;
+use base qw/Prophet::CLI::Command/;
+
+sub run {
+    my $self = shift;
+    $self->fatal_error( "The command you ran, '"
+            . $self->command
+            . "', could not be found. Perhaps running --help would help?" );
 }
 
 1;

@@ -4,12 +4,5 @@ use strict;
 
 use Prophet::CLI;
 my $cli = Prophet::CLI->new();
-my $cmd = shift @ARGV;
-$cli->parse_record_cmd_args();
-
-if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
-    $sub->($cli);
-} else {
-    die "I don't know how to do the $cmd";
-}
+$cli->run_one_command();
 

@@ -180,10 +180,8 @@ sub call_func {
     Carp::cluck unless ref $_[0];
 
     my @args = @{ shift @_ };
-    my $cmd  = shift @args;
     local (@ARGV) = (@args);
     my $cli = Prophet::CLI->new();
-    $cli->parse_record_cmd_args();
 
     my $str = '';
     open my $str_fh, '>', \$str;
@@ -194,13 +192,8 @@ sub call_func {
     if (my $p = SVN::Pool->can('new_default')) {
         $p->('SVN::Pool');    
     };
-    if ( my $sub = $cli->can( 'do_' . $cmd ) ) {
 
-        # in_gladiator
-        { $ret = $sub->($cli) }
-    } else {
-        die "I don't know how to do the $cmd";
-    }
+    $ret = $cli->run_one_command();
     select($old_fh) if defined $old_fh;
 
     return ( $ret, $str, undef );

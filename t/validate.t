@@ -25,4 +25,4 @@ ok($uuid);
 throws_ok {
     $record->create( props => { name => 'Bob', age => 31 } );
 }
-qr/validation error/;
+qr/validation error/i;

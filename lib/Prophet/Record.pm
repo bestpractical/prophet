@@ -233,7 +233,7 @@ sub validate_props {
     for my $key ( uniq( keys %$props, $self->declared_props ) ) {
         return undef unless ( $self->_validate_prop_name($key) );
         if ( my $sub = $self->can( 'validate_prop_' . $key ) ) {
-            $sub->( $self, props => $props, errors => $errors ) || push @errors, "Validation error for '$key': $errors->{$key}\n";
+            $sub->( $self, props => $props, errors => $errors ) || push @errors, "Validation error for '$key': ".($errors->{$key}||'');
         }
     }
     if (@errors) {
