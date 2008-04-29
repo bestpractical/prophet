@@ -26,6 +26,8 @@ sub declared_props {
 use Params::Validate;
 use Data::UUID;
 use List::MoreUtils qw/uniq/;
+use Prophet::App; # for require_module. Kinda hacky
+
 my $UUIDGEN = Data::UUID->new();
 
 use constant collection_class => 'Prophet::Collection';
@@ -56,6 +58,7 @@ sub record_type { $_[0]->type }
 
 sub register_reference {
     my ( $class, $accessor, $foreign_class, @args ) = @_;
+    $foreign_class->require();
     if ( $foreign_class->isa('Prophet::Collection') ) {
         return $class->register_collection_reference(
             $accessor => $foreign_class,
@@ -82,9 +85,13 @@ sub register_collection_reference {
     my ( $class, $accessor, $collection_class, @args ) = @_;
     my %args = validate( @args, { by => 1 } );
     no strict 'refs';
+
+    Prophet::App->require_module($collection_class->record_class);
+    
+    
     *{ $class . "::$accessor" } = sub {
         my $self = shift;
-        my $collection = $collection_class->new( handle => $self->handle, type => $collection_class->record_class );
+        my $collection = $collection_class->new( handle => $self->handle, type => $collection_class->record_class->record_type );
         $collection->matching( sub { $_[0]->prop( $args{by} ) eq $self->uuid } );
         return $collection;
     };

@@ -51,7 +51,7 @@ sub _record_cmd {
     my ( $self, $type, $record_class ) = @_;
     my $cmd = shift @ARGV or die "record subcommand required";
 
-    $record_class->require || die $@;
+    Prophet::App->require_module($record_class);
     return $self->_handle_reference_command( $record_class,
         $record_class->REFERENCES->{$cmd} )
         if ( $record_class->REFERENCES->{$cmd} );
@@ -112,12 +112,7 @@ sub _get_cmd_obj {
 sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
-    $class->require;
-    if (my $msg = $@) {
-        my $class_path = $class .".pm";
-        $class_path =~ s/::/\//g;
-        die $msg if $msg !~ /Can't locate $class_path/;
-    }
+    Prophet::App->require_module($class);
     return $class if ( $class->isa('Prophet::CLI::Command') );
 
     return undef;
@@ -139,11 +134,13 @@ sub parse_args {
 
     $self->primary_commands( \@primary );
 
-    %{ $self->{'args'} } = @ARGV;
-    for my $name ( keys %{ $self->{'args'} } ) {
+    while (my $name = shift @ARGV) { 
         die "$name doesn't look like --prop-name" if ( $name !~ /^--/ );
-        $name =~ /^--(.*)$/;
-        $self->{args}->{$1} = delete $self->{'args'}->{$name};
+        my $val;
+
+        ($name,$val)= split(/=/,$name,2) if ($name =~/=/);
+        $name =~ s/^--//;
+        $self->{'args'}->{$name} =  ($val || shift @ARGV);
     }
 
 }
@@ -207,9 +204,10 @@ sub fatal_error {
 
 sub _get_record {
     my $self = shift;
-     my $args = { handle => $self->cli->app_handle->handle, type => $self->type } ;
-    if ( $self->record_class ) {
-        return $self->record_class->new( $args);
+     my $args = { handle => $self->cli->app_handle->handle, type => $self->type };
+    if (my $class =  $self->record_class ) {
+        Prophet::App->require_module($class);
+        return $class->new( $args);
     } elsif ( $self->type ) {
         return $self->_type_to_record_class( $self->type )->new($args);
     } else { Carp::confess("I was asked to get a record object, but I have neither a type nor a record class")}
@@ -220,11 +218,11 @@ sub _type_to_record_class {
     my $self = shift;
     my $type = shift;
     my $try = $self->cli->app_class . "::Model::" . ucfirst( lc($type) );
-    $try->require;    # don't care about fails
+    Prophet::App->require_module($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
 
     $try = $self->cli->app_class . "::Record";
-    $try->require;
+    Prophet::App->require_module($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
     return 'Prophet::Record';
 }
@@ -257,7 +255,7 @@ sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
-    $record->collection_class->require;
+    Prophet::App->require_module($record->collection_class);
     my $records = $record->collection_class->new(
         handle => $self->app_handle->handle,
         type   => $self->type

@@ -70,5 +70,18 @@ sub resdb_handle {
 }
 
 
+sub require_module {
+    my $self = shift;
+    my $class = shift;
+    $class->require;
+    if (my $msg = $@) {
+        my $class_path = $class .".pm";
+        $class_path =~ s/::/\//g;
+        my $ok_err= "Can't locate $class_path";
+        die $msg if $msg !~  qr/^$ok_err/;
+    }
+    $@ = '';
+}
+
 
 1;
