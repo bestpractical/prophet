@@ -73,14 +73,13 @@ Reblesses this replica into the right sort of replica for whatever kind of repli
 sub _rebless_to_replica_type {
     my $self = shift;
 
-
     my ($scheme, $real_url) = split(/:/,$self->url,2);
     $self->url($real_url);
     if ( my $class = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme}) {
     $class->require or die $@;
     return bless $self, $class;
     } else {
-        die "$scheme isn't a replica type I know how to handle";
+        $self->log_fatal( "$scheme isn't a replica type I know how to handle. (The Replica URL given was ".$self->url.")");
     }
 }
 
@@ -772,6 +771,12 @@ sub log {
     print STDERR "# ".substr($self->uuid,0,6)." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
 }
 
+
+sub log_fatal {
+    my $self = shift;
+    $self->log(@_);
+    Carp::confess(@_);
+}
 
 1;
 

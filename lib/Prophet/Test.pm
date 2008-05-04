@@ -204,7 +204,7 @@ sub repo_uri_for {
     my $path = repo_path_for($username);
     $path =~ s{^|\\}{/}g if IS_WIN32;
 
-    return ($ENV{'PROPHET_REPLICA_TYPE'}|| Prophet::App->DEFAULT_REPLICA_TYPE) . ':file://' . $path;
+    return Prophet::App->default_replica_type . ':file://' . $path;
 }
 
 sub replica_uuid {

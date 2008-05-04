@@ -38,6 +38,12 @@ sub _load_replica_types {
         }
     }
 
+sub default_replica_type {
+    my $self = shift;
+     return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
+
+}
+
 =head2 handle
 
 
@@ -47,7 +53,7 @@ sub handle {
     my $self = shift;
     unless ( $self->_handle() ) {
         my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' );
-        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
+        my $type = $self->default_replica_type;
         $self->_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
     }
     return $self->_handle();
@@ -63,7 +69,7 @@ sub resdb_handle {
     return ($self->handle->resolution_db_handle) if ($self->handle->resolution_db_handle);
     unless ( $self->_resdb_handle ) {
         my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
-        my $type = $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
+        my $type = $self->default_replica_type;
         $self->_resdb_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
     }
     return $self->_resdb_handle();

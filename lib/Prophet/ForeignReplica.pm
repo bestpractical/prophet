@@ -15,13 +15,22 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 sub setup {
     my $self = shift;
-    my $cli = Prophet::CLI->new();
+    my $cli  = Prophet::CLI->new();
 
-    $self->state_handle( Prophet::Replica->new({ url => $ENV{'PROPHET_REPLICA_TYPE'} .":".$cli->app_handle->handle->url, db_uuid => $self->state_db_uuid }) );
+    # XXX TODO this $cli object should be a Prophet::App object
+    my $state_handle_url =      $cli->app_handle->default_replica_type . ":" . $cli->app_handle->handle->url;
+    $self->log( "Connecting to state database ".$state_handle_url);
+    $self->state_handle(
+        Prophet::Replica->new(
+            {   url => $state_handle_url,
+                db_uuid => $self->state_db_uuid
+            }
+        )
+    );
 }
 
-sub conflicts_from_changeset              { return; }
-sub can_write_changesets                    {1}
+sub conflicts_from_changeset { return; }
+sub can_write_changesets     {1}
 
 sub record_resolutions { die "not for foreign replicas" }
 
@@ -36,10 +45,8 @@ sub record_changes {
 }
 
 # XXX TODO = or do these ~always stay stubbed?
-sub begin_edit {}
-sub commit_edit{}
-
-
+sub begin_edit  { }
+sub commit_edit { }
 
 use Data::UUID 'NameSpace_DNS';
 
@@ -79,7 +86,8 @@ our $REMOTE_ID_METATYPE = "_remote_id_map";
 
 sub _remote_id_storage {
     my $self = shift;
-    return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE, 'prophet-uuid' )->(@_);
+    return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE,
+        'prophet-uuid' )->(@_);
 }
 
 1;
