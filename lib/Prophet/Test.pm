@@ -170,10 +170,10 @@ sub is_script_output {
 }
 
 sub run_output_matches {
-    my ( $script, $args, $expected, $msg ) = @_;
+    my ( $script, $args, $expected, $stderr, $msg ) = @_;
     Test::Builder->new->level(2);
     lives_and {
-        @_ = ( $script, $args, $expected, [], $msg );
+        @_ = ( $script, $args, $expected, $stderr, $msg );
         goto \&is_script_output;
     };
 
