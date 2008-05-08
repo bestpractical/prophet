@@ -37,35 +37,6 @@ our %CMD_MAP = (
     list => 'search'
 );
 
-sub _handle_reference_command {
-    my ( $self, $class, $ref_spec ) = @_;
-
-    # turn uuid arg into a prop at ref'ed class
-    my $by_type = $ref_spec->{by};
-    @ARGV = map { s/--uuid/--$by_type/; $_ } @ARGV;
-    unshift @ARGV, '--search', '--regex', '.';    # list only for now
-    $self->_record_cmd( $ref_spec->{type}->record_type, $ref_spec->{type} );
-}
-
-sub _record_cmd {
-    my ( $self, $type, $record_class ) = @_;
-    my $cmd = shift @ARGV or die "record subcommand required";
-
-    Prophet::App->require_module($record_class);
-    return $self->_handle_reference_command( $record_class,
-        $record_class->REFERENCES->{$cmd} )
-        if ( $record_class->REFERENCES->{$cmd} );
-
-    my $cmd_obj = $self->_get_cmd_obj();
-
-    if ($record_class) {
-        $cmd_obj->record_class($record_class);
-    } else {
-        $cmd_obj->record_class('Prophet::Record');
-        $self->type($type);
-    }
-    $cmd_obj->run();
-}
 
 sub _get_cmd_obj {
     my $self = shift;
@@ -251,38 +222,47 @@ sub run {
 package Prophet::CLI::Command::Search;
 use base qw/Prophet::CLI::Command/;
 
-sub run {
+
+sub get_collection_object {
     my $self = shift;
 
-    my $record = $self->_get_record;
-    Prophet::App->require_module($record->collection_class);
-    my $records = $record->collection_class->new(
+    my $class = $self->_get_record->collection_class;
+    Prophet::App->require_module($class);
+    my $records = $class->new(
         handle => $self->app_handle->handle,
         type   => $self->type
     );
 
+    return $records;
+}
+
+sub get_search_callback {
+    my $self = shift;
+
     if ( my $regex = $self->args->{regex} ) {
-        $records->matching(
-            sub {
+            return sub {
                 my $item  = shift;
                 my $props = $item->get_props;
                 map { return 1 if $props->{$_} =~ $regex } keys %$props;
                 return 0;
             }
-        );
     } else {
-        $records->matching( sub {1} );
+        return sub {1}
     }
+}
+sub run {
+    my $self = shift;
+
+    my $records = $self->get_collection_object();
+    my $search_cb = $self->get_search_callback();
+    $records->matching($search_cb);
+
     for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
         if ( $_->summary_props ) {
             print $_->format_summary . "\n";
         } else {
-
             # XXX OLD HACK TO MAKE TESTS PASS
-            printf( "%s %s %s \n",
-                $_->uuid,
-                $_->prop('summary') || "(no summary)",
-                $_->prop('status')  || '(no status)' );
+            printf( "%s %s %s \n", $_->uuid, $_->prop('summary') || "(no summary)", $_->prop('status')  || '(no status)' );
         }
     }
 }
