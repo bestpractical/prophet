@@ -584,15 +584,34 @@ sub record_changes {
     eval {
         my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit() unless ($inside_edit);
-        $self->_integrate_change($_) for ( $changeset->changes );
+        $self->integrate_changes($changeset);
         $self->_after_record_changes($changeset);
         $self->commit_edit() unless ($inside_edit);
     };
     die($@) if ($@);
 }
+
+=head2 integrate_changes  Prophet::ChangeSet
+
+This routine is called by record_changes with a L<Prophet::ChangeSet> object.
+It integrates all changes from that object into the current replica. 
+
+All bookkeeping, such as opening and closing an edit, is done by L</record_changes>.
+
+If your replica type needs to play games to integrate multiple changes as a single 
+record, this is what you'd override.
+
+=cut
+
+sub integrate_changes {
+    my ($self, $changeset) = validate_pos( @_, {isa => 'Prophet::Replica'}, { isa => 'Prophet::ChangeSet' } );
+    $self->_integrate_change($_, $changeset) for ( $changeset->changes );
+
+}
+
+
 sub _integrate_change {
-    my $self   = shift;
-    my ($change) = validate_pos(@_, { isa => 'Prophet::Change'});
+    my ($self, $change, $changeset) = validate_pos(@_, {isa => 'Prophet::Replica'}, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'} );
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {

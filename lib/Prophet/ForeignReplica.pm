@@ -39,9 +39,7 @@ sub import_resolutions_from_remote_source { warn 'no resdb'; return }
 sub record_changes {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
-    for my $change ( $changeset->changes ) {
-        my $result = $self->_integrate_change( $change, $changeset );
-    }
+    $self->integrate_changes($changeset);
 }
 
 # XXX TODO = or do these ~always stay stubbed?
