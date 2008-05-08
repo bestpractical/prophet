@@ -57,8 +57,8 @@ sub _get_cmd_obj {
 
    my @extreme_fallback_commands = (     $self->app_class . "::CLI::Command::" . ucfirst(lc( $commands[-1] )),    # App::SD::CLI::Command::List
         "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),    # Prophet::CLI::Command::List
-        $self->app_class . "::CLI::Comand::NotFound",
-        "Prophet::CLI::Comand::NotFound"
+        $self->app_class . "::CLI::Command::NotFound",
+        "Prophet::CLI::Command::NotFound"
     );
 
     my $class;
@@ -437,7 +437,7 @@ use base qw/Prophet::CLI::Command/;
 sub run {
     my $self = shift;
     $self->fatal_error( "The command you ran, '"
-            . $self->command
+            . ($self->command || '')
             . "', could not be found. Perhaps running --help would help?" );
 }
 
