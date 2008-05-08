@@ -28,7 +28,7 @@ features(
         -default => 1,
         recommends('HTTP::Server::Simple'), # HTTP::Server::Simple::CGI
         recommends('Test::HTTP::Server::Simple'),
-        recommends('Test::WWW::Mechanize'),
+        recommends('Test::WWW::Mechanize' => '1.16'),
         recommends('HTTP::Server::Simple')
     ],
 
