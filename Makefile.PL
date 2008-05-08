@@ -21,11 +21,12 @@ requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');
 requires('JSON');
 requires('Module::Pluggable');
+requires('File::Find::Rule');
 
 features(
     'REST Server' => [
         -default => 1,
-        recommends('HTTP::Server::Simple'), # HTTP::Server::Simple::CGI'
+        recommends('HTTP::Server::Simple'), # HTTP::Server::Simple::CGI
         recommends('Test::HTTP::Server::Simple'),
         recommends('Test::WWW::Mechanize'),
         recommends('HTTP::Server::Simple')
