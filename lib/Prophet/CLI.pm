@@ -214,6 +214,10 @@ sub run {
     my $record = $self->_get_record;
 
     $record->create( props => $self->args );
+    if (!$record->uuid) {
+        warn "Failed to create " . $record->record_type . "\n";
+        return;
+    }
 
     print "Created " . $record->record_type . " " . $record->uuid . "\n";
 
