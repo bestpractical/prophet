@@ -438,7 +438,7 @@ sub run {
     my $self = shift;
     $self->fatal_error( "The command you ran, '"
             . ($self->command || '')
-            . "', could not be found. Perhaps running --help would help?" );
+            . "', could not be found. Perhaps running '$0 help' would help?" );
 }
 
 1;
