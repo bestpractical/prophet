@@ -95,15 +95,13 @@ sub run_ok {
     my $args   = shift if ( ref $_[0] eq 'ARRAY' );
     my $msg    = shift if (@_);
 
-    @_ = sub {
+    lives_and {
         my ( $ret, $stdout, $stderr ) = ( run_script( $script, $args ), $msg );
-        @_ = ( $ret, $msg );
 
         #diag("STDOUT: " . $stdout) if ($stdout);
         #diag("STDERR: " . $stderr) if ($stderr);
-        goto &Test::More::ok;
+        ok($ret, $msg);
     };
-    goto \&lives_and;
 }
 
 sub _mk_cmp_closure {
@@ -158,25 +156,18 @@ sub is_script_output {
     my $ret = run3 [ @cmd, @$arg ], undef, _mk_cmp_closure( $exp_stdout, $stdout_err ),    # stdout
         _mk_cmp_closure( $exp_stderr, $stdout_err );                                       # stderr
 
+    my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$arg );
+    ok(@$stdout_err, $test_name);
     if (@$stdout_err) {
-        @_ = ( 0, join( ' ', $msg ? "$msg:" : '', $script, @$arg ) );
         diag( "Different in line: " . join( ',', @$stdout_err ) );
-        goto \&ok;
-    } else {
-        @_ = ( 1, join( ' ', $msg ? "$msg:" : '', $script, @$arg ) );
-        goto \&ok;
     }
-
 }
 
 sub run_output_matches {
     my ( $script, $args, $expected, $stderr, $msg ) = @_;
-    Test::Builder->new->level(2);
     lives_and {
-        @_ = ( $script, $args, $expected, $stderr, $msg );
-        goto \&is_script_output;
+        is_script_output($script, $args, $expected, $stderr, $msg);
     };
-
 }
 
 =head2 repo_path_for $USERNAME
