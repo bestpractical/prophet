@@ -157,7 +157,7 @@ sub is_script_output {
         _mk_cmp_closure( $exp_stderr, $stdout_err );                                       # stderr
 
     my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$arg );
-    ok(@$stdout_err, $test_name);
+    ok(!@$stdout_err, $test_name);
     if (@$stdout_err) {
         diag( "Different in line: " . join( ',', @$stdout_err ) );
     }
