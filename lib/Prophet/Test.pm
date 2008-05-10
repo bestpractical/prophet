@@ -44,6 +44,7 @@ sub import_extra {
 
 sub in_gladiator (&) {
     my $code = shift;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
 
     my $types;
     require "Devel::Gladiator"
@@ -95,7 +96,10 @@ sub run_ok {
     my $args   = shift if ( ref $_[0] eq 'ARRAY' );
     my $msg    = shift if (@_);
 
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
     lives_and {
+        local $Test::Builder::Level = $Test::Builder::Level + 1;
         my ( $ret, $stdout, $stderr ) = ( run_script( $script, $args ), $msg );
 
         #diag("STDOUT: " . $stdout) if ($stdout);
@@ -149,6 +153,9 @@ sub _get_perl_cmd {
 
 sub is_script_output {
     my ( $script, $arg, $exp_stdout, $exp_stderr, $msg ) = @_;
+
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+
     my $stdout_err = [];
     $exp_stderr ||= [];
     my @cmd = _get_perl_cmd($script);
@@ -157,7 +164,7 @@ sub is_script_output {
         _mk_cmp_closure( $exp_stderr, $stdout_err );                                       # stderr
 
     my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$arg );
-    ok(!@$stdout_err, $test_name);
+    is(scalar(@$stdout_err), 0, $test_name);
     if (@$stdout_err) {
         diag( "Different in line: " . join( ',', @$stdout_err ) );
     }
@@ -165,7 +172,9 @@ sub is_script_output {
 
 sub run_output_matches {
     my ( $script, $args, $expected, $stderr, $msg ) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
     lives_and {
+        local $Test::Builder::Level = $Test::Builder::Level + 3;
         is_script_output($script, $args, $expected, $stderr, $msg);
     };
 }
@@ -276,6 +285,7 @@ sub fetch_newest_changesets {
 
 sub ok_added_revisions (&$$) {
     my ( $code, $num, $msg ) = @_;
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
     my $last_rev = replica_last_rev();
     $code->();
     is( replica_last_rev(), $last_rev + $num, $msg );
