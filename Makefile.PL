@@ -23,6 +23,7 @@ requires('JSON');
 requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
+requires('Scalar::Defer');
 
 features(
     'REST Server' => [

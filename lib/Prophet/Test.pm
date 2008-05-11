@@ -4,7 +4,7 @@ use warnings;
 package Prophet::Test;
 use base qw/Test::More Exporter/;
 our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid
-    serialize_conflict serialize_changeset in_gladiator diag is_script_output run_command set_editor
+    serialize_conflict serialize_changeset in_gladiator diag is_script_output run_command set_editor load_record
     /;
 
 use File::Path 'rmtree';
@@ -13,6 +13,7 @@ use Path::Class 'dir';
 use Test::Exception;
 use IPC::Run3 'run3';
 use Params::Validate ':all';
+use Scalar::Defer qw/lazy defer force/;
 
 use Prophet::CLI;
 
@@ -347,10 +348,26 @@ Examples:
 =cut
 
 sub run_command {
-    my $output;
+    my $output = '';
     open my $handle, '>', \$output;
     Prophet::CLI->new->invoke($handle, @_);
     return $output;
+}
+
+{
+    my $connection = lazy {
+        my $cli = Prophet::CLI->new();
+        $cli->app_handle->handle;
+    };
+
+    sub load_record {
+        my $type = shift;
+        my $uuid = shift;
+
+        my $record = Prophet::Record->new(handle => $connection, type => $type);
+        $record->load(uuid => $uuid);
+        return $record;
+    }
 }
 
 =head2 as_alice CODE, as_bob CODE, as_charlie CODE, as_david CODE
