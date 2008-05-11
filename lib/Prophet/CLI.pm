@@ -158,44 +158,6 @@ sub run_one_command {
     }
 }
 
-=head2 edit_text [text] -> text
-
-Filters the given text through the user's C<$EDITOR> using
-L<Proc::InvokeEditor>.
-
-=cut
-
-sub edit_text {
-    my $self = shift;
-    my $text = shift;
-
-    require Proc::InvokeEditor;
-    return scalar Proc::InvokeEditor->edit($text);
-}
-
-=head2 edit_hash hashref -> hashref
-
-Filters the hash through the user's C<$EDITOR> using L<Proc::InvokeEditor>.
-
-No validation is done on the input or output.
-
-=cut
-
-sub edit_hash {
-    my $self = shift;
-    my $hash = shift;
-
-    my $input = join "\n", map { "$_: $hash->{$_}\n" } keys %$hash;
-    my $output = $self->edit_text($input);
-
-    my $filtered;
-    while ($output =~ m{^(\S+?):(.*)$}g) {
-        $filtered->{$1} = $2;
-    }
-
-    return $filtered;
-}
-
 package Prophet::CLI::Command;
 
 use base qw/Class::Accessor/;
@@ -242,6 +204,44 @@ sub args {
 
 sub app_handle {
     shift->cli->app_handle;
+}
+
+=head2 edit_text [text] -> text
+
+Filters the given text through the user's C<$EDITOR> using
+L<Proc::InvokeEditor>.
+
+=cut
+
+sub edit_text {
+    my $self = shift;
+    my $text = shift;
+
+    require Proc::InvokeEditor;
+    return scalar Proc::InvokeEditor->edit($text);
+}
+
+=head2 edit_hash hashref -> hashref
+
+Filters the hash through the user's C<$EDITOR> using L<Proc::InvokeEditor>.
+
+No validation is done on the input or output.
+
+=cut
+
+sub edit_hash {
+    my $self = shift;
+    my $hash = shift;
+
+    my $input = join "\n", map { "$_: $hash->{$_}\n" } keys %$hash;
+    my $output = $self->edit_text($input);
+
+    my $filtered;
+    while ($output =~ m{^(\S+?):(.*)$}g) {
+        $filtered->{$1} = $2;
+    }
+
+    return $filtered;
 }
 
 package Prophet::CLI::Command::Create;
