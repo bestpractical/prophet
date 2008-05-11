@@ -20,6 +20,15 @@ our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
 diag( "Replicas can be found in" . $REPO_BASE );
 
+our $EDIT_TEXT = sub { shift };
+do {
+    no warnings 'redefine';
+    *Prophet::CLI::Command::edit_text = sub {
+        my $self = shift;
+        $EDIT_TEXT->(@_);
+    };
+};
+
 sub import_extra {
     my $class = shift;
     my $args  = shift;
