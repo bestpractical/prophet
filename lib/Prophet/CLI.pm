@@ -236,8 +236,8 @@ sub edit_hash {
     my $input = join "\n", map { "$_: $hash->{$_}\n" } keys %$hash;
     my $output = $self->edit_text($input);
 
-    my $filtered;
-    while ($output =~ m{^(\S+?):(.*)$}g) {
+    my $filtered = {};
+    while ($output =~ m{^(\S+?):(.*)$}mg) {
         $filtered->{$1} = $2;
     }
 
@@ -251,7 +251,16 @@ sub run {
     my $self   = shift;
     my $record = $self->_get_record;
 
-    $record->create( props => $self->args );
+    my $props;
+    if (exists $self->args->{edit}) {
+        delete $self->args->{edit};
+        $props = $self->edit_hash($self->args);
+    }
+    else {
+        $props = $self->args;
+    }
+
+    $record->create( props => $props );
     if (!$record->uuid) {
         warn "Failed to create " . $record->record_type . "\n";
         return;
