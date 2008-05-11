@@ -22,6 +22,7 @@ requires('URI');
 requires('JSON');
 requires('Module::Pluggable');
 requires('File::Find::Rule');
+requires('Proc::InvokeEditor');
 
 features(
     'REST Server' => [
