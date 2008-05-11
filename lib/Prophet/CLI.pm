@@ -256,7 +256,7 @@ sub edit_hash {
     my $output = $self->edit_text($input);
 
     my $filtered = {};
-    while ($output =~ m{^(\S+?):(.*)$}mg) {
+    while ($output =~ m{^(\S+?):\s*(.*)$}mg) {
         $filtered->{$1} = $2;
     }
 
