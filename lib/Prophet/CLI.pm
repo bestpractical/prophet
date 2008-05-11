@@ -345,12 +345,25 @@ sub run {
 package Prophet::CLI::Command::Update;
 use base qw/Prophet::CLI::Command/;
 
+sub edit_record {
+    my $self   = shift;
+    my $record = shift;
+
+    if (exists $self->args->{edit}) {
+        my $props = $record->get_props;
+        return $self->edit_hash($props);
+    }
+    else {
+        return $self->args;
+    }
+}
+
 sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
     $record->load( uuid => $self->uuid );
-    my $result = $record->set_props( props => $self->edit_args );
+    my $result = $record->set_props( props => $self->edit_record($record) );
     if ($result) {
         print $record->type . " " . $record->uuid . " updated.\n";
 
