@@ -244,6 +244,25 @@ sub edit_hash {
     return $filtered;
 }
 
+=head2 edit_args [arg] -> hashref
+
+Returns a hashref of the passed-in arguments. If the "arg" argument is
+specified, (default "edit"), then L</edit_hash> is invoked on the argument
+list.
+
+=cut
+
+sub edit_args {
+    my $self = shift;
+    my $arg = shift || 'edit';
+
+    if (exists $self->args->{$arg}) {
+        delete $self->args->{$arg};
+        return $self->edit_hash($self->args);
+    }
+    return $self->args;
+}
+
 package Prophet::CLI::Command::Create;
 use base qw/Prophet::CLI::Command/;
 
@@ -251,16 +270,7 @@ sub run {
     my $self   = shift;
     my $record = $self->_get_record;
 
-    my $props;
-    if (exists $self->args->{edit}) {
-        delete $self->args->{edit};
-        $props = $self->edit_hash($self->args);
-    }
-    else {
-        $props = $self->args;
-    }
-
-    $record->create( props => $props );
+    $record->create( props => $self->edit_args );
     if (!$record->uuid) {
         warn "Failed to create " . $record->record_type . "\n";
         return;
@@ -326,7 +336,7 @@ sub run {
 
     my $record = $self->_get_record;
     $record->load( uuid => $self->uuid );
-    my $result = $record->set_props( props => $self->args );
+    my $result = $record->set_props( props => $self->edit_args );
     if ($result) {
         print $record->type . " " . $record->uuid . " updated.\n";
 
