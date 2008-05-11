@@ -158,6 +158,25 @@ sub run_one_command {
     }
 }
 
+=head2 invoke [outhandle], ARGV
+
+Run the given command. If outhandle is true, select that as the file handle
+for the duration of the command.
+
+=cut
+
+sub invoke {
+    my ($self, $output, @args) = @_;
+    my $ofh;
+
+    local *ARGV = \@args;
+    $ofh = select $output if $output;
+    my $ret = eval { $self->run_one_command };
+    warn $@ if $@;
+    select $ofh if $ofh;
+    return $ret;
+}
+
 package Prophet::CLI::Command;
 
 use base qw/Class::Accessor/;
