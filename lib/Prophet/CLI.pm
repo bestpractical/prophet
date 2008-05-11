@@ -244,23 +244,37 @@ sub edit_hash {
     return $filtered;
 }
 
-=head2 edit_args [arg] -> hashref
+=head2 edit_args [arg], defaults -> hashref
 
-Returns a hashref of the passed-in arguments. If the "arg" argument is
-specified, (default "edit"), then L</edit_hash> is invoked on the argument
-list.
+Returns a hashref of the command arguments mixed in with any default arguments.
+If the "arg" argument is specified, (default "edit", use C<undef> if you only want default arguments), then L</edit_hash> is
+invoked on the argument list.
 
 =cut
 
 sub edit_args {
     my $self = shift;
-    my $arg = shift || 'edit';
+    my $arg  = shift || 'edit';
 
+    my $edit_hash;
     if (exists $self->args->{$arg}) {
         delete $self->args->{$arg};
-        return $self->edit_hash($self->args);
+        $edit_hash = 1;
     }
-    return $self->args;
+
+    my %args;
+    if (@_ == 1) {
+        %args = (%{ $self->args }, %{ $_[0] });
+    }
+    else {
+        %args = (%{ $self->args }, @_);
+    }
+
+    if ($edit_hash) {
+        return $self->edit_hash(\%args);
+    }
+
+    return \%args;
 }
 
 package Prophet::CLI::Command::Create;
