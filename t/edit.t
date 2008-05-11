@@ -1,0 +1,137 @@
+use warnings;
+use strict;
+use Test::More tests => 34;
+use Prophet::Test;
+use File::Temp qw'tempdir';
+
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+my $prophet = Prophet::CLI->new;
+
+my $uuid;
+my $created_re = qr/Created Robot Master (\S+)(?{ $uuid = $1 })/;
+my $updated_re = qr/Robot Master (\S+)(?{ $uuid = $1 }) updated/;
+my $invoked_editor = 0;
+
+# ------------
+
+my $out = run_command('create', '--type=Robot Master');
+like($out, $created_re);
+is($invoked_editor, 0, "Editor not invoked");
+ok($uuid, "got a uuid");
+cleanup();
+
+# ------------
+
+$out = run_command('create', '--type=Robot Master', '--edit');
+like($out, $created_re);
+is($invoked_editor, 1, "Editor invoked once");
+ok($uuid, "got a uuid");
+cleanup();
+
+# ------------
+
+editor(sub {
+    return << "TEXT";
+name: Shadow Man
+weapon: Shadow Blade
+weakness: Top Spin
+TEXT
+});
+
+$out = run_command('create', '--type=Robot Master', '--edit');
+like($out, $created_re);
+is($invoked_editor, 1, "Editor invoked once");
+ok($uuid, "got a uuid");
+my $shadow_man = load_record('Robot Master', $uuid);
+is($shadow_man->uuid, $uuid, "correct uuid");
+is($shadow_man->prop('name'), 'Shadow Man', 'correct name');
+is($shadow_man->prop('weapon'), 'Shadow Blade', 'correct weapon');
+is($shadow_man->prop('weakness'), 'Top Spin', 'correct weakness');
+cleanup();
+
+# ------------
+
+editor(sub {
+    return << "TEXT";
+# called Clash Man in Japan
+name: Crash Man
+
+# also called Clash Bomb in Japan
+weapon: Crash Bomb
+
+# in Mega Man 3, he's weak to Hard Knuckle
+weakness: Air Shooter
+TEXT
+});
+
+$out = run_command('create', '--type=Robot Master', '--edit');
+like($out, $created_re);
+is($invoked_editor, 1, "Editor invoked once");
+ok($uuid, "got a uuid");
+my $crash_man = load_record('Robot Master', $uuid);
+is($crash_man->uuid, $uuid, "correct uuid");
+is($crash_man->prop('name'), 'Crash Man', 'correct name');
+is($crash_man->prop('weapon'), 'Crash Bomb', 'correct weapon');
+is($crash_man->prop('weakness'), 'Air Shooter', 'correct weakness');
+cleanup();
+
+# ------------
+
+editor(sub {
+    return << "TEXT";
+name: Clash Man
+weapon: Clash Bomb
+TEXT
+});
+
+$out = run_command(
+    'update',
+    '--type=Robot Master',
+    '--uuid=' . $crash_man->uuid,
+    '--edit',
+);
+
+like($out, $updated_re);
+is($invoked_editor, 1, "Editor invoked once");
+ok($uuid, "got a uuid");
+my $crash_man2 = load_record('Robot Master', $uuid);
+is($crash_man2->uuid, $uuid, "correct uuid");
+is($crash_man2->prop('name'), 'Clash Man', 'corrected name');
+is($crash_man2->prop('weapon'), 'Clash Bomb', 'corrected weapon');
+is($crash_man2->prop('weakness'), 'Air Shooter', 'same weakness');
+cleanup();
+
+# ------------
+
+$out = run_command(
+    'update',
+    '--type=Robot Master',
+    '--uuid=' . $crash_man->uuid,
+    '--weakness=Hard Knuckle',
+);
+
+like($out, $updated_re);
+is($invoked_editor, 0, "Editor not invoked");
+ok($uuid, "got a uuid");
+my $crash_man3 = load_record('Robot Master', $uuid);
+is($crash_man3->uuid, $uuid, "correct uuid");
+is($crash_man3->prop('name'), 'Clash Man', 'same name');
+is($crash_man3->prop('weapon'), 'Clash Bomb', 'same weapon');
+is($crash_man3->prop('weakness'), 'Hard Knuckle', 'updated weakness');
+cleanup();
+
+# ------------
+
+sub cleanup {
+    undef $uuid;
+    $invoked_editor = 0;
+    editor(sub { '' });
+}
+
+sub editor {
+    my $code = shift;
+    set_editor(sub {
+        $invoked_editor++;
+        $code->(@_);
+    });
+}
