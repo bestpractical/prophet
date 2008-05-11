@@ -95,9 +95,11 @@ my $TB = Test::Builder->new();
 sub step {
     my $self = shift;
     my $step_name = shift || undef;
+    my $step_display = defined($step_name) ? $step_name : "(undef)";
+
     for my $chicken ( @{ $self->chickens } ) {
 
-        diag(" as ".$chicken->name. ": $step_name");
+        diag(" as ".$chicken->name. ": $step_display");
         # walk the arena, noting the type of each value
         as_user( $chicken->name, sub { $chicken->take_one_step($step_name) } );
         die if ( grep { !$_ } $TB->summary );
