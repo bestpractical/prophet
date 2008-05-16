@@ -576,12 +576,28 @@ sub _create_luid {
     return ++$map->{'_maximum_luid'};
 }
 
+sub _guid2luid_file { "local-id-cache" }
+
 sub _read_guid2luid_mappings {
-    Carp::confess "Someone has failed to implement a '_read_guid2luid_mappings' method for their replica type.";
+    my $self = shift;
+    my $json = $self->read_metadata_file(path => $self->_guid2luid_file)
+            || '{}';
+
+    require JSON;
+    return JSON::from_json($json, { utf8 => 1 });
 }
 
 sub _write_guid2luid_mappings {
-    Carp::confess "Someone has failed to implement a '_write_guid2luid_mappings' method for their replica type.";
+    my $self = shift;
+    my $map  = shift;
+
+    require JSON;
+    my $content = JSON::to_json($map, { canonical => 1, pretty => 0, utf8 => 1 });
+
+    $self->write_metadata_file(
+        path    => $self->_guid2luid_file,
+        content => $content,
+    );
 }
 
 sub _read_luid2guid_mappings {
