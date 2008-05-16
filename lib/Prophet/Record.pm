@@ -15,7 +15,7 @@ This class represents a base class for any record in a Prophet database
 
 use base qw'Class::Accessor Class::Data::Inheritable';
 
-__PACKAGE__->mk_accessors(qw'handle uuid type');
+__PACKAGE__->mk_accessors(qw'handle uuid luid type');
 __PACKAGE__->mk_classdata( REFERENCES => {} );
 __PACKAGE__->mk_classdata( PROPERTIES => {} );
 
@@ -121,6 +121,7 @@ sub create {
     $self->validate_props( $args{'props'} ) or return undef;
 
     $self->uuid($uuid);
+    $self->find_or_create_luid();
 
     $self->handle->create_record(
         props => $args{'props'},
@@ -141,6 +142,7 @@ sub load {
     my $self = shift;
     my %args = validate( @_, { uuid => 1 } );
     $self->uuid( $args{uuid} );
+    $self->find_or_create_luid();
 
     return $self->handle->record_exists( uuid => $self->uuid, type => $self->type );
 }
@@ -280,6 +282,19 @@ sub format_summary {
 
     return sprintf( $format, map { $self->prop($_) || "(no $_)" } $self->summary_props );
 
+}
+
+=head2 find_or_create_luid
+
+Finds the luid for the records uuid, or creates a new one. Returns the luid.
+
+=cut
+
+sub find_or_create_luid {
+    my $self = shift;
+    my $luid = $self->handle->find_or_create_luid($self->uuid);
+    $self->luid($luid);
+    return $luid;
 }
 
 1;
