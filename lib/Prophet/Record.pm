@@ -133,8 +133,9 @@ sub create {
 }
 
 =head2 load { uuid => $UUID }
+=head2 load { luid => $UUID }
 
-Loads a Prophet record off disk by its uuid.
+Loads a Prophet record off disk by its uuid or luid.
 
 =cut
 
