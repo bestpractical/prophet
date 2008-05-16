@@ -7,6 +7,7 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use Data::UUID;
+use Path::Class;
 
 
 __PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb is_state_handle db_uuid url));
@@ -464,6 +465,52 @@ sub export_to {
     $exporter->export();
 }
 
+=head2 metadata_directory
+
+=cut
+
+sub metadata_directory {
+    my $self = shift;
+    return $ENV{PROPHET_METADATA_DIRECTORY} if $ENV{PROPHET_METADATA_DIRECTORY};
+    return dir($ENV{HOME}, '.prophet-meta', $self->uuid);
+}
+
+=head2 read_metadata_file
+
+Returns the contents of the given file in this replica's metadata directory.
+Returns C<undef> if the file does not exist.
+
+=cut
+
+sub read_metadata_file {
+    my $self = shift;
+    my %args = validate( @_, { path => 1 } );
+    my $file = file($self->metadata_directory, $args{path});
+
+    return undef if !-f $file;
+    return scalar $file->slurp;
+}
+
+=head2 write_metadata_file
+
+Writes the given string to the given file in this replica's metadata directory.
+
+=cut
+
+sub write_metadata_file {
+    my $self = shift;
+    my %args = validate( @_, { path => 1, content => 1 } );
+    my $file = file($self->metadata_directory, $args{path});
+
+    my $parent = $file->parent;
+    if (!-d $parent) {
+        $parent->mkpath || die "Failed to create directory " . $file->parent;
+    }
+
+    my $fh = $file->openw;
+    print $fh $args{content};
+    close $fh || die $!;
+}
 
 =head1 methods to be implemented by a replica backend
 
