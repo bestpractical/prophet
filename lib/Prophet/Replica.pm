@@ -488,6 +488,41 @@ Returns the sequence # of the most recently committed changeset
 
 sub latest_sequence_no {return undef }
 
+=head2 find_or_create_luid { uuid => UUID }
+
+Finds or creates a LUID for the given UUID.
+
+=cut
+
+sub find_or_create_luid {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1 } );
+
+    my $mapping = $self->_read_guid2luid_mappings;
+
+    if (!exists($mapping->{ $args{'uuid'} })) {
+        $mapping->{ $args{'uuid'} } = $self->_create_luid($mapping);
+        $self->_write_guid2luid_mappings($mapping);
+    }
+
+    return $mapping->{ $args{'uuid'} };
+}
+
+sub _create_luid {
+    my $self = shift;
+    my $map  = shift;
+
+    return ++$map->{'_maximum_luid'};
+}
+
+sub _read_guid2luid_mappings {
+    Carp::confess "Someone has failed to implement a '_read_guid2luid_mappings' method for their replica type.";
+}
+
+sub _write_guid2luid_mappings {
+    Carp::confess "Someone has failed to implement a '_write_guid2luid_mappings' method for their replica type.";
+}
+
 =head2 traverse_changesets { after => SEQUENCE_NO, callback => sub {} }
 
 Walk through each changeset in the replica after SEQUENCE_NO, calling the C<callback> for each one in turn.
