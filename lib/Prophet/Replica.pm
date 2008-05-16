@@ -539,7 +539,7 @@ sub _write_guid2luid_mappings {
 
 sub _read_luid2guid_mappings {
     my $self = shift;
-    my $guid2luid = $self->_read_luid2guid_mappings(@_);
+    my $guid2luid = $self->_read_guid2luid_mappings(@_);
     my %luid2guid = reverse %$guid2luid;
     return \%luid2guid;
 }
