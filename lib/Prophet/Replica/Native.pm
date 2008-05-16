@@ -658,7 +658,7 @@ sub _guid2luid_file { "local-id-cache" }
 sub _read_guid2luid_mappings {
     my $self = shift;
 
-    return {} if !$self->_file_exists($self->_guid2luid_file)
+    return {} if !$self->_file_exists($self->_guid2luid_file);
 
     return from_json($self->_read_file($self->_guid2luid_file), { utf8 => 1 });
 }
