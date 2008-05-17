@@ -351,7 +351,7 @@ sub conflicts_from_changeset {
 
     $conflict->analyze_changeset();
 
-    return undef unless @{ $conflict->conflicting_changes };
+    return undef unless $conflict->has_conflicting_changes;
 
     return $conflict;
 

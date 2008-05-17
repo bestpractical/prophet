@@ -1,5 +1,6 @@
 package Prophet::Conflict;
 use Moose;
+use MooseX::AttributeHelpers;
 use Params::Validate;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
@@ -36,6 +37,17 @@ has autoresolved => (
     isa => 'Bool',
 );
 
+has conflicting_changes => (
+    metaclass => 'Collection::Array',
+    is        => 'ro',
+    isa       => 'ArrayRef[Prophet::ConflictingChange]',
+    default   => sub { [] },
+    provides  => {
+        count => 'has_conflicting_changes',
+        push  => 'add_conflicting_change',
+    },
+);
+
 =head2 analyze_changeset Prophet::ChangeSet
 
 Take a look at a changeset. if there are any conflicts, populate
@@ -50,7 +62,7 @@ sub analyze_changeset {
     #my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     $self->generate_changeset_conflicts();
-    return unless ( @{ $self->conflicting_changes } );
+    return unless $self->has_conflicting_changes;
 
     $self->generate_nullification_changeset;
 
@@ -94,7 +106,7 @@ sub generate_changeset_conflicts {
     my $self = shift;
     for my $change ( $self->changeset->changes ) {
         if ( my $change_conflicts = $self->_generate_change_conflicts($change) ) {
-            push @{ $self->conflicting_changes }, $change_conflicts;
+            $self->add_conflicting_change($change_conflicts);
         }
     }
 }
@@ -178,19 +190,6 @@ sub _generate_prop_change_conflicts {
 
     }
     return @prop_conflicts;
-}
-
-=head2 conflicting_changes 
-
-Returns a referencew to an array of conflicting changes for this conflict
-
-
-=cut
-
-sub conflicting_changes {
-    my $self = shift;
-    $self->{'conflicting_changes'} ||= [];
-    return $self->{'conflicting_changes'};
 }
 
 =head2 generate_nullification_changeset
