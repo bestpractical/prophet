@@ -1,8 +1,29 @@
-use warnings;
-use strict;
-
 package Prophet::ChangeSet;
-use base qw/Class::Accessor/;
+use Moose;
+
+has sequence_no => (
+    is => 'rw',
+);
+
+has source_uuid => (
+    is => 'rw',
+);
+
+has original_source_uuid => (
+    is => 'rw',
+);
+
+has original_sequence_no => (
+    is => 'rw',
+);
+
+has is_nullification => (
+    is => 'rw',
+);
+
+has is_resolution => (
+    is => 'rw',
+);
 
 =head1 NAME
 
@@ -20,9 +41,6 @@ use Params::Validate;
 =head1 METHODS
 
 =cut
-
-__PACKAGE__->mk_accessors(
-    qw/sequence_no source_uuid original_source_uuid original_sequence_no is_nullification  is_resolution/);
 
 =head2 new
 
@@ -118,5 +136,8 @@ sub new_from_hashref {
     }
     return $self;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
