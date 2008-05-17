@@ -1,9 +1,6 @@
-use warnings;
-use strict;
-
 package Prophet::Replica::Native;
-use base qw/Prophet::Replica/;
-
+use Moose;
+extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use LWP::Simple ();
 use Path::Class;
@@ -14,9 +11,28 @@ use JSON;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url _db_uuid _uuid/);
-__PACKAGE__->mk_accessors(
-    qw(fs_root_parent fs_root target_replica cas_root record_cas_dir changeset_cas_dir record_dir current_edit)
+has _db_uuid => (
+    is => 'rw',
+);
+
+has _uuid => (
+    is => 'rw',
+);
+
+has fs_root_parent => (
+    is => 'rw',
+);
+
+has fs_root => (
+    is => 'rw',
+);
+
+has target_replica => (
+    is => 'rw',
+);
+
+has current_edit => (
+    is => 'rw',
 );
 
 use constant scheme            => 'prophet';
@@ -652,5 +668,8 @@ sub type_exists {
     my %args = validate( @_, { type => 1 } );
     return $self->_file_exists( $self->_record_type_root( $args{'type'} ) );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

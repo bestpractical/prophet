@@ -1,21 +1,41 @@
-use warnings;
-use strict;
-
 package Prophet::Replica::SVN;
-use base qw/Prophet::Replica/;
+use Moose;
+extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
- 
-
-
-
 
 # require rather than use to make them late-binding
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url ra fs_root repo_handle current_edit _pool/);
+has ra => (
+    is      => 'rw',
+    isa     => 'SVN::Ra',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        require Prophet::Replica::SVN::Util;
+        my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::SVN::Util->get_auth_providers );
+        my $config = Prophet::Replica::SVN::Util->svnconfig;
+        return SVN::Ra->new(url => $self->url, config => $config, auth => $baton, pool => $self->_pool);
+    },
+);
 
+has fs_root => (
+    is => 'rw',
+);
+
+has repo_handle => (
+    is => 'rw',
+);
+
+has current_edit => (
+    is => 'rw',
+);
+
+has _pool => (
+    is => 'rw',
+);
 
 use constant scheme => 'svn';
 
@@ -26,14 +46,6 @@ Open a connection to the SVN source identified by C<$self->url>.
 
 =cut
 
-sub _get_ra {
-    my $self = shift;
-    require Prophet::Replica::SVN::Util;
-    my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::SVN::Util->get_auth_providers );
-    my $config = Prophet::Replica::SVN::Util->svnconfig;
-    return SVN::Ra->new( url => $self->url, config => $config, auth => $baton, pool => $self->_pool );
-}
-
 sub setup {
     my $self = shift;
    require SVN::Core; require SVN::Ra; require SVN::Delta; require SVN::Repos; require SVN::Fs;
@@ -43,10 +55,6 @@ sub setup {
         #$self->state_handle( $self->prophet_handle ); XXX DO THIS RIGHT
     }
 
-
-    
-    $self->ra( $self->_get_ra );
-    
     if ( $self->is_resdb ) {
 
         # XXX: should probably just point to self
@@ -124,7 +132,6 @@ sub _fetch_changeset {
 
     require Prophet::Replica::SVN::ReplayEditor;
     my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
-    $editor->ra( $self->_get_ra );
     my $pool = SVN::Pool->new_default;
 
     # This horrible hack is here because I have no idea how to pass custom variables into the editor
@@ -476,6 +483,9 @@ sub type_exists {
     return $root->check_path( $self->_directory_for_type( type => $args{'type'}, ) );
 
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 

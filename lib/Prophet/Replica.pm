@@ -1,16 +1,38 @@
-use warnings;
-use strict;
-
-
 package Prophet::Replica;
-use base qw/Class::Accessor/;
+use Moose;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use Data::UUID;
 use Path::Class;
 
+has state_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
 
-__PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb is_state_handle db_uuid url));
+has resolution_db_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
+
+has is_resdb => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has is_state_handle => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has db_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has url => (
+    is => 'rw',
+);
 
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
@@ -797,6 +819,9 @@ sub log_fatal {
     $self->log(@_);
     Carp::confess(@_);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 
