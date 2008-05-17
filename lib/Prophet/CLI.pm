@@ -403,7 +403,7 @@ sub run {
 
     my $record = $self->_get_record;
     $record->load( uuid => $self->uuid )
-        || $self->fatal_error("I couldn't find that record");
+        || $self->fatal_error("I couldn't find the record " . $self->uuid);
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
     } else {
