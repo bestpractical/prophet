@@ -35,8 +35,12 @@ has type => (
 );
 
 has uuid => (
-    is  => 'rw',
-    isa => 'Str',
+    is      => 'rw',
+    isa     => 'Str',
+    trigger => sub {
+        my $self = shift;
+        $self->find_or_create_luid;
+    },
 );
 
 has luid => (
@@ -145,7 +149,6 @@ sub create {
     $self->validate_props( $args{'props'} ) or return undef;
 
     $self->uuid($uuid);
-    $self->find_or_create_luid();
 
     $self->handle->create_record(
         props => $args{'props'},
@@ -187,7 +190,6 @@ sub load {
         $self->uuid( $self->handle->find_uuid_by_luid( luid => $args{luid} ) );
     } else {
         $self->uuid( $args{uuid} );
-        $self->find_or_create_luid();
     }
 
     return $self->handle->record_exists(
