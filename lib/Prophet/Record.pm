@@ -292,7 +292,7 @@ Finds the luid for the records uuid, or creates a new one. Returns the luid.
 
 sub find_or_create_luid {
     my $self = shift;
-    my $luid = $self->handle->find_or_create_luid($self->uuid);
+    my $luid = $self->handle->find_or_create_luid(uuid => $self->uuid);
     $self->luid($luid);
     return $luid;
 }
