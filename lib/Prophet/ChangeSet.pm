@@ -1,5 +1,6 @@
 package Prophet::ChangeSet;
 use Moose;
+use MooseX::AttributeHelpers;
 use Prophet::Change;
 use Params::Validate;
 
@@ -27,11 +28,15 @@ has is_resolution => (
     is => 'rw',
 );
 
-has _changes => (
-    is       => 'rw',
-    isa      => 'ArrayRef[Prophet::Change]',
-    init_arg => 'changes',
-    default  => sub { [] },
+has changes => (
+    metaclass  => 'Collection::Array',
+    is         => 'rw',
+    isa        => 'ArrayRef[Prophet::Change]',
+    auto_deref => 1,
+    default    => sub { [] },
+    provides   => {
+        push   => '_add_change',
+    },
 );
 
 =head1 NAME
@@ -89,7 +94,7 @@ Add a new change, L<$args{'change'}> to this changeset.
 sub add_change {
     my $self = shift;
     my %args = validate( @_, { change => { isa => 'Prophet::Change' } } );
-    push @{ $self->_changes }, $args{change};
+    $self->_add_change($args{change});
 
 }
 
@@ -99,14 +104,6 @@ Return an array of all the changes in the current changeset.
 
 =cut
 
-sub changes {
-    my $self = shift;
-    if (@_) {
-        $self->_changes(shift);
-    }
-    return @{ $self->_changes };
-}
-
 =head2 is_empty
 
 Returns true if this changeset has no changes
@@ -115,7 +112,7 @@ Returns true if this changeset has no changes
 
 sub is_empty {
     my $self = shift;
-    return @{ $self->_changes } ? 0 : 1;
+    return @{ $self->changes } ? 0 : 1;
 }
 
 our @SERIALIZE_PROPS
