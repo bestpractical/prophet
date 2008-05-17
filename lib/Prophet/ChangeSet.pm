@@ -1,5 +1,7 @@
 package Prophet::ChangeSet;
 use Moose;
+use Prophet::Change;
+use Params::Validate;
 
 has sequence_no => (
     is => 'rw',
@@ -25,6 +27,13 @@ has is_resolution => (
     is => 'rw',
 );
 
+has _changes => (
+    is       => 'rw',
+    isa      => 'ArrayRef[Prophet::Change]',
+    init_arg => 'changes',
+    default  => sub { [] },
+);
+
 =head1 NAME
 
 Prophet::ChangeSet
@@ -34,9 +43,6 @@ Prophet::ChangeSet
 This class represents a single, atomic Prophet database update. It tracks some metadata about the changeset it self and contains a list of L<Prophet::Change> entries which describe the actual records created, updated and deleted.
 
 =cut
-
-use Prophet::Change;
-use Params::Validate;
 
 =head1 METHODS
 
@@ -83,7 +89,7 @@ Add a new change, L<$args{'change'}> to this changeset.
 sub add_change {
     my $self = shift;
     my %args = validate( @_, { change => { isa => 'Prophet::Change' } } );
-    push @{ $self->{changes} }, $args{change};
+    push @{ $self->_changes }, $args{change};
 
 }
 
@@ -96,9 +102,9 @@ Return an array of all the changes in the current changeset.
 sub changes {
     my $self = shift;
     if (@_) {
-        $self->{'changes'} = shift;
+        $self->_changes(shift);
     }
-    return @{ $self->{'changes'} || [] };
+    return @{ $self->_changes };
 }
 
 =head2 is_empty
@@ -109,7 +115,7 @@ Returns true if this changeset has no changes
 
 sub is_empty {
     my $self = shift;
-    return $self->changes ? 0 : 1;
+    return @{ $self->_changes } ? 0 : 1;
 }
 
 our @SERIALIZE_PROPS
