@@ -653,25 +653,4 @@ sub type_exists {
     return $self->_file_exists( $self->_record_type_root( $args{'type'} ) );
 }
 
-sub _guid2luid_file { "local-id-cache" }
-
-sub _read_guid2luid_mappings {
-    my $self = shift;
-
-    return {} if !$self->_file_exists($self->_guid2luid_file);
-
-    return from_json($self->_read_file($self->_guid2luid_file), { utf8 => 1 });
-}
-
-sub _write_guid2luid_mappings {
-    my $self = shift;
-    my $map  = shift;
-    my $content = to_json($map, { canonical => 1, pretty => 0, utf8 => 1 });
-
-    $self->_write_file(
-        path    => $self->_guid2luid_file,
-        content => $content,
-    );
-}
-
 1;
