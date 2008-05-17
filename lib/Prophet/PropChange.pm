@@ -1,10 +1,20 @@
-use warnings;
-use strict;
-
 package Prophet::PropChange;
-use base qw/Class::Accessor/;
+use Moose;
 
-__PACKAGE__->mk_accessors(qw/name old_value new_value/);
+has name => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has old_value => (
+    is  => 'rw',
+    isa => 'Maybe[Str]',
+);
+
+has new_value => (
+    is  => 'rw',
+    isa => 'Str',
+);
 
 =head1 NAME
 
@@ -30,5 +40,8 @@ What L</name> changed I<to>.
 
 
 =cut
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
