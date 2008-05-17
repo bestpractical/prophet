@@ -14,7 +14,6 @@ requires('Path::Class');
 requires('YAML::Syck');
 requires('Test::Exception');
 requires('UNIVERSAL::require');
-requires('Class::Data::Inheritable');
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
