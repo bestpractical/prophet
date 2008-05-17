@@ -1,16 +1,13 @@
-use warnings;
-use strict;
-
 package Prophet::Server::REST;
-use base qw/HTTP::Server::Simple::CGI/;
+use Moose;
 use Params::Validate qw/:all/;
 use JSON;
+extends 'HTTP::Server::Simple::CGI';
 
-sub prophet_handle {
-    my $self = shift;
-    $self->{'_prophet_handle'} = shift if (@_);
-    return $self->{'_prophet_handle'};
-}
+has prophet_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
 
 sub handle_request {
     my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server::REST'} ,  { isa => 'CGI' } );
@@ -133,5 +130,8 @@ sub _send_redirect {
     print "Location: " . $args{'to'} . "\r\n";
     return '302';
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
