@@ -49,7 +49,7 @@ sub generate_resolution {
     for my $conflicting_change ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {
             if ( my $resolution = $_->( $conflicting_change, $self, $resdb ) ) {
-                $resolutions->add_change( change => $resolution ) if $resolution->prop_changes;
+                $resolutions->add_change( change => $resolution ) if $resolution->has_prop_changes;
                 last;
             }
         }
