@@ -351,7 +351,7 @@ sub run {
     my $search_cb = $self->get_search_callback();
     $records->matching($search_cb);
 
-    for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
+    for ( sort { $a->uuid cmp $b->uuid } $records->items ) {
         if ( $_->summary_props ) {
             print $_->format_summary . "\n";
         } else {

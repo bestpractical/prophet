@@ -61,7 +61,7 @@ for ( @{ $arena->chickens } ) {
             );
             $records->matching( sub {1} );
             use Data::Dumper;
-            for ( @{ $records->as_array_ref } ) {
+            for ($records->items) {
                 warn $_->uuid . ' : ' . Dumper( $_->get_props );
             }
         }

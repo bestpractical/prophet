@@ -148,9 +148,9 @@ sub dump_state {
     $resolutions->matching( sub {1} );
     $merges->matching( sub      {1} );
 
-    %{ $state->{records} }       = map { $_->uuid => $_->get_props } @{ $records->as_array_ref };
-    %{ $state->{merges} }      = map { $_->uuid => $_->get_props } @{ $merges->as_array_ref };
-    %{ $state->{resolutions} } = map { $_->uuid => $_->get_props } @{ $resolutions->as_array_ref };
+    %{ $state->{records} }       = map { $_->uuid => $_->get_props } $records->items;
+    %{ $state->{merges} }      = map { $_->uuid => $_->get_props } $merges->items;
+    %{ $state->{resolutions} } = map { $_->uuid => $_->get_props } $resolutions->items;
 
     return $state;
 
