@@ -1,7 +1,12 @@
-use warnings;
-use strict;
-
 package Prophet::Record;
+use Moose;
+use MooseX::ClassAttribute;
+use Params::Validate;
+use Data::UUID;
+use List::MoreUtils qw/uniq/;
+use Prophet::App; # for require_module. Kinda hacky
+
+use constant collection_class => 'Prophet::Collection';
 
 =head1 NAME
 
@@ -13,24 +18,45 @@ This class represents a base class for any record in a Prophet database
 
 =cut
 
-use base qw'Class::Accessor Class::Data::Inheritable';
+has handle => (
+    is       => 'rw',
+    required => 1,
+);
 
-__PACKAGE__->mk_accessors(qw'handle uuid type');
-__PACKAGE__->mk_classdata( REFERENCES => {} );
-__PACKAGE__->mk_classdata( PROPERTIES => {} );
+has type => (
+    is       => 'rw',
+    isa      => 'Str',
+    required => 1,
+    default  => sub {
+        my $self = shift;
+        $self->record_type;
+    },
+);
+
+has uuid => (
+    is => 'rw',
+    isa => 'Str',
+);
+
+class_has REFERENCES => (
+    is      => 'rw',
+    isa     => 'HashRef',
+    default => sub { {} },
+);
+
+class_has PROPERTIES => (
+    is      => 'rw',
+    isa     => 'HashRef',
+    default => sub { {} },
+);
 
 sub declared_props {
     return sort keys %{ $_[0]->PROPERTIES };
 }
 
-use Params::Validate;
-use Data::UUID;
-use List::MoreUtils qw/uniq/;
-use Prophet::App; # for require_module. Kinda hacky
-
 my $UUIDGEN = Data::UUID->new();
 
-use constant collection_class => 'Prophet::Collection';
+sub record_type { $_[0]->type }
 
 =head1 METHODS
 
@@ -39,18 +65,6 @@ use constant collection_class => 'Prophet::Collection';
 Instantiates a new, empty L<Prophet::Record/> of type $type.
 
 =cut
-
-sub new {
-    my $class = shift;
-    my $self  = bless {}, $class;
-    my $args  = ref( $_[0] ) ? $_[0] : {@_};
-    $args->{type} ||= $class->record_type;
-    my %args = validate( @{ [%$args] }, { handle => 1, type => 1 } );
-    $self->$_( $args{$_} ) for keys(%args);
-    return $self;
-}
-
-sub record_type { $_[0]->type }
 
 =head2 register_reference
 
@@ -281,5 +295,9 @@ sub format_summary {
     return sprintf( $format, map { $self->prop($_) || "(no $_)" } $self->summary_props );
 
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
+no MooseX::ClassAttribute;
 
 1;

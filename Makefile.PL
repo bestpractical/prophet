@@ -26,6 +26,7 @@ requires('Proc::InvokeEditor');
 requires('Scalar::Defer');
 requires('Moose'); # Moose::Util::TypeConstraints
 requires('MooseX::AttributeHelpers');
+requires('MooseX::ClassAttribute');
 
 features(
     'REST Server' => [
