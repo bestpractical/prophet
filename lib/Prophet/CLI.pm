@@ -429,7 +429,8 @@ sub run {
         return;
     }
 
-    print "id: " . $record->uuid . "\n";
+    print "uuid: " . $record->uuid . "\n";
+    print "luid: " . $record->luid . "\n";
     my $props = $record->get_props();
     for ( keys %$props ) {
         print $_. ": " . $props->{$_} . "\n";
