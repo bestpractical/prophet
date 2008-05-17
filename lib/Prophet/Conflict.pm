@@ -138,10 +138,10 @@ sub _generate_change_conflicts {
         my $current_state
             = $self->prophet_handle->get_record_props( uuid => $change->record_uuid, type => $change->record_type );
 
-        push @{ $change_conflict->prop_conflicts }, $self->_generate_prop_change_conflicts( $change, $current_state );
+        $change_conflict->add_prop_conflict($self->_generate_prop_change_conflicts( $change, $current_state ));
     }
 
-    return ( @{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
+    return ( $change_conflict->has_prop_conflicts || $file_op_conflict ) ? $change_conflict : undef;
 }
 
 =head2 _generate_prop_change_conflicts Prophet::Change %hash_of_current_properties
