@@ -125,12 +125,22 @@ When working with individual records, it is often the case that we'll be expecti
 sub set_type_and_uuid {
     my $self = shift;
 
+    if (my $id = delete $self->{args}->{id}) {
+        if ($id =~ /^(\d+)$/) { 
+        $self->{args}->{luid} = $id;
+        } else { 
+        $self->{args}->{uuid} = $id;
+
+        }
+
+    }
+
     if ( my $uuid = delete $self->{args}->{uuid} ) {
         $self->uuid($uuid);
     }
     elsif ( my $luid = delete $self->{args}->{luid} ) {
         my $uuid = $self->app_handle->handle->find_uuid_by_luid(luid => $luid);
-        die "Invalid luid '$luid'\n" if !defined($uuid);
+        die "I have no UUID mapped to the local id '$luid'\n" if !defined($uuid);
         $self->uuid($uuid);
     }
     if ( $self->{args}->{type} ) {
@@ -314,7 +324,7 @@ sub run {
         return;
     }
 
-    print "Created " . $record->record_type . " " . $record->uuid . "\n";
+    print "Created " . $record->record_type . " " . $record->luid . " (".$record->uuid.")"."\n";
 
 }
 
@@ -428,9 +438,7 @@ sub run {
         print "Record not found\n";
         return;
     }
-
-    print "uuid: " . $record->uuid . "\n";
-    print "luid: " . $record->luid . "\n";
+    print "id: ".$record->luid." (" .$record->uuid.")\n";
     my $props = $record->get_props();
     for ( keys %$props ) {
         print $_. ": " . $props->{$_} . "\n";
