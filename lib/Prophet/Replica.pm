@@ -508,6 +508,20 @@ sub find_or_create_luid {
     return $mapping->{ $args{'uuid'} };
 }
 
+=head2 find_uuid_by_luid { luid => LUID }
+
+Finds the UUID for the given LUID. Returns C<undef> if the LUID is not known.
+
+=cut
+
+sub find_uuid_by_luid {
+    my $self = shift;
+    my %args = validate( @_, { luid => 1 } );
+
+    my $mapping = $self->_read_luid2guid_mappings;
+    return $mapping->{ $args{'luid'} };
+}
+
 sub _create_luid {
     my $self = shift;
     my $map  = shift;
@@ -521,6 +535,13 @@ sub _read_guid2luid_mappings {
 
 sub _write_guid2luid_mappings {
     Carp::confess "Someone has failed to implement a '_write_guid2luid_mappings' method for their replica type.";
+}
+
+sub _read_luid2guid_mappings {
+    my $self = shift;
+    my $guid2luid = $self->_read_luid2guid_mappings(@_);
+    my %luid2guid = reverse %$guid2luid;
+    return \%luid2guid;
 }
 
 =head2 traverse_changesets { after => SEQUENCE_NO, callback => sub {} }
