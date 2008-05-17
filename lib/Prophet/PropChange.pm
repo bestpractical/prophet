@@ -13,7 +13,7 @@ has old_value => (
 
 has new_value => (
     is  => 'rw',
-    isa => 'Str',
+    isa => 'Maybe[Str]',
 );
 
 =head1 NAME
