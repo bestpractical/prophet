@@ -1,10 +1,42 @@
-use warnings;
-use strict;
-
 package Prophet::App;
-use base qw/Class::Accessor/;
+use Moose;
 use Path::Class;
-__PACKAGE__->mk_accessors(qw/_resdb_handle _config/);
+
+has handle => (
+    is      => 'rw',
+    isa     => 'Prophet::Replica',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
+        my $type = $self->default_replica_type;
+        return Prophet::Replica->new({ url => $type.':file://' . $root });
+    },
+);
+
+has resdb_handle => (
+    is      => 'rw',
+    isa     => 'Prophet::Replica',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        return $self->handle->resolution_db_handle
+            if $self->handle->resolution_db_handle;
+        my $root = ($ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet')) . "_res";
+        my $type = $self->default_replica_type;
+        return Prophet::Replica->new({ url => $type.':file://' . $root });
+    },
+);
+
+has _config => (
+    is      => 'rw',
+    isa     => 'Prophet::Config',
+    lazy    => 1,
+    default => sub {
+        require Prophet::Config;
+        return Prophet::Config->new;
+    },
+);
 
 use constant DEFAULT_REPLICA_TYPE => 'prophet';
 
@@ -14,72 +46,26 @@ Prophet::App
 
 =cut
 
-sub _handle {
+sub BUILD {
     my $self = shift;
-    $self->{_handle} = shift if (@_);
-    return $self->{_handle};
-}
-
-sub new {
-    my $self = shift->SUPER::new(@_);
-   
     $self->_load_replica_types();
-
-    # Initialize our handle and resolution db handle
-    $self->handle;
-    $self->resdb_handle;
-
-    return $self;
 }
 
 sub _load_replica_types {
     my $self = shift;
-        my $replica_class = ref($self)."::Replica";
-        my $except = $replica_class."::(.*)::";
-        Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
-        for my $package ( $self->app_replica_types) {
-            $package->require;
+    my $replica_class = blessed($self)."::Replica";
+    my $except = $replica_class."::(.*)::";
+    Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
+    for my $package ( $self->app_replica_types) {
+        $package->require;
         Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package) 
-        }
     }
+}
 
 sub default_replica_type {
     my $self = shift;
-     return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
-
+    return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
 }
-
-=head2 handle
-
-
-=cut
-
-sub handle {
-    my $self = shift;
-    unless ( $self->_handle() ) {
-        my $root = $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' );
-        my $type = $self->default_replica_type;
-        $self->_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
-    }
-    return $self->_handle();
-}
-
-=head2 resdb_handle
-
-=cut
-
-sub resdb_handle {
-    my $self = shift;
-   
-    return ($self->handle->resolution_db_handle) if ($self->handle->resolution_db_handle);
-    unless ( $self->_resdb_handle ) {
-        my $root = ( $ENV{'PROPHET_REPO'} || dir( $ENV{'HOME'}, '.prophet' ) ) . "_res";
-        my $type = $self->default_replica_type;
-        $self->_resdb_handle( Prophet::Replica->new( { url => $type.':file://' . $root } ) );
-    }
-    return $self->_resdb_handle();
-}
-
 
 sub require_module {
     my $self = shift;
@@ -107,11 +93,6 @@ If called with two arguments, sets the value of that config setting.
 sub config {
     my $self = shift;
 
-    unless ($self->_config) {
-        require Prophet::Config;
-        $self->_config(Prophet::Config->new);
-    }
-
     return $self->_config if @_ == 0;
 
     my $key = shift;
@@ -120,5 +101,8 @@ sub config {
     my $value = shift;
     return $self->_config->set($key => $value);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
