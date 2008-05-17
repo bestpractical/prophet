@@ -1,15 +1,37 @@
-use warnings;
-use strict;
-
 package Prophet::Collection;
+use Moose;
+use MooseX::AttributeHelpers;
 use Params::Validate;
-use base qw/Class::Accessor/;
-
-use overload '@{}' => \&as_array_ref, fallback => 1;
-
-__PACKAGE__->mk_accessors(qw'handle type');
-use constant record_class => 'Prophet::Record';
 use Prophet::Record;
+
+use overload '@{}' => sub { shift->items }, fallback => 1;
+use constant record_class => 'Prophet::Record';
+
+has handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
+
+has type => (
+    is      => 'rw',
+    isa     => 'Str',
+    default => sub {
+        my $self = shift;
+        $self->record_class->record_type;
+    },
+);
+
+has items => (
+    metaclass  => 'Collection::Array',
+    is         => 'rw',
+    isa        => 'ArrayRef[Prophet::Record]',
+    default    => sub { [] },
+    auto_deref => 1,
+    provides   => {
+        push   => 'add_item',
+        count  => 'count',
+    },
+);
 
 =head1 NAME
 
@@ -31,17 +53,6 @@ Instantiate a new, empty L<Prophet::Collection> object to find items of type C<$
 
 =cut
 
-sub new {
-    my $class = shift;
-    my $self  = {};
-    bless $self, $class;
-    my $args = ref( $_[0] ) ? $_[0] : {@_};
-    $args->{type} ||= $class->record_class->record_type;
-    my %args = validate( @{ [%$args] }, { handle => 1, type => 1 } );
-    $self->$_( $args{$_} ) for ( keys %args );
-    return $self;
-}
-
 =head2 matching $CODEREF
 
 Find all L<Prophet::Record>s of this collection's C<type> where $CODEREF returns true.
@@ -60,12 +71,12 @@ sub matching {
     my $records = $self->handle->list_records( type => $self->type );
 
     # run coderef against each item;
-    # if it matches, add it to _items
+    # if it matches, add it to items
     foreach my $key (@$records) {
         my $record = $self->record_class->new( { handle => $self->handle, type => $self->type } );
         $record->load( uuid => $key );
         if ( $coderef->($record) ) {
-            push @{ $self->{_items} }, $record;
+            $self->add_item($record);
         }
 
     }
@@ -74,16 +85,7 @@ sub matching {
 
 }
 
-=head2 as_array_ref
-
-Return the set of L<Prophet::Record>s we've found as an array reference or return an empty array ref if none were found.
-
-=cut
-
-sub as_array_ref {
-    my $self = shift;
-    return $self->{_items} || [];
-
-}
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
