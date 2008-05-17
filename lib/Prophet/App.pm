@@ -4,15 +4,10 @@ use strict;
 package Prophet::App;
 use base qw/Class::Accessor/;
 use Path::Class;
-__PACKAGE__->mk_accessors(qw/_resdb_handle _config/);
+__PACKAGE__->mk_accessors(qw/_resdb_handle/);
 
 use constant DEFAULT_REPLICA_TYPE => 'prophet';
 
-=head1 NAME
-
-Prophet::App
-
-=cut
 
 sub _handle {
     my $self = shift;
@@ -94,31 +89,5 @@ sub require_module {
     $@ = '';
 }
 
-=head2 config
-
-If called with no arguments, returns the L<Prophet::Config> instance.
-
-If called with one arguments, returns the value of that config setting.
-
-If called with two arguments, sets the value of that config setting.
-
-=cut
-
-sub config {
-    my $self = shift;
-
-    unless ($self->_config) {
-        require Prophet::Config;
-        $self->_config(Prophet::Config->new);
-    }
-
-    return $self->_config if @_ == 0;
-
-    my $key = shift;
-    return $self->_config->get($key) if @_ == 0;
-
-    my $value = shift;
-    return $self->_config->set($key => $value);
-}
 
 1;

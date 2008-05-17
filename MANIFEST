@@ -24,7 +24,6 @@ lib/Prophet/Change.pm
 lib/Prophet/ChangeSet.pm
 lib/Prophet/CLI.pm
 lib/Prophet/Collection.pm
-lib/Prophet/Config.pm
 lib/Prophet/Conflict.pm
 lib/Prophet/ConflictingChange.pm
 lib/Prophet/ConflictingPropChange.pm
@@ -62,7 +61,6 @@ t/canonicalize.t
 t/create-conflict.t
 t/create.t
 t/delete-delete-conflict.t
-t/delete.t
 t/edit.t
 t/export.t
 t/generalized_sync_n_merge.t
