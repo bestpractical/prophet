@@ -37,7 +37,7 @@ has prop_changes => (
     auto_deref => 1,
     default    => sub { [] },
     provides   => {
-        empty => 'has_prop_changes',
+        count => 'has_prop_changes',
         push  => '_add_prop_change',
     },
 );

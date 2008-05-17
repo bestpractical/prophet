@@ -42,7 +42,7 @@ has changes => (
     default    => sub { [] },
     provides   => {
         push   => '_add_change',
-        empty  => 'has_changes',
+        count  => 'has_changes',
     },
 );
 
