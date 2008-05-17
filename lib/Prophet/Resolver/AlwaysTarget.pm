@@ -10,12 +10,13 @@ sub run {
     my $conflicting_change = shift;
     my $conflict           = shift;
     my $resolution         = Prophet::Change->new_from_conflict($conflicting_change);
-    if ( $conflicting_change->file_op_conflict eq 'update_missing_file' ) {
+    my $file_op_conflict = $conflicting_change->file_op_conflict || '';
+    if ( $file_op_conflict eq 'update_missing_file' ) {
         $resolution->change_type('delete');
         return $resolution;
-    } elsif ( $conflicting_change->file_op_conflict eq 'delete_missing_file' ) {
+    } elsif ( $file_op_conflict eq 'delete_missing_file' ) {
         return $resolution;
-    } elsif ( $conflicting_change->file_op_conflict ) {
+    } elsif ( $file_op_conflict ) {
         die Dumper($conflict,$conflicting_change);
     }
 

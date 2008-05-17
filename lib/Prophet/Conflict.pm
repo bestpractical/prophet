@@ -108,7 +108,7 @@ Given a change, generates a set of Prophet::ConflictingChange entries.
 sub _generate_change_conflicts {
     my $self = shift;
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
-    my $file_op_conflict = '';
+    my $file_op_conflict;
 
     my $file_exists = $self->prophet_handle->record_exists( uuid => $change->record_uuid, type => $change->record_type );
 
@@ -130,7 +130,7 @@ sub _generate_change_conflicts {
             record_uuid          => $change->record_uuid,
             target_record_exists => $file_exists,
             change_type        => $change->change_type,
-            file_op_conflict   => $file_op_conflict
+            $file_op_conflict ? (file_op_conflict   => $file_op_conflict) : (),
         }
     );
 
@@ -213,13 +213,14 @@ sub generate_nullification_changeset {
         my $nullify_conflict
             = Prophet::Change->new( { record_type => $conflict->record_type, record_uuid => $conflict->record_uuid } );
 
-        if ( $conflict->file_op_conflict eq "delete_missing_file" ) {
+        my $file_op_conflict = $conflict->file_op_conflict || '';
+        if ( $file_op_conflict eq "delete_missing_file" ) {
             $nullify_conflict->change_type('add_file');
-        } elsif ( $conflict->file_op_conflict eq "update_missing_file" ) {
+        } elsif ( $file_op_conflict eq "update_missing_file" ) {
             $nullify_conflict->change_type('add_file');
-        } elsif ( $conflict->file_op_conflict eq "create_existing_file" ) {
+        } elsif ( $file_op_conflict eq "create_existing_file" ) {
             $nullify_conflict->change_type('delete');
-        } elsif ( $conflict->file_op_conflict ) {
+        } elsif ( $file_op_conflict ) {
             die "We don't know how to deal with a conflict of type " . $conflict->file_op_conflict;
         } else {
             $nullify_conflict->change_type('update_file');

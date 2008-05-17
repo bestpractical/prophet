@@ -5,6 +5,7 @@ package Prophet::Meta::Types;
 use Moose::Util::TypeConstraints;
 
 enum 'Prophet::Type::ChangeType' => qw/add_file add_dir update_file delete/;
+enum 'Prophet::Type::FileOpConflict' => qw/delete_missing_file update_missing_file create_existing_file create_existing_dir/;
 
 1;
 
