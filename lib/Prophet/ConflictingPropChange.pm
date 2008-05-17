@@ -7,15 +7,18 @@ has name => (
 );
 
 has source_old_value => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Maybe[Str]',
 );
 
 has target_value => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Maybe[Str]',
 );
 
 has source_new_value => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Maybe[Str]',
 );
 
 =head1 NAME
