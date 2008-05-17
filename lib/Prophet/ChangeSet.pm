@@ -4,28 +4,34 @@ use MooseX::AttributeHelpers;
 use Prophet::Change;
 use Params::Validate;
 
-has sequence_no => (
-    is => 'rw',
+has source_uuid => (
+    is  => 'rw',
+    isa => 'Str',
 );
 
-has source_uuid => (
-    is => 'rw',
+has sequence_no => (
+    is  => 'rw',
+    isa => 'Maybe[Int]',
 );
 
 has original_source_uuid => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Str',
 );
 
 has original_sequence_no => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Maybe[Int]',
 );
 
 has is_nullification => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Bool',
 );
 
 has is_resolution => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Bool',
 );
 
 has changes => (
