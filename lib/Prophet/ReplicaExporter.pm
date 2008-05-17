@@ -1,13 +1,32 @@
-use warnings;
-use strict;
-
 package Prophet::ReplicaExporter;
-use base qw/Class::Accessor/;
+use Moose;
 use Params::Validate qw(:all);
 use Path::Class;
 use UNIVERSAL::require;
 
-__PACKAGE__->mk_accessors(qw( source_replica target_path target_replica));
+has source_replica => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
+
+has target_path => (
+    is        => 'rw',
+    isa       => 'Path::Class::Dir',
+    predicate => 'has_target_path',
+);
+
+has target_replica => (
+    is      => 'rw',
+    isa     => 'Prophet::Replica',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        confess "No target_path specified." unless $self->has_target_path;
+        my $replica = Prophet::Replica->new({url => "prophet:file://" . $self->target_path});
+        $replica->initialize;
+        return $replica;
+    },
+);
 
 =head1 NAME
 
@@ -156,12 +175,6 @@ The file is sorted in ascending order by revision id.
 sub export {
     my $self = shift;
 
-    $self->target_replica(
-        Prophet::Replica->new(
-            { url => "prophet:file://" . $self->target_path }
-        )
-    );
-    $self->target_replica->initialize();
     $self->_init_export_metadata();
     $self->export_records( type => $_ )
         for ( @{ $self->source_replica->list_types } );
@@ -213,5 +226,8 @@ sub export_changesets {
     }
     close($cs_file);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
