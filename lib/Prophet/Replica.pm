@@ -539,7 +539,7 @@ sub record_resolutions {
         # Otherwise, record them locally
     my $res_handle =  $self->resolution_db_handle || $self;
 
-    return unless $changeset->changes;
+    return if $changeset->is_empty;
 
     $self->begin_edit();
     $self->record_changes($changeset);
