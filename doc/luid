@@ -1,0 +1,18 @@
+GUIDs are not great to work with. "B900A5B8-2322-11DD-A835-2B9E427B83F6" is a
+lot to demand of a user. And god forbid they have to actually type in that
+meaningless string. Substring matching doesn't help much because two GUIDs can
+easily differ by only a bit.
+
+Instead, we give users local IDs for each record. So instead of
+"B900A5B8-2322-11DD-A835-2B9E427B83F6" they might get "7". Local IDs are local
+to a replica - so two users can have different records with local ID "7".
+
+Because local IDs are integers, they're always distinguishable from global IDs.
+
+Local IDs are mildly fleeting. They're contained in a single file (directory?)
+which may be removed at any time. Every time a record is loaded, it's given
+a local ID which is cached so the user may use it.
+
+The local ID -> global ID mapping is contained in the $replica/local-id-cache
+file (directory?).
+
