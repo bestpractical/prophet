@@ -1,15 +1,40 @@
-
-use warnings;
-use strict;
-
 package Prophet::Conflict;
+use Moose;
 use Params::Validate;
-use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
 
-__PACKAGE__->mk_accessors(
-    qw/prophet_handle resolvers changeset nullification_changeset resolution_changeset autoresolved/);
+has prophet_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
+
+has resolvers => (
+    is         => 'rw',
+    isa        => 'ArrayRef[CodeRef]',
+    default    => sub { [] },
+    auto_deref => 1,
+);
+
+has changeset => (
+    is  => 'rw',
+    isa => 'Prophet::ChangeSet',
+);
+
+has nullification_changeset => (
+    is  => 'rw',
+    isa => 'Prophet::ChangeSet',
+);
+
+has resolution_changeset => (
+    is  => 'rw',
+    isa => 'Prophet::ChangeSet',
+);
+
+has autoresolved => (
+    is  => 'rw',
+    isa => 'Bool',
+);
 
 =head2 analyze_changeset Prophet::ChangeSet
 
@@ -42,7 +67,7 @@ sub generate_resolution {
     my @resolvers = (
         sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
         $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
-        @{ $self->resolvers || [] },
+        $self->resolvers,
         sub { Prophet::Resolver::Failed->new->run(@_) },
     );
     my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
@@ -213,6 +238,9 @@ sub generate_nullification_changeset {
 
     $self->nullification_changeset($nullification);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 
