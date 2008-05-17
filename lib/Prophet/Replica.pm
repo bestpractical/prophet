@@ -573,7 +573,7 @@ sub _create_luid {
     my $self = shift;
     my $map  = shift;
 
-    return ++$map->{'_maximum_luid'};
+    return ++$map->{'_meta'}{'maximum_luid'};
 }
 
 sub _guid2luid_file { "local-id-cache" }
@@ -603,6 +603,7 @@ sub _write_guid2luid_mappings {
 sub _read_luid2guid_mappings {
     my $self = shift;
     my $guid2luid = $self->_read_guid2luid_mappings(@_);
+    delete $guid2luid->{'_meta'};
     my %luid2guid = reverse %$guid2luid;
     return \%luid2guid;
 }
