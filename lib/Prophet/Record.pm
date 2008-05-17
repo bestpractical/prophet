@@ -35,7 +35,12 @@ has type => (
 );
 
 has uuid => (
-    is => 'rw',
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has luid => (
+    is  => 'rw',
     isa => 'Str',
 );
 
@@ -101,19 +106,23 @@ sub register_collection_reference {
     my %args = validate( @args, { by => 1 } );
     no strict 'refs';
 
-    Prophet::App->require_module($collection_class->record_class);
-    
-    
+    Prophet::App->require_module( $collection_class->record_class );
+
     *{ $class . "::$accessor" } = sub {
-        my $self = shift;
-        my $collection = $collection_class->new( handle => $self->handle, type => $collection_class->record_class->record_type );
-        $collection->matching( sub { $_[0]->prop( $args{by} ) eq $self->uuid } );
+        my $self       = shift;
+        my $collection = $collection_class->new(
+            handle => $self->handle,
+            type   => $collection_class->record_class->record_type
+        );
+        $collection->matching( sub { $_[0]->prop( $args{by} ) eq $self->uuid }
+        );
         return $collection;
     };
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor} = { %args, type => $collection_class->record_class };
+    $class->REFERENCES->{$accessor}
+        = { %args, type => $collection_class->record_class };
 }
 
 =head2 create { props => { %hash_of_kv_pairs } }
@@ -136,6 +145,7 @@ sub create {
     $self->validate_props( $args{'props'} ) or return undef;
 
     $self->uuid($uuid);
+    $self->find_or_create_luid();
 
     $self->handle->create_record(
         props => $args{'props'},
@@ -146,18 +156,44 @@ sub create {
     return $self->uuid;
 }
 
-=head2 load { uuid => $UUID }
+=head2 load { uuid => $UUID } or { luid => $UUID }
 
-Loads a Prophet record off disk by its uuid.
+Loads a Prophet record off disk by its uuid or luid.
 
 =cut
 
 sub load {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1 } );
-    $self->uuid( $args{uuid} );
 
-    return $self->handle->record_exists( uuid => $self->uuid, type => $self->type );
+    my %args = validate(
+        @_,
+        {   uuid => {
+                optional  => 1,
+                callbacks => {
+                    'uuid or luid present' => sub { $_[0] || $_[1]->{luid} },
+                },
+            },
+            luid => {
+                optional  => 1,
+                callbacks => {
+                    'luid or uuid present' => sub { $_[0] || $_[1]->{uuid} },
+                },
+            },
+        }
+    );
+
+    if ( $args{luid} ) {
+        $self->luid( $args{luid} );
+        $self->uuid( $self->handle->find_uuid_by_luid( luid => $args{luid} ) );
+    } else {
+        $self->uuid( $args{uuid} );
+        $self->find_or_create_luid();
+    }
+
+    return $self->handle->record_exists(
+        uuid => $self->uuid,
+        type => $self->type
+    );
 }
 
 =head2 set_prop { name => $name, value => $value }
@@ -193,7 +229,11 @@ sub set_props {
 
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) || return undef;
-    $self->handle->set_record_props( type => $self->type, uuid => $self->uuid, props => $args{'props'} );
+    $self->handle->set_record_props(
+        type  => $self->type,
+        uuid  => $self->uuid,
+        props => $args{'props'}
+    );
     return 1;
 }
 
@@ -205,7 +245,10 @@ Returns a hash of this record's properties as currently set in the database.
 
 sub get_props {
     my $self = shift;
-    return $self->handle->get_record_props( uuid => $self->uuid, type => $self->type );
+    return $self->handle->get_record_props(
+        uuid => $self->uuid,
+        type => $self->type
+    );
 }
 
 =head2 prop $name
@@ -232,7 +275,10 @@ TODO: how is this different than setting it to an empty value?
 sub delete_prop {
     my $self = shift;
     my %args = validate( @_, { name => 1 } );
-    $self->handle->delete_record_prop( uuid => $self->uuid, name => $args{'name'} );
+    $self->handle->delete_record_prop(
+        uuid => $self->uuid,
+        name => $args{'name'}
+    );
 }
 
 =head2 delete
@@ -255,11 +301,12 @@ sub validate_props {
     for my $key ( uniq( keys %$props, $self->declared_props ) ) {
         return undef unless ( $self->_validate_prop_name($key) );
         if ( my $sub = $self->can( 'validate_prop_' . $key ) ) {
-            $sub->( $self, props => $props, errors => $errors ) || push @errors, "Validation error for '$key': ".($errors->{$key}||'');
+            $sub->( $self, props => $props, errors => $errors ) || push @errors,
+                "Validation error for '$key': " . ( $errors->{$key} || '' );
         }
     }
     if (@errors) {
-        die join('',@errors);   
+        die join( '', @errors );
     }
     return 1;
 }
@@ -290,11 +337,30 @@ use constant summary_props  => ();
 sub format_summary {
     my $self   = shift;
     my $format = $self->summary_format;
-    my $uuid   = $self->uuid;
-    $format =~ s/%u/$uuid/g;
+    if ( $format =~ /%u/ ) {
+        my $uuid = $self->uuid;
+        $format =~ s/%u/$uuid/g;
+    }
+    if ( $format =~ /%l/ ) {
+        my $luid = $self->luid;
+        $format =~ s/%l/$luid/g;
+    }
+    return sprintf( $format,
+        map { $self->prop($_) || "(no $_)" } $self->summary_props );
 
-    return sprintf( $format, map { $self->prop($_) || "(no $_)" } $self->summary_props );
+}
 
+=head2 find_or_create_luid
+
+Finds the luid for the records uuid, or creates a new one. Returns the luid.
+
+=cut
+
+sub find_or_create_luid {
+    my $self = shift;
+    my $luid = $self->handle->find_or_create_luid( uuid => $self->uuid );
+    $self->luid($luid);
+    return $luid;
 }
 
 __PACKAGE__->meta->make_immutable;

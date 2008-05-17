@@ -494,6 +494,52 @@ sub export_to {
     $exporter->export();
 }
 
+=head2 metadata_directory
+
+=cut
+
+sub metadata_directory {
+    my $self = shift;
+    return $ENV{PROPHET_METADATA_DIRECTORY} if $ENV{PROPHET_METADATA_DIRECTORY};
+    return dir($ENV{HOME}, '.prophet-meta', $self->uuid);
+}
+
+=head2 read_metadata_file
+
+Returns the contents of the given file in this replica's metadata directory.
+Returns C<undef> if the file does not exist.
+
+=cut
+
+sub read_metadata_file {
+    my $self = shift;
+    my %args = validate( @_, { path => 1 } );
+    my $file = file($self->metadata_directory, $args{path});
+
+    return undef if !-f $file;
+    return scalar $file->slurp;
+}
+
+=head2 write_metadata_file
+
+Writes the given string to the given file in this replica's metadata directory.
+
+=cut
+
+sub write_metadata_file {
+    my $self = shift;
+    my %args = validate( @_, { path => 1, content => 1 } );
+    my $file = file($self->metadata_directory, $args{path});
+
+    my $parent = $file->parent;
+    if (!-d $parent) {
+        $parent->mkpath || die "Failed to create directory " . $file->parent;
+    }
+
+    my $fh = $file->openw;
+    print $fh $args{content};
+    close $fh || die $!;
+}
 
 =head1 methods to be implemented by a replica backend
 
@@ -517,6 +563,79 @@ Returns the sequence # of the most recently committed changeset
 =cut
 
 sub latest_sequence_no {return undef }
+
+=head2 find_or_create_luid { uuid => UUID }
+
+Finds or creates a LUID for the given UUID.
+
+=cut
+
+sub find_or_create_luid {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1 } );
+
+    my $mapping = $self->_read_guid2luid_mappings;
+
+    if (!exists($mapping->{ $args{'uuid'} })) {
+        $mapping->{ $args{'uuid'} } = $self->_create_luid($mapping);
+        $self->_write_guid2luid_mappings($mapping);
+    }
+
+    return $mapping->{ $args{'uuid'} };
+}
+
+=head2 find_uuid_by_luid { luid => LUID }
+
+Finds the UUID for the given LUID. Returns C<undef> if the LUID is not known.
+
+=cut
+
+sub find_uuid_by_luid {
+    my $self = shift;
+    my %args = validate( @_, { luid => 1 } );
+
+    my $mapping = $self->_read_luid2guid_mappings;
+    return $mapping->{ $args{'luid'} };
+}
+
+sub _create_luid {
+    my $self = shift;
+    my $map  = shift;
+
+    return ++$map->{'_meta'}{'maximum_luid'};
+}
+
+sub _guid2luid_file { "local-id-cache" }
+
+sub _read_guid2luid_mappings {
+    my $self = shift;
+    my $json = $self->read_metadata_file(path => $self->_guid2luid_file)
+            || '{}';
+
+    require JSON;
+    return JSON::from_json($json, { utf8 => 1 });
+}
+
+sub _write_guid2luid_mappings {
+    my $self = shift;
+    my $map  = shift;
+
+    require JSON;
+    my $content = JSON::to_json($map, { canonical => 1, pretty => 0, utf8 => 1 });
+
+    $self->write_metadata_file(
+        path    => $self->_guid2luid_file,
+        content => $content,
+    );
+}
+
+sub _read_luid2guid_mappings {
+    my $self = shift;
+    my $guid2luid = $self->_read_guid2luid_mappings(@_);
+    delete $guid2luid->{'_meta'};
+    my %luid2guid = reverse %$guid2luid;
+    return \%luid2guid;
+}
 
 =head2 traverse_changesets { after => SEQUENCE_NO, callback => sub {} }
 

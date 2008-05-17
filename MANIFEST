@@ -3,6 +3,7 @@ bin/run_test_yml.pl
 bin/taste_recipe
 doc/glossary
 doc/jesse_test_env_setup
+doc/luid
 doc/notes-on-merging
 doc/repository-layout
 doc/todo
@@ -64,6 +65,7 @@ t/edit.t
 t/export.t
 t/generalized_sync_n_merge.t
 t/lib/TestApp/Bug.pm
+t/luid.t
 t/non-conflicting-merge.t
 t/real-conflicting-merge.t
 t/res-conflict-3.t
