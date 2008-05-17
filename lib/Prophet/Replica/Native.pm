@@ -42,13 +42,13 @@ use constant changeset_cas_dir => dir( __PACKAGE__->cas_root => 'changesets' );
 use constant record_dir        => 'records';
 use constant changeset_index   => 'changesets.idx';
 
-=head2 setup
+=head2 BUILD
 
 Open a connection to the SVN source identified by C<$self->url>.
 
 =cut
 
-sub setup {
+sub BUILD {
     my $self = shift;
     $self->{url}
         =~ s/^prophet://;  # url-based constructor in ::replica should do better
