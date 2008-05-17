@@ -69,7 +69,6 @@ is_deeply(
                 }
             },
             'is_nullification' => undef,
-            'is_empty'         => 0
         }
     ]
 );
@@ -123,7 +122,6 @@ is_deeply(
                 }
             },
             'is_nullification' => undef,
-            'is_empty'         => 0
         }
     ]
 );

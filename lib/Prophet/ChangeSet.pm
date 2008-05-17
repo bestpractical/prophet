@@ -95,7 +95,7 @@ sub is_empty {
 }
 
 our @SERIALIZE_PROPS
-    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty));
+    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
 
 sub as_hash {
     my $self = shift;
