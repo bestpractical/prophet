@@ -175,7 +175,7 @@ sub integrate_changeset {
     return if ($changeset->is_nullification);
 
     $self->remove_redundant_data($changeset);    #Things we have already seen
-    return if ($changeset->is_empty);
+    return unless $changeset->has_changes;
 
 
 
@@ -539,7 +539,7 @@ sub record_resolutions {
         # Otherwise, record them locally
     my $res_handle =  $self->resolution_db_handle || $self;
 
-    return if $changeset->is_empty;
+    return unless $changeset->has_changes;
 
     $self->begin_edit();
     $self->record_changes($changeset);

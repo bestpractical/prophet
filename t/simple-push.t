@@ -45,7 +45,7 @@ as_bob {
 };
 
 is_deeply(
-    [ map { $_->as_hash } grep { !$_->is_empty}  @$changesets ],
+    [ map { $_->as_hash } grep { $_->has_changes }  @$changesets ],
     [ 
         {   'sequence_no'          => 3,
             'original_sequence_no' => 3,
@@ -96,7 +96,7 @@ as_bob {
 
 $changesets = $bob->new_changesets_for($alice);
 
-my @changes = map { $_->as_hash } grep {!$_->is_empty} @$changesets;
+my @changes = map { $_->as_hash } grep { $_->has_changes } @$changesets;
 
 is_deeply(
     \@changes,

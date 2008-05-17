@@ -42,6 +42,7 @@ has changes => (
     default    => sub { [] },
     provides   => {
         push   => '_add_change',
+        empty  => 'has_changes',
     },
 );
 
@@ -110,16 +111,11 @@ Return an array of all the changes in the current changeset.
 
 =cut
 
-=head2 is_empty
+=head2 has_changes
 
-Returns true if this changeset has no changes
+Returns true if this changeset has any changes
 
 =cut
-
-sub is_empty {
-    my $self = shift;
-    return @{ $self->changes } ? 0 : 1;
-}
 
 our @SERIALIZE_PROPS
     = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
