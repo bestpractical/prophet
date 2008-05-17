@@ -1,9 +1,7 @@
-use warnings;
-use strict;
-
 package Prophet::Resolver::AlwaysSource;
-use base qw/Prophet::Resolver/;
+use Moose;
 use Prophet::Change;
+extends 'Prophet::Resolver';
 
 sub run {
     my $self               = shift;
@@ -13,5 +11,8 @@ sub run {
     my $resolution = Prophet::Change->new_from_conflict($conflicting_change);
     return $resolution;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

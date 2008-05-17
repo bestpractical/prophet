@@ -1,10 +1,8 @@
-use warnings;
-use strict;
-
 package Prophet::Resolver::IdenticalChanges;
-use base qw/Prophet::Resolver/;
+use Moose;
 use Params::Validate qw(:all);
 use Prophet::Change;
+extends 'Prophet::Resolver';
 
 =head2 attempt_automatic_conflict_resolution
 
@@ -55,5 +53,8 @@ sub run {
     return $resolution;
 
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

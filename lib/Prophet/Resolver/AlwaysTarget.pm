@@ -1,9 +1,7 @@
-use warnings;
-use strict;
-
 package Prophet::Resolver::AlwaysTarget;
-use base qw/Prophet::Resolver/;
+use Moose;
 use Data::Dumper;
+extends 'Prophet::Resolver';
 
 sub run {
     my $self               = shift;
@@ -29,6 +27,9 @@ sub run {
     }
     return $resolution;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 
