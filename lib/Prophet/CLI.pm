@@ -128,6 +128,11 @@ sub set_type_and_uuid {
     if ( my $uuid = delete $self->{args}->{uuid} ) {
         $self->uuid($uuid);
     }
+    elsif ( my $luid = delete $self->{args}->{luid} ) {
+        my $uuid = $self->app_handle->handle->find_uuid_by_luid(luid => $luid);
+        die "Invalid luid '$luid'\n" if !defined($uuid);
+        $self->uuid($uuid);
+    }
     if ( $self->{args}->{type} ) {
         $self->type( delete $self->{args}->{'type'} );
     } elsif($self->primary_commands->[-2]) {
