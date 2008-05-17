@@ -1,6 +1,6 @@
 package Prophet::Change;
 use Moose;
-use Moose::Util::TypeConstraints;
+use Prophet::Meta::Types;
 use MooseX::AttributeHelpers;
 use Prophet::PropChange;
 use Params::Validate;
@@ -17,7 +17,7 @@ has record_uuid => (
 
 has change_type => (
     is  => 'rw',
-    isa => enum([qw/add_file add_dir update_file delete/]),
+    isa => 'Prophet::Type::ChangeType',
 );
 
 has resolution_cas => (
@@ -139,6 +139,5 @@ sub new_from_hashref {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
-no Moose::Util::TypeConstraints;
 
 1;
