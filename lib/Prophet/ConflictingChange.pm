@@ -1,15 +1,39 @@
-use warnings;
-use strict;
-
 package Prophet::ConflictingChange;
+use Moose;
+use Prophet::Meta::Types;
 use Prophet::ConflictingPropChange;
-
-use base qw/Class::Accessor/;
-use JSON qw'to_json';
+use JSON 'to_json';
 use Digest::SHA1 'sha1_hex';
 
-# change_type is one of: add_file add_dir update delete
-__PACKAGE__->mk_accessors(qw/record_type record_uuid source_record_exists target_record_exists change_type file_op_conflict/);
+has record_type => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has record_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has source_record_exists => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has target_record_exists => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has change_type => (
+    is  => 'rw',
+    isa => 'Prophet::Type::ChangeType',
+);
+
+has file_op_conflict => (
+    is  => 'rw',
+    isa => 'Prophet::Type::FileOpConflict',
+);
 
 =head2 prop_conflicts
 
@@ -56,7 +80,9 @@ sub fingerprint {
     }
 
     return  sha1_hex(to_json($struct, {utf8 => 1, canonical => 1}));
-
-
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 1;
