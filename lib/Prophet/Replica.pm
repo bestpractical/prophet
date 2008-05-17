@@ -7,6 +7,7 @@ use base qw/Class::Accessor/;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use Data::UUID;
+use Path::Class;
 
 
 __PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb is_state_handle db_uuid url));
@@ -460,7 +461,7 @@ sub export_to {
     my %args = validate( @_, { path => 1, } );
     Prophet::ReplicaExporter->require();
 
-    my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, source_replica => $self});
+    my $exporter = Prophet::ReplicaExporter->new({target_path => dir($args{'path'}), source_replica => $self});
     $exporter->export();
 }
 
