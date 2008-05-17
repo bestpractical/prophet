@@ -140,9 +140,30 @@ Loads a Prophet record off disk by its uuid.
 
 sub load {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1 } );
-    $self->uuid( $args{uuid} );
-    $self->find_or_create_luid();
+
+    my %args = validate(@_, {
+        uuid => {
+            optional => 1,
+            callbacks => {
+                'uuid or luid present' => sub { $_[0] || $_[1]->{luid} },
+            },
+        },
+        luid => {
+            optional => 1,
+            callbacks => {
+                'luid or uuid present' => sub { $_[0] || $_[1]->{uuid} },
+            },
+        },
+    });
+
+    if ($args{luid}) {
+        $self->luid( $args{luid} );
+        $self->uuid( $self->handle->find_uuid_by_luid(luid => $args{luid}) );
+    }
+    else {
+        $self->uuid( $args{uuid} );
+        $self->find_or_create_luid();
+    }
 
     return $self->handle->record_exists( uuid => $self->uuid, type => $self->type );
 }
