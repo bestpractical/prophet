@@ -84,8 +84,8 @@ sub create_record {
     my ( $ret, $out, $err ) = call_func_ok( [ qw(create --type Scratch), @{ $args->{props} } ] );
 
     #    ok($ret, $self->name . " created a record");
-    if ( $out =~ /Created\s+(.*?)\s+(.*)$/i ) {
-        $args->{result} = $2;
+    if ( $out =~ /Created\s+(.*?)\s+(\d+)\s+\((.*)\)/i ) {
+        $args->{result} = $3;
     }
     $self->record_action( 'create_record', $args );
 }
