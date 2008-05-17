@@ -24,7 +24,8 @@ requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires('Scalar::Defer');
-requires('Moose');
+requires('Moose'); # Moose::Util::TypeConstraints
+requires('MooseX::AttributeHelpers');
 
 features(
     'REST Server' => [
