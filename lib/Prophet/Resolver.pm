@@ -1,13 +1,8 @@
-use warnings;
-use strict;
-
 package Prophet::Resolver;
+use Moose;
 
-sub new {
-    my $class = shift;
-    my $self = bless {}, $class;
-    return $self;
-}
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 
