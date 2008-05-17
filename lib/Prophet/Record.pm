@@ -24,10 +24,11 @@ has handle => (
 );
 
 has type => (
-    is       => 'rw',
-    isa      => 'Str',
-    required => 1,
-    default  => sub {
+    is        => 'rw',
+    isa       => 'Str',
+    required  => 1,
+    predicate => 'has_type',
+    default   => sub {
         my $self = shift;
         $self->record_type;
     },
@@ -56,7 +57,7 @@ sub declared_props {
 
 my $UUIDGEN = Data::UUID->new();
 
-sub record_type { $_[0]->type }
+sub record_type { $_[0]->has_type ? $_[0]->type : undef }
 
 =head1 METHODS
 
