@@ -3,7 +3,7 @@
 use inc::Module::Install;
 name('Prophet');
 author('clkao and jesse');
-license('DeathandRepudiation');
+license('Perl');
 
 requires('Params::Validate');
 requires('List::MoreUtils');
@@ -11,7 +11,6 @@ requires('Class::Accessor');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-requires('YAML::Syck');
 requires('Test::Exception');
 requires('UNIVERSAL::require');
 requires('Term::ReadKey');
@@ -46,6 +45,10 @@ features(
         recommends('Acme::MetaSyntactic'),
         recommends('Devel::Gladiator')
     ],
+    'Testing' => [
+        -default => 1,
+        'YAML::Syck' => 0
+    ]
 );
 
 all_from('lib/Prophet.pm');

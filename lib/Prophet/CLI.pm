@@ -436,7 +436,6 @@ sub run {
 package Prophet::CLI::Command::Update;
 use Moose;
 extends 'Prophet::CLI::Command';
-use Moose;
 with 'Prophet::CLI::RecordCommand';
 
 sub edit_record {
@@ -473,8 +472,6 @@ sub run {
 package Prophet::CLI::Command::Delete;
 use Moose;
 extends 'Prophet::CLI::Command';
-
-use Moose;
 with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
@@ -493,7 +490,6 @@ sub run {
 package Prophet::CLI::Command::Show;
 use Moose;
 extends 'Prophet::CLI::Command';
-use Moose;
 with 'Prophet::CLI::RecordCommand';
 
 
