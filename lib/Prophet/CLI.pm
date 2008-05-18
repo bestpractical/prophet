@@ -215,20 +215,26 @@ sub invoke {
     return $ret;
 }
 
-package Prophet::CLI::Command;
+package Prophet::CLI::RecordCommand;
+use Moose::Role;
 
-use base qw/Class::Accessor/;
+has type => (
+    is => 'rw',
+    isa => 'Str',
+    required => 0
+);
 
-__PACKAGE__->mk_accessors(qw/cli record_class command type uuid/);
+has uuid => (
+    is => 'rw',
+    isa => 'Str',
+    required => 0
+);
 
-# XXX type, uuid are only for record commands
+has record_class => (
+    is => 'rw',
+    isa => 'Prophet::Record',
+);
 
-sub fatal_error {
-    my $self   = shift;
-    my $reason = shift;
-    die $reason . "\n";
-
-}
 
 sub _get_record {
     my $self = shift;
@@ -254,6 +260,25 @@ sub _type_to_record_class {
     return $try if ( $try->isa('Prophet::Record') );
     return 'Prophet::Record';
 }
+
+
+
+package Prophet::CLI::Command;
+use Moose;
+
+has cli => (
+    is => 'rw',
+    isa => 'Prophet::CLI',
+    weak_ref => 1);
+
+
+sub fatal_error {
+    my $self   = shift;
+    my $reason = shift;
+    die $reason . "\n";
+
+}
+
 
 sub args {
     shift->cli->args(@_);
@@ -335,7 +360,14 @@ sub edit_args {
 }
 
 package Prophet::CLI::Command::Create;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
+
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
+
+has +uuid => ( required => 0);
 
 sub run {
     my $self   = shift;
@@ -352,8 +384,10 @@ sub run {
 }
 
 package Prophet::CLI::Command::Search;
-use base qw/Prophet::CLI::Command/;
-
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
+has +uuid => ( required => 0);
 
 sub get_collection_object {
     my $self = shift;
@@ -400,7 +434,10 @@ sub run {
 }
 
 package Prophet::CLI::Command::Update;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
+use Moose;
+with 'Prophet::CLI::RecordCommand';
 
 sub edit_record {
     my $self   = shift;
@@ -434,8 +471,11 @@ sub run {
 }
 
 package Prophet::CLI::Command::Delete;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
+use Moose;
+with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
 
@@ -451,7 +491,11 @@ sub run {
 }
 
 package Prophet::CLI::Command::Show;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
+use Moose;
+with 'Prophet::CLI::RecordCommand';
+
 
 sub run {
     my $self = shift;
@@ -470,7 +514,8 @@ sub run {
 }
 
 package Prophet::CLI::Command::Merge;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
 
@@ -523,7 +568,8 @@ sub _do_merge {
 }
 
 package Prophet::CLI::Command::Push;
-use base qw/Prophet::CLI::Command::Merge/;
+use Moose;
+extends 'Prophet::CLI::Command::Merge';
 
 sub run {
     my $self = shift;
@@ -538,7 +584,8 @@ sub run {
 }
 
 package Prophet::CLI::Command::Export;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
     my $self = shift;
@@ -547,7 +594,8 @@ sub run {
 }
 
 package Prophet::CLI::Command::Pull;
-use base qw/Prophet::CLI::Command::Merge/;
+use Moose;
+extends 'Prophet::CLI::Command::Merge';
 
 sub run {
 
@@ -562,7 +610,8 @@ sub run {
 }
 
 package Prophet::CLI::Command::Server;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
 
@@ -576,13 +625,12 @@ sub run {
 }
 
 package Prophet::CLI::Command::NotFound;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
     my $self = shift;
-    $self->fatal_error( "The command you ran, '"
-            . ($self->command || '')
-            . "', could not be found. Perhaps running '$0 help' would help?" );
+    $self->fatal_error( "The command you ran could not be found. Perhaps running '$0 help' would help?" );
 }
 
 1;

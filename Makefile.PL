@@ -23,7 +23,7 @@ requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires('Scalar::Defer');
-requires('Moose'); # Moose::Util::TypeConstraints
+requires('Moose'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers');
 requires('MooseX::ClassAttribute');
 
