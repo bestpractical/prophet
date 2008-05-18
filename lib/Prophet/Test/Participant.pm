@@ -1,22 +1,19 @@
-use warnings;
-use strict;
-
 package Prophet::Test::Participant;
-use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/name arena/);
+use Moose;
 use Prophet::Test;
-use Scalar::Util qw/weaken/;
 
-sub new {
+has name => (
+    is  => 'rw',
+    isa => 'Str',
+);
 
-    my $self = shift->SUPER::new(@_);
-    $self->_setup();
-    weaken( $self->{'arena'} );
+has arena => (
+    is       => 'rw',
+    isa      => 'Prophet::Test::Arena',
+    weak_ref => 1,
+);
 
-    return $self;
-}
-
-sub _setup {
+sub BUILD {
     my $self = shift;
     as_user( $self->name, sub { call_func_ok( [qw(search --type Bug --regex .)] ) } );
 
@@ -198,5 +195,8 @@ sub call_func {
 
     return ( $ret, $str, undef );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

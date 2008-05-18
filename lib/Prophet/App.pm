@@ -33,7 +33,7 @@ has _config => (
     isa     => 'Prophet::Config',
     lazy    => 1,
     default => sub {
-        require Prophet::Config;
+        Prophet::Config->require;
         return Prophet::Config->new;
     },
 );
