@@ -116,7 +116,7 @@ sub sync_from_peer {
     my $self = shift;
     my $args = shift;
 
-    my $from = $args->{from} ||= ( shuffle( grep { $_->name ne $self->name } @{ $self->arena->chickens } ) )[0]->name;
+    my $from = $args->{from} ||= ( shuffle( grep { $_->name ne $self->name } $self->arena->chickens ) )[0]->name;
 
     $self->record_action( 'sync_from_peer', $args );
 

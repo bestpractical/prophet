@@ -36,18 +36,18 @@ my $err = $@;
 ok( !$err, "There was no error ($err)" );
 my $Test = Test::Builder->new;
 if ( grep { !$_ } $Test->summary ) {
-    my $fname = join( '', sort map { substr( $_->name, 0, 1 ) } @{ $arena->chickens } ) . '.yml';
+    my $fname = join( '', sort map { substr( $_->name, 0, 1 ) } $arena->chickens ) . '.yml';
     diag "test failed... dumping recipe to $fname";
     YAML::Syck::DumpFile(
         $fname,
-        {   chickens => [ map { $_->name } @{ $arena->chickens } ],
+        {   chickens => [ map { $_->name } $arena->chickens ],
             recipe   => $arena->{history}
         }
     );
 }
 
 exit;
-for ( @{ $arena->chickens } ) {
+for ( $arena->chickens ) {
     warn $_->name;
     as_user(
         $_->name,
