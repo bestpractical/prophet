@@ -39,6 +39,15 @@ has primary_commands => ( # the commadns the user executes from the commandline
     isa => 'ArrayRef'
     );
 
+has args => (
+    metaclass => 'Collection::Hash',
+    is        => 'rw',
+    isa       => 'HashRef',
+    default   => sub { {} },
+    provides  => {
+    },
+);
+
 use Prophet;
 use Prophet::Record;
 use Prophet::Collection;
@@ -180,12 +189,6 @@ Returns a reference to the key-value pairs passed in on the command line
 If passed a hashref, sets the args to taht;
 
 =cut
-
-sub args {
-    my $self = shift;
-    $self->{'args'} = shift if $_[0];
-    return $self->{'args'};
-}
 
 sub run_one_command {
     my $self = shift;
