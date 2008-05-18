@@ -269,7 +269,9 @@ use Moose;
 has cli => (
     is => 'rw',
     isa => 'Prophet::CLI',
-    weak_ref => 1);
+    weak_ref => 1,
+    handles => [qw/args app_handle/],
+);
 
 
 sub fatal_error {
@@ -279,14 +281,6 @@ sub fatal_error {
 
 }
 
-
-sub args {
-    shift->cli->args(@_);
-}
-
-sub app_handle {
-    shift->cli->app_handle;
-}
 
 =head2 edit_text [text] -> text
 
