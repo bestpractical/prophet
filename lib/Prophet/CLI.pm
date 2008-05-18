@@ -1,26 +1,49 @@
-use warnings;
-use strict;
-
 package Prophet::CLI;
-use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(
-    qw/app_class record_class type uuid app_handle primary_commands/);
+use Moose;
+use MooseX::ClassAttribute;
+
+has app_class => (
+        is => 'rw',
+        isa => 'Str', # 'Prophet::App',
+        default => 'Prophet::App'
+);
+
+has record_class => (
+        is => 'rw',
+        isa => 'Str',# 'Prophet::Record',
+        default => 'Prophet::Record'
+);
+
+has app_handle => (
+        is => 'rw',
+        isa => 'Prophet::App',
+        lazy => 1,
+        default => sub { $_[0]->app_class->require; $_[0]->app_class->new() }
+);
+
+
+
+has uuid => (   # this is the uuid set by the user from the commandline
+    is => 'rw',
+    isa => 'Str'
+    );
+
+has type => (   # this is the type set by the user from the commandline
+    is => 'rw',
+    isa => 'Str'
+    );
+
+
+has primary_commands => ( # the commadns the user executes from the commandline
+    is => 'rw',
+    isa => 'ArrayRef'
+    );
 
 use Prophet;
 use Prophet::Record;
 use Prophet::Collection;
 use Prophet::Replica;
 
-sub new {
-    my $class = shift;
-    my $self  = $class->SUPER::new(@_);
-    $self->record_class('Prophet::Record') unless $self->record_class;
-
-    $self->app_class || $self->app_class('Prophet::App');
-    $self->app_class->require();    # unless exists $INC{$app_class_path};
-    $self->app_handle( $self->app_class->new );
-    return $self;
-}
 
 =head2 _record_cmd
 
