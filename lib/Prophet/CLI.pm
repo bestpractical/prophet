@@ -40,11 +40,15 @@ has primary_commands => ( # the commadns the user executes from the commandline
     );
 
 has args => (
-    metaclass => 'Collection::Hash',
-    is        => 'rw',
-    isa       => 'HashRef',
-    default   => sub { {} },
-    provides  => {
+    metaclass  => 'Collection::Hash',
+    is         => 'rw',
+    isa        => 'HashRef',
+    default    => sub { {} },
+    provides   => {
+        set    => 'set_arg',
+        get    => 'arg',
+        exists => 'has_arg',
+        delete => 'delete_arg',
     },
 );
 
@@ -143,7 +147,7 @@ sub parse_args {
 
         ($name,$val)= split(/=/,$name,2) if ($name =~/=/);
         $name =~ s/^--//;
-        $self->{'args'}->{$name} =  ($val || shift @ARGV);
+        $self->set_arg($name => ($val || shift @ARGV));
     }
 
 }
@@ -157,26 +161,26 @@ When working with individual records, it is often the case that we'll be expecti
 sub set_type_and_uuid {
     my $self = shift;
 
-    if (my $id = delete $self->{args}->{id}) {
+    if (my $id = $self->delete_arg('id')) {
         if ($id =~ /^(\d+)$/) { 
-        $self->{args}->{luid} = $id;
+        $self->set_arg(luid => $id);
         } else { 
-        $self->{args}->{uuid} = $id;
+        $self->set_arg(uuid => $id);
 
         }
 
     }
 
-    if ( my $uuid = delete $self->{args}->{uuid} ) {
+    if ( my $uuid = $self->delete_arg('uuid')) {
         $self->uuid($uuid);
     }
-    elsif ( my $luid = delete $self->{args}->{luid} ) {
+    elsif ( my $luid = $self->delete_arg('luid')) {
         my $uuid = $self->app_handle->handle->find_uuid_by_luid(luid => $luid);
         die "I have no UUID mapped to the local id '$luid'\n" if !defined($uuid);
         $self->uuid($uuid);
     }
-    if ( $self->{args}->{type} ) {
-        $self->type( delete $self->{args}->{'type'} );
+    if ( my $type = $self->delete_arg('type') ) {
+        $self->type($type);
     } elsif($self->primary_commands->[-2]) {
         $self->type($self->primary_commands->[-2]); 
     }
@@ -273,9 +277,8 @@ has cli => (
     is => 'rw',
     isa => 'Prophet::CLI',
     weak_ref => 1,
-    handles => [qw/args app_handle/],
+    handles => [qw/args set_arg arg has_arg delete_arg app_handle/],
 );
-
 
 sub fatal_error {
     my $self   = shift;
@@ -336,8 +339,8 @@ sub edit_args {
     my $arg  = shift || 'edit';
 
     my $edit_hash;
-    if (exists $self->args->{$arg}) {
-        delete $self->args->{$arg};
+    if ($self->has_arg($arg)) {
+        $self->delete_arg($arg);
         $edit_hash = 1;
     }
 
@@ -402,7 +405,7 @@ sub get_collection_object {
 sub get_search_callback {
     my $self = shift;
 
-    if ( my $regex = $self->args->{regex} ) {
+    if ( my $regex = $self->arg('regex') ) {
             return sub {
                 my $item  = shift;
                 my $props = $item->get_props;
@@ -439,7 +442,7 @@ sub edit_record {
     my $self   = shift;
     my $record = shift;
 
-    if (exists $self->args->{edit}) {
+    if ($self->has_arg('edit')) {
         my $props = $record->get_props;
         return $self->edit_hash($props);
     }
@@ -514,10 +517,8 @@ sub run {
 
     my $self = shift;
 
-    my $opts = $self->args();
-
-    my $source = Prophet::Replica->new( { url => $opts->{'from'} } );
-    my $target = Prophet::Replica->new( { url => $opts->{'to'} } );
+    my $source = Prophet::Replica->new( { url => $self->arg('from') } );
+    my $target = Prophet::Replica->new( { url => $self->arg('to') } );
 
     $target->import_resolutions_from_remote_replica( from => $source );
 
@@ -533,9 +534,7 @@ sub _do_merge {
                 . "someone did a bad job cloning your database" );
     }
 
-    my $opts = $self->args();
-
-    $opts->{'prefer'} ||= 'none';
+    my $prefer = $self->arg('prefer') || 'none';
 
     if ( !$target->can_write_changesets ) {
         $self->fatal_error( $target->url
@@ -548,11 +547,11 @@ sub _do_merge {
         resdb => $self->app_handle->resdb_handle,
         $ENV{'PROPHET_RESOLVER'}
         ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
-        : ( (   $opts->{'prefer'} eq 'to'
+        : ( (   $prefer eq 'to'
                 ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' )
                 : ()
             ),
-            (   $opts->{'prefer'} eq 'from'
+            (   $prefer eq 'from'
                 ? ( resolver_class => 'Prophet::Resolver::AlwaysSource' )
                 : ()
             )
@@ -583,7 +582,7 @@ extends 'Prophet::CLI::Command';
 sub run {
     my $self = shift;
 
-    $self->app_handle->handle->export_to( path => $self->args->{path} );
+    $self->app_handle->handle->export_to( path => $self->arg('path') );
 }
 
 package Prophet::CLI::Command::Pull;
@@ -610,9 +609,8 @@ sub run {
 
     my $self = shift;
 
-    my $opts = $self->args();
     require Prophet::Server::REST;
-    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080 );
+    my $server = Prophet::Server::REST->new( $self->arg('port') || 8080 );
     $server->prophet_handle( $self->app_handle->handle );
     $server->run;
 }
