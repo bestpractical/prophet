@@ -523,6 +523,8 @@ sub run {
     $target->import_resolutions_from_remote_replica( from => $source );
 
     $self->_do_merge( $source, $target );
+
+    print "Merge complete.\n";
 }
 
 sub _do_merge {
