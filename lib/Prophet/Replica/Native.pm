@@ -20,11 +20,21 @@ has _uuid => (
 );
 
 has fs_root_parent => (
-    is => 'rw',
+    is      => 'rw',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        $self->fs_root_parent($self->url =~ m{^file://(.*)/.*?$});
+    },
 );
 
 has fs_root => (
-    is => 'rw',
+    is      => 'rw',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        $self->fs_root($self->url =~ m{^file://(.*)$});
+    },
 );
 
 has target_replica => (
@@ -34,6 +44,31 @@ has target_replica => (
 has current_edit => (
     is => 'rw',
 );
+
+has '+resolution_db_handle' => (
+    isa     => 'Prophet::Replica | Undef',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        return if $self->is_resdb || $self->is_state_handle;
+        return Prophet::Replica->new({
+            url      => "prophet:" . $self->url . '/resolutions',
+            is_resdb => 1,
+        })
+    },
+);
+
+#has '+state_handle' => (
+#    isa     => 'Prophet::Replica | Undef',
+#    lazy    => 1,
+#    default => sub {
+#        return if $self->is_state_handle;
+#        return Prophet::Replica->new({
+#            url             => "prophet:" . $self->url,
+#            is_state_handle => 1
+#        });
+#    },
+#);
 
 use constant scheme            => 'prophet';
 use constant cas_root          => 'cas';
@@ -53,19 +88,8 @@ sub BUILD {
     $self->{url}
         =~ s/^prophet://;  # url-based constructor in ::replica should do better
     $self->{url} =~ s{/$}{};
-    $self->fs_root( $self->url        =~ m{^file://(.*)$} );
-    $self->fs_root_parent( $self->url =~ m{^file://(.*)/.*?$} );
     $self->_probe_or_create_db();
 
-# $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
-
-    $self->resolution_db_handle(
-        Prophet::Replica->new(
-            {   url      => "prophet:" . $self->{url} . '/resolutions',
-                is_resdb => 1
-            }
-        )
-    ) unless ( $self->is_resdb || $self->is_state_handle );
 
     #    warn "I AM ".$ENV{'PROPHET_USER'};
     #    warn $self->uuid;
