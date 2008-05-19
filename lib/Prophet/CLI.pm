@@ -222,6 +222,9 @@ sub invoke {
     return $ret;
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::RecordCommand;
 use Moose::Role;
 
@@ -268,7 +271,7 @@ sub _type_to_record_class {
     return 'Prophet::Record';
 }
 
-
+no Moose::Role;
 
 package Prophet::CLI::Command;
 use Moose;
@@ -359,6 +362,9 @@ sub edit_args {
     return \%args;
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Create;
 use Moose;
 extends 'Prophet::CLI::Command';
@@ -382,6 +388,9 @@ sub run {
     print "Created " . $record->record_type . " " . $record->luid . " (".$record->uuid.")"."\n";
 
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 package Prophet::CLI::Command::Search;
 use Moose;
@@ -433,6 +442,9 @@ sub run {
     }
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Update;
 use Moose;
 extends 'Prophet::CLI::Command';
@@ -469,6 +481,9 @@ sub run {
     }
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Delete;
 use Moose;
 extends 'Prophet::CLI::Command';
@@ -486,6 +501,9 @@ sub run {
     }
 
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 package Prophet::CLI::Command::Show;
 use Moose;
@@ -508,6 +526,9 @@ sub run {
     }
 
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 package Prophet::CLI::Command::Merge;
 use Moose;
@@ -559,7 +580,11 @@ sub _do_merge {
             )
         )
     );
+
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 package Prophet::CLI::Command::Push;
 use Moose;
@@ -577,6 +602,9 @@ sub run {
     $self->_do_merge( $source_me, $source_other );
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Export;
 use Moose;
 extends 'Prophet::CLI::Command';
@@ -586,6 +614,9 @@ sub run {
 
     $self->app_handle->handle->export_to( path => $self->arg('path') );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 package Prophet::CLI::Command::Pull;
 use Moose;
@@ -603,6 +634,9 @@ sub run {
 
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Server;
 use Moose;
 extends 'Prophet::CLI::Command';
@@ -617,6 +651,9 @@ sub run {
     $server->run;
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::NotFound;
 use Moose;
 extends 'Prophet::CLI::Command';
@@ -625,5 +662,8 @@ sub run {
     my $self = shift;
     $self->fatal_error( "The command you ran could not be found. Perhaps running '$0 help' would help?" );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
