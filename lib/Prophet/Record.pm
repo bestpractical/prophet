@@ -322,7 +322,7 @@ sub format_summary {
         $format =~ s/%u/$uuid/g;
     }
     if ( $format =~ /%l/ ) {
-        my $luid = $self->luid;
+        my $luid = sprintf('%s',$self->luid);
         $format =~ s/%l/$luid/g;
     }
     return sprintf( $format,
