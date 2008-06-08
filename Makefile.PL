@@ -39,9 +39,13 @@ features(
         -default => 0,
         recommends( 'SVN::Core') # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
     ],
-    'Crazy debugging tools' => [
+    'Maintainer testing tools' => [
         -default   => 1,
         recommends('Acme::MetaSyntactic'),
+        recommends('Test::POD::Coverage')
+    ],
+    "Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)" => [
+        -default => 0,
         recommends('Devel::Gladiator')
     ],
 );

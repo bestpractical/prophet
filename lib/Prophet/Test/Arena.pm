@@ -89,7 +89,6 @@ sub run_from_data {
 
 }
 
-use Devel::Gladiator;
 my $TB = Test::Builder->new();
 
 sub step {
