@@ -61,9 +61,12 @@ sub in_gladiator (&) {
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
     my $types;
-    require "Devel::Gladiator"
-        or die
+    eval { require Devel::Gladiator; };
+    if ($@) {
+        return $code->();
+        die
         'Get Devel::Gladiator from http://code.sixapart.com/svn/Devel-Gladiator/trunk/ and harass sky@crucially.net to CPAN it';
+    } 
     for ( @{ Devel::Gladiator::walk_arena() } ) {
         $types->{ ref($_) }--;
     }
