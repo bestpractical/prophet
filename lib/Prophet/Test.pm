@@ -50,7 +50,7 @@ sub import_extra {
 
 {
     no warnings 'redefine';
-
+    require Test::More;
     sub Test::More::diag {    # bad bad bad # convenient convenient convenient
         Test::More->builder->diag(@_) if ( $Test::Harness::Verbose || $ENV{'TEST_VERBOSE'} );
     }

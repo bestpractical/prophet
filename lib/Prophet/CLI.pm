@@ -79,32 +79,31 @@ sub _get_cmd_obj {
 
     my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $self->primary_commands };
 
-
-
     my @possible_classes;
-    
+
     my @to_try = @commands;
 
-    while( @to_try ) {
-        my $cmd = $self->app_class . "::CLI::Command::" . join( '::', map {ucfirst lc $_} @to_try ) ;    # App::SD::CLI::Command::Ticket::Comment::List
+    while (@to_try) {
+        my $cmd = $self->app_class . "::CLI::Command::" . join( '::', map { ucfirst lc $_ } @to_try );    # App::SD::CLI::Command::Ticket::Comment::List
         push @possible_classes, $cmd;
-        shift @to_try; # throw away that top-level "Ticket" option 
+        shift @to_try;                                                                                    # throw away that top-level "Ticket" option
     }
 
-   my @extreme_fallback_commands = (     $self->app_class . "::CLI::Command::" . ucfirst(lc( $commands[-1] )),    # App::SD::CLI::Command::List
-        "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),    # Prophet::CLI::Command::List
+    my @extreme_fallback_commands = (
+        $self->app_class . "::CLI::Command::" . ucfirst( lc( $commands[-1] ) ),                           # App::SD::CLI::Command::List
+        "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),                                          # Prophet::CLI::Command::List
         $self->app_class . "::CLI::Command::NotFound",
         "Prophet::CLI::Command::NotFound"
     );
 
     my $class;
 
-    for my $try (@possible_classes, @extreme_fallback_commands) {
+    for my $try ( @possible_classes, @extreme_fallback_commands ) {
         $class = $self->_try_to_load_cmd_class($try);
         last if $class;
     }
 
-    die "I don't know how to parse '" . join(" ", @{$self->primary_commands}) ."'. Are you sure that's a valid command?" unless ($class);
+    die "I don't know how to parse '" . join( " ", @{ $self->primary_commands } ) . "'. Are you sure that's a valid command?" unless ($class);
 
     my $command_obj = $class->new(
         {   cli      => $self,
@@ -120,8 +119,11 @@ sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
     Prophet::App->require_module($class);
+    warn "trying out " .$class;
+    no strict 'refs';
+    warn join(',', @{$class.'::ISA'});
     return $class if ( $class->isa('Prophet::CLI::Command') );
-
+    warn "aw. not it";
     return undef;
 }
 
@@ -368,18 +370,16 @@ no Moose;
 package Prophet::CLI::Command::Create;
 use Moose;
 extends 'Prophet::CLI::Command';
-
-use Moose;
-extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
-
 has +uuid => ( required => 0);
 
 sub run {
     my $self   = shift;
     my $record = $self->_get_record;
-
-    $record->create( props => $self->edit_args );
+    my ($val, $msg) = $record->create( props => $self->edit_args );
+    if (!$val) { 
+        warn $msg ."\n";
+    }
     if (!$record->uuid) {
         warn "Failed to create " . $record->record_type . "\n";
         return;

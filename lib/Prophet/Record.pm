@@ -144,7 +144,6 @@ sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
     my $uuid = $UUIDGEN->create_str;
-
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) or return undef;
 

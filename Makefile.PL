@@ -29,25 +29,25 @@ requires('MooseX::ClassAttribute');
 features(
     'REST Server' => [
         -default => 1,
-        recommends('HTTP::Server::Simple'), # HTTP::Server::Simple::CGI
-        recommends('Test::HTTP::Server::Simple'),
-        recommends('Test::WWW::Mechanize' => '1.16'),
-        recommends('HTTP::Server::Simple')
+        'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
+        'Test::HTTP::Server::Simple',
+        'Test::WWW::Mechanize' => '1.16',
+        'HTTP::Server::Simple'
     ],
 
 
     'Subversion replica support' => [
         -default => 0,
-        recommends( 'SVN::Core') # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
+         'SVN::Core' # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
     ],
     'Maintainer testing tools' => [
         -default   => 1,
-        recommends('Acme::MetaSyntactic'),
-        recommends('Test::POD::Coverage')
+        'Acme::MetaSyntactic',
+        'Test::POD::Coverage'
     ],
-    "Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)" => [
+    q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
         -default => 0,
-        recommends('Devel::Gladiator')
+        'Devel::Gladiator'
     ],
     'Testing' => [
         -default => 1,
