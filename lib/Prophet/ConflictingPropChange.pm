@@ -1,11 +1,25 @@
-
-use warnings;
-use strict;
-
 package Prophet::ConflictingPropChange;
-use base qw/Class::Accessor/;
+use Moose;
 
-__PACKAGE__->mk_accessors(qw/name source_old_value target_value source_new_value/);
+has name => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has source_old_value => (
+    is  => 'rw',
+    isa => 'Maybe[Str]',
+);
+
+has target_value => (
+    is  => 'rw',
+    isa => 'Maybe[Str]',
+);
+
+has source_new_value => (
+    is  => 'rw',
+    isa => 'Maybe[Str]',
+);
 
 =head1 NAME
 
@@ -39,11 +53,13 @@ sub as_hash {
     my $self = shift;
     my $hashref = {};
 
-    for  (qw(name source_old_value target_value source_new_value)) {
-         $hashref->{$_} = $self->$_()
+    for ($self->meta->get_attribute_list) {
+         $hashref->{$_} = $self->$_
     }
     return $hashref;
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

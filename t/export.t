@@ -63,7 +63,7 @@ as_bob {
     use_ok('Prophet::Replica::Native');
     diag("Checking changesets in $path");
     my $changesets =  Prophet::Replica->new( { url => 'prophet:file://' . $path } )->fetch_changesets( after => 0 );
-    my @changesets = grep {!$_->is_empty} @$changesets;
+    my @changesets = grep {$_->has_changes} @$changesets;
     is( $#changesets, 2, "We found a total of 3 changesets" );
     # XXX: compare the changeset structure
     is( lc( $changesets->[-1]->{source_uuid} ), lc( $changesets->[-1]->{original_source_uuid} ) );

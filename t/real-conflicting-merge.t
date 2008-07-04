@@ -7,8 +7,8 @@ use Test::Exception;
 use Prophet::Test tests => 19;
 
 as_alice {
-    run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+    like(run_command(qw(create --type Bug --status new --from alice)), qr/Created Bug/, "Created a record as alice");
+    like(run_command(qw(search --type Bug --regex .)), qr/new/, "Found our record");
 };
 
 diag('Bob syncs from alice');
@@ -17,18 +17,18 @@ my $record_id;
 
 as_bob {
 
-    run_ok( 'prophet', [qw(create --type Dummy --ignore yes)], "Created a dummy record" );
-
-    run_ok( 'prophet', [ 'merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    like(run_command(qw(create --type Dummy --ignore yes)), qr/Created Dummy/);
+    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice')), qr/Merge complete/, "Sync ran ok!");
 
     # check our local replicas
-    my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
-    like( $out, qr/new/, "We have the one record from alice" );
+    my $out = run_command(qw(search --type Bug --regex .));
+    like($out, qr/new/, "We have the one record from alice" );
     if ( $out =~ /^(.*?)\s./ ) {
         $record_id = $1;
     }
 
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
+    like(run_command( 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled'), qr/Bug .* updated/);
+
     run_output_matches(
         'prophet',
         [ 'show', '--type',            'Bug',             '--uuid', $record_id ],
@@ -40,7 +40,8 @@ as_bob {
 };
 
 as_alice {
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'open' ] );
+    like(run_command('update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'open' ), qr/Bug .* updated/);
+
     run_output_matches(
         'prophet',
         [ 'show', '--type',            'Bug',          '--uuid', $record_id ],
@@ -164,7 +165,6 @@ sub check_bob_final_state_ok {
                         }
                     }
                 },
-                is_empty             => 0,
                 is_nullification     => 1,
                 is_resolution        => undef,
                 sequence_no          => ( replica_last_rev() - 2 ),
@@ -172,7 +172,7 @@ sub check_bob_final_state_ok {
                 source_uuid          => replica_uuid(),
                 original_source_uuid => replica_uuid(),
             },
-            {   is_empty             => 0,
+            {
                 is_nullification     => undef,
                 is_resolution        => undef,
                 sequence_no          => ( replica_last_rev() - 1 ),
@@ -205,7 +205,7 @@ sub check_bob_final_state_ok {
                 }
             },
 
-            {   is_empty             => 0,
+            {
                 is_nullification     => undef,
                 is_resolution        => 1,
                 sequence_no          => replica_last_rev(),

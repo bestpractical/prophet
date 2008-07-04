@@ -1,21 +1,20 @@
-use warnings;
-use strict;
-
 package Prophet::Resolver::AlwaysTarget;
-use base qw/Prophet::Resolver/;
+use Moose;
 use Data::Dumper;
+extends 'Prophet::Resolver';
 
 sub run {
     my $self               = shift;
     my $conflicting_change = shift;
     my $conflict           = shift;
     my $resolution         = Prophet::Change->new_from_conflict($conflicting_change);
-    if ( $conflicting_change->file_op_conflict eq 'update_missing_file' ) {
+    my $file_op_conflict = $conflicting_change->file_op_conflict || '';
+    if ( $file_op_conflict eq 'update_missing_file' ) {
         $resolution->change_type('delete');
         return $resolution;
-    } elsif ( $conflicting_change->file_op_conflict eq 'delete_missing_file' ) {
+    } elsif ( $file_op_conflict eq 'delete_missing_file' ) {
         return $resolution;
-    } elsif ( $conflicting_change->file_op_conflict ) {
+    } elsif ( $file_op_conflict ) {
         die Dumper($conflict,$conflicting_change);
     }
 
@@ -28,6 +27,9 @@ sub run {
     }
     return $resolution;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 

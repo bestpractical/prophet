@@ -1,22 +1,19 @@
-use warnings;
-use strict;
-
 package Prophet::Test::Participant;
-use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/name arena/);
+use Moose;
 use Prophet::Test;
-use Scalar::Util qw/weaken/;
 
-sub new {
+has name => (
+    is  => 'rw',
+    isa => 'Str',
+);
 
-    my $self = shift->SUPER::new(@_);
-    $self->_setup();
-    weaken( $self->{'arena'} );
+has arena => (
+    is       => 'rw',
+    isa      => 'Prophet::Test::Arena',
+    weak_ref => 1,
+);
 
-    return $self;
-}
-
-sub _setup {
+sub BUILD {
     my $self = shift;
     as_user( $self->name, sub { call_func_ok( [qw(search --type Bug --regex .)] ) } );
 
@@ -116,7 +113,7 @@ sub sync_from_peer {
     my $self = shift;
     my $args = shift;
 
-    my $from = $args->{from} ||= ( shuffle( grep { $_->name ne $self->name } @{ $self->arena->chickens } ) )[0]->name;
+    my $from = $args->{from} ||= ( shuffle( grep { $_->name ne $self->name } $self->arena->chickens ) )[0]->name;
 
     $self->record_action( 'sync_from_peer', $args );
 
@@ -148,9 +145,9 @@ sub dump_state {
     $resolutions->matching( sub {1} );
     $merges->matching( sub      {1} );
 
-    %{ $state->{records} }       = map { $_->uuid => $_->get_props } @{ $records->as_array_ref };
-    %{ $state->{merges} }      = map { $_->uuid => $_->get_props } @{ $merges->as_array_ref };
-    %{ $state->{resolutions} } = map { $_->uuid => $_->get_props } @{ $resolutions->as_array_ref };
+    %{ $state->{records} }       = map { $_->uuid => $_->get_props } $records->items;
+    %{ $state->{merges} }      = map { $_->uuid => $_->get_props } $merges->items;
+    %{ $state->{resolutions} } = map { $_->uuid => $_->get_props } $resolutions->items;
 
     return $state;
 
@@ -198,5 +195,8 @@ sub call_func {
 
     return ( $ret, $str, undef );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

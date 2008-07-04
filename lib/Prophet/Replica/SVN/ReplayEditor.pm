@@ -29,11 +29,6 @@ Instantiates a new subversion "editor" to track a single remote revision
 
 =cut
 
-sub new {
-    my $self = shift->SUPER::new(@_);
-    return $self;
-}
-
 =head2 ra [$RA]
 
 Gets or sets the Subversion RA object.

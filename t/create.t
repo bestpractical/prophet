@@ -29,18 +29,16 @@ use_ok('Prophet::Collection');
 
 my $people = Prophet::Collection->new( handle => $cxn, type => 'Person' );
 $people->matching( sub { ( shift->prop('species') || '' ) ne 'cat' } );
-is( $#{ $people->as_array_ref }, 1 );
-my @people = @$people;
-is_deeply( [ sort map { $_->prop('name') } @people ], [qw(Jesse Kaia)] );
+is( $people->count, 2 );
+is_deeply( [ sort map { $_->prop('name') } @$people ], [qw(Jesse Kaia)] );
 
 my $cats = Prophet::Collection->new( handle => $cxn, type => 'Person' );
 $cats->matching( sub { ( shift->prop('species') || '' ) eq 'cat' } );
-is( $#{ $cats->as_array_ref }, 1 );
-my @cats = @{ $cats->as_array_ref };
-for (@cats) {
+is( $cats->count , 2 );
+for (@$cats) {
     is( $_->prop('age'), "0.7" );
 }
-is_deeply( [ sort map { $_->prop('name') } @cats ], [qw(Mao Mei)] );
+is_deeply( [ sort map { $_->prop('name') } @$cats ], [qw(Mao Mei)] );
 
 my $cat = Prophet::Record->new( handle => $cxn, type => 'Person' );
 $cat->load( uuid => $mao );
@@ -49,16 +47,16 @@ my $cat2 = Prophet::Record->new( handle => $cxn, type => 'Person' );
 $cat2->load( uuid => $mei );
 $cat2->set_prop( name => 'age', value => '0.8' );
 
-is( $#{ $cats->as_array_ref }, 1 );
-for (@cats) {
+is( $cats->count, 2 );
+for (@$cats) {
     is( $_->prop('age'), "0.8" );
 }
 
-for (@cats) {
+for (@$cats) {
     ok( $_->delete );
 }
 
 my $records = Prophet::Collection->new( type => 'Person', handle => $cxn );
 $records->matching( sub {1} );
-is( $#{ $records->as_array_ref }, 1 );
+is( $records->count, 2 );
 1;

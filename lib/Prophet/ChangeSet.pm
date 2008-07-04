@@ -1,8 +1,50 @@
-use warnings;
-use strict;
-
 package Prophet::ChangeSet;
-use base qw/Class::Accessor/;
+use Moose;
+use MooseX::AttributeHelpers;
+use Prophet::Change;
+use Params::Validate;
+
+has source_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has sequence_no => (
+    is  => 'rw',
+    isa => 'Maybe[Int]',
+);
+
+has original_source_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has original_sequence_no => (
+    is  => 'rw',
+    isa => 'Maybe[Int]',
+);
+
+has is_nullification => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has is_resolution => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has changes => (
+    metaclass  => 'Collection::Array',
+    is         => 'rw',
+    isa        => 'ArrayRef[Prophet::Change]',
+    auto_deref => 1,
+    default    => sub { [] },
+    provides   => {
+        push   => '_add_change',
+        count  => 'has_changes',
+    },
+);
 
 =head1 NAME
 
@@ -14,15 +56,9 @@ This class represents a single, atomic Prophet database update. It tracks some m
 
 =cut
 
-use Prophet::Change;
-use Params::Validate;
-
 =head1 METHODS
 
 =cut
-
-__PACKAGE__->mk_accessors(
-    qw/sequence_no source_uuid original_source_uuid original_sequence_no is_nullification  is_resolution/);
 
 =head2 new
 
@@ -65,7 +101,7 @@ Add a new change, L<$args{'change'}> to this changeset.
 sub add_change {
     my $self = shift;
     my %args = validate( @_, { change => { isa => 'Prophet::Change' } } );
-    push @{ $self->{changes} }, $args{change};
+    $self->_add_change($args{change});
 
 }
 
@@ -75,27 +111,14 @@ Return an array of all the changes in the current changeset.
 
 =cut
 
-sub changes {
-    my $self = shift;
-    if (@_) {
-        $self->{'changes'} = shift;
-    }
-    return @{ $self->{'changes'} || [] };
-}
+=head2 has_changes
 
-=head2 is_empty
-
-Returns true if this changeset has no changes
+Returns true if this changeset has any changes
 
 =cut
 
-sub is_empty {
-    my $self = shift;
-    return $self->changes ? 0 : 1;
-}
-
 our @SERIALIZE_PROPS
-    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution is_empty));
+    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
 
 sub as_hash {
     my $self = shift;
@@ -118,5 +141,8 @@ sub new_from_hashref {
     }
     return $self;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

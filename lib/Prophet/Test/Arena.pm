@@ -1,9 +1,28 @@
-use warnings;
-use strict;
-
 package Prophet::Test::Arena;
-use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(qw/chickens record_callback history/);
+use Moose;
+use MooseX::AttributeHelpers;
+
+has chickens => (
+    is         => 'rw',
+    isa        => 'ArrayRef[Prophet::Test::Participant]',
+    default    => sub { [] },
+    auto_deref => 1,
+);
+
+has record_callback => (
+    is  => 'rw',
+    isa => 'CodeRef',
+);
+
+has history => (
+    metaclass => 'Collection::Array',
+    is        => 'rw',
+    isa       => 'ArrayRef[ArrayRef]',
+    default   => sub { [] },
+    provides  => {
+        push => 'add_history',
+    },
+);
 
 use Prophet::Test::Participant;
 use Acme::MetaSyntactic;
@@ -25,7 +44,7 @@ sub setup {
             });
     }
     
-    $self->chickens(@chickens);
+    $self->chickens(\@chickens);
 }
 
 sub run_from_yaml {
@@ -63,7 +82,7 @@ sub run_from_data {
 
     for ( @{ $data->{recipe} } ) {
         my ( $name, $action, $args ) = @$_;
-        my ($chicken) = grep { $_->name eq $name } @{ $arena->chickens };
+        my ($chicken) = grep { $_->name eq $name } $arena->chickens;
         if ( $args->{record} ) {
             $args->{record} = $record_map->{ $args->{record} };
         }
@@ -96,7 +115,7 @@ sub step {
     my $step_name = shift || undef;
     my $step_display = defined($step_name) ? $step_name : "(undef)";
 
-    for my $chicken ( @{ $self->chickens } ) {
+    for my $chicken ($self->chickens) {
 
         diag(" as ".$chicken->name. ": $step_display");
         # walk the arena, noting the type of each value
@@ -111,7 +130,7 @@ sub step {
 sub dump_state {
     my $self = shift;
     my %state;
-    for my $chicken ( @{ $self->chickens } ) {
+    for my $chicken ($self->chickens) {
         $state{ $chicken->name } = as_user( $chicken->name, sub { $chicken->dump_state } );
     }
     return \%state;
@@ -124,8 +143,8 @@ sub sync_all_pairs {
 
     diag("now syncing all pairs");
 
-    my @chickens_a = shuffle @{ $self->chickens };
-    my @chickens_b = shuffle @{ $self->chickens };
+    my @chickens_a = shuffle $self->chickens;
+    my @chickens_b = shuffle $self->chickens;
 
     foreach my $a (@chickens_a) {
         foreach my $b (@chickens_b) {
@@ -151,7 +170,10 @@ sub record {
         if $self->record_callback;
 
     # XXX: move to some kind of recorder class and make use of callback
-    push @{ $self->{history} ||= [] }, [ $name, $action, $stored ];
+    $self->add_history([$name, $action, $stored]);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

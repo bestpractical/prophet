@@ -1,7 +1,12 @@
-use warnings;
-use strict;
-
 package Prophet::Record;
+use Moose;
+use MooseX::ClassAttribute;
+use Params::Validate;
+use Data::UUID;
+use List::MoreUtils qw/uniq/;
+use Prophet::App; # for require_module. Kinda hacky
+
+use constant collection_class => 'Prophet::Collection';
 
 =head1 NAME
 
@@ -13,24 +18,55 @@ This class represents a base class for any record in a Prophet database
 
 =cut
 
-use base qw'Class::Accessor Class::Data::Inheritable';
+has handle => (
+    is       => 'rw',
+    required => 1,
+);
 
-__PACKAGE__->mk_accessors(qw'handle uuid luid type');
-__PACKAGE__->mk_classdata( REFERENCES => {} );
-__PACKAGE__->mk_classdata( PROPERTIES => {} );
+has type => (
+    is        => 'rw',
+    isa       => 'Str',
+    required  => 1,
+    predicate => 'has_type',
+    default   => sub {
+        my $self = shift;
+        $self->record_type;
+    },
+);
+
+has uuid => (
+    is      => 'rw',
+    isa     => 'Str',
+    trigger => sub {
+        my $self = shift;
+        $self->find_or_create_luid;
+    },
+);
+
+has luid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+class_has REFERENCES => (
+    is      => 'rw',
+    isa     => 'HashRef',
+    default => sub { {} },
+);
+
+class_has PROPERTIES => (
+    is      => 'rw',
+    isa     => 'HashRef',
+    default => sub { {} },
+);
 
 sub declared_props {
     return sort keys %{ $_[0]->PROPERTIES };
 }
 
-use Params::Validate;
-use Data::UUID;
-use List::MoreUtils qw/uniq/;
-use Prophet::App;    # for require_module. Kinda hacky
-
 my $UUIDGEN = Data::UUID->new();
 
-use constant collection_class => 'Prophet::Collection';
+sub record_type { $_[0]->has_type ? $_[0]->type : undef }
 
 =head1 METHODS
 
@@ -39,18 +75,6 @@ use constant collection_class => 'Prophet::Collection';
 Instantiates a new, empty L<Prophet::Record/> of type $type.
 
 =cut
-
-sub new {
-    my $class = shift;
-    my $self  = bless {}, $class;
-    my $args  = ref( $_[0] ) ? $_[0] : {@_};
-    $args->{type} ||= $class->record_type;
-    my %args = validate( @{ [%$args] }, { handle => 1, type => 1 } );
-    $self->$_( $args{$_} ) for keys(%args);
-    return $self;
-}
-
-sub record_type { $_[0]->type }
 
 =head2 register_reference
 
@@ -120,12 +144,10 @@ sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
     my $uuid = $UUIDGEN->create_str;
-
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) or return undef;
 
     $self->uuid($uuid);
-    $self->find_or_create_luid();
 
     $self->handle->create_record(
         props => $args{'props'},
@@ -167,7 +189,6 @@ sub load {
         $self->uuid( $self->handle->find_uuid_by_luid( luid => $args{luid} ) );
     } else {
         $self->uuid( $args{uuid} );
-        $self->find_or_create_luid();
     }
 
     return $self->handle->record_exists(
@@ -342,5 +363,9 @@ sub find_or_create_luid {
     $self->luid($luid);
     return $luid;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
+no MooseX::ClassAttribute;
 
 1;

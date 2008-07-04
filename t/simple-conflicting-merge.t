@@ -105,7 +105,6 @@ as_bob {
         $null_as_hash,
         {
 
-            is_empty             => 0,
             is_nullification     => 1,
             is_resolution        => undef,
             original_sequence_no => undef,
@@ -143,7 +142,7 @@ as_bob {
     $from_alice_as_hash->{$_} = undef for qw(sequence_no source_uuid);
     is_deeply(
         $from_alice_as_hash,
-        {   is_empty             => 0,
+        {
             is_nullification     => undef,
             is_resolution        => undef,
             source_uuid          => undef,

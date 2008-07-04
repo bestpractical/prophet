@@ -1,9 +1,6 @@
-use warnings;
-use strict;
-
 package Prophet::Replica::Native;
-use base qw/Prophet::Replica/;
-
+use Moose;
+extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use LWP::Simple ();
 use Path::Class;
@@ -14,10 +11,64 @@ use JSON;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-__PACKAGE__->mk_accessors(qw/url _db_uuid _uuid/);
-__PACKAGE__->mk_accessors(
-    qw(fs_root_parent fs_root target_replica cas_root record_cas_dir changeset_cas_dir record_dir current_edit)
+has _db_uuid => (
+    is => 'rw',
 );
+
+has _uuid => (
+    is => 'rw',
+);
+
+has fs_root_parent => (
+    is      => 'rw',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        $self->fs_root_parent($self->url =~ m{^file://(.*)/.*?$});
+    },
+);
+
+has fs_root => (
+    is      => 'rw',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        $self->fs_root($self->url =~ m{^file://(.*)$});
+    },
+);
+
+has target_replica => (
+    is => 'rw',
+);
+
+has current_edit => (
+    is => 'rw',
+);
+
+has '+resolution_db_handle' => (
+    isa     => 'Prophet::Replica | Undef',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        return if $self->is_resdb || $self->is_state_handle;
+        return Prophet::Replica->new({
+            url      => "prophet:" . $self->url . '/resolutions',
+            is_resdb => 1,
+        })
+    },
+);
+
+#has '+state_handle' => (
+#    isa     => 'Prophet::Replica | Undef',
+#    lazy    => 1,
+#    default => sub {
+#        return if $self->is_state_handle;
+#        return Prophet::Replica->new({
+#            url             => "prophet:" . $self->url,
+#            is_state_handle => 1
+#        });
+#    },
+#);
 
 use constant scheme            => 'prophet';
 use constant cas_root          => 'cas';
@@ -26,30 +77,19 @@ use constant changeset_cas_dir => dir( __PACKAGE__->cas_root => 'changesets' );
 use constant record_dir        => 'records';
 use constant changeset_index   => 'changesets.idx';
 
-=head2 setup
+=head2 BUILD
 
 Open a connection to the SVN source identified by C<$self->url>.
 
 =cut
 
-sub setup {
+sub BUILD {
     my $self = shift;
     $self->{url}
         =~ s/^prophet://;  # url-based constructor in ::replica should do better
     $self->{url} =~ s{/$}{};
-    $self->fs_root( $self->url        =~ m{^file://(.*)$} );
-    $self->fs_root_parent( $self->url =~ m{^file://(.*)/.*?$} );
     $self->_probe_or_create_db();
 
-# $self->state_handle( Prophet::Replica->new( { url => "prophet:".$self->{url}, is_state_handle =>1 } ) ) unless ( $self->is_state_handle || $self->state_handle);
-
-    $self->resolution_db_handle(
-        Prophet::Replica->new(
-            {   url      => "prophet:" . $self->{url} . '/resolutions',
-                is_resdb => 1
-            }
-        )
-    ) unless ( $self->is_resdb || $self->is_state_handle );
 
     #    warn "I AM ".$ENV{'PROPHET_USER'};
     #    warn $self->uuid;
@@ -652,5 +692,8 @@ sub type_exists {
     my %args = validate( @_, { type => 1 } );
     return $self->_file_exists( $self->_record_type_root( $args{'type'} ) );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

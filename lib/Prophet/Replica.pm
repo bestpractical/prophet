@@ -1,16 +1,39 @@
-use warnings;
-use strict;
-
-
 package Prophet::Replica;
-use base qw/Class::Accessor/;
+use Moose;
 use Params::Validate qw(:all);
 use UNIVERSAL::require;
 use Data::UUID;
 use Path::Class;
 
+has state_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
 
-__PACKAGE__->mk_accessors(qw(state_handle resolution_db_handle is_resdb is_state_handle db_uuid url));
+has resolution_db_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
+
+has is_resdb => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has is_state_handle => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has db_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has url => (
+    is  => 'rw',
+    isa => 'Str',
+);
 
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
@@ -35,7 +58,7 @@ A base class for all Prophet replicas
 
 =head1 METHODS
 
-=head2 new
+=head2 BUILD
 
 Instantiates a new replica
 
@@ -43,12 +66,22 @@ Instantiates a new replica
 
 sub _unimplemented { my $self = shift; die ref($self). " does not implement ". shift; }
 
-sub new {
-    my $self = shift->SUPER::new(@_);
-    $self->_rebless_to_replica_type(@_);
-    $self->setup();
-    return $self;
-}
+around new => sub {
+    my $orig  = shift;
+    my $class = shift;
+    my %args  = @_ == 1 ? %{ $_[0] } : @_;
+
+    my ($new_class, $scheme, $url) = $class->_url_to_replica_class($args{url});
+
+    if (!$new_class) {
+        $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url})");
+    }
+
+    return $orig->($class, %args, url => $args{url}) if $class eq $new_class;
+
+    $new_class->require;
+    return $new_class->new(%args);
+};
 
 =head2 register_replica_scheme { class=> Some::Perl::Class, scheme => 'scheme:' }
 
@@ -65,23 +98,19 @@ sub register_replica_scheme {
 
 
 }
-=head2 _rebless_to_replica_type
 
-Reblesses this replica into the right sort of replica for whatever kind of replica $self->url points to
+=head2 _url_to_replica_class
 
+Returns the replica class for the given url.
 
 =cut
-sub _rebless_to_replica_type {
-    my $self = shift;
 
-    my ($scheme, $real_url) = split(/:/,$self->url,2);
-    $self->url($real_url);
-    if ( my $class = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme}) {
-    $class->require or die $@;
-    return bless $self, $class;
-    } else {
-        $self->log_fatal( "$scheme isn't a replica type I know how to handle. (The Replica URL given was ".$self->url.")");
-    }
+sub _url_to_replica_class {
+    my $self = shift;
+    my $url  = shift;
+
+    my ($scheme, $real_url) = split /:/, $url;
+    return ($Prophet::Replica::REPLICA_TYPE_MAP->{$scheme}, $scheme, $real_url);
 }
 
 sub import_changesets {
@@ -176,7 +205,7 @@ sub integrate_changeset {
     return if ($changeset->is_nullification);
 
     $self->remove_redundant_data($changeset);    #Things we have already seen
-    return if ($changeset->is_empty);
+    return unless $changeset->has_changes;
 
 
 
@@ -322,7 +351,7 @@ sub conflicts_from_changeset {
 
     $conflict->analyze_changeset();
 
-    return undef unless @{ $conflict->conflicting_changes };
+    return undef unless $conflict->has_conflicting_changes;
 
     return $conflict;
 
@@ -461,7 +490,7 @@ sub export_to {
     my %args = validate( @_, { path => 1, } );
     Prophet::ReplicaExporter->require();
 
-    my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, source_replica => $self});
+    my $exporter = Prophet::ReplicaExporter->new({target_path => dir($args{'path'}), source_replica => $self});
     $exporter->export();
 }
 
@@ -659,7 +688,7 @@ sub record_resolutions {
         # Otherwise, record them locally
     my $res_handle =  $self->resolution_db_handle || $self;
 
-    return unless $changeset->changes;
+    return unless $changeset->has_changes;
 
     $self->begin_edit();
     $self->record_changes($changeset);
@@ -916,6 +945,9 @@ sub log_fatal {
     $self->log(@_);
     Carp::confess(@_);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 

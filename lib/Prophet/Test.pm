@@ -50,7 +50,7 @@ sub import_extra {
 
 {
     no warnings 'redefine';
-
+    require Test::More;
     sub Test::More::diag {    # bad bad bad # convenient convenient convenient
         Test::More->builder->diag(@_) if ( $Test::Harness::Verbose || $ENV{'TEST_VERBOSE'} );
     }
@@ -253,7 +253,7 @@ sub replica_merge_tickets {
     my $cli     = Prophet::CLI->new();
     my $tickets = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
     $tickets->matching( sub {1} );
-    return { map { $_->uuid => $_->prop('last-changeset') } @{ $tickets->as_array_ref } };
+    return { map { $_->uuid => $_->prop('last-changeset') } $tickets->items };
 
 }
 

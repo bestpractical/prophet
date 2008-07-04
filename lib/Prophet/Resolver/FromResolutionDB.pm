@@ -1,11 +1,9 @@
-use warnings;
-use strict;
-
 package Prophet::Resolver::FromResolutionDB;
-use base qw/Prophet::Resolver/;
+use Moose;
 use Prophet::Change;
 use JSON;
 use Digest::SHA1 'sha1_hex';
+extends 'Prophet::Resolver';
 
 sub run {
     my $self               = shift;
@@ -19,14 +17,12 @@ sub run {
         type   => '_prophet_resolution-' . $conflicting_change->fingerprint
     );
     $res->matching( sub {1} );
-    return unless @{ $res->as_array_ref };
-
-    #    return unless scalar @{ $res->as_array_ref };
+    return unless $res->count;
 
     my %answer_map;
     my %answer_count;
 
-    for my $answer ( @{ $res->as_array_ref } ) {
+    for my $answer ($res->items) {
         my $key = sha1_hex( to_json($answer->get_props, {utf8 => 1, pretty => 1, canonical => 1}));
         $answer_map{$key} ||= $answer;
         $answer_count{$key}++;
@@ -44,7 +40,9 @@ sub run {
         );
     }
     return $resolution;
-
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

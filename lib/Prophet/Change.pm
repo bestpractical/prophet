@@ -1,12 +1,46 @@
-use warnings;
-use strict;
-
 package Prophet::Change;
-use base qw/Class::Accessor/;
-
+use Moose;
+use Prophet::Meta::Types;
+use MooseX::AttributeHelpers;
 use Prophet::PropChange;
 use Params::Validate;
-__PACKAGE__->mk_accessors(qw/record_type record_uuid change_type resolution_cas/);
+
+has record_type => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has record_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has change_type => (
+    is  => 'rw',
+    isa => 'Prophet::Type::ChangeType',
+);
+
+has resolution_cas => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has is_resolution => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has prop_changes => (
+    metaclass  => 'Collection::Array',
+    is         => 'rw',
+    isa        => 'ArrayRef[Prophet::PropChange]',
+    auto_deref => 1,
+    default    => sub { [] },
+    provides   => {
+        count => 'has_prop_changes',
+        push  => '_add_prop_change',
+    },
+);
 
 =head1 NAME
 
@@ -28,20 +62,13 @@ The UUID of the record being changed
 
 =head2 change_type
 
-One of create_file, add_dir, update_file, delete
-XXX TODO is it create_file or add_file?
+One of add_file, add_dir, update_file, delete
 
 =head2 prop_changes [\@PROPCHANGES]
 
 Returns a list of L<Prophet::PropChange/> associated with this Change. Takes an optional arrayref to fully replace the set of propcahnges
 
 =cut
-
-sub prop_changes {
-    my $self = shift;
-    $self->{prop_changes} = shift if @_;
-    return @{ $self->{prop_changes} || [] };
-}
 
 =head2 new_from_conflict( $conflict )
 
@@ -71,13 +98,12 @@ Takes a C<name>, and the C<old> and C<new> values.
 sub add_prop_change {
     my $self   = shift;
     my %args   = validate( @_, { name => 1, old => 0, new => 0 } );
-    my $change = Prophet::PropChange->new();
-    $change->name( $args{'name'} );
-    $change->old_value( $args{'old'} );
-    $change->new_value( $args{'new'} );
-
-    push @{ $self->{prop_changes} }, $change;
-
+    my $change = Prophet::PropChange->new(
+        name      => $args{'name'},
+        old_value => $args{'old'},
+        new_value => $args{'new'},
+    );
+    $self->_add_prop_change($change);
 }
 
 sub as_hash {
@@ -110,5 +136,8 @@ sub new_from_hashref {
     }
     return $self;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

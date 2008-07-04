@@ -1,15 +1,52 @@
-
-use warnings;
-use strict;
-
 package Prophet::Conflict;
+use Moose;
+use MooseX::AttributeHelpers;
 use Params::Validate;
-use base qw/Class::Accessor/;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
 
-__PACKAGE__->mk_accessors(
-    qw/prophet_handle resolvers changeset nullification_changeset resolution_changeset autoresolved/);
+has prophet_handle => (
+    is  => 'rw',
+    isa => 'Prophet::Replica',
+);
+
+has resolvers => (
+    is         => 'rw',
+    isa        => 'ArrayRef[CodeRef]',
+    default    => sub { [] },
+    auto_deref => 1,
+);
+
+has changeset => (
+    is  => 'rw',
+    isa => 'Prophet::ChangeSet',
+);
+
+has nullification_changeset => (
+    is  => 'rw',
+    isa => 'Prophet::ChangeSet',
+);
+
+has resolution_changeset => (
+    is  => 'rw',
+    isa => 'Prophet::ChangeSet',
+);
+
+has autoresolved => (
+    is  => 'rw',
+    isa => 'Bool',
+);
+
+has conflicting_changes => (
+    metaclass => 'Collection::Array',
+    is        => 'ro',
+    isa       => 'ArrayRef[Prophet::ConflictingChange]',
+    default   => sub { [] },
+    provides  => {
+        count => 'has_conflicting_changes',
+        push  => 'add_conflicting_change',
+    },
+);
 
 =head2 analyze_changeset Prophet::ChangeSet
 
@@ -25,7 +62,7 @@ sub analyze_changeset {
     #my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     $self->generate_changeset_conflicts();
-    return unless ( @{ $self->conflicting_changes } );
+    return unless $self->has_conflicting_changes;
 
     $self->generate_nullification_changeset;
 
@@ -42,14 +79,14 @@ sub generate_resolution {
     my @resolvers = (
         sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
         $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
-        @{ $self->resolvers || [] },
+        $self->resolvers,
         sub { Prophet::Resolver::Failed->new->run(@_) },
     );
     my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
     for my $conflicting_change ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {
             if ( my $resolution = $_->( $conflicting_change, $self, $resdb ) ) {
-                $resolutions->add_change( change => $resolution ) if $resolution->prop_changes;
+                $resolutions->add_change( change => $resolution ) if $resolution->has_prop_changes;
                 last;
             }
         }
@@ -69,7 +106,7 @@ sub generate_changeset_conflicts {
     my $self = shift;
     for my $change ( $self->changeset->changes ) {
         if ( my $change_conflicts = $self->_generate_change_conflicts($change) ) {
-            push @{ $self->conflicting_changes }, $change_conflicts;
+            $self->add_conflicting_change($change_conflicts);
         }
     }
 }
@@ -83,7 +120,7 @@ Given a change, generates a set of Prophet::ConflictingChange entries.
 sub _generate_change_conflicts {
     my $self = shift;
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
-    my $file_op_conflict = '';
+    my $file_op_conflict;
 
     my $file_exists = $self->prophet_handle->record_exists( uuid => $change->record_uuid, type => $change->record_type );
 
@@ -105,7 +142,7 @@ sub _generate_change_conflicts {
             record_uuid          => $change->record_uuid,
             target_record_exists => $file_exists,
             change_type        => $change->change_type,
-            file_op_conflict   => $file_op_conflict
+            $file_op_conflict ? (file_op_conflict   => $file_op_conflict) : (),
         }
     );
 
@@ -113,10 +150,10 @@ sub _generate_change_conflicts {
         my $current_state
             = $self->prophet_handle->get_record_props( uuid => $change->record_uuid, type => $change->record_type );
 
-        push @{ $change_conflict->prop_conflicts }, $self->_generate_prop_change_conflicts( $change, $current_state );
+        $change_conflict->add_prop_conflict($self->_generate_prop_change_conflicts( $change, $current_state ));
     }
 
-    return ( @{ $change_conflict->prop_conflicts } || $file_op_conflict ) ? $change_conflict : undef;
+    return ( $change_conflict->has_prop_conflicts || $file_op_conflict ) ? $change_conflict : undef;
 }
 
 =head2 _generate_prop_change_conflicts Prophet::Change %hash_of_current_properties
@@ -155,19 +192,6 @@ sub _generate_prop_change_conflicts {
     return @prop_conflicts;
 }
 
-=head2 conflicting_changes 
-
-Returns a referencew to an array of conflicting changes for this conflict
-
-
-=cut
-
-sub conflicting_changes {
-    my $self = shift;
-    $self->{'conflicting_changes'} ||= [];
-    return $self->{'conflicting_changes'};
-}
-
 =head2 generate_nullification_changeset
 
 In order to record a changeset which might not apply cleanly to the
@@ -188,13 +212,14 @@ sub generate_nullification_changeset {
         my $nullify_conflict
             = Prophet::Change->new( { record_type => $conflict->record_type, record_uuid => $conflict->record_uuid } );
 
-        if ( $conflict->file_op_conflict eq "delete_missing_file" ) {
+        my $file_op_conflict = $conflict->file_op_conflict || '';
+        if ( $file_op_conflict eq "delete_missing_file" ) {
             $nullify_conflict->change_type('add_file');
-        } elsif ( $conflict->file_op_conflict eq "update_missing_file" ) {
+        } elsif ( $file_op_conflict eq "update_missing_file" ) {
             $nullify_conflict->change_type('add_file');
-        } elsif ( $conflict->file_op_conflict eq "create_existing_file" ) {
+        } elsif ( $file_op_conflict eq "create_existing_file" ) {
             $nullify_conflict->change_type('delete');
-        } elsif ( $conflict->file_op_conflict ) {
+        } elsif ( $file_op_conflict ) {
             die "We don't know how to deal with a conflict of type " . $conflict->file_op_conflict;
         } else {
             $nullify_conflict->change_type('update_file');
@@ -213,6 +238,9 @@ sub generate_nullification_changeset {
 
     $self->nullification_changeset($nullification);
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
 

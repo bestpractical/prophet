@@ -3,7 +3,7 @@
 use inc::Module::Install;
 name('Prophet');
 author('clkao and jesse');
-license('DeathandRepudiation');
+license('Perl');
 
 requires('Params::Validate');
 requires('List::MoreUtils');
@@ -11,10 +11,8 @@ requires('Class::Accessor');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-requires('YAML::Syck');
 requires('Test::Exception');
 requires('UNIVERSAL::require');
-requires('Class::Data::Inheritable');
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
@@ -24,30 +22,37 @@ requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires('Scalar::Defer');
+requires('Moose'); # Moose::Util::TypeConstraints Moose::Role
+requires('MooseX::AttributeHelpers');
+requires('MooseX::ClassAttribute');
 
 features(
     'REST Server' => [
         -default => 1,
-        recommends('HTTP::Server::Simple'), # HTTP::Server::Simple::CGI
-        recommends('Test::HTTP::Server::Simple'),
-        recommends('Test::WWW::Mechanize' => '1.16'),
-        recommends('HTTP::Server::Simple')
+        'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
+        'Test::HTTP::Server::Simple',
+        'Test::WWW::Mechanize' => '1.16',
+        'HTTP::Server::Simple'
     ],
 
 
     'Subversion replica support' => [
         -default => 0,
-        recommends( 'SVN::Core') # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
+         'SVN::Core' # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
     ],
     'Maintainer testing tools' => [
         -default   => 1,
-        recommends('Acme::MetaSyntactic'),
-        recommends('Test::POD::Coverage')
+        'Acme::MetaSyntactic',
+        'Test::POD::Coverage'
     ],
-    "Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)" => [
+    q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
         -default => 0,
-        recommends('Devel::Gladiator')
+        'Devel::Gladiator'
     ],
+    'Testing' => [
+        -default => 1,
+        'YAML::Syck' => 0
+    ]
 );
 
 all_from('lib/Prophet.pm');

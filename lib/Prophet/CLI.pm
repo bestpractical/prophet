@@ -1,26 +1,62 @@
-use warnings;
-use strict;
-
 package Prophet::CLI;
-use base qw/Class::Accessor/;
-__PACKAGE__->mk_accessors(
-    qw/app_class record_class type uuid app_handle primary_commands/);
+use Moose;
+use MooseX::ClassAttribute;
+
+has app_class => (
+        is => 'rw',
+        isa => 'Str', # 'Prophet::App',
+        default => 'Prophet::App'
+);
+
+has record_class => (
+        is => 'rw',
+        isa => 'Str',# 'Prophet::Record',
+        default => 'Prophet::Record'
+);
+
+has app_handle => (
+        is => 'rw',
+        isa => 'Prophet::App',
+        lazy => 1,
+        default => sub { $_[0]->app_class->require; $_[0]->app_class->new() }
+);
+
+
+
+has uuid => (   # this is the uuid set by the user from the commandline
+    is => 'rw',
+    isa => 'Str'
+    );
+
+has type => (   # this is the type set by the user from the commandline
+    is => 'rw',
+    isa => 'Str'
+    );
+
+
+has primary_commands => ( # the commadns the user executes from the commandline
+    is => 'rw',
+    isa => 'ArrayRef'
+    );
+
+has args => (
+    metaclass  => 'Collection::Hash',
+    is         => 'rw',
+    isa        => 'HashRef',
+    default    => sub { {} },
+    provides   => {
+        set    => 'set_arg',
+        get    => 'arg',
+        exists => 'has_arg',
+        delete => 'delete_arg',
+    },
+);
 
 use Prophet;
 use Prophet::Record;
 use Prophet::Collection;
 use Prophet::Replica;
 
-sub new {
-    my $class = shift;
-    my $self  = $class->SUPER::new(@_);
-    $self->record_class('Prophet::Record') unless $self->record_class;
-
-    $self->app_class || $self->app_class('Prophet::App');
-    $self->app_class->require();    # unless exists $INC{$app_class_path};
-    $self->app_handle( $self->app_class->new );
-    return $self;
-}
 
 =head2 _record_cmd
 
@@ -43,32 +79,31 @@ sub _get_cmd_obj {
 
     my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $self->primary_commands };
 
-
-
     my @possible_classes;
-    
+
     my @to_try = @commands;
 
-    while( @to_try ) {
-        my $cmd = $self->app_class . "::CLI::Command::" . join( '::', map {ucfirst lc $_} @to_try ) ;    # App::SD::CLI::Command::Ticket::Comment::List
+    while (@to_try) {
+        my $cmd = $self->app_class . "::CLI::Command::" . join( '::', map { ucfirst lc $_ } @to_try );    # App::SD::CLI::Command::Ticket::Comment::List
         push @possible_classes, $cmd;
-        shift @to_try; # throw away that top-level "Ticket" option 
+        shift @to_try;                                                                                    # throw away that top-level "Ticket" option
     }
 
-   my @extreme_fallback_commands = (     $self->app_class . "::CLI::Command::" . ucfirst(lc( $commands[-1] )),    # App::SD::CLI::Command::List
-        "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),    # Prophet::CLI::Command::List
+    my @extreme_fallback_commands = (
+        $self->app_class . "::CLI::Command::" . ucfirst( lc( $commands[-1] ) ),                           # App::SD::CLI::Command::List
+        "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),                                          # Prophet::CLI::Command::List
         $self->app_class . "::CLI::Command::NotFound",
         "Prophet::CLI::Command::NotFound"
     );
 
     my $class;
 
-    for my $try (@possible_classes, @extreme_fallback_commands) {
+    for my $try ( @possible_classes, @extreme_fallback_commands ) {
         $class = $self->_try_to_load_cmd_class($try);
         last if $class;
     }
 
-    die "I don't know how to parse '" . join(" ", @{$self->primary_commands}) ."'. Are you sure that's a valid command?" unless ($class);
+    die "I don't know how to parse '" . join( " ", @{ $self->primary_commands } ) . "'. Are you sure that's a valid command?" unless ($class);
 
     my $command_obj = $class->new(
         {   cli      => $self,
@@ -84,8 +119,11 @@ sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
     Prophet::App->require_module($class);
+    warn "trying out " .$class;
+    no strict 'refs';
+    warn join(',', @{$class.'::ISA'});
     return $class if ( $class->isa('Prophet::CLI::Command') );
-
+    warn "aw. not it";
     return undef;
 }
 
@@ -111,7 +149,7 @@ sub parse_args {
 
         ($name,$val)= split(/=/,$name,2) if ($name =~/=/);
         $name =~ s/^--//;
-        $self->{'args'}->{$name} =  ($val || shift @ARGV);
+        $self->set_arg($name => ($val || shift @ARGV));
     }
 
 }
@@ -125,26 +163,26 @@ When working with individual records, it is often the case that we'll be expecti
 sub set_type_and_uuid {
     my $self = shift;
 
-    if (my $id = delete $self->{args}->{id}) {
+    if (my $id = $self->delete_arg('id')) {
         if ($id =~ /^(\d+)$/) { 
-        $self->{args}->{luid} = $id;
+        $self->set_arg(luid => $id);
         } else { 
-        $self->{args}->{uuid} = $id;
+        $self->set_arg(uuid => $id);
 
         }
 
     }
 
-    if ( my $uuid = delete $self->{args}->{uuid} ) {
+    if ( my $uuid = $self->delete_arg('uuid')) {
         $self->uuid($uuid);
     }
-    elsif ( my $luid = delete $self->{args}->{luid} ) {
+    elsif ( my $luid = $self->delete_arg('luid')) {
         my $uuid = $self->app_handle->handle->find_uuid_by_luid(luid => $luid);
         die "I have no UUID mapped to the local id '$luid'\n" if !defined($uuid);
         $self->uuid($uuid);
     }
-    if ( $self->{args}->{type} ) {
-        $self->type( delete $self->{args}->{'type'} );
+    if ( my $type = $self->delete_arg('type') ) {
+        $self->type($type);
     } elsif($self->primary_commands->[-2]) {
         $self->type($self->primary_commands->[-2]); 
     }
@@ -157,12 +195,6 @@ Returns a reference to the key-value pairs passed in on the command line
 If passed a hashref, sets the args to taht;
 
 =cut
-
-sub args {
-    my $self = shift;
-    $self->{'args'} = shift if $_[0];
-    return $self->{'args'};
-}
 
 sub run_one_command {
     my $self = shift;
@@ -192,20 +224,29 @@ sub invoke {
     return $ret;
 }
 
-package Prophet::CLI::Command;
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
-use base qw/Class::Accessor/;
+package Prophet::CLI::RecordCommand;
+use Moose::Role;
 
-__PACKAGE__->mk_accessors(qw/cli record_class command type uuid/);
+has type => (
+    is => 'rw',
+    isa => 'Str',
+    required => 0
+);
 
-# XXX type, uuid are only for record commands
+has uuid => (
+    is => 'rw',
+    isa => 'Str',
+    required => 0
+);
 
-sub fatal_error {
-    my $self   = shift;
-    my $reason = shift;
-    die $reason . "\n";
+has record_class => (
+    is => 'rw',
+    isa => 'Prophet::Record',
+);
 
-}
 
 sub _get_record {
     my $self = shift;
@@ -232,13 +273,25 @@ sub _type_to_record_class {
     return 'Prophet::Record';
 }
 
-sub args {
-    shift->cli->args(@_);
+no Moose::Role;
+
+package Prophet::CLI::Command;
+use Moose;
+
+has cli => (
+    is => 'rw',
+    isa => 'Prophet::CLI',
+    weak_ref => 1,
+    handles => [qw/args set_arg arg has_arg delete_arg app_handle/],
+);
+
+sub fatal_error {
+    my $self   = shift;
+    my $reason = shift;
+    die $reason . "\n";
+
 }
 
-sub app_handle {
-    shift->cli->app_handle;
-}
 
 =head2 edit_text [text] -> text
 
@@ -291,8 +344,8 @@ sub edit_args {
     my $arg  = shift || 'edit';
 
     my $edit_hash;
-    if (exists $self->args->{$arg}) {
-        delete $self->args->{$arg};
+    if ($self->has_arg($arg)) {
+        $self->delete_arg($arg);
         $edit_hash = 1;
     }
 
@@ -311,14 +364,22 @@ sub edit_args {
     return \%args;
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Create;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
+has +uuid => ( required => 0);
 
 sub run {
     my $self   = shift;
     my $record = $self->_get_record;
-
-    $record->create( props => $self->edit_args );
+    my ($val, $msg) = $record->create( props => $self->edit_args );
+    if (!$val) { 
+        warn $msg ."\n";
+    }
     if (!$record->uuid) {
         warn "Failed to create " . $record->record_type . "\n";
         return;
@@ -328,9 +389,14 @@ sub run {
 
 }
 
-package Prophet::CLI::Command::Search;
-use base qw/Prophet::CLI::Command/;
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
+package Prophet::CLI::Command::Search;
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
+has +uuid => ( required => 0);
 
 sub get_collection_object {
     my $self = shift;
@@ -348,7 +414,7 @@ sub get_collection_object {
 sub get_search_callback {
     my $self = shift;
 
-    if ( my $regex = $self->args->{regex} ) {
+    if ( my $regex = $self->arg('regex') ) {
             return sub {
                 my $item  = shift;
                 my $props = $item->get_props;
@@ -366,7 +432,7 @@ sub run {
     my $search_cb = $self->get_search_callback();
     $records->matching($search_cb);
 
-    for ( sort { $a->uuid cmp $b->uuid } @{ $records->as_array_ref } ) {
+    for ( sort { $a->uuid cmp $b->uuid } $records->items ) {
         if ( $_->summary_props ) {
             print $_->format_summary . "\n";
         } else {
@@ -376,14 +442,19 @@ sub run {
     }
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Update;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
 
 sub edit_record {
     my $self   = shift;
     my $record = shift;
 
-    if (exists $self->args->{edit}) {
+    if ($self->has_arg('edit')) {
         my $props = $record->get_props;
         return $self->edit_hash($props);
     }
@@ -410,15 +481,19 @@ sub run {
     }
 }
 
-package Prophet::CLI::Command::Delete;
-use base qw/Prophet::CLI::Command/;
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
+package Prophet::CLI::Command::Delete;
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
 
     my $record = $self->_get_record;
     $record->load( uuid => $self->uuid )
-        || $self->fatal_error("I couldn't find that record");
+        || $self->fatal_error("I couldn't find the record " . $self->uuid);
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
     } else {
@@ -427,8 +502,14 @@ sub run {
 
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Show;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::RecordCommand';
+
 
 sub run {
     my $self = shift;
@@ -446,21 +527,25 @@ sub run {
 
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Merge;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
 
     my $self = shift;
 
-    my $opts = $self->args();
-
-    my $source = Prophet::Replica->new( { url => $opts->{'from'} } );
-    my $target = Prophet::Replica->new( { url => $opts->{'to'} } );
+    my $source = Prophet::Replica->new( { url => $self->arg('from') } );
+    my $target = Prophet::Replica->new( { url => $self->arg('to') } );
 
     $target->import_resolutions_from_remote_replica( from => $source );
 
     $self->_do_merge( $source, $target );
+
+    print "Merge complete.\n";
 }
 
 sub _do_merge {
@@ -472,9 +557,7 @@ sub _do_merge {
                 . "someone did a bad job cloning your database" );
     }
 
-    my $opts = $self->args();
-
-    $opts->{'prefer'} ||= 'none';
+    my $prefer = $self->arg('prefer') || 'none';
 
     if ( !$target->can_write_changesets ) {
         $self->fatal_error( $target->url
@@ -487,20 +570,25 @@ sub _do_merge {
         resdb => $self->app_handle->resdb_handle,
         $ENV{'PROPHET_RESOLVER'}
         ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
-        : ( (   $opts->{'prefer'} eq 'to'
+        : ( (   $prefer eq 'to'
                 ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' )
                 : ()
             ),
-            (   $opts->{'prefer'} eq 'from'
+            (   $prefer eq 'from'
                 ? ( resolver_class => 'Prophet::Resolver::AlwaysSource' )
                 : ()
             )
         )
     );
+
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Push;
-use base qw/Prophet::CLI::Command::Merge/;
+use Moose;
+extends 'Prophet::CLI::Command::Merge';
 
 sub run {
     my $self = shift;
@@ -514,17 +602,25 @@ sub run {
     $self->_do_merge( $source_me, $source_other );
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Export;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
     my $self = shift;
 
-    $self->app_handle->handle->export_to( path => $self->args->{path} );
+    $self->app_handle->handle->export_to( path => $self->arg('path') );
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Pull;
-use base qw/Prophet::CLI::Command::Merge/;
+use Moose;
+extends 'Prophet::CLI::Command::Merge';
 
 sub run {
 
@@ -538,28 +634,36 @@ sub run {
 
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::Server;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
 
     my $self = shift;
 
-    my $opts = $self->args();
     require Prophet::Server::REST;
-    my $server = Prophet::Server::REST->new( $opts->{'port'} || 8080 );
+    my $server = Prophet::Server::REST->new( $self->arg('port') || 8080 );
     $server->prophet_handle( $self->app_handle->handle );
     $server->run;
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 package Prophet::CLI::Command::NotFound;
-use base qw/Prophet::CLI::Command/;
+use Moose;
+extends 'Prophet::CLI::Command';
 
 sub run {
     my $self = shift;
-    $self->fatal_error( "The command you ran, '"
-            . ($self->command || '')
-            . "', could not be found. Perhaps running '$0 help' would help?" );
+    $self->fatal_error( "The command you ran could not be found. Perhaps running '$0 help' would help?" );
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;

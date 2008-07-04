@@ -1,14 +1,11 @@
-use warnings;
-use strict;
-
 package Prophet::Server::REST;
-use base qw/HTTP::Server::Simple::CGI/;
 use Params::Validate qw/:all/;
 use JSON;
+use base 'HTTP::Server::Simple::CGI';
 
 sub prophet_handle {
     my $self = shift;
-    $self->{'_prophet_handle'} = shift if (@_);
+    $self->{'_prophet_handle'} = shift if @_;
     return $self->{'_prophet_handle'};
 }
 

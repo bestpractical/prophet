@@ -1,30 +1,51 @@
-use warnings;
-use strict;
-
 package Prophet::ConflictingChange;
+use Moose;
+use MooseX::AttributeHelpers;
+use Prophet::Meta::Types;
 use Prophet::ConflictingPropChange;
-
-use base qw/Class::Accessor/;
-use JSON qw'to_json';
+use JSON 'to_json';
 use Digest::SHA1 'sha1_hex';
 
-# change_type is one of: add_file add_dir update delete
-__PACKAGE__->mk_accessors(qw/record_type record_uuid source_record_exists target_record_exists change_type file_op_conflict/);
+has record_type => (
+    is  => 'rw',
+    isa => 'Str',
+);
 
-=head2 prop_conflicts
+has record_uuid => (
+    is  => 'rw',
+    isa => 'Str',
+);
 
-Returns a reference to an array of Prophet::ConflictingPropChange objects
+has source_record_exists => (
+    is  => 'rw',
+    isa => 'Bool',
+);
 
-=cut
+has target_record_exists => (
+    is  => 'rw',
+    isa => 'Bool',
+);
 
-sub prop_conflicts {
-    my $self = shift;
+has change_type => (
+    is  => 'rw',
+    isa => 'Prophet::Type::ChangeType',
+);
 
-    $self->{'prop_conflicts'} ||= [];
-    return $self->{prop_conflicts};
+has file_op_conflict => (
+    is  => 'rw',
+    isa => 'Prophet::Type::FileOpConflict',
+);
 
-}
-
+has prop_conflicts => (
+    metaclass => 'Collection::Array',
+    is        => 'rw',
+    isa       => 'ArrayRef',
+    default   => sub { [] },
+    provides  => {
+        push  => 'add_prop_conflict',
+        count => 'has_prop_conflicts',
+    },
+);
 
 sub as_hash {
     my $self = shift;
@@ -56,7 +77,9 @@ sub fingerprint {
     }
 
     return  sha1_hex(to_json($struct, {utf8 => 1, canonical => 1}));
-
-
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
 1;

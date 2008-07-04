@@ -1,9 +1,7 @@
-use warnings;
-use strict;
-
 package Prophet::ForeignReplica;
-use base qw/Prophet::Replica/;
+use Moose;
 use Params::Validate qw(:all);
+extends 'Prophet::Replica';
 
 =head1 NAME
 
@@ -13,7 +11,7 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 =cut
 
-sub setup {
+sub BUILD {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
 
@@ -87,5 +85,8 @@ sub _remote_id_storage {
     return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE,
         'prophet-uuid' )->(@_);
 }
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
 
 1;

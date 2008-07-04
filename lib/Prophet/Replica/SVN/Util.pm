@@ -1,8 +1,11 @@
-use warnings;
-use strict;
-
 # XXX CARGO CULTED FROM SVK::Util;
 package Prophet::Replica::SVN::Util;
+use Moose;
+use MooseX::ClassAttribute;
+
+use SVN::Client;
+
+my $pool = SVN::Pool->new;
 
 =head1 NAME
 
@@ -14,16 +17,25 @@ A library of utility functions for Subversion repository authentication. Ripped 
 
 =cut
 
-use base 'Class::Data::Inheritable';
+class_has svnconfig => (
+    is      => 'rw',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+        return undef if $ENV{PROPHET_NO_SVN_CONFIG};
 
-__PACKAGE__->mk_classdata('_svnconfig');
-__PACKAGE__->mk_classdata('auth_providers');
+        SVN::Core::config_ensure(undef);
+        return $self->_svnconfig( SVN::Core::config_get_config( undef, $pool ) );
+    },
+);
 
 # XXX: this is 1.3 api. use SVN::Auth::* for 1.4 and we don't have to load ::Client anymore
 # (well, fix svn perl bindings to wrap the prompt functions correctly first.
-use SVN::Client;
-__PACKAGE__->auth_providers(
-    sub {
+
+class_has auth_providers => (
+    is      => 'rw',
+    lazy    => 1,
+    default => sub { sub {
         my $keychain = SVN::_Core->can('svn_auth_get_keychain_simple_provider');
         my $win32    = SVN::_Core->can('svn_auth_get_windows_simple_provider');
         [   $keychain ? $keychain : (),
@@ -37,26 +49,15 @@ __PACKAGE__->auth_providers(
             SVN::Client::get_ssl_client_cert_pw_prompt_provider( \&_ssl_client_cert_pw_prompt, 2 ),
             SVN::Client::get_username_prompt_provider( \&_username_prompt, 2 ),
         ];
-    }
+    }},
 );
 
-my $pool = SVN::Pool->new;
 
 =head2 svnconfig
 
 Returns a handle to the user's Subversion configuration.
 
 =cut
-
-sub svnconfig {
-    my $class = shift;
-    return $class->_svnconfig if $class->_svnconfig;
-
-    return undef if $ENV{PROPHET_NO_SVN_CONFIG};
-
-    SVN::Core::config_ensure(undef);
-    return $class->_svnconfig( SVN::Core::config_get_config( undef, $pool ) );
-}
 
 =head2 get_auth_providers
 
@@ -189,5 +190,8 @@ sub _read_password {
 
     return $password;
 }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
