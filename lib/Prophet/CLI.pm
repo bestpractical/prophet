@@ -119,11 +119,7 @@ sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
     Prophet::App->require_module($class);
-    warn "trying out " .$class;
-    no strict 'refs';
-    warn join(',', @{$class.'::ISA'});
     return $class if ( $class->isa('Prophet::CLI::Command') );
-    warn "aw. not it";
     return undef;
 }
 
