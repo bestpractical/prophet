@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 12;
+use Prophet::Test tests => 14;
 
 as_alice {
     run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
@@ -46,11 +46,17 @@ as_bob {
 
 };
 
+my $changesets =   [ map { $_->as_hash } grep { $_->has_changes }  @$changesets ];
+my $seq = delete $changesets->[0]->{'sequence_no'};
+my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
+is($seq, $orig_seq);
+
+
 is_deeply(
-    [ map { $_->as_hash } grep { $_->has_changes }  @$changesets ],
+   $changesets,
     [ 
-        {   'sequence_no'          => 3,
-            'original_sequence_no' => 3,
+        {   #'sequence_no'          => 3,
+            #'original_sequence_no' => 3, # the number is different on different replica types
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
@@ -100,10 +106,16 @@ $changesets = $bob->new_changesets_for($alice);
 
 my @changes = map { $_->as_hash } grep { $_->has_changes } @$changesets;
 
+my $seq = delete @changes[0]->{'sequence_no'};
+my $orig_seq = delete @changes[0]->{'original_sequence_no'};
+is($seq, $orig_seq);
+
 is_deeply(
     \@changes,
-    [   {   'sequence_no'          => 4,
-            'original_sequence_no' => 4,
+    [   {  
+        
+        #     'sequence_no'          => 4,  # the number varies based on replica type
+        #    'original_sequence_no' => 4,
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),

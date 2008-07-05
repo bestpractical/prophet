@@ -118,7 +118,7 @@ sub register_collection_reference {
             handle => $self->handle,
             type   => $collection_class->record_class->record_type
         );
-        $collection->matching( sub { $_[0]->prop( $args{by} ) eq $self->uuid }
+        $collection->matching( sub { ($_[0]->prop( $args{by} )||'') eq $self->uuid }
         );
         return $collection;
     };
