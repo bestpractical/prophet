@@ -244,7 +244,7 @@ has record_class => (
 );
 
 
-sub _get_record {
+sub _get_record_class {
     my $self = shift;
      my $args = { handle => $self->cli->app_handle->handle, type => $self->type };
     if (my $class =  $self->record_class ) {
@@ -254,6 +254,14 @@ sub _get_record {
         return $self->_type_to_record_class( $self->type )->new($args);
     } else { Carp::confess("I was asked to get a record object, but I have neither a type nor a record class")}
 
+}
+
+sub _load_record {
+    my $self = shift;
+    my $record = $self->_get_record_class;
+        $record->load( uuid => $self->uuid )
+        || $self->fatal_error("I couldn't find the record " . $self->uuid);
+    return $record;
 }
 
 sub _type_to_record_class {
@@ -371,7 +379,7 @@ has +uuid => ( required => 0);
 
 sub run {
     my $self   = shift;
-    my $record = $self->_get_record;
+    my $record = $self->_get_record_class;
     my ($val, $msg) = $record->create( props => $self->edit_args );
     if (!$val) { 
         warn $msg ."\n";
@@ -397,7 +405,7 @@ has +uuid => ( required => 0);
 sub get_collection_object {
     my $self = shift;
 
-    my $class = $self->_get_record->collection_class;
+    my $class = $self->_get_record_class->collection_class;
     Prophet::App->require_module($class);
     my $records = $class->new(
         handle => $self->app_handle->handle,
@@ -462,8 +470,7 @@ sub edit_record {
 sub run {
     my $self = shift;
 
-    my $record = $self->_get_record;
-    $record->load( uuid => $self->uuid );
+    my $record = $self->_load_record;
     my $result = $record->set_props( props => $self->edit_record($record) );
     if ($result) {
         print $record->type . " " . $record->uuid . " updated.\n";
@@ -484,12 +491,11 @@ package Prophet::CLI::Command::Delete;
 use Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
+
 sub run {
     my $self = shift;
 
-    my $record = $self->_get_record;
-    $record->load( uuid => $self->uuid )
-        || $self->fatal_error("I couldn't find the record " . $self->uuid);
+    my $record = $self->_load_record;
     if ( $record->delete ) {
         print $record->type . " " . $record->uuid . " deleted.\n";
     } else {
@@ -510,11 +516,7 @@ with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
 
-    my $record = $self->_get_record;
-    if ( !$record->load( uuid => $self->uuid ) ) {
-        print "Record not found\n";
-        return;
-    }
+    my $record = $self->_load_record;
     print "id: ".$record->luid." (" .$record->uuid.")\n";
     my $props = $record->get_props();
     for ( keys %$props ) {
