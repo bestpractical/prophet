@@ -34,7 +34,6 @@ is( $bob->db_uuid,
 );
 };
 
-my $changesets = $bob->new_changesets_for($alice);
 
 my $openbug = '';
 as_bob {
@@ -46,7 +45,7 @@ as_bob {
 
 };
 
-my $changesets =   [ map { $_->as_hash } grep { $_->has_changes }  @$changesets ];
+my $changesets =   [ map { $_->as_hash } grep { $_->has_changes }  @{$bob->new_changesets_for($alice)}];
 my $seq = delete $changesets->[0]->{'sequence_no'};
 my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
 is($seq, $orig_seq);
@@ -106,9 +105,7 @@ $changesets = $bob->new_changesets_for($alice);
 
 my @changes = map { $_->as_hash } grep { $_->has_changes } @$changesets;
 
-my $seq = delete @changes[0]->{'sequence_no'};
-my $orig_seq = delete @changes[0]->{'original_sequence_no'};
-is($seq, $orig_seq);
+is( delete $changes[0]->{'sequence_no'}, delete $changes[0]->{'original_sequence_no'});
 
 is_deeply(
     \@changes,
