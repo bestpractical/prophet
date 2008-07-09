@@ -58,6 +58,7 @@ sub _load_replica_types {
     Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
     for my $package ( $self->app_replica_types) {
         $package->require;
+        next unless $package->can('scheme');
         Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package) 
     }
 }

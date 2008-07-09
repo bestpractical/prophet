@@ -62,7 +62,7 @@ sub prompt_for_login {
     # XXX belongs to some CLI callback
     use Term::ReadKey;
     local $| = 1;
-    if ($username) {
+    unless ($username) {
         print "Username for $uri: ";
         ReadMode 1;
         $username = ReadLine 0;

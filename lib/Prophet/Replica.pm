@@ -308,14 +308,20 @@ sub has_seen_changeset {
     $self->log("Checking to see if we've ever seen changeset " .$changeset->original_sequence_no . " from ".substr($changeset->original_source_uuid,0,6));
 
     # If the changeset originated locally, we never want it
-    return 1 if $changeset->original_source_uuid eq $self->uuid;
-
+    if  ($changeset->original_source_uuid eq $self->uuid ) {
+        
+        $self->log("\t  - We have. (It originated locally)");
+        return 1 
+    }
     # Otherwise, if the we have a merge ticket from the source, we don't want the changeset
-    my $last = $self->last_changeset_from_source( $changeset->original_source_uuid );
-
     # if the source's sequence # is >= the changeset's sequence #, we can safely skip it
-    return 1 if ( $last >= $changeset->original_sequence_no );
-    return undef;
+    elsif ( $self->last_changeset_from_source( $changeset->original_source_uuid ) >= $changeset->original_sequence_no ) {
+        $self->log("\t  - We have seen this or a more recent changeset from remote.");
+        return 1;
+    } else {
+        $self->log("\t  - We have not.");
+        return undef;
+    }
 }
 
 =head2 changeset_will_conflict Prophet::ChangeSet
@@ -352,6 +358,8 @@ sub conflicts_from_changeset {
     $conflict->analyze_changeset();
 
     return undef unless $conflict->has_conflicting_changes;
+
+    $self->log("Conflicting changeset: ".YAML::Dump($conflict));
 
     return $conflict;
 
@@ -757,8 +765,6 @@ sub integrate_changes {
     $self->_integrate_change($_, $changeset) for ( $changeset->changes );
 
 }
-
-
 sub _integrate_change {
     my ($self, $change, $changeset) = validate_pos(@_, {isa => 'Prophet::Replica'}, { isa => 'Prophet::Change'}, { isa => 'Prophet::ChangeSet'} );
 
