@@ -2,42 +2,53 @@ package Prophet::CLI;
 use Moose;
 use MooseX::ClassAttribute;
 
+use Prophet;
+use Prophet::Record;
+use Prophet::Collection;
+use Prophet::Replica;
+
+use List::Util 'first';
+
 has app_class => (
-        is => 'rw',
-        isa => 'Str', # 'Prophet::App',
-        default => 'Prophet::App'
+    is      => 'rw',
+    isa     => 'ClassName',
+    default => 'Prophet::App',
 );
 
 has record_class => (
-        is => 'rw',
-        isa => 'Str',# 'Prophet::Record',
-        default => 'Prophet::Record'
+    is      => 'rw',
+    isa     => 'ClassName',
+    default => 'Prophet::Record',
 );
 
 has app_handle => (
-        is => 'rw',
-        isa => 'Prophet::App',
-        lazy => 1,
-        default => sub { $_[0]->app_class->require; $_[0]->app_class->new() }
+    is      => 'rw',
+    isa     => 'Prophet::App',
+    lazy    => 1,
+    default => sub {
+        $_[0]->app_class->require;
+        return $_[0]->app_class->new;
+    },
 );
 
+has uuid => (
+    is            => 'rw',
+    isa           => 'Str',
+    predicate     => 'has_uuid',
+    documentation => "This is the uuid set by the user from the commandline",
+);
 
+has type => (
+    is  => 'rw',
+    isa => 'Str',
+    documentation => "This is the type set by the user from the commandline",
+);
 
-has uuid => (   # this is the uuid set by the user from the commandline
-    is => 'rw',
-    isa => 'Str'
-    );
-
-has type => (   # this is the type set by the user from the commandline
-    is => 'rw',
-    isa => 'Str'
-    );
-
-
-has primary_commands => ( # the commadns the user executes from the commandline
-    is => 'rw',
-    isa => 'ArrayRef'
-    );
+has primary_commands => (
+    is  => 'rw',
+    isa => 'ArrayRef',
+    documentation => "The commands the user executes from the commandline",
+);
 
 has args => (
     metaclass  => 'Collection::Hash',
@@ -52,12 +63,6 @@ has args => (
     },
 );
 
-use Prophet;
-use Prophet::Record;
-use Prophet::Collection;
-use Prophet::Replica;
-
-
 =head2 _record_cmd
 
 handles the subcommand for a particular type
@@ -70,56 +75,65 @@ our %CMD_MAP = (
     edit => 'update',
     rm   => 'delete',
     del  => 'delete',
-    list => 'search'
+    list => 'search',
 );
-
 
 sub _get_cmd_obj {
     my $self = shift;
 
-    my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $self->primary_commands };
+    my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ }
+                   @{ $self->primary_commands };
 
     my @possible_classes;
 
     my @to_try = @commands;
 
     while (@to_try) {
-        my $cmd = $self->app_class . "::CLI::Command::" . join( '::', map { ucfirst lc $_ } @to_try );    # App::SD::CLI::Command::Ticket::Comment::List
+
+        # App::SD::CLI::Command::Ticket::Comment::List
+        my $cmd = $self->app_class . "::CLI::Command::" . join('::', map { ucfirst lc $_ } @to_try);
+
         push @possible_classes, $cmd;
-        shift @to_try;                                                                                    # throw away that top-level "Ticket" option
+        shift @to_try;
+        # throw away that top-level "Ticket" option
     }
 
-    my @extreme_fallback_commands = (
-        $self->app_class . "::CLI::Command::" . ucfirst( lc( $commands[-1] ) ),                           # App::SD::CLI::Command::List
-        "Prophet::CLI::Command::" . ucfirst( lc $commands[-1] ),                                          # Prophet::CLI::Command::List
-        $self->app_class . "::CLI::Command::NotFound",
-        "Prophet::CLI::Command::NotFound"
-    );
+    my @extreme_fallback_commands;
 
-    my $class;
-
-    for my $try ( @possible_classes, @extreme_fallback_commands ) {
-        $class = $self->_try_to_load_cmd_class($try);
-        last if $class;
+    # App::SD::CLI::Command::List
+    # Prophet::CLI::Command::List
+    for my $main ($self->app_class, 'Prophet') {
+        push @extreme_fallback_commands, $main . "::CLI::Command::" . ucfirst(lc $commands[-1]);
     }
+
+    # App::SD::CLI::Command::NotFound
+    # Prophet::CLI::Command::NotFound
+    for my $main ($self->app_class, 'Prophet') {
+        push @extreme_fallback_commands, $main . "::CLI::Command::NotFound";
+    }
+
+    my $class = first { $self->_try_to_load_cmd_class($_) }
+                @possible_classes, @extreme_fallback_commands;
 
     die "I don't know how to parse '" . join( " ", @{ $self->primary_commands } ) . "'. Are you sure that's a valid command?" unless ($class);
 
-    my $command_obj = $class->new(
-        {   cli      => $self,
-            commands => $self->primary_commands,
-            type     => $self->type,
-            uuid     => $self->uuid
-        }
+    my %constructor_args = (
+        cli      => $self,
+        commands => $self->primary_commands,
+        type     => $self->type,
     );
-    return $command_obj;
+
+    $constructor_args{uuid} = $self->uuid
+        if $self->has_uuid;
+
+    return $class->new(%constructor_args);
 }
 
 sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
     Prophet::App->require_module($class);
-    return $class if ( $class->isa('Prophet::CLI::Command') );
+    return $class if $class->isa('Prophet::CLI::Command');
     return undef;
 }
 
@@ -127,19 +141,17 @@ sub _try_to_load_cmd_class {
 
 This routine pulls arguments passed on the command line out of ARGV and sticks them in L</args>. The keys have leading "--" stripped.
 
-
 =cut
 
 sub parse_args {
     my $self = shift;
 
     my @primary;
-    push @primary, shift @ARGV while ( $ARGV[0] &&  $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
-
+    push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
 
     $self->primary_commands( \@primary );
 
-    while (my $name = shift @ARGV) { 
+    while (my $name = shift @ARGV) {
         die "$name doesn't look like --prop-name" if ( $name !~ /^--/ );
         my $val;
 
@@ -147,12 +159,11 @@ sub parse_args {
         $name =~ s/^--//;
         $self->set_arg($name => ($val || shift @ARGV));
     }
-
 }
 
 =head2 set_type_and_uuid
 
-When working with individual records, it is often the case that we'll be expecting a --type argument and then a mess of other key-value pairs. 
+When working with individual records, it is often the case that we'll be expecting a --type argument and then a mess of other key-value pairs.
 
 =cut
 
@@ -160,13 +171,11 @@ sub set_type_and_uuid {
     my $self = shift;
 
     if (my $id = $self->delete_arg('id')) {
-        if ($id =~ /^(\d+)$/) { 
-        $self->set_arg(luid => $id);
-        } else { 
-        $self->set_arg(uuid => $id);
-
+        if ($id =~ /^(\d+)$/) {
+            $self->set_arg(luid => $id);
+        } else {
+            $self->set_arg(uuid => $id);
         }
-
     }
 
     if ( my $uuid = $self->delete_arg('uuid')) {
@@ -180,7 +189,7 @@ sub set_type_and_uuid {
     if ( my $type = $self->delete_arg('type') ) {
         $self->type($type);
     } elsif($self->primary_commands->[-2]) {
-        $self->type($self->primary_commands->[-2]); 
+        $self->type($self->primary_commands->[-2]);
     }
 }
 
@@ -381,7 +390,7 @@ sub run {
     my $self   = shift;
     my $record = $self->_get_record_class;
     my ($val, $msg) = $record->create( props => $self->edit_args );
-    if (!$val) { 
+    if (!$val) {
         warn $msg ."\n";
     }
     if (!$record->uuid) {
