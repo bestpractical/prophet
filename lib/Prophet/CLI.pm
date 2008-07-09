@@ -375,7 +375,7 @@ package Prophet::CLI::Command::Create;
 use Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
-has +uuid => ( required => 0);
+has '+uuid' => ( required => 0);
 
 sub run {
     my $self   = shift;
@@ -400,7 +400,7 @@ package Prophet::CLI::Command::Search;
 use Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
-has +uuid => ( required => 0);
+has '+uuid' => ( required => 0);
 
 sub get_collection_object {
     my $self = shift;
