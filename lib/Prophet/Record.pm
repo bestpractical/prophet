@@ -364,6 +364,34 @@ sub find_or_create_luid {
     return $luid;
 }
 
+=head2 show_props
+
+Returns a stringified form of the properties suitable for displaying directly
+to the user. Also includes luid and uuid.
+
+=cut
+
+sub show_props {
+    my $self = shift;
+    my @fields;
+
+    push @fields, ["id", $self->luid ." (" . $self->uuid . ")"];
+    my $max_length = 2;
+
+    my $props = $self->get_props;
+    for (keys %$props) {
+        push @fields, [$_, $props->{$_}];
+        $max_length = length($_)
+            if length($_) > $max_length;
+    }
+
+    my $out = join "\n",
+              map { sprintf '%*s %s', -($max_length+1), "$_->[0]:", $_->[1] }
+              @fields;
+
+    return $out;
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 no MooseX::ClassAttribute;

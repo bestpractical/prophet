@@ -8,12 +8,7 @@ sub run {
     my $self = shift;
 
     my $record = $self->_load_record;
-    print "id: ".$record->luid." (" .$record->uuid.")\n";
-    my $props = $record->get_props();
-    for ( keys %$props ) {
-        print $_. ": " . $props->{$_} . "\n";
-    }
-
+    print $record->show_props;
 }
 
 __PACKAGE__->meta->make_immutable;
