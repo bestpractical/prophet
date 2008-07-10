@@ -364,7 +364,7 @@ sub find_or_create_luid {
     return $luid;
 }
 
-=head2 show_props
+=head2 stringify_props
 
 Returns a stringified form of the properties suitable for displaying directly
 to the user. Also includes luid and uuid.
@@ -383,17 +383,17 @@ sub stringify_props {
 
     my $props = $self->get_props;
 
-    # kind of ugly but it simplifies the code
-    $props->{id} = $self->luid ." (" . $self->uuid . ")";
-
     # which props are we going to display?
     my @show_props;
     if ($self->can('props_to_show')) {
         @show_props = $self->props_to_show(\%args);
     }
     else {
-        @show_props = keys %$props;
+        @show_props = ('id', keys %$props);
     }
+
+    # kind of ugly but it simplifies the code
+    $props->{id} = $self->luid ." (" . $self->uuid . ")";
 
     my $max_length = 0;
     my @fields;
