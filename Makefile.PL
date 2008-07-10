@@ -43,7 +43,7 @@ features(
     'Maintainer testing tools' => [
         -default   => 1,
         'Acme::MetaSyntactic',
-        'Test::POD::Coverage'
+        'Test::Pod::Coverage'
     ],
     q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
         -default => 0,
