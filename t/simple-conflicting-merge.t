@@ -32,7 +32,11 @@ as_bob {
     run_output_matches(
         'prophet',
         [ 'show','--type',            'Bug',             '--uuid', $record_id ],
-        [ qr/id: (\d+) \($record_id\)/, 'status: stalled', 'from: alice' ],
+        [
+            qr/id:     (\d+) \($record_id\)/,
+              'status: stalled',
+              'from:   alice',
+        ],
         'content is correct'
     );
 };
@@ -42,7 +46,11 @@ as_alice {
     run_output_matches(
         'prophet',
         ['show', '--type',            'Bug',             '--uuid', $record_id ],
-        [ qr/id: (\d+) \($record_id\)/, 'status: stalled', 'from: alice' ],
+        [
+            qr/id:     (\d+) \($record_id\)/,
+              'status: stalled',
+              'from:   alice',
+        ],
         'content is correct'
     );
 

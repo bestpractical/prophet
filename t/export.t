@@ -39,11 +39,10 @@ as_bob {
         'prophet',
         ['show', '--type',            'Bug',             '--uuid', $record_id ],
         [
-       
-        qr/id: (\d+) \($record_id\)/,
-        
-        
-        'status: stalled', 'from: alice' ],
+            qr/id:     (\d+) \($record_id\)/,
+              'status: stalled',
+              'from:   alice',
+        ],
         'content is correct'
     );
 
