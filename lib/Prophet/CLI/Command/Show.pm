@@ -3,7 +3,6 @@ use Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 
-
 sub run {
     my $self = shift;
 
