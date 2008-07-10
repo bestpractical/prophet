@@ -22,9 +22,9 @@ requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires('Scalar::Defer');
-requires('Moose'); # Moose::Util::TypeConstraints Moose::Role
-requires('MooseX::AttributeHelpers');
-requires('MooseX::ClassAttribute');
+requires('Moose' => '0.54'); # Moose::Util::TypeConstraints Moose::Role
+requires('MooseX::AttributeHelpers' => '0.12');
+requires('MooseX::ClassAttribute' => '0.04');
 
 features(
     'REST Server' => [
