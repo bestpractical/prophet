@@ -158,7 +158,13 @@ sub parse_args {
 
         ($name,$val)= split(/=/,$name,2) if ($name =~/=/);
         $name =~ s/^--//;
-        $self->set_arg($name => ($val || shift @ARGV));
+
+        # no value specified, pull it from the next argument, unless the next
+        # argument is another option
+        $val = shift @ARGV
+            if !defined($val) && @ARGV && $ARGV[0] !~ /^--/;
+
+        $self->set_arg($name => $val);
     }
 }
 
