@@ -369,6 +369,12 @@ sub find_or_create_luid {
 Returns a stringified form of the properties suitable for displaying directly
 to the user. Also includes luid and uuid.
 
+You may define a "color_prop" method which transforms a property name and value
+(by adding color).
+
+You may also define a "color_prop_foo" method which transforms values of
+property "foo" (by adding color).
+
 =cut
 
 sub show_props {
@@ -376,24 +382,67 @@ sub show_props {
     my %args = @_;
 
     my @fields;
+    my $max_length = 0;
 
-    push @fields, ["id", $self->luid ." (" . $self->uuid . ")"];
-    my $max_length = 2;
+    # add a property to @fields
+    my $add_prop = sub {
+        my ($field, $value) = @_;
+
+        # color if we can (and should)
+        my ($color_field, $color_value) = ($field, $value);
+        if (!$args{batch}) {
+            if ($self->can("color_prop_$field")) {
+                my $method = "color_prop_$field";
+                $color_value = $self->$method($value);
+            }
+            else {
+                ($color_field, $color_value) = $self->color_prop($field, $value);
+            }
+        }
+
+        push @fields, [$field, $color_field, $color_value];
+
+        # don't check length($field) here, since coloring will increase the
+        # length but we only care about display length
+        $max_length = length($field)
+            if length($field) > $max_length;
+    };
+
+    $add_prop->("id" => $self->luid ." (" . $self->uuid . ")");
 
     my $props = $self->get_props;
     for (keys %$props) {
-        push @fields, [$_, $props->{$_}];
-        $max_length = length($_)
-            if length($_) > $max_length;
+        $add_prop->($_ => $props->{$_});
     }
 
     $max_length = 0 if $args{batch};
 
-    my $out = join "\n",
-              map { sprintf '%*s %s', -($max_length+1), "$_->[0]:", $_->[1] }
-              @fields;
+    # this code is kind of ugly. we need to format based on uncolored length
+    return join '',
+           map {
+               my ($field, $color_field, $color_value) = @$_;
+               $color_field .= ':';
+               $color_field .= ' ' x ($max_length - length($field));
+               "$color_field $color_value\n"
+           }
+           @fields;
+}
 
-    return $out;
+=head2 color_prop property, value
+
+Colorize the given property and/or value. Return the (property, value) pair.
+
+You should not alter the length of the property/value display. This will mess
+up the table display. You should only use coloring escape codes.
+
+=cut
+
+sub color_prop {
+    my $self     = shift;
+    my $property = shift;
+    my $value    = shift;
+
+    return ($property, $value);
 }
 
 __PACKAGE__->meta->make_immutable;
