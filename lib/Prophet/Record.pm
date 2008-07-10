@@ -373,6 +373,8 @@ to the user. Also includes luid and uuid.
 
 sub show_props {
     my $self = shift;
+    my %args = @_;
+
     my @fields;
 
     push @fields, ["id", $self->luid ." (" . $self->uuid . ")"];
@@ -384,6 +386,8 @@ sub show_props {
         $max_length = length($_)
             if length($_) > $max_length;
     }
+
+    $max_length = 0 if $args{batch};
 
     my $out = join "\n",
               map { sprintf '%*s %s', -($max_length+1), "$_->[0]:", $_->[1] }

@@ -8,7 +8,7 @@ sub run {
     my $self = shift;
 
     my $record = $self->_load_record;
-    print $record->show_props;
+    print $record->show_props(batch => $self->has_arg('batch'));
 }
 
 __PACKAGE__->meta->make_immutable;

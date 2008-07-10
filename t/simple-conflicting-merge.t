@@ -45,11 +45,11 @@ as_alice {
     run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
     run_output_matches(
         'prophet',
-        ['show', '--type',            'Bug',             '--uuid', $record_id ],
+        ['show', '--type',            'Bug',             '--uuid', $record_id, '--batch', ],
         [
-            qr/id:     (\d+) \($record_id\)/,
+            qr/id: (\d+) \($record_id\)/,
               'status: stalled',
-              'from:   alice',
+              'from: alice',
         ],
         'content is correct'
     );
