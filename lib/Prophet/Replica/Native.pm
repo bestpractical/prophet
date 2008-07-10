@@ -609,7 +609,7 @@ sub set_record_props {
         type => $args{'type'}
     );
     my %new_props = %$old_props;
-    foreach my $prop ( %{ $args{props} } ) {
+    foreach my $prop ( keys %{ $args{props} } ) {
         if ( !defined $args{props}->{$prop} ) {
             delete $new_props{$prop};
         } else {
