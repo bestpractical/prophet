@@ -401,6 +401,9 @@ sub stringify_props {
     for my $field (@show_props) {
         my $value = $props->{$field};
 
+        # don't bother displaying unset fields
+        next if !defined($value);
+
         # color if we can (and should)
         my ($color_field, $color_value) = ($field, $value);
         if (!$args{batch}) {
