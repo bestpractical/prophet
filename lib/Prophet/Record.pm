@@ -377,16 +377,29 @@ property "foo" (by adding color).
 
 =cut
 
-sub show_props {
+sub stringify_props {
     my $self = shift;
     my %args = @_;
 
-    my @fields;
-    my $max_length = 0;
+    my $props = $self->get_props;
 
-    # add a property to @fields
-    my $add_prop = sub {
-        my ($field, $value) = @_;
+    # kind of ugly but it simplifies the code
+    $props->{id} = $self->luid ." (" . $self->uuid . ")";
+
+    # which props are we going to display?
+    my @show_props;
+    if ($self->can('props_to_show')) {
+        @show_props = $self->props_to_show(\%args);
+    }
+    else {
+        @show_props = keys %$props;
+    }
+
+    my $max_length = 0;
+    my @fields;
+
+    for my $field (@show_props) {
+        my $value = $props->{$field};
 
         # color if we can (and should)
         my ($color_field, $color_value) = ($field, $value);
@@ -406,13 +419,6 @@ sub show_props {
         # length but we only care about display length
         $max_length = length($field)
             if length($field) > $max_length;
-    };
-
-    $add_prop->("id" => $self->luid ." (" . $self->uuid . ")");
-
-    my $props = $self->get_props;
-    for (keys %$props) {
-        $add_prop->($_ => $props->{$_});
     }
 
     $max_length = 0 if $args{batch};
