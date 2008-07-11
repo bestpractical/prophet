@@ -64,6 +64,19 @@ has args => (
     },
 );
 
+has props => (
+    metaclass  => 'Collection::Hash',
+    is         => 'rw',
+    isa        => 'HashRef',
+    default    => sub { {} },
+    provides   => {
+        set    => 'set_prop',
+        get    => 'prop',
+        exists => 'has_prop',
+        delete => 'delete_prop',
+    },
+);
+
 =head2 _record_cmd
 
 handles the subcommand for a particular type
@@ -154,11 +167,22 @@ sub parse_args {
     my @primary;
     push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
 
+    my $sep = 0;
+    my @sep_method = (
+        'set_arg',
+        'set_prop',
+    );
+
     $self->primary_commands( \@primary );
 
     while (my $name = shift @ARGV) {
         die "$name doesn't look like --prop-name" if ( $name !~ /^--/ );
         my $val;
+
+        if ($name eq '--' || $name eq '--props') {
+            ++$sep;
+            next;
+        }
 
         ($name,$val)= split(/=/,$name,2) if ($name =~/=/);
         $name =~ s/^--//;
@@ -168,7 +192,8 @@ sub parse_args {
         $val = shift @ARGV
             if !defined($val) && @ARGV && $ARGV[0] !~ /^--/;
 
-        $self->set_arg($name => $val);
+        my $setter = $sep_method[$sep] or next;
+        $self->$setter($name => $val);
     }
 }
 
