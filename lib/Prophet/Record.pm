@@ -387,6 +387,14 @@ sub stringify_props {
     my @show_props;
     if ($self->can('props_to_show')) {
         @show_props = $self->props_to_show(\%args);
+
+        # if they ask for verbosity, then display all the other fields
+        # after the fields that our subclass wants to show
+        if ($args{verbose}) {
+            my %already_shown = map { $_ => 1 } @show_props;
+            push @show_props, grep { !$already_shown{$_} }
+                              keys %$props;
+        }
     }
     else {
         @show_props = ('id', keys %$props);
