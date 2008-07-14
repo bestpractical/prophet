@@ -8,7 +8,7 @@ use Prophet::Test tests => 16;
 use Test::Exception;
 
 as_alice {
-    run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
+    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
 
@@ -20,7 +20,7 @@ use File::Temp 'tempdir';
 
 as_bob {
 
-    run_ok( 'prophet', [qw(create --type Dummy --ignore yes)], "Created a dummy record" );
+    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
 
     diag repo_uri_for('bob');
     diag repo_uri_for('alice');
@@ -34,10 +34,10 @@ as_bob {
     }
     diag($record_id);
 
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
+    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
         'prophet',
-        ['show', '--type',            'Bug',             '--uuid', $record_id, '--batch'],
+        ['show', '--type', 'Bug', '--uuid', $record_id, '--batch'],
         [
             qr/id: (\d+) \($record_id\)/,
               'status: stalled',

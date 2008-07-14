@@ -6,7 +6,7 @@ use strict;
 use Prophet::Test tests => 25;
 
 as_alice {
-    run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
+    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 
     # update the record
@@ -15,7 +15,7 @@ as_alice {
 };
 
 as_bob {
-    run_ok( 'prophet', [qw(create --type Bug --status open --from bob )], "Created a record as bob" );
+    run_ok( 'prophet', [qw(create --type Bug -- --status open --from bob )], "Created a record as bob" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/], " Found our record" );
 
     # update the record

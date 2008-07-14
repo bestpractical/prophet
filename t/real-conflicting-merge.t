@@ -7,7 +7,7 @@ use Test::Exception;
 use Prophet::Test tests => 19;
 
 as_alice {
-    like(run_command(qw(create --type Bug --status new --from alice)), qr/Created Bug/, "Created a record as alice");
+    like(run_command(qw(create --type Bug -- --status new --from alice)), qr/Created Bug/, "Created a record as alice");
     like(run_command(qw(search --type Bug --regex .)), qr/new/, "Found our record");
 };
 
@@ -17,7 +17,7 @@ my $record_id;
 
 as_bob {
 
-    like(run_command(qw(create --type Dummy --ignore yes)), qr/Created Dummy/);
+    like(run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/);
     like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice')), qr/Merge complete/, "Sync ran ok!");
 
     # check our local replicas
@@ -27,11 +27,11 @@ as_bob {
         $record_id = $1;
     }
 
-    like(run_command( 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled'), qr/Bug .* updated/);
+    like(run_command( 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled'), qr/Bug .* updated/);
 
     run_output_matches(
         'prophet',
-        [ 'show', '--type',            'Bug',             '--uuid', $record_id, '--batch' ],
+        [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
         qr/id: (\d+) \($record_id\)/,
           'status: stalled',
@@ -42,11 +42,11 @@ as_bob {
 };
 
 as_alice {
-    like(run_command('update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'open' ), qr/Bug .* updated/);
+    like(run_command('update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'open' ), qr/Bug .* updated/);
 
     run_output_matches(
         'prophet',
-        [ 'show', '--type',            'Bug',          '--uuid', $record_id, '--batch' ],
+        [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
             qr/id: (\d+) \($record_id\)/,
               'status: open',

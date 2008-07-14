@@ -107,6 +107,7 @@ $out = run_command(
     'update',
     '--type=Robot Master',
     '--uuid=' . $crash_man->uuid,
+    '--',
     '--weakness=Hard Knuckle',
 );
 

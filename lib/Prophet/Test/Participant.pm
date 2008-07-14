@@ -78,7 +78,7 @@ sub create_record {
     my $args = shift;
     @{ $args->{props} } = _random_props() unless $args->{props};
 
-    my ( $ret, $out, $err ) = call_func_ok( [ qw(create --type Scratch), @{ $args->{props} } ] );
+    my ( $ret, $out, $err ) = call_func_ok( [ qw(create --type Scratch --), @{ $args->{props} } ] );
 
     #    ok($ret, $self->name . " created a record");
     if ( $out =~ /Created\s+(.*?)\s+(\d+)\s+\((.*)\)/i ) {
@@ -102,7 +102,7 @@ sub update_record {
     %{ $args->{props} } = _permute_props(%props) unless $args->{props};
     %props = %{ $args->{props} };
 
-    call_func_ok( [ qw(update --type Scratch --uuid), $args->{record}, map { '--' . $_ => $props{$_} } keys %props ],
+    call_func_ok( [ qw(update --type Scratch --uuid), $args->{record}, '--', map { '--' . $_ => $props{$_} } keys %props ],
         $self->name . " updated a record" );
 
     $self->record_action( 'update_record', $args );

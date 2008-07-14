@@ -7,7 +7,7 @@ use Prophet::Test tests => 17;
 use Test::Exception;
 
 as_alice {
-    run_ok( 'prophet', [qw(create --type Bug --status new --from alice )], "Created a record as alice" );
+    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
 
@@ -17,7 +17,7 @@ my $record_id;
 
 as_bob {
 
-    run_ok( 'prophet', [qw(create --type Dummy --ignore yes)], "Created a dummy record" );
+    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
 
     run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
 
@@ -28,10 +28,10 @@ as_bob {
         $record_id = $1;
     }
 
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
+    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
         'prophet',
-        [ 'show','--type',            'Bug',             '--uuid', $record_id ],
+        [ 'show','--type', 'Bug', '--uuid', $record_id ],
         [
             qr/id:     (\d+) \($record_id\)/,
               'status: stalled',
@@ -42,10 +42,10 @@ as_bob {
 };
 
 as_alice {
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--status' => 'stalled' ] );
+    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
         'prophet',
-        ['show', '--type',            'Bug',             '--uuid', $record_id, '--batch', ],
+        ['show', '--type', 'Bug', '--uuid', $record_id, '--batch', ],
         [
             qr/id: (\d+) \($record_id\)/,
               'status: stalled',
