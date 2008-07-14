@@ -7,7 +7,7 @@ sub edit_record {
     my $self   = shift;
     my $record = shift;
 
-    return $self->edit_props('edit', $record->get_props);
+    return $self->edit_props('edit');
 }
 
 sub run {
