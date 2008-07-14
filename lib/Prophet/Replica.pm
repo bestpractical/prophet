@@ -74,7 +74,7 @@ around new => sub {
     my ($new_class, $scheme, $url) = $class->_url_to_replica_class($args{url});
 
     if (!$new_class) {
-        $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url})");
+        $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url}). I can handle the following replica types: " . join(', ', sort keys %$REPLICA_TYPE_MAP) . ", and possibly more)");
     }
 
     return $orig->($class, %args, url => $args{url}) if $class eq $new_class;
