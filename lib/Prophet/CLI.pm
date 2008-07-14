@@ -150,7 +150,8 @@ sub _try_to_load_cmd_class {
     return $class if $class->isa('Prophet::CLI::Command');
 
     warn "Invalid class $class - not a subclass of Prophet::CLI::Command."
-        if Class::MOP::is_class_loaded($class);
+        if $class !~ /::$/ # don't warn about "Prophet::CLI::Command::" (which happens on "./bin/sd")
+        && Class::MOP::is_class_loaded($class);
 
     return undef;
 }
