@@ -18,37 +18,35 @@ sub run {
 
 sub _do_merge {
     my ( $self, $source, $target ) = @_;
+
     if ( $target->uuid eq $source->uuid ) {
         $self->fatal_error(
                   "You appear to be trying to merge two identical replicas. "
                 . "Either you're trying to merge a replica to itself or "
-                . "someone did a bad job cloning your database" );
+                . "someone did a bad job cloning your database." );
+    }
+
+    if ( !$target->can_write_changesets ) {
+        $self->fatal_error( $target->url
+                . " does not accept changesets. Perhaps it's unwritable."
+        );
     }
 
     my $prefer = $self->arg('prefer') || 'none';
 
-    if ( !$target->can_write_changesets ) {
-        $self->fatal_error( $target->url
-                . " does not accept changesets. Perhaps it's unwritable or something"
-        );
-    }
+    my $resolver = $ENV{'PROPHET_RESOLVER'}
+                   ? 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'}
+                 : $prefer eq 'to'
+                   ? 'Prophet::Resolver::AlwaysTarget'
+                 : $prefer eq 'from'
+                   ? 'Prophet::Resolver::AlwaysSource'
+                   : ();
 
     $target->import_changesets(
         from  => $source,
         resdb => $self->app_handle->resdb_handle,
-        $ENV{'PROPHET_RESOLVER'}
-        ? ( resolver_class => 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'} )
-        : ( (   $prefer eq 'to'
-                ? ( resolver_class => 'Prophet::Resolver::AlwaysTarget' )
-                : ()
-            ),
-            (   $prefer eq 'from'
-                ? ( resolver_class => 'Prophet::Resolver::AlwaysSource' )
-                : ()
-            )
-        )
+        ( $resolver ? resolver_class => $resolver : () ),
     );
-
 }
 
 __PACKAGE__->meta->make_immutable;
