@@ -2,19 +2,19 @@ package Prophet::CLI::RecordCommand;
 use Moose::Role;
 
 has type => (
-    is => 'rw',
-    isa => 'Str',
-    required => 0
+    is       => 'rw',
+    isa      => 'Str',
+    required => 0,
 );
 
 has uuid => (
-    is => 'rw',
-    isa => 'Str',
-    required => 0
+    is       => 'rw',
+    isa      => 'Str',
+    required => 0,
 );
 
 has record_class => (
-    is => 'rw',
+    is  => 'rw',
     isa => 'Prophet::Record',
 );
 

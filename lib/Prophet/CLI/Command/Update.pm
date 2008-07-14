@@ -7,13 +7,7 @@ sub edit_record {
     my $self   = shift;
     my $record = shift;
 
-    if ($self->has_arg('edit')) {
-        my $props = $record->get_props;
-        return $self->edit_hash($props);
-    }
-    else {
-        return $self->args;
-    }
+    return $self->edit_props('edit', $record->get_props);
 }
 
 sub run {

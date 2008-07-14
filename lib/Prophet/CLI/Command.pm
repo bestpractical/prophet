@@ -5,7 +5,11 @@ has cli => (
     is => 'rw',
     isa => 'Prophet::CLI',
     weak_ref => 1,
-    handles => [qw/args set_arg arg has_arg delete_arg app_handle/],
+    handles => [
+        qw/args  set_arg  arg  has_arg  delete_arg/,
+        qw/props set_prop prop has_prop delete_prop/,
+        'app_handle',
+    ],
 );
 
 sub fatal_error {
@@ -54,39 +58,34 @@ sub edit_hash {
     return $filtered;
 }
 
-=head2 edit_args [arg], defaults -> hashref
+=head2 edit_props [arg], defaults -> hashref
 
-Returns a hashref of the command arguments mixed in with any default arguments.
-If the "arg" argument is specified, (default "edit", use C<undef> if you only want default arguments), then L</edit_hash> is
-invoked on the argument list.
+Returns a hashref of the command's props mixed in with any default props.
+If the "arg" argument is specified, (default "edit", use C<undef> if you only want default arguments), then L</edit_hash> is invoked on the property list.
 
 =cut
 
-sub edit_args {
+sub edit_props {
     my $self = shift;
     my $arg  = shift || 'edit';
 
-    my $edit_hash;
-    if ($self->has_arg($arg)) {
-        $self->delete_arg($arg);
-        $edit_hash = 1;
-    }
-
-    my %args;
+    my %props;
     if (@_ == 1) {
-        %args = (%{ $self->args }, %{ $_[0] });
+        %props = (%{ $_[0] }, %{ $self->props });
     }
     else {
-        %args = (%{ $self->args }, @_);
+        %props = (@_, %{ $self->props });
     }
 
-    if ($edit_hash) {
-        return $self->edit_hash(\%args);
+    if ($self->has_arg($arg)) {
+        return $self->edit_hash(\%props);
     }
 
-    return \%args;
+    return \%props;
 }
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
+
+1;
 

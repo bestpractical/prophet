@@ -7,7 +7,7 @@ has '+uuid' => ( required => 0);
 sub run {
     my $self   = shift;
     my $record = $self->_get_record_class;
-    my ($val, $msg) = $record->create( props => $self->edit_args );
+    my ($val, $msg) = $record->create( props => $self->edit_props );
     if (!$val) {
         warn $msg ."\n";
     }
