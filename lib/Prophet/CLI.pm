@@ -176,7 +176,9 @@ sub parse_args {
     $self->primary_commands( \@primary );
 
     while (my $name = shift @ARGV) {
-        die "$name doesn't look like --prop-name" if ( $name !~ /^--/ );
+        die "$name doesn't look like --argument"
+            if $sep == 0 && $name !~ /^--/;
+
         my $val;
 
         if ($name eq '--' || $name eq '--props') {
