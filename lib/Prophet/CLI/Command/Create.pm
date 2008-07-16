@@ -9,7 +9,7 @@ sub run {
     my $record = $self->_get_record_class;
     my ($val, $msg) = $record->create( props => $self->edit_props );
     if (!$val) {
-        warn $msg ."\n";
+        warn "Unable to create record: " . $msg . "\n";
     }
     if (!$record->uuid) {
         warn "Failed to create " . $record->record_type . "\n";

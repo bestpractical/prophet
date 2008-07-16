@@ -56,7 +56,7 @@ sub handle_request_get {
         my $type = $1;
         my $col = Prophet::Collection->new( handle => $self->prophet_handle, type => $type );
         $col->matching( sub {1} );
-        warn "Todo. query language";
+        warn "Query language not implemented yet.";
         return $self->_send_content(
             content_type => 'text/x-json',
             content      => to_json( { map { $_->uuid => "/records/$type/" . $_->uuid . ".json" } @$col } )

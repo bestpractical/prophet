@@ -89,12 +89,6 @@ sub BUILD {
         =~ s/^prophet://;  # url-based constructor in ::replica should do better
     $self->{url} =~ s{/$}{};
     $self->_probe_or_create_db();
-
-
-    #    warn "I AM ".$ENV{'PROPHET_USER'};
-    #    warn $self->uuid;
-    #    warn $self->state_handle->uuid unless ($self->is_state_handle);
-
 }
 
 sub state_handle { return shift; }

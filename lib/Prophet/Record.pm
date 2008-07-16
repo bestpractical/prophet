@@ -90,9 +90,8 @@ sub register_reference {
         );
     } elsif ( $foreign_class->isa('Prophet::Record') ) {
 
-        #        warn "not yet";
     } else {
-        die "wtf";
+        die "Your foreign class ($foreign_class) must be a subclass of Prophet::Record or Prophet::Collection";
     }
 
 }

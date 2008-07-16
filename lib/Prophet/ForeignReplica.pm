@@ -30,9 +30,12 @@ sub BUILD {
 sub conflicts_from_changeset { return; }
 sub can_write_changesets     {1}
 
-sub record_resolutions { die "not for foreign replicas" }
+sub record_resolutions { die "resolution handling is not for foreign replicas" }
 
-sub import_resolutions_from_remote_source { warn 'no resdb'; return }
+sub import_resolutions_from_remote_source {
+    warn 'resdb not implemented yet';
+    return
+}
 
 sub record_changes {
     my $self = shift;
