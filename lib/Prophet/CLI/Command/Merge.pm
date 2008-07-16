@@ -45,6 +45,7 @@ sub _do_merge {
     $target->import_changesets(
         from  => $source,
         resdb => $self->app_handle->resdb_handle,
+        force => $self->has_arg('force'),
         ( $resolver ? (resolver_class => $resolver) : () ),
     );
 }

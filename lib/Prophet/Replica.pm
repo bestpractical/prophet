@@ -128,7 +128,8 @@ sub import_changesets {
             resolver           => { optional => 1 },
             resolver_class     => { optional => 1 },
             conflict_callback  => { optional => 1 },
-            reporting_callback => { optional => 1 }
+            reporting_callback => { optional => 1 },
+            force              => { optional => 1 },
         }
     );
 
@@ -136,6 +137,7 @@ sub import_changesets {
 
     $source->traverse_new_changesets(
         for      => $self,
+        force    => $args{'force'},
         callback => sub {
             $self->integrate_changeset(
                 changeset          => $_[0],
@@ -410,13 +412,17 @@ sub traverse_new_changesets {
         @_,
         {   for      => { isa => 'Prophet::Replica' },
             callback => 1,
+            force    => 0,
         }
     );
 
     if ( $self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid ) {
-
-        #warn "HEY. You should not be merging between two replicas with different database uuids";
-        # XXX TODO
+        if ($args{force}) {
+            warn "You are merging two different databases! This is highly unusual.";
+        }
+        else {
+            confess "You are trying to merge two different databases! If you really want to do this, try adding a --force argument.";
+        }
     }
 
 
