@@ -101,7 +101,7 @@ as_bob {
     }
 };
 
-$changesets = $bob->new_changesets_for($alice);
+$changesets = $bob->new_changesets_for($alice, force => 1);
 
 my @changes = map { $_->as_hash } grep { $_->has_changes } @$changesets;
 
