@@ -77,7 +77,20 @@ Record Types are uniquely identified with a textual name and a UUID
 =head2 Resolution
     When the local Replica 
 
+=head2 Export/Publish
 
+Exporting is the act of cloning a replica. The replica uuid (which is its
+identity) remains the same. An exported replica is useful for copying to another machine or USB stick, so that other people may pull your changes.
+
+Publishing a replica just export it to another machine, usually over ssh.
+
+Exporting or publishing to an existing replica just updates that replica, it
+does not perform a merge, since the replica uuid is the same for both copies.
+
+=head2 Push/Pull
+
+Pushing and pulling merge changes from two different replicas. Pushing to or
+pulling from an empty replica creates it and assigns it a new replica uuid.
 
 =head1 NON-TERMS
 
