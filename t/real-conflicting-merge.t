@@ -18,7 +18,7 @@ my $record_id;
 as_bob {
 
     like(run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/);
-    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice')), qr/Merge complete/, "Sync ran ok!");
+    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force'), qr/Merge complete/, "Sync ran ok!");
 
     # check our local replicas
     my $out = run_command(qw(search --type Bug --regex .));
@@ -67,7 +67,7 @@ as_bob {
     my $conflict_obj;
 
     throws_ok {
-        $target->import_changesets( from => $source, );
+        $target->import_changesets( from => $source, force => 1);
     }
     qr/not resolved/;
 
@@ -75,6 +75,7 @@ as_bob {
         $target->import_changesets(
             from     => $source,
             resolver => sub { die "my way of death\n" },
+            force    => 1,
         );
     }
     qr/my way of death/, 'our resolver is actually called';
@@ -84,7 +85,8 @@ as_bob {
 
             $target->import_changesets(
                 from           => $source,
-                resolver_class => 'Prophet::Resolver::AlwaysTarget'
+                resolver_class => 'Prophet::Resolver::AlwaysTarget',
+                force          => 1,
             );
         },
         3,
@@ -105,21 +107,22 @@ as_alice {
     my $source = Prophet::Replica->new( { url => repo_uri_for('bob') } );
     my $target = Prophet::Replica->new( { url => repo_uri_for('alice') } );
     throws_ok {
-        $target->import_changesets( from => $source, );
+        $target->import_changesets( from => $source, force => 1 );
     }
     qr/not resolved/;
 
-    $target->import_resolutions_from_remote_replica( from => $source );
+    $target->import_resolutions_from_remote_replica( from => $source, force => 1 );
 
     $target->import_changesets(
         from  => $source,
-        resdb => $target->resolution_db_handle
+        resdb => $target->resolution_db_handle,
+        force => 1,
     );
 
     lives_and {
         ok_added_revisions(
             sub {
-                $target->import_changesets( from => $source );
+                $target->import_changesets( from => $source, force => 1 );
             },
             0,
             'no more changes to sync'
@@ -135,7 +138,7 @@ as_bob {
     lives_and {
         ok_added_revisions(
             sub {
-                $target->import_changesets( from => $source );
+                $target->import_changesets( from => $source, force => 1 );
             },
             0,
             'no more changes to sync'

@@ -28,7 +28,7 @@ as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
-    run_ok( 'prophet', [ 'merge',  '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge',  '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
@@ -42,7 +42,7 @@ as_alice {
     diag('Alice syncs from bob again. There will be no new changes from bob');
 
     # sync from bob
-    run_ok( 'prophet', [ 'merge',  '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge',  '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
 
     # check our local replicas
     ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
@@ -66,7 +66,7 @@ as_bob {
 
     # sync from alice
 
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
 
     # check our local replicas
     ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
@@ -79,7 +79,7 @@ as_bob {
     $last_rev = replica_last_rev();
 
     diag('Sync from alice to bob again');
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
 
     is_deeply( replica_merge_tickets(), { replica_uuid_for('alice') => as_alice { replica_last_rev() - 1 } } );
     is( replica_last_rev(), $last_rev, "We have not recorded another transaction after a second sync" );
@@ -88,7 +88,7 @@ as_bob {
 
 as_alice {
     my $last_rev = replica_last_rev();
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('alice'), '--from', repo_uri_for('bob') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('alice'), '--from', repo_uri_for('bob'), '--force' ], "Sync ran ok!" );
     is( replica_last_rev(), $last_rev,
         "We have not recorded another transaction after bob had fully synced from alice" );
 

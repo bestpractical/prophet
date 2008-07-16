@@ -118,7 +118,7 @@ sub sync_from_peer {
     $self->record_action( 'sync_from_peer', $args );
 
     @_ = (
-        [ 'merge', '--prefer', 'to', '--from', repo_uri_for($from), '--to', repo_uri_for( $self->name ) ],
+        [ 'merge', '--prefer', 'to', '--from', repo_uri_for($from), '--to', repo_uri_for( $self->name ), '--force' ],
         $self->name . " sync from " . $from . " ran ok!"
     );
     goto \&call_func_ok;

@@ -19,7 +19,7 @@ as_bob {
 
     run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
 
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
@@ -75,6 +75,7 @@ as_bob {
     lives_ok {
         $target->import_changesets(
             from              => $source,
+            force             => 1,
             conflict_callback => sub {
                 $conflict_obj = shift;
             }

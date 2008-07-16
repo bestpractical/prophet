@@ -87,7 +87,7 @@ as_alice {
     # sync from bob
     diag('Alice syncs from bob');
     is($alice->last_changeset_from_source($bob->uuid) => 0);
-    run_ok( 'prophet', [ 'merge', '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice') ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'merge', '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
     is($alice->last_changeset_from_source($bob->uuid) => $bob->latest_sequence_no);
 };
 
