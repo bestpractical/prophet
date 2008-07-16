@@ -24,7 +24,7 @@ has fs_root_parent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        $self->fs_root_parent($self->url =~ m{^file://(.*)/.*?$});
+        return $self->url =~ m{^file://(.*)/.*?$} ? $1 : undef;
     },
 );
 
@@ -33,7 +33,7 @@ has fs_root => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        $self->fs_root($self->url =~ m{^file://(.*)$});
+        return $self->url =~ m{^file://(.*)$} ? $1 : undef;
     },
 );
 
