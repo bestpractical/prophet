@@ -450,10 +450,16 @@ Returns the local changesets that have not yet been seen by the replica we're pa
 
 sub new_changesets_for {
     my $self = shift;
-    my ($other) = validate_pos( @_, { isa => 'Prophet::Replica' } );
+
+    # the first argument is always the replica
+    unshift @_, 'replica';
+    my %args = validate(@_, {
+        replica  => { isa => 'Prophet::Replica' },
+        force    => 0,
+    });
 
     my @result;
-    $self->traverse_new_changesets( for => $other, callback => sub { push @result, $_[0] } );
+    $self->traverse_new_changesets( for => $args{replica}, callback => sub { push @result, $_[0] }, force => $args{force} );
 
     return \@result;
 }

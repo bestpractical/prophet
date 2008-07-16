@@ -45,7 +45,7 @@ as_bob {
 
 };
 
-my $changesets =   [ map { $_->as_hash } grep { $_->has_changes }  @{$bob->new_changesets_for($alice)}];
+my $changesets =   [ map { $_->as_hash } grep { $_->has_changes }  @{$bob->new_changesets_for($alice, force => 1)}];
 my $seq = delete $changesets->[0]->{'sequence_no'};
 my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
 is($seq, $orig_seq);
