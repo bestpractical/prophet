@@ -26,6 +26,7 @@ after run => sub {
         src       => $from,
         dst       => $to,
         recursive => 1,
+        verbose   => $self->has_arg('verbose'),
     });
 
     warn $_ for $rsync->err;
