@@ -23,7 +23,7 @@ has target_replica => (
         my $self = shift;
         confess "No target_path specified" unless $self->has_target_path;
         my $replica = Prophet::Replica->new({url => "prophet:file://" . $self->target_path});
-        $replica->initialize;
+        $replica->initialize($self->source_replica->db_uuid);
         return $replica;
     },
 );
