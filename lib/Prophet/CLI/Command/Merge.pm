@@ -9,7 +9,10 @@ sub run {
     my $source = Prophet::Replica->new( { url => $self->arg('from') } );
     my $target = Prophet::Replica->new( { url => $self->arg('to') } );
 
-    $target->import_resolutions_from_remote_replica( from => $source );
+    $target->import_resolutions_from_remote_replica(
+        from  => $source,
+        force => $self->has_arg('force'),
+    );
 
     $self->_do_merge( $source, $target );
 

@@ -158,7 +158,8 @@ sub import_resolutions_from_remote_replica {
         {   from              => { isa      => 'Prophet::Replica' },
             resolver          => { optional => 1 },
             resolver_class    => { optional => 1 },
-            conflict_callback => { optional => 1 }
+            conflict_callback => { optional => 1 },
+            force             => { optional => 1 },
         }
     );
     my $source = $args{'from'};
@@ -168,8 +169,8 @@ sub import_resolutions_from_remote_replica {
 
     $self->resolution_db_handle->import_changesets(
         from     => $source->resolution_db_handle,
-        resolver => sub { die "not implemented yet" }
-
+        resolver => sub { die "not implemented yet" },
+        force    => $args{force},
     );
 }
 
