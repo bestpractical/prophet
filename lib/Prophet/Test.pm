@@ -63,10 +63,9 @@ sub in_gladiator (&) {
     my $types;
     eval { require Devel::Gladiator; };
     if ($@) {
+        warn 'Get Devel::Gladiator from http://code.sixapart.com/svn/Devel-Gladiator/trunk/ and harass sky@crucially.net to CPAN it';
         return $code->();
-        die
-        'Get Devel::Gladiator from http://code.sixapart.com/svn/Devel-Gladiator/trunk/ and harass sky@crucially.net to CPAN it';
-    } 
+    }
     for ( @{ Devel::Gladiator::walk_arena() } ) {
         $types->{ ref($_) }--;
     }

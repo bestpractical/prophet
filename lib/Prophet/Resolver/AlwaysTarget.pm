@@ -15,7 +15,7 @@ sub run {
     } elsif ( $file_op_conflict eq 'delete_missing_file' ) {
         return $resolution;
     } elsif ( $file_op_conflict ) {
-        die Dumper($conflict,$conflicting_change);
+        die "Unknown file_op_conflict $file_op_conflict: " . Dumper($conflict,$conflicting_change);
     }
 
     for my $prop_change ( @{ $conflicting_change->prop_conflicts } ) {

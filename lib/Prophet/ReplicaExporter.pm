@@ -21,7 +21,7 @@ has target_replica => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        confess "No target_path specified." unless $self->has_target_path;
+        confess "No target_path specified" unless $self->has_target_path;
         my $replica = Prophet::Replica->new({url => "prophet:file://" . $self->target_path});
         $replica->initialize;
         return $replica;

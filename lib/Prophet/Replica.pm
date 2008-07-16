@@ -160,7 +160,7 @@ sub import_resolutions_from_remote_replica {
 
     $self->resolution_db_handle->import_changesets(
         from     => $source->resolution_db_handle,
-        resolver => sub { die "nono not yet" }
+        resolver => sub { die "not implemented yet" }
 
     );
 }
@@ -654,9 +654,8 @@ Walk through each changeset in the replica after SEQUENCE_NO, calling the C<call
 =cut
 
 sub traverse_changesets {
-
-    Carp::confess "Someone has failed to implement a 'traverse_changesets' method for their replica type.";
-
+    my $class = blessed($_[0]);
+    Carp::confess "$class has failed to implement a 'traverse_changesets' method for their replica type.";
 
 }
 =head2  can_write_changesets
@@ -782,7 +781,7 @@ sub _integrate_change {
         $self->log("delete_file: " .$change->record_type. " " .$change->record_uuid);
         $self->delete_record( type => $change->record_type, uuid => $change->record_uuid);
     } else {
-        Carp::confess( " I have never heard of the change type: " . $change->change_type );
+        Carp::confess( "Unknown change type: " . $change->change_type );
     }
 
 }

@@ -104,10 +104,7 @@ sub _probe_or_create_db {
         $self->initialize();
 
     } else {
-        die
-            "We can only create file: based prophet replicas. It looks like you're trying to create "
-            . $self->url;
-
+        die "We can only create file: based prophet replicas. It looks like you're trying to create " . $self->url;
     }
 
 }

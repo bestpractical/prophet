@@ -9,7 +9,7 @@ sub run {
     my $conflict           = shift;
 
     die
-        " The resolution was not resolved. Sorry dude. (Once Prophet works, you should NEVER see this message)"
+        "The conflict was not resolved! Sorry dude."
         . Dumper($conflict, $conflicting_change);
 
 }

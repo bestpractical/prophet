@@ -120,7 +120,7 @@ sub step {
         diag(" as ".$chicken->name. ": $step_display");
         # walk the arena, noting the type of each value
         as_user( $chicken->name, sub { $chicken->take_one_step($step_name) } );
-        die if ( grep { !$_ } $TB->summary );
+        die "We failed some tests; aborting" if grep { !$_ } $TB->summary;
 
     }
 

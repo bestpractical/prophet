@@ -116,7 +116,7 @@ sub traverse_changesets {
     my $last_rev = $self->latest_sequence_no();
 
 
-    die "you must implement latest_sequence_no in " . ref($self) . ", or override traverse_changesets"
+    die "You must implement latest_sequence_no in " . blessed($self) . ", or override traverse_changesets"
         unless defined $last_rev;
 
     for my $rev ( $first_rev .. $self->latest_sequence_no ) {

@@ -30,7 +30,7 @@ sub BUILD {
 sub conflicts_from_changeset { return; }
 sub can_write_changesets     {1}
 
-sub record_resolutions { die "resolution handling is not for foreign replicas" }
+sub record_resolutions { die "Resolution handling is not for foreign replicas" }
 
 sub import_resolutions_from_remote_source {
     warn 'resdb not implemented yet';
