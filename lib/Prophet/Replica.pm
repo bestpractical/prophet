@@ -41,11 +41,17 @@ use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_repli
 our $REPLICA_TYPE_MAP = {};
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
- for ( __PACKAGE__->core_replica_types) {
-    $_->require; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
-    # and tries to load Prophet::Replica::SVN::ReplayEditor;
-    __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) 
- }
+for ( __PACKAGE__->core_replica_types) {
+   $_->require; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
+   # and tries to load Prophet::Replica::SVN::ReplayEditor;
+   __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) 
+}
+
+ # register some aliases
+for my $scheme (qw/http file/) {
+   __PACKAGE__->register_replica_scheme(scheme => $scheme, class => $REPLICA_TYPE_MAP->{prophet});
+}
+
 =head1 NAME
 
 Prophet::Replica
