@@ -3,7 +3,7 @@ use warnings;
 
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid
+our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid database_uuid database_uuid_for
     serialize_conflict serialize_changeset in_gladiator diag is_script_output run_command set_editor load_record
     /;
 
@@ -237,6 +237,12 @@ sub replica_uuid {
     return $cli->app_handle->handle->uuid;
 }
 
+sub database_uuid {
+    my $self = shift;
+    my $cli  = Prophet::CLI->new();
+    return $cli->app_handle->handle->db_uuid;
+}
+
 =head2 replica_merge_tickets
 
 Returns a hash of key-value pairs of the form 
@@ -268,6 +274,7 @@ Run this code block as USERNAME.  This routine sets up the %ENV hash so that whe
 =cut
 
 our %REPLICA_UUIDS;
+our %DATABASE_UUIDS;
 
 sub as_user {
     my $username = shift;
@@ -278,6 +285,7 @@ sub as_user {
     #  diag("I am $username. My replica id is ".replica_uuid());
 
     $REPLICA_UUIDS{$username} = replica_uuid();
+    $DATABASE_UUIDS{$username} = database_uuid();
 
     my $ret = $coderef->();
 
@@ -287,7 +295,11 @@ sub as_user {
 sub replica_uuid_for {
     my $user = shift;
     return $REPLICA_UUIDS{$user};
+}
 
+sub database_uuid_for {
+    my $user = shift;
+    return $REPLICA_UUIDS{$user};
 }
 
 =head2 fetch_newest_changesets COUNT
