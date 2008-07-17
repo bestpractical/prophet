@@ -13,6 +13,11 @@ before run => sub {
 before run => sub {
     my $self = shift;
     my $dir = tempdir(CLEANUP => 1);
+
+    my $uuid = $self->app_handle->handle->db_uuid;
+    $dir .= "/$uuid";
+    mkdir $dir;
+
     $self->set_arg(path => $dir);
 };
 
