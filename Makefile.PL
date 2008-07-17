@@ -9,6 +9,7 @@ requires('Params::Validate');
 requires('List::MoreUtils');
 requires('Class::Accessor');
 requires('IPC::Run3');
+requires('File::Rsync');
 requires('Data::UUID');
 requires('Path::Class');
 requires('Test::Exception');
