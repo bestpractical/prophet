@@ -5,7 +5,7 @@ extends 'Prophet::CLI::Command::Merge';
 sub run {
 
     my $self         = shift;
-    my $other        = shift @ARGV;
+    my $other        = $self->arg('from');
     my $source_other = Prophet::Replica->new( { url => $other } );
     $self->app_handle->handle->import_resolutions_from_remote_replica(
         from => $source_other );

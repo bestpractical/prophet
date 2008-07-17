@@ -6,7 +6,7 @@ sub run {
     my $self = shift;
 
     my $source_me    = $self->app_handle->handle;
-    my $other        = shift @ARGV;
+    my $other        = $self->arg('to');
     my $source_other = Prophet::Replica->new( { url => $other } );
     my $resdb        = $source_me->import_resolutions_from_remote_replica(
         from => $source_other );
