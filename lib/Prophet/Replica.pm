@@ -49,7 +49,10 @@ for ( __PACKAGE__->core_replica_types) {
 
  # register some aliases
 for my $scheme (qw/http file/) {
-   __PACKAGE__->register_replica_scheme(scheme => $scheme, class => $REPLICA_TYPE_MAP->{prophet});
+   __PACKAGE__->register_replica_scheme(
+       %{ $REPLICA_TYPE_MAP->{prophet} },
+       scheme => $scheme,
+   );
 }
 
 =head1 NAME
@@ -99,10 +102,9 @@ sub register_replica_scheme {
     my $class = shift;
     my %args = validate(@_, { class => 1, scheme => 1});
 
-    $Prophet::Replica::REPLICA_TYPE_MAP->{$args{'scheme'}} = $args{'class'};
-
-
-
+    $Prophet::Replica::REPLICA_TYPE_MAP->{$args{'scheme'}} = {
+        class => $args{'class'},
+    };
 }
 
 =head2 _url_to_replica_class
@@ -116,7 +118,8 @@ sub _url_to_replica_class {
     my $url  = shift;
 
     my ($scheme, $real_url) = split /:/, $url;
-    return ($Prophet::Replica::REPLICA_TYPE_MAP->{$scheme}, $scheme, $real_url);
+    my $type_map = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme};
+    return ($type_map->{class}, $scheme, $real_url);
 }
 
 sub import_changesets {
