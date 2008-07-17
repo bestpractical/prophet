@@ -48,13 +48,13 @@ for ( __PACKAGE__->core_replica_types) {
 }
 
  # register some aliases
-for my $scheme (qw/http file/) {
-   __PACKAGE__->register_replica_scheme(
-       %{ $REPLICA_TYPE_MAP->{prophet} },
-       scheme      => $scheme,
-       keep_scheme => 1,
-   );
-}
+__PACKAGE__->register_replica_scheme(%{ $REPLICA_TYPE_MAP->{prophet} }, scheme => 'file');
+
+__PACKAGE__->register_replica_scheme(
+    %{ $REPLICA_TYPE_MAP->{prophet} },
+    scheme      => 'http',
+    keep_scheme => 1,
+);
 
 =head1 NAME
 
