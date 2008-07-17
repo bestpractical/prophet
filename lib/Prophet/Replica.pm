@@ -422,7 +422,9 @@ sub traverse_new_changesets {
             warn "You are merging two different databases! This is highly unusual.";
         }
         else {
-            confess "You are trying to merge two different databases! If you really want to do this, try adding a --force argument.";
+            confess "You are trying to merge two different databases! If you really want to do this, try adding a --force argument.\n"
+            . "Local database:  " . $self->db_uuid      . "\n"
+            . "Remote database: " . $args{for}->db_uuid . "\n";
         }
     }
 
