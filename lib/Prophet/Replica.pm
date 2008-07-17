@@ -51,7 +51,8 @@ for ( __PACKAGE__->core_replica_types) {
 for my $scheme (qw/http file/) {
    __PACKAGE__->register_replica_scheme(
        %{ $REPLICA_TYPE_MAP->{prophet} },
-       scheme => $scheme,
+       scheme      => $scheme,
+       keep_scheme => 1,
    );
 }
 
@@ -100,10 +101,11 @@ B<Class Method>. Register a URI scheme C<scheme> to point to a replica object of
 
 sub register_replica_scheme {
     my $class = shift;
-    my %args = validate(@_, { class => 1, scheme => 1});
+    my %args = validate(@_, { class => 1, scheme => 1, keep_scheme => 0 });
 
     $Prophet::Replica::REPLICA_TYPE_MAP->{$args{'scheme'}} = {
-        class => $args{'class'},
+        class       => $args{'class'},
+        keep_scheme => $args{'keep_scheme'},
     };
 }
 
@@ -119,6 +121,8 @@ sub _url_to_replica_class {
 
     my ($scheme, $real_url) = split /:/, $url;
     my $type_map = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme};
+    $real_url = $url if $type_map->{keep_scheme};
+
     return ($type_map->{class}, $scheme, $real_url);
 }
 
