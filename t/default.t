@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More  tests => 7;
+use Test::More tests => 9;
 use File::Temp qw'tempdir';
 use lib 't/lib';
 
@@ -20,4 +20,10 @@ isa_ok( $record, 'Prophet::Record' );
 my $uuid = $record->create( props => { name => 'Jesse', email => 'JeSsE@bestPractical.com' } );
 ok($uuid);
 is( $record->prop('status'), 'new', "default status" );
+
+my $closed_record = TestApp::Bug->new( handle => $cxn );
+
+$uuid = $closed_record->create( props => { name => 'Jesse', email => 'JeSsE@bestPractical.com', status => 'closed' } );
+ok($uuid);
+is( $closed_record->prop('status'), 'closed', "default status is overridable" );
 
