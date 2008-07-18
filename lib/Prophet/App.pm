@@ -28,13 +28,13 @@ has resdb_handle => (
     },
 );
 
-has _config => (
+has config => (
     is      => 'rw',
     isa     => 'Prophet::Config',
-    lazy    => 1,
     default => sub {
+        my $self = shift;
         Prophet::Config->require;
-        return Prophet::Config->new;
+        return Prophet::Config->new(app_handle => $self);
     },
 );
 
@@ -83,25 +83,10 @@ sub require_module {
 
 =head2 config
 
-If called with no arguments, returns the L<Prophet::Config> instance.
-
-If called with one arguments, returns the value of that config setting.
-
-If called with two arguments, sets the value of that config setting.
+Returns the L<Prophet::Config> instance for the running application
 
 =cut
 
-sub config {
-    my $self = shift;
-
-    return $self->_config if @_ == 0;
-
-    my $key = shift;
-    return $self->_config->get($key) if @_ == 0;
-
-    my $value = shift;
-    return $self->_config->set($key => $value);
-}
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

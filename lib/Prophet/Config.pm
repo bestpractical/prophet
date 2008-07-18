@@ -3,53 +3,67 @@ use Moose;
 use MooseX::AttributeHelpers;
 use Path::Class;
 
+
+has app_handle => (
+    is => 'ro',
+    weak_ref => 1,
+    isa => 'Prophet::App',
+    required => 0
+);
+has config_files => ( 
+    is => 'rw',
+    isa => 'ArrayRef' ,
+    default =>sub  {[]}
+);
+
 has config => (
     metaclass => 'Collection::Hash',
     is        => 'rw',
     isa       => 'HashRef',
-    lazy      => 1,
-    default   => sub { shift->load_config_files },
+    lazy      => 0,
+    default   => sub { shift->load_from_files },
     provides  => {
         get   => 'get',
         set   => 'set',
+        keys  => 'list'
     },
 );
 
-sub prophet_config_file { dir($ENV{HOME}, ".prophetrc") }
-sub app_config_file { dir($ENV{PROPHET_REPO}, "prophetrc") }
+#sub prophet_config_file { dir($ENV{HOME}, ".prophetrc") }
+sub app_config_file { 
+    my $self = shift;
+    $ENV{'PROPHET_APP_CONFIG'} || file( $self->app_handle->handle->fs_root => "prophetrc" ) 
 
-my $singleton;
-around new => sub {
-    return $singleton if $singleton;
-    my $orig = shift;
-    return $singleton = $orig->(@_);
-};
+}
 
-sub load_config_files {
+#my $singleton;
+#around new => sub { return $singleton if $singleton; my $orig = shift; return $singleton = $orig->(@_); };
+
+sub load_from_files {
     my $self = shift;
     my @config = @_;
-    @config = grep { -f $_ } $self->prophet_config_file, $self->app_config_file
-        if !@config;
+    @config = grep { -f $_ } $self->app_config_file if !@config;
+    #@config = grep { -f $_ } $self->prophet_config_file, $self->app_config_file if !@config;
 
     my $config = {};
 
     for my $file (@config) {
-        $self->load_config_file($file, $config);
+        $self->load_from_file(file($file), $config);
+        push @{$self->config_files}, $file;
     }
 
     return $config;
 }
 
-sub load_config_file {
+sub load_from_file {
     my $self   = shift;
     my $file   = shift;
     my $config = shift || {};
 
     for my $line ($file->slurp) {
-        s/\#.*//; # strip comments
-        if ($line =~ /^([^:]+):\s*(.*)$/) {
+        $line =~ s/\#.*$//; # strip comments
+        next unless ($line =~ /^([^:]+?)\s*=\s*(.*)$/);
             $config->{$1} = $2;
-        }
     }
 }
 
@@ -93,12 +107,12 @@ The file which controls configuration for all Prophet apps. C<$HOME/.prophetc>.
 The file which controls configuration for this application.
 C<$PROPHET_REPO/prophetrc>.
 
-=head2 load_config_files [files]
+=head2 load_from_files [files]
 
 Loads the given config files. If no files are passed in, it will use the
 default of L</prophet_config_file> and L</app_config_file>.
 
-=head2 load_config_file file
+=head2 load_from_file file
 
 Loads the given config file.
 
@@ -109,6 +123,10 @@ Gets a specific config setting.
 =head2 set
 
 Sets a specific config setting.
+
+=head2 list
+
+List all configuration options
 
 =cut
 
