@@ -356,24 +356,49 @@ returns a formated string that is the summary for the record.
 
 =cut
 
-use constant summary_format => '%u';
-use constant summary_props  => ();
+
+sub _default_summary_format { 'No summary format defined for this record type' }
 
 sub format_summary {
     my $self   = shift;
-    my $format = $self->summary_format;
-    if ( $format =~ /%u/ ) {
-        my $uuid = $self->uuid;
-        $format =~ s/%u/$uuid/g;
+
+    my $configured_format =
+         $self->app_handle->config->get('summary_format_'.$self->type) 
+         || $self->app_handle->config->get('default_summary_format')
+         || $self->_default_summary_format ;
+    my $props = $self->get_props;
+
+    my @out;
+    foreach my $atom(split(/\s*\|\s*/,$configured_format)) {
+            my ($format_string,$prop);
+            if ($atom =~ /,/) {
+                  ($format_string,$prop) = split(/,/,$atom);
+                $prop  = ($props->{$prop} || "(no $prop)") unless ($prop =~ /^\$/);
+            } else {
+                $format_string = '%s';
+                $prop = $atom;
+            }
+            push @out, $self->format_atom( $format_string => $prop);
     }
-    if ( $format =~ /%l/ ) {
-        my $luid = sprintf('%s',$self->luid);
-        $format =~ s/%l/$luid/g;
-    }
-    return sprintf( $format,
-        map { $self->prop($_) || "(no $_)" } $self->summary_props );
+    return join(' ', @out);
 
 }
+
+sub format_atom {
+    my $self = shift;
+    my $string = shift;
+    my $value_in = shift;
+    my $value;
+    if ($value_in =~ /^\$[gu]uid/) {
+            $value = $self->uuid;
+    } elsif ($value_in eq '$luid') {
+            $value = $self->luid;
+    } else {
+            $value = $value_in;
+    }
+    return sprintf($string, $value);
+}
+
 
 =head2 find_or_create_luid
 
@@ -388,86 +413,24 @@ sub find_or_create_luid {
     return $luid;
 }
 
-=head2 stringify_props
 
-Returns a stringified form of the properties suitable for displaying directly
-to the user. Also includes luid and uuid.
 
-You may define a "color_prop" method which transforms a property name and value
-(by adding color).
 
-You may also define a "color_prop_foo" method which transforms values of
-property "foo" (by adding color).
+sub colorize {
+        my $self = shift;
+        my ($field, $value) = @_;
+        my $colorized_field;
+        my $colorized_value;
 
-=cut
-
-sub stringify_props {
-    my $self = shift;
-    my %args = @_;
-
-    my $props = $self->get_props;
-
-    # which props are we going to display?
-    my @show_props;
-    if ($self->can('props_to_show')) {
-        @show_props = $self->props_to_show(\%args);
-
-        # if they ask for verbosity, then display all the other fields
-        # after the fields that our subclass wants to show
-        if ($args{verbose}) {
-            my %already_shown = map { $_ => 1 } @show_props;
-            push @show_props, grep { !$already_shown{$_} }
-                              keys %$props;
-        }
-    }
-    else {
-        @show_props = ('id', keys %$props);
-    }
-
-    # kind of ugly but it simplifies the code
-    $props->{id} = $self->luid ." (" . $self->uuid . ")";
-
-    my $max_length = 0;
-    my @fields;
-
-    for my $field (@show_props) {
-        my $value = $props->{$field};
-
-        # don't bother displaying unset fields
-        next if !defined($value);
-
-        # color if we can (and should)
-        my ($color_field, $color_value) = ($field, $value);
-        if (!$args{batch}) {
-            if ($self->can("color_prop_$field")) {
-                my $method = "color_prop_$field";
-                $color_value = $self->$method($value);
+            if (my $method = $self->can("color_prop_$field")) {
+                $colorized_value = $self->$method($value);
             }
             else {
-                ($color_field, $color_value) = $self->color_prop($field, $value);
+                ($colorized_field, $colorized_value) = $self->color_prop($field, $value);
             }
+            return ($colorized_field, $colorized_value)
         }
 
-        push @fields, [$field, $color_field, $color_value];
-
-        # don't check length($field) here, since coloring will increase the
-        # length but we only care about display length
-        $max_length = length($field)
-            if length($field) > $max_length;
-    }
-
-    $max_length = 0 if $args{batch};
-
-    # this code is kind of ugly. we need to format based on uncolored length
-    return join '',
-           map {
-               my ($field, $color_field, $color_value) = @$_;
-               $color_field .= ':';
-               $color_field .= ' ' x ($max_length - length($field));
-               "$color_field $color_value\n"
-           }
-           @fields;
-}
 
 =head2 color_prop property, value
 

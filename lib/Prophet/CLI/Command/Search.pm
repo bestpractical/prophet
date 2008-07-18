@@ -53,12 +53,7 @@ sub run {
     $records->matching($search_cb);
 
     for ( sort { $a->luid <=> $b->luid } $records->items ) {
-        if ( $_->summary_props ) {
             print $_->format_summary . "\n";
-        } else {
-            # XXX OLD HACK TO MAKE TESTS PASS
-            printf( "%s %s %s \n", $_->uuid, $_->prop('summary') || "(no summary)", $_->prop('status')  || '(no status)' );
-        }
     }
 }
 

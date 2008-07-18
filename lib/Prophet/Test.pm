@@ -46,6 +46,7 @@ sub import_extra {
         no warnings 'redefine';
         *Test::Builder::plan = sub { };
     }
+$ENV{'PROPHET_APP_CONFIG'} = 't/testing.conf';
 }
 
 {
@@ -127,6 +128,9 @@ sub run_ok {
 sub _mk_cmp_closure {
     my ( $exp, $err ) = @_;
     my $line = 0;
+
+    $exp = ref($exp) eq 'ARRAY' ? $exp : [$exp];
+
     sub {
         my $output = shift;
         chomp $output;
