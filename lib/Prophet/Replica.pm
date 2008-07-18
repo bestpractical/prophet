@@ -426,10 +426,12 @@ sub traverse_new_changesets {
 
     if ( $self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid ) {
         if ($args{force}) {
-            warn "You are merging two different databases! This is highly unusual.";
+            warn "WARNING: You are merging two different databases!\n";
         }
         else {
-            confess "You are trying to merge two different databases! If you really want to do this, try adding a --force argument.\n"
+            die "You are trying to merge two different databases! This is NOT\n".
+            "recommended. If you really want to do this,  add '--force' to\n".
+            "your commandline.\n\n"
             . "Local database:  " . $self->db_uuid      . "\n"
             . "Remote database: " . $args{for}->db_uuid . "\n";
         }

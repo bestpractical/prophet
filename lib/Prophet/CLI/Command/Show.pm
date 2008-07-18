@@ -69,12 +69,12 @@ sub stringify_props {
         next if !defined($value);
 
         # color if we can (and should)
-        my ($colorized_field, $colorized_value) = ($field, $value);
+        my ($colorized_field, $colorized_value);
         if ($colorize) {
             ($colorized_field,$colorized_value) = $record->colorize($field => $value);
 
     }
-        push @fields, [$field, $colorized_field, $colorized_value];
+        push @fields, [$field, ($colorized_field|| $field), ($colorized_value ||$value)];
 
         # don't check length($field) here, since coloring will increase the
         # length but we only care about display length
