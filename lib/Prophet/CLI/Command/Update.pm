@@ -16,7 +16,7 @@ sub run {
     my $record = $self->_load_record;
     my $result = $record->set_props( props => $self->edit_record($record) );
     if ($result) {
-        print $record->type . " " . $record->uuid . " updated.\n";
+        print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
 
     } else {
         print "SOMETHING BAD HAPPENED "
