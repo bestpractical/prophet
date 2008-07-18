@@ -61,6 +61,7 @@ has args => (
         get    => 'arg',
         exists => 'has_arg',
         delete => 'delete_arg',
+        keys   => 'arg_names',
     },
 );
 
@@ -74,6 +75,7 @@ has props => (
         get    => 'prop',
         exists => 'has_prop',
         delete => 'delete_prop',
+        keys   => 'prop_names',
     },
 );
 

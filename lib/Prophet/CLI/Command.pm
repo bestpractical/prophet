@@ -6,8 +6,8 @@ has cli => (
     isa => 'Prophet::CLI',
     weak_ref => 1,
     handles => [
-        qw/args  set_arg  arg  has_arg  delete_arg/,
-        qw/props set_prop prop has_prop delete_prop/,
+        qw/args  set_arg  arg  has_arg  delete_arg  arg_names/,
+        qw/props set_prop prop has_prop delete_prop prop_names/,
         'app_handle', 'run_one_command',
     ],
 );

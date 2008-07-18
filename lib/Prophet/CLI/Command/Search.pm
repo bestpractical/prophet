@@ -28,6 +28,19 @@ sub get_search_callback {
                 map { return 1 if $props->{$_} =~ $regex } keys %$props;
                 return 0;
             }
+    } elsif (scalar $self->prop_names > 0) {
+        my $expected_props = $self->props;
+        return sub {
+            my $item = shift;
+            my $props = $item->get_props;
+
+            for (keys %$expected_props) {
+                return 0 if not defined $props->{$_};
+                return 0 unless $props->{$_} eq $expected_props->{$_};
+            }
+
+            return 1;
+        };
     } else {
         return sub {1}
     }
