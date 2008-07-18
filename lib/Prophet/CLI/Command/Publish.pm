@@ -36,6 +36,8 @@ after run => sub {
 
     warn $_ for $rsync->err;
     print $_ for $rsync->out;
+
+    print "Publish complete.\n";
 };
 
 __PACKAGE__->meta->make_immutable;
