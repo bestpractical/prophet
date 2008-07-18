@@ -7,6 +7,12 @@ use Prophet::Record;
 use overload '@{}' => sub { shift->items }, fallback => 1;
 use constant record_class => 'Prophet::Record';
 
+has app_handle => (
+    is  => 'rw',
+    isa => 'Maybe[Prophet::App]',
+    required => 0
+);
+
 has handle => (
     is  => 'rw',
     isa => 'Prophet::Replica',
@@ -73,7 +79,7 @@ sub matching {
     # run coderef against each item;
     # if it matches, add it to items
     foreach my $key (@$records) {
-        my $record = $self->record_class->new( { handle => $self->handle, type => $self->type } );
+        my $record = $self->record_class->new( { app_handle => $self->app_handle,  handle => $self->handle, type => $self->type } );
         $record->load( uuid => $key );
         if ( $coderef->($record) ) {
             $self->add_item($record);

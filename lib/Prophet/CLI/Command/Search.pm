@@ -10,6 +10,7 @@ sub get_collection_object {
     my $class = $self->_get_record_class->collection_class;
     Prophet::App->require_module($class);
     my $records = $class->new(
+        app_handle => $self->app_handle,
         handle => $self->app_handle->handle,
         type   => $self->type
     );

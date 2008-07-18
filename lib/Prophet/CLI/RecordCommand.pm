@@ -21,7 +21,7 @@ has record_class => (
 
 sub _get_record_class {
     my $self = shift;
-     my $args = { handle => $self->cli->app_handle->handle, type => $self->type };
+     my $args = { app_handle => $self->cli->app_handle, handle => $self->cli->app_handle->handle, type => $self->type };
     if (my $class =  $self->record_class ) {
         Prophet::App->require_module($class);
         return $class->new( $args);

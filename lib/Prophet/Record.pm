@@ -18,6 +18,12 @@ This class represents a base class for any record in a Prophet database
 
 =cut
 
+has app_handle => (
+    isa => 'Maybe[Prophet::App]',
+    is       => 'rw',
+    required => 0,
+);
+
 has handle => (
     is       => 'rw',
     required => 1,
