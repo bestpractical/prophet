@@ -2,8 +2,12 @@
 package Prophet::CLI::Command::Shell;
 use Moose;
 extends 'Prophet::CLI::Command';
+use Path::Class 'file';
 
-sub prompt { "prophet> " }
+sub prompt {
+    my $binary = file($0)->basename;
+    return "$binary> ";
+}
 
 sub run {
     my $self = shift;
