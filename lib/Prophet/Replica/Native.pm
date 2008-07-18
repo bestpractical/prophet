@@ -103,8 +103,12 @@ sub _probe_or_create_db {
         # We have a filesystem based replica. we can perform a create
         $self->initialize();
 
-    } else {
+    } elsif ($self->can_write_changesets) {
         die "We can only create file: based prophet replicas. It looks like you're trying to create " . $self->url;
+    } else {
+        die "Prophet couldn't find a replica at \"".$self->url."\"\n\n".
+            "Please check the number and dial again.\n";
+        
     }
 
 }
