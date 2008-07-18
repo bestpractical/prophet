@@ -149,6 +149,8 @@ sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
     my $uuid = $UUIDGEN->create_str;
+
+    $self->default_props($args{'props'});
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) or return undef;
 
@@ -328,6 +330,23 @@ sub canonicalize_props {
             $sub->( $self, props => $props, errors => $errors );
         }
     }
+    return 1;
+}
+
+sub default_props {
+    my $self   = shift;
+    my $props  = shift;
+
+    my @methods = grep { $_->{name} =~ /^default_prop_/ } $self->meta->compute_all_applicable_methods;
+
+    for my $method_data (@methods) {
+        my ($key) = $method_data->{name} =~ /^default_prop_(.+)$/;
+        my $sub   = $method_data->{code};
+
+        $props->{$key} = $sub->( $self, props => $props)
+            if !defined($props->{$key});
+    }
+
     return 1;
 }
 
