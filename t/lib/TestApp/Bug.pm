@@ -22,4 +22,6 @@ sub canonicalize_prop_email {
     $args{props}->{email} = lc( $args{props}->{email} );
 }
 
+sub default_prop_status { 'new' }
+
 1;
