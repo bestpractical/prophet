@@ -299,7 +299,7 @@ sub replica_uuid_for {
 
 sub database_uuid_for {
     my $user = shift;
-    return $REPLICA_UUIDS{$user};
+    return $DATABASE_UUIDS{$user};
 }
 
 =head2 fetch_newest_changesets COUNT
