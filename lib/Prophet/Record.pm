@@ -314,7 +314,7 @@ sub validate_props {
         }
     }
     if (@errors) {
-        die join( '', @errors );
+        die join( '', @errors )."\n";
     }
     return 1;
 }
