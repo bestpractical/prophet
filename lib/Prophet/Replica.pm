@@ -87,7 +87,7 @@ around new => sub {
         $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url}). I can handle the following replica types: " . join(', ', sort keys %$REPLICA_TYPE_MAP) . ", and possibly more)");
     }
 
-    return $orig->($class, %args, url => $args{url}) if $class eq $new_class;
+    return $orig->($class, %args) if $class eq $new_class;
 
     $new_class->require;
     return $new_class->new(%args);
