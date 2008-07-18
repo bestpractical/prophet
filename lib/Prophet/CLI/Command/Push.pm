@@ -2,17 +2,16 @@ package Prophet::CLI::Command::Push;
 use Moose;
 extends 'Prophet::CLI::Command::Merge';
 
-sub run {
+override run => sub {
     my $self = shift;
 
-    my $source_me    = $self->app_handle->handle;
-    my $other        = $self->arg('to');
-    my $source_other = Prophet::Replica->new( { url => $other } );
-    my $resdb        = $source_me->import_resolutions_from_remote_replica(
-        from => $source_other );
+    die "Please specify a --to.\n" if !$self->has_arg('to');
 
-    $self->_do_merge( $source_me, $source_other );
-}
+    $self->set_arg(from => $self->app_handle->default_replica_type.":file://".$s
+elf->app_handle->handle->fs_root);
+
+    super();
+};
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
