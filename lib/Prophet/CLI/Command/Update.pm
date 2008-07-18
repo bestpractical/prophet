@@ -21,8 +21,9 @@ sub run {
     } else {
         print "SOMETHING BAD HAPPENED "
             . $record->type . " "
+            . $record->luid . " ("
             . $record->uuid
-            . " not updated.\n";
+            . ") not updated.\n";
 
     }
 }
