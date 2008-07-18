@@ -5,7 +5,7 @@ use strict;
 use Prophet::Test 'no_plan';
 use File::Temp qw'tempdir';
     $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
-delete $ENV{'PROPHET_APP_CONFIG'};
+
 
 use_ok('Prophet::CLI');
 # Test basic config file parsing
