@@ -19,6 +19,13 @@ has _uuid => (
     is => 'rw',
 );
 
+
+has replica_version => (
+    is      => 'ro',
+    lazy    => 1,
+    default => sub { shift->_read_file('replica-version') }
+);
+
 has fs_root_parent => (
     is      => 'rw',
     lazy    => 1,
@@ -37,13 +44,17 @@ has fs_root => (
     },
 );
 
-has target_replica => (
-    is => 'rw',
-);
-
 has current_edit => (
     is => 'rw',
 );
+
+has current_edit_records => (
+    metaclass => 'Collection::Array',
+    is        => 'rw',
+    isa       => 'ArrayRef',
+    default   => sub { [] },
+);
+
 
 has '+resolution_db_handle' => (
     isa     => 'Prophet::Replica | Undef',
@@ -96,7 +107,7 @@ sub state_handle { return shift; }
 sub _probe_or_create_db {
     my $self = shift;
 
-    return if $self->_read_file('replica-version');
+    return if $self->replica_version;
 
     if ( $self->fs_root_parent ) {
 
@@ -222,12 +233,35 @@ sub _write_serialized_record {
         data    => $args{props},
         cas_dir => $self->record_cas_dir
     );
-    $self->_write_record_index_entry(
-        uuid    => $args{uuid},
+
+       my $record =   {uuid    => $args{uuid},
         type    => $args{type},
-        cas_key => $cas_key
-    );
+        cas_key => $cas_key};
+
+    $self->_prepare_record_index_update(
+           uuid    => $args{uuid},
+        type    => $args{type},
+        cas_key => $cas_key);
 }
+
+
+sub _prepare_record_index_update {  
+        my $self = shift;
+        my %record = (@_);
+
+    # If we're inside an edit, we can record the changeset info into the index
+    if ( $self->current_edit) { 
+        push @{$self->current_edit_records}, \%record;
+
+        } else {
+        # If we're not inside an edit, we're likely exporting the replica
+        # TODO: the replica exporter code should probably be retooled
+         $self->_write_record_index_entry(%record);
+         }
+
+}
+
+use constant RECORD_INDEX_SIZE => ( 4 + 20 );
 
 sub _write_record_index_entry {
     my $self         = shift;
@@ -251,6 +285,30 @@ sub _write_record_index_entry {
     close $record_index;
 }
 
+sub _read_record_index_entry {
+    my $self = shift;
+    my %args         = validate( @_, { type => 1, uuid => 1 } );
+
+    my $idx_filename = $self->_record_index_filename(
+        uuid => $args{uuid},
+        type => $args{type}
+    );
+
+
+
+    my $index = $self->_read_file($idx_filename);
+    return undef unless $index;
+
+    # XXX TODO THIS CODE IS HACKY AND SHOULD BE SHOT;
+    my $count = length($index) / RECORD_INDEX_SIZE;
+
+    my ( $seq, $key ) = unpack( 'NH40',
+        substr( $index, ( $count - 1 ) * RECORD_INDEX_SIZE, RECORD_INDEX_SIZE )
+    );
+
+    return ($seq,$key);
+}
+
 sub _delete_record_index {
     my $self         = shift;
     my %args         = validate( @_, { type => 1, uuid => 1 } );
@@ -261,34 +319,14 @@ sub _delete_record_index {
     file( $self->fs_root => $idx_filename )->remove
         || die "Could not delete record $idx_filename: " . $!;
 }
-use constant RECORD_INDEX_SIZE => ( 4 + 20 );
 
 sub _read_serialized_record {
     my $self         = shift;
     my %args         = validate( @_, { type => 1, uuid => 1 } );
-    my $idx_filename = $self->_record_index_filename(
-        uuid => $args{uuid},
-        type => $args{type}
-    );
 
-    my $index = $self->_read_file($idx_filename);
-    return undef unless $index;
+    my $casfile = $self->_record_cas_filename(type => $args{'type'}, uuid => $args{'uuid'});
 
-    # XXX TODO THIS CODE IS FUCKING HACKY AND SHOULD BE SHOT;
-    my $count = length($index) / RECORD_INDEX_SIZE;
-
-    my ( $seq, $key ) = unpack( 'NH40',
-        substr( $index, ( $count - 1 ) * RECORD_INDEX_SIZE, RECORD_INDEX_SIZE )
-    );
-
-    # XXX: deserialize the changeset content from the cas with $key
-    my $casfile = file(
-        $self->record_cas_dir,
-        substr( $key, 0, 1 ),
-        substr( $key, 1, 1 ), $key
-    );
-
-    # That's the props
+    return undef unless $casfile;
     return from_json( $self->_read_file($casfile), { utf8 => 1} );
 }
 
@@ -301,6 +339,24 @@ sub _record_index_filename {
         substr( $args{uuid}, 1, 1 ),
         $args{uuid}
     );
+}
+
+sub _record_cas_filename {
+    my $self         = shift;
+    my %args         = validate( @_, { type => 1, uuid => 1 } );
+
+    my ($seq,$key) = $self->_read_record_index_entry( type => $args{'type'}, uuid => $args{'uuid'});
+
+
+    return undef unless ($key and ($key ne '0'x40));
+    # XXX: deserialize the changeset content from the cas with $key
+    my $casfile = file(
+        $self->record_cas_dir,
+        substr( $key, 0, 1 ),
+        substr( $key, 1, 1 ), $key
+    );
+
+    return $casfile;
 }
 
 sub _record_type_root {
@@ -517,6 +573,9 @@ sub commit_edit {
     $self->current_edit->original_source_uuid( $self->uuid )
         unless ( $self->current_edit->original_source_uuid );
     $self->current_edit->sequence_no($sequence);
+    for my $record (@{$self->current_edit_records}) {
+         $self->_write_record_index_entry(%$record);
+    }
     $self->_write_changeset_to_index( $self->current_edit );
 }
 
@@ -577,8 +636,6 @@ sub delete_record {
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
 
-# XXX TODO Write out an entry to the record's index file marking it as a special deleted uuid? - this has lots of ramifications for list, load, exists, create
-    $self->_delete_record_index( uuid => $args{uuid}, type => $args{type} );
 
     my $change = Prophet::Change->new(
         {   record_type => $args{'type'},
@@ -587,6 +644,8 @@ sub delete_record {
         }
     );
     $self->current_edit->add_change( change => $change );
+    
+    $self->_prepare_record_index_update( uuid    => $args{uuid}, type    => $args{type}, cas_key => '0'x40);
 
     $self->commit_edit() unless ($inside_edit);
     return 1;
@@ -650,14 +709,11 @@ sub record_exists {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
     return undef unless $args{'uuid'};
-    return $self->_file_exists(
-        $self->_record_index_filename(
+    return $self->_record_cas_filename(
             type => $args{'type'},
             uuid => $args{'uuid'}
-        )
-    );
+    ) ? 1 : 0;
 
-    # TODO, check that the index file doesn't have a 'deleted!' note
 }
 
 sub list_records {
@@ -665,11 +721,14 @@ sub list_records {
     my %args = validate( @_ => { type => 1 } );
 
     #return just the filenames, which, File::Find::Rule doesn't seem capable of
-    return [
-        map { my @path = split( qr'/', $_ ); pop @path }
+        my @record_uuids = map { my @path = split( qr'/', $_ ); pop @path }
             File::Find::Rule->file->maxdepth(3)->in(
             dir( $self->fs_root, $self->_record_type_root( $args{'type'} ) )
-            )
+            );
+
+    
+
+    return [grep {$self->_record_cas_filename(type => $args{'type'}, uuid => $_ ) }@record_uuids
     ];
 }
 
