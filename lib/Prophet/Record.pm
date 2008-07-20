@@ -301,8 +301,8 @@ sub delete {
 
 sub changesets {
     my $self = shift;
-    my @changeset_ids = $self->handle->list_record_changesets(record_uuid => 
-    $self->uuid 
+    my @changesets = $self->handle->changesets_for_record(uuid => 
+    $self->uuid, type => $self->type
     );
 }
 
