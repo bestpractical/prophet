@@ -183,8 +183,9 @@ sub is_script_output {
     my $ret = run3 [ @cmd, @$arg ], undef, _mk_cmp_closure( $exp_stdout, $stdout_err ),    # stdout
         _mk_cmp_closure( $exp_stderr, $stdout_err );                                       # stderr
 
-    for (@$exp_stdout) {
-        push @$stdout_err, "got nothing, expected: $_";
+    for my $line(@$exp_stdout) {
+        next if !defined $line;
+        push @$stdout_err, "got nothing, expected: $line";
     }
 
     my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$arg );
