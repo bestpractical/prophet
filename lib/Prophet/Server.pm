@@ -1,4 +1,4 @@
-package Prophet::Server::REST;
+package Prophet::Server;
 use Params::Validate qw/:all/;
 use JSON;
 use base 'HTTP::Server::Simple::CGI';
@@ -10,7 +10,7 @@ sub prophet_handle {
 }
 
 sub handle_request {
-    my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server::REST'} ,  { isa => 'CGI' } );
+    my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server'} ,  { isa => 'CGI' } );
     my $http_status;
     if ( my $sub = $self->can( 'handle_request_' . lc( $cgi->request_method ) ) ) {
         $http_status = $sub->( $self, $cgi );

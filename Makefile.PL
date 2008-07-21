@@ -28,7 +28,7 @@ requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 
 features(
-    'REST Server' => [
+    'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
         'Test::HTTP::Server::Simple',
