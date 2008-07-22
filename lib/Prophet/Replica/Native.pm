@@ -245,19 +245,19 @@ sub _write_serialized_record {
 }
 
 
-sub _prepare_record_index_update {  
-        my $self = shift;
-        my %record = (@_);
+sub _prepare_record_index_update {
+    my $self   = shift;
+    my %record = (@_);
 
     # If we're inside an edit, we can record the changeset info into the index
-    if ( $self->current_edit) { 
-        push @{$self->current_edit_records}, \%record;
+    if ( $self->current_edit ) {
+        push @{ $self->current_edit_records }, \%record;
 
-        } else {
+    } else {
         # If we're not inside an edit, we're likely exporting the replica
         # TODO: the replica exporter code should probably be retooled
-         $self->_write_record_index_entry(%record);
-         }
+        $self->_write_record_index_entry(%record);
+    }
 
 }
 
@@ -265,7 +265,7 @@ use constant RECORD_INDEX_SIZE => ( 4 + 20 );
 
 sub _write_record_index_entry {
     my $self         = shift;
-    my %args         = validate( @_, { type => 1, uuid => 1, cas_key => 1 } );
+    my %args         = validate( @_, { type => 1, uuid => 1, cas_key => 1, changeset_id => 0 } );
     my $idx_filename = $self->_record_index_filename(
         uuid => $args{uuid},
         type => $args{type}
@@ -274,11 +274,11 @@ sub _write_record_index_entry {
     my $index_path = file( $self->fs_root, $idx_filename );
     $index_path->parent->mkpath;
 
-    my $record_index = $index_path->openw;
+    open( my $record_index, ">>" . $index_path);
 
     # XXX TODO: skip if the index already has this version of the record;
     # XXX TODO FETCH THAT
-    my $record_last_changed_changeset = 1;
+    my $record_last_changed_changeset = $args{'changeset_id'} || 0;
     my $index_row
         = pack( 'NH40', $record_last_changed_changeset, $args{cas_key} );
     print $record_index $index_row || die $!;
@@ -287,26 +287,44 @@ sub _write_record_index_entry {
 
 sub _read_record_index_entry {
     my $self = shift;
-    my %args         = validate( @_, { type => 1, uuid => 1 } );
+    my %args = validate( @_, { type => 1, uuid => 1 } );
+
+    # XXX TODO - we shouldn't compute all entries just to get the last
+    my @entries = $self->_read_record_index(
+        type => $args{type},
+        uuid => $args{uuid}
+    );
+    return @{$entries[-1] || []};
+
+}
+
+
+sub _read_record_index {
+    my $self = shift;
+    my %args = validate( @_, { type => 1, uuid => 1 } );
 
     my $idx_filename = $self->_record_index_filename(
         uuid => $args{uuid},
         type => $args{type}
     );
 
-
-
     my $index = $self->_read_file($idx_filename);
     return undef unless $index;
 
     # XXX TODO THIS CODE IS HACKY AND SHOULD BE SHOT;
     my $count = length($index) / RECORD_INDEX_SIZE;
-
-    my ( $seq, $key ) = unpack( 'NH40',
-        substr( $index, ( $count - 1 ) * RECORD_INDEX_SIZE, RECORD_INDEX_SIZE )
-    );
-
-    return ($seq,$key);
+    my @entries;
+    for my $offset ( 0 .. ( $count - 1 ) ) {
+        my ( $seq, $key ) = unpack(
+            'NH40',
+            substr(
+                $index, ( $offset ) * RECORD_INDEX_SIZE,
+                RECORD_INDEX_SIZE
+            )
+        );
+        push @entries, [ $seq => $key ];
+    }
+    return @entries;
 }
 
 sub _delete_record_index {
@@ -321,13 +339,16 @@ sub _delete_record_index {
 }
 
 sub _read_serialized_record {
-    my $self         = shift;
-    my %args         = validate( @_, { type => 1, uuid => 1 } );
+    my $self = shift;
+    my %args = validate( @_, { type => 1, uuid => 1 } );
 
-    my $casfile = $self->_record_cas_filename(type => $args{'type'}, uuid => $args{'uuid'});
+    my $casfile = $self->_record_cas_filename(
+        type => $args{'type'},
+        uuid => $args{'uuid'}
+    );
 
     return undef unless $casfile;
-    return from_json( $self->_read_file($casfile), { utf8 => 1} );
+    return from_json( $self->_read_file($casfile), { utf8 => 1 } );
 }
 
 sub _record_index_filename {
@@ -335,11 +356,18 @@ sub _record_index_filename {
     my %args = validate( @_, { uuid => 1, type => 1 } );
     return file(
         $self->_record_type_root( $args{'type'} ),
-        substr( $args{uuid}, 0, 1 ),
-        substr( $args{uuid}, 1, 1 ),
-        $args{uuid}
+        $self->_hashed_dir_name($args{uuid})
     );
 }
+
+
+sub _hashed_dir_name {
+    my $self = shift;
+    my $hash = shift;
+
+    return (substr( $hash, 0, 1 ), substr( $hash, 1, 1 ), $hash);
+}
+
 
 sub _record_cas_filename {
     my $self         = shift;
@@ -352,8 +380,7 @@ sub _record_cas_filename {
     # XXX: deserialize the changeset content from the cas with $key
     my $casfile = file(
         $self->record_cas_dir,
-        substr( $key, 0, 1 ),
-        substr( $key, 1, 1 ), $key
+        $self->_hashed_dir_name($key)
     );
 
     return $casfile;
@@ -409,21 +436,14 @@ Walks through all changesets after $after, calling $callback on each.
 
 use constant CHG_RECORD_SIZE => ( 4 + 16 + 4 + 20 );
 
-sub traverse_changesets {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   after    => 1,
-            callback => 1,
-        }
-    );
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $latest    = $self->latest_sequence_no();
-    my $chgidx    = $self->_read_file( $self->changeset_index );
 
-    $self->log("Traversing changesets between $first_rev and $latest");
-    for my $rev ( $first_rev .. $latest ) {
-        my $index_record = substr( $chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE,
+sub _get_changeset_index_entry {
+    my $self = shift;
+    my %args = validate(@_, { sequence_no => 1, index_file => 1});
+
+    my $chgidx = $args{index_file};
+    my $rev = $args{'sequence_no'};
+        my $index_record = substr( $$chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE,
             CHG_RECORD_SIZE );
         my ( $seq, $orig_uuid, $orig_seq, $key )
             = unpack( 'Na16NH40', $index_record );
@@ -434,10 +454,8 @@ sub traverse_changesets {
                 . " data key $key" );
 
         # XXX: deserialize the changeset content from the cas with $key
-        my $casfile = file(
-            $self->changeset_cas_dir,
-            substr( $key, 0, 1 ),
-            substr( $key, 1, 1 ), $key
+        my $casfile = file( $self->changeset_cas_dir,
+            $self->_hashed_dir_name($key)
         );
 
         my $changeset = $self->_deserialize_changeset(
@@ -446,9 +464,68 @@ sub traverse_changesets {
             original_sequence_no => $orig_seq,
             sequence_no          => $seq
         );
+
+        return $changeset;
+}
+
+
+sub traverse_changesets {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   after    => 1,
+            callback => 1,
+        }
+    );
+
+    my $first_rev = ( $args{'after'} + 1 ) || 1;
+    my $latest = $self->latest_sequence_no();
+
+    my $chgidx = $self->_read_changeset_index;
+    $self->log("Traversing changesets between $first_rev and $latest");
+    for my $rev ( $first_rev .. $latest ) {
+        my $changeset = $self->_get_changeset_index_entry(
+            sequence_no    => $rev,
+            index_file => $chgidx
+        );
+
         $args{callback}->($changeset);
     }
 }
+
+sub _read_changeset_index {
+    my $self =shift;
+    my $chgidx    = $self->_read_file( $self->changeset_index );
+    return \$chgidx;
+}
+
+=head2 changesets_for_record { uuid => $uuid, type => $type }
+
+Returns an ordered set of changeset objects for all changesets containing
+changes to this object. 
+
+Note that changesets may include changes to other records
+
+=cut
+
+sub changesets_for_record {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1, type => 1 } );
+
+    my @record_index = $self->_read_record_index( type => $args{'type'}, uuid => $args{'uuid'});
+
+    my $changeset_index = $self->_read_changeset_index();
+
+    my @changesets;
+    foreach my $item (@record_index) {
+        my $sequence = $item->[0];
+        push @changesets, $self->_get_changeset_index_entry( sequence_no => $sequence, index_file => $changeset_index);
+    }
+
+    return @changesets;
+
+}
+
 
 sub _deserialize_changeset {
     my $self = shift;
@@ -491,8 +568,7 @@ sub _write_to_cas {
     my $fingerprint = sha1_hex($content);
     my $content_filename = file(
         $args{'cas_dir'},
-        substr( $fingerprint, 0, 1 ),
-        substr( $fingerprint, 1, 1 ), $fingerprint
+            $self->_hashed_dir_name($fingerprint)
     );
 
     $self->_write_file( path => $content_filename, content => $content );
@@ -553,6 +629,8 @@ sub begin_edit {
     my $self = shift;
     $self->current_edit(
         Prophet::ChangeSet->new( { source_uuid => $self->uuid } ) );
+    $self->current_edit_records([]);
+
 }
 
 sub _set_original_source_metadata_for_current_edit {
@@ -574,7 +652,7 @@ sub commit_edit {
         unless ( $self->current_edit->original_source_uuid );
     $self->current_edit->sequence_no($sequence);
     for my $record (@{$self->current_edit_records}) {
-         $self->_write_record_index_entry(%$record);
+         $self->_write_record_index_entry(changeset_id => $sequence, %$record);
     }
     $self->_write_changeset_to_index( $self->current_edit );
 }
