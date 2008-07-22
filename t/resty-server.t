@@ -88,6 +88,6 @@ $ua->get( url('some_crazy_page') );
 is( $ua->status, '404', "No that page doesn't exist" );
 
 package Prophet::TestServer;
-use base qw/Test::HTTP::Server::Simple Prophet::Server::REST/;
+use base qw/Test::HTTP::Server::Simple Prophet::Server/;
 
 1;

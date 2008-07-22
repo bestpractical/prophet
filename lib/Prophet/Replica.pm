@@ -425,10 +425,7 @@ sub traverse_new_changesets {
     );
 
     if ( $self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid ) {
-        if ($args{force}) {
-            warn "WARNING: You are merging two different databases!\n";
-        }
-        else {
+        unless ($args{'force'}) {
             die "You are trying to merge two different databases! This is NOT\n".
             "recommended. If you really want to do this,  add '--force' to\n".
             "your commandline.\n\n"
