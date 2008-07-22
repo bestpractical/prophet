@@ -42,8 +42,7 @@ template record_table => sub {
                             my $prop = $_->{prop};
                             cell {
                                 attr {
-                                    id    => "$type-$uuid-$prop",
-                                    class => $prop,
+                                    class => "prop-$prop",
                                 };
                                 outs $_->{value}
                             }
