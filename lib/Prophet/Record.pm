@@ -360,7 +360,8 @@ returns a formated string that is the summary for the record.
 sub _default_summary_format { 'No summary format defined for this record type' }
 
 sub format_summary {
-    my $self   = shift;
+    my $self = shift;
+    my $html = shift;
 
     my $configured_format =
          $self->app_handle->config->get('summary_format_'.$self->type) 

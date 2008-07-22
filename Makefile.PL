@@ -36,6 +36,11 @@ features(
         'HTTP::Server::Simple'
     ],
 
+    'HTML display' => [
+        -default => 1,
+        'Template::Declare', # Template::Declare::Tags
+    ],
+
 
     'Subversion replica support' => [
         -default => 0,

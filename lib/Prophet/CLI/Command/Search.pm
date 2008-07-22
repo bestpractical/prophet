@@ -45,12 +45,32 @@ sub get_search_callback {
         return sub {1}
     }
 }
+
 sub run {
     my $self = shift;
 
     my $records = $self->get_collection_object();
     my $search_cb = $self->get_search_callback();
     $records->matching($search_cb);
+
+    my $display_method = $self->has_arg('html')
+                       ? 'display_html'
+                       : 'display_terminal';
+    $self->$display_method($records);
+}
+
+sub display_html {
+    my $self = shift;
+    my $records = shift;
+
+    require Prophet::Server::View;
+    Template::Declare->init(roots => ['Prophet::Server::View']);
+    print Template::Declare->show('record_table' => $records);
+}
+
+sub display_terminal {
+    my $self = shift;
+    my $records = shift;
 
     for ( sort { $a->luid <=> $b->luid } $records->items ) {
             print $_->format_summary . "\n";
