@@ -34,10 +34,7 @@ has type => (
     isa       => 'Str',
     required  => 1,
     predicate => 'has_type',
-    default   => sub {
-        my $self = shift;
-        $self->record_type;
-    },
+    default   => sub { undef}
 );
 
 has uuid => (
@@ -72,7 +69,7 @@ sub declared_props {
 
 my $UUIDGEN = Data::UUID->new();
 
-sub record_type { $_[0]->has_type ? $_[0]->type : undef }
+sub record_type { $_[0]->type }
 
 =head1 METHODS
 
@@ -121,7 +118,7 @@ sub register_collection_reference {
         my $self       = shift;
         my $collection = $collection_class->new(
             handle => $self->handle,
-            type   => $collection_class->record_class->record_type
+            type   => $collection_class->record_class->type
         );
         $collection->matching( sub { ($_[0]->prop( $args{by} )||'') eq $self->uuid }
         );
@@ -300,6 +297,15 @@ sub delete {
     $self->handle->delete_record( type => $self->type, uuid => $self->uuid );
 
 }
+
+
+sub changesets {
+    my $self = shift;
+    my @changeset_ids = $self->handle->list_record_changesets(record_uuid => 
+    $self->uuid 
+    );
+}
+
 
 sub validate_props {
     my $self   = shift;
@@ -488,5 +494,4 @@ sub color_prop {
 __PACKAGE__->meta->make_immutable;
 no Moose;
 no MooseX::ClassAttribute;
-
 1;
