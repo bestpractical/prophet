@@ -1,12 +1,22 @@
 package Prophet::Server;
+use strict;
+use warnings;
+use base 'HTTP::Server::Simple::CGI';
+
+use Prophet::Server::View;
 use Params::Validate qw/:all/;
 use JSON;
-use base 'HTTP::Server::Simple::CGI';
 
 sub prophet_handle {
     my $self = shift;
     $self->{'_prophet_handle'} = shift if @_;
     return $self->{'_prophet_handle'};
+}
+
+sub new {
+    my $class = shift;
+    Template::Declare->init(roots => ['Prophet::Server::View']);
+    return $class->SUPER::new(@_);
 }
 
 sub handle_request {
@@ -24,6 +34,15 @@ sub handle_request_get {
     my $self = shift;
     my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
     my $p = $cgi->path_info;
+
+    if (Template::Declare->has_template($p)) {
+        my $content = Template::Declare->show($p);
+
+        return $self->_send_content(
+            content_type => 'text/html',
+            content      => $content,
+        );
+    }
 
     if ( $p =~ m|^/records\.json$| ) {
         $self->_send_content(
