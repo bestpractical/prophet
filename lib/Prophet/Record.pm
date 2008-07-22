@@ -359,31 +359,58 @@ returns a formated string that is the summary for the record.
 
 sub _default_summary_format { 'No summary format defined for this record type' }
 
-sub format_summary {
+sub _summary_format {
     my $self = shift;
+    return $self->app_handle->config->get('summary_format_'.$self->type)
+        || $self->app_handle->config->get('default_summary_format')
+        || $self->_default_summary_format;
+}
 
-    my $configured_format =
-         $self->app_handle->config->get('summary_format_'.$self->type) 
-         || $self->app_handle->config->get('default_summary_format')
-         || $self->_default_summary_format ;
+sub _atomize_summary_format {
+    my $self = shift;
+    my $format = shift || $self->_summary_format;
+    return split /\s*\|\s*/, $format;
+}
+
+sub _parse_format_summary {
+    my $self   = shift;
+    my $format = shift;
+
     my $props = $self->get_props;
 
     my @out;
-    foreach my $atom(split(/\s*\|\s*/,$configured_format)) {
-            my ($format_string,$prop);
-            if ($atom =~ /,/) {
-                  ($format_string,$prop) = split(/,/,$atom);
-                $prop  = ($props->{$prop} || "(no $prop)") unless ($prop =~ /^\$/);
-            } else {
-                $format_string = '%s';
-                $prop = $atom;
+    foreach my $atom ($self->_atomize_summary_format) {
+        my %atom_data;
+        my ($format, $prop);
+
+        if ($atom =~ /,/) {
+            ($format, $prop) = split /,/, $atom;
+
+            unless ($prop =~ /^\$/) {
+                $prop = $props->{$prop}
+                     || "(no $prop)"
             }
-            push @out, $self->format_atom( $format_string => $prop);
+
+        } else {
+            $format = '%s';
+            $prop = $atom;
+        }
+
+        $atom_data{formatted} = $self->format_atom($format => $prop);
+        @atom_data{'format', 'prop'} = ($format, $prop);
+
+        push @out, \%atom_data;
     }
 
-    return @out if wantarray;
-    return join(' ', @out);
+    return @out;
+}
 
+sub format_summary {
+    my $self = shift;
+
+    my @out = $self->_parse_format_summary;
+    return @out if wantarray;
+    return join ' ', map { $_->{formatted} } @out;
 }
 
 sub format_atom {
