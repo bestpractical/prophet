@@ -361,7 +361,6 @@ sub _default_summary_format { 'No summary format defined for this record type' }
 
 sub format_summary {
     my $self = shift;
-    my $html = shift;
 
     my $configured_format =
          $self->app_handle->config->get('summary_format_'.$self->type) 
@@ -381,6 +380,8 @@ sub format_summary {
             }
             push @out, $self->format_atom( $format_string => $prop);
     }
+
+    return @out if wantarray;
     return join(' ', @out);
 
 }
