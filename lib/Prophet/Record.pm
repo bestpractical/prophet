@@ -413,21 +413,23 @@ sub format_summary {
     return join ' ', map { $_->{formatted} } @out;
 }
 
+sub atom_value {
+    my $self     = shift;
+    my $value_in = shift;
+
+    if ($value_in =~ /^\$[gu]uid/) {
+        return $self->uuid;
+    } elsif ($value_in eq '$luid') {
+        return $self->luid;
+    return $value_in;
+}
+
 sub format_atom {
     my $self = shift;
     my $string = shift;
     my $value_in = shift;
-    my $value;
-    if ($value_in =~ /^\$[gu]uid/) {
-            $value = $self->uuid;
-    } elsif ($value_in eq '$luid') {
-            $value = $self->luid;
-    } else {
-            $value = $value_in;
-    }
-    return sprintf($string, $value);
+    return sprintf($string, $self->atom_value($value_in));
 }
-
 
 =head2 find_or_create_luid
 
