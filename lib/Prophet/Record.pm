@@ -365,46 +365,82 @@ returns a formated string that is the summary for the record.
 
 sub _default_summary_format { 'No summary format defined for this record type' }
 
-sub format_summary {
-    my $self   = shift;
+sub _summary_format {
+    my $self = shift;
+    return $self->app_handle->config->get('summary_format_'.$self->type)
+        || $self->app_handle->config->get('default_summary_format')
+        || $self->_default_summary_format;
+}
 
-    my $configured_format =
-         $self->app_handle->config->get('summary_format_'.$self->type) 
-         || $self->app_handle->config->get('default_summary_format')
-         || $self->_default_summary_format ;
+sub _atomize_summary_format {
+    my $self = shift;
+    my $format = shift || $self->_summary_format;
+    return split /\s*\|\s*/, $format;
+}
+
+sub _parse_format_summary {
+    my $self   = shift;
+    my $format = shift;
+
     my $props = $self->get_props;
 
     my @out;
-    foreach my $atom(split(/\s*\|\s*/,$configured_format)) {
-            my ($format_string,$prop);
-            if ($atom =~ /,/) {
-                  ($format_string,$prop) = split(/,/,$atom);
-                $prop  = ($props->{$prop} || "(no $prop)") unless ($prop =~ /^\$/);
-            } else {
-                $format_string = '%s';
-                $prop = $atom;
-            }
-            push @out, $self->format_atom( $format_string => $prop);
-    }
-    return join(' ', @out);
+    foreach my $atom ($self->_atomize_summary_format) {
+        my %atom_data;
+        my ($format, $prop, $value);
 
+        if ($atom =~ /,/) {
+            ($format, $prop) = split /,/, $atom;
+
+            $value = $prop;
+
+            unless ($value =~ /^\$/) {
+                $value = $props->{$value}
+                      || "(no $value)"
+            }
+
+        } else {
+            $format = '%s';
+            $prop = $value = $atom;
+        }
+
+        @atom_data{'format', 'prop'} = ($format, $prop);
+        $atom_data{value} = $self->atom_value($value);
+        $atom_data{formatted} = $self->format_atom($format => $atom_data{value});
+
+        push @out, \%atom_data;
+    }
+
+    return @out;
+}
+
+sub format_summary {
+    my $self = shift;
+
+    my @out = $self->_parse_format_summary;
+    return @out if wantarray;
+    return join ' ', map { $_->{formatted} } @out;
+}
+
+sub atom_value {
+    my $self     = shift;
+    my $value_in = shift;
+
+    if ($value_in =~ /^\$[gu]uid/) {
+        return $self->uuid;
+    } elsif ($value_in eq '$luid') {
+        return $self->luid;
+    }
+
+    return $value_in;
 }
 
 sub format_atom {
     my $self = shift;
     my $string = shift;
-    my $value_in = shift;
-    my $value;
-    if ($value_in =~ /^\$[gu]uid/) {
-            $value = $self->uuid;
-    } elsif ($value_in eq '$luid') {
-            $value = $self->luid;
-    } else {
-            $value = $value_in;
-    }
-    return sprintf($string, $value);
+    my $value = shift;
+    return sprintf($string, $self->atom_value($value));
 }
-
 
 =head2 find_or_create_luid
 

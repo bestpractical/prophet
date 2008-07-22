@@ -1,7 +1,11 @@
-package Prophet::Server::REST;
+package Prophet::Server;
+use strict;
+use warnings;
+use base 'HTTP::Server::Simple::CGI';
+
+use Prophet::Server::View;
 use Params::Validate qw/:all/;
 use JSON;
-use base 'HTTP::Server::Simple::CGI';
 
 sub prophet_handle {
     my $self = shift;
@@ -9,8 +13,14 @@ sub prophet_handle {
     return $self->{'_prophet_handle'};
 }
 
+sub new {
+    my $class = shift;
+    Template::Declare->init(roots => ['Prophet::Server::View']);
+    return $class->SUPER::new(@_);
+}
+
 sub handle_request {
-    my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server::REST'} ,  { isa => 'CGI' } );
+    my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server'} ,  { isa => 'CGI' } );
     my $http_status;
     if ( my $sub = $self->can( 'handle_request_' . lc( $cgi->request_method ) ) ) {
         $http_status = $sub->( $self, $cgi );
@@ -24,6 +34,15 @@ sub handle_request_get {
     my $self = shift;
     my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
     my $p = $cgi->path_info;
+
+    if (Template::Declare->has_template($p)) {
+        my $content = Template::Declare->show($p);
+
+        return $self->_send_content(
+            content_type => 'text/html',
+            content      => $content,
+        );
+    }
 
     if ( $p =~ m|^/records\.json$| ) {
         $self->_send_content(
