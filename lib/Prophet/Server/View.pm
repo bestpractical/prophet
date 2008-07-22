@@ -21,10 +21,24 @@ template record_table => sub {
         body {
             table {
                 my @items = $records ? $records->items : ();
-                for ( sort { $a->luid <=> $b->luid } @items ) {
-                    my @atoms = $_->format_summary;
+                for my $record (sort { $a->luid <=> $b->luid } @items) {
+                    my $type = $record->type;
+                    my $uuid = $record->uuid;
+                    my @atoms = $record->format_summary;
+
                     row {
-                        cell { $_->{value} } for @atoms;
+                        attr { id => "$type-$uuid", class => "$type" };
+
+                        for (@atoms) {
+                            my $prop = $_->{prop};
+                            cell {
+                                attr {
+                                    id    => "$type-$uuid-$prop",
+                                    class => $prop,
+                                };
+                                outs $_->{value}
+                            }
+                        }
                     }
                 }
             }
