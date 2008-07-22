@@ -381,23 +381,25 @@ sub _parse_format_summary {
     my @out;
     foreach my $atom ($self->_atomize_summary_format) {
         my %atom_data;
-        my ($format, $prop);
+        my ($format, $prop, $value);
 
         if ($atom =~ /,/) {
             ($format, $prop) = split /,/, $atom;
 
-            unless ($prop =~ /^\$/) {
-                $prop = $props->{$prop}
-                     || "(no $prop)"
+            $value = $prop;
+
+            unless ($value =~ /^\$/) {
+                $value = $props->{$value}
+                      || "(no $value)"
             }
 
         } else {
             $format = '%s';
-            $prop = $atom;
+            $prop = $value = $atom;
         }
 
         @atom_data{'format', 'prop'} = ($format, $prop);
-        $atom_data{value} = $self->atom_value($prop);
+        $atom_data{value} = $self->atom_value($value);
         $atom_data{formatted} = $self->format_atom($format => $atom_data{value});
 
         push @out, \%atom_data;
