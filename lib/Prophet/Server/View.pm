@@ -24,7 +24,7 @@ template record_table => sub {
                 for ( sort { $a->luid <=> $b->luid } @items ) {
                     my @atoms = $_->format_summary;
                     row {
-                        cell { $_ } for @atoms;
+                        cell { $_->{value} } for @atoms;
                     }
                 }
             }

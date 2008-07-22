@@ -396,8 +396,9 @@ sub _parse_format_summary {
             $prop = $atom;
         }
 
-        $atom_data{formatted} = $self->format_atom($format => $prop);
         @atom_data{'format', 'prop'} = ($format, $prop);
+        $atom_data{value} = $self->atom_value($prop);
+        $atom_data{formatted} = $self->format_atom($format => $atom_data{value});
 
         push @out, \%atom_data;
     }
@@ -421,14 +422,16 @@ sub atom_value {
         return $self->uuid;
     } elsif ($value_in eq '$luid') {
         return $self->luid;
+    }
+
     return $value_in;
 }
 
 sub format_atom {
     my $self = shift;
     my $string = shift;
-    my $value_in = shift;
-    return sprintf($string, $self->atom_value($value_in));
+    my $value = shift;
+    return sprintf($string, $self->atom_value($value));
 }
 
 =head2 find_or_create_luid
