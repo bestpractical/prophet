@@ -11,9 +11,12 @@ template record_table => sub {
 
     html {
         body {
-            ul {
+            table {
                 for ( sort { $a->luid <=> $b->luid } $records->items ) {
-                    li { $_->format_summary }
+                    my @atoms = $_->format_summary;
+                    row {
+                        cell { $_ } for @atoms;
+                    }
                 }
             }
         }
