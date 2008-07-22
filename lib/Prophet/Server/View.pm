@@ -21,6 +21,15 @@ template record_table => sub {
         body {
             table {
                 my @items = $records ? $records->items : ();
+                if (@items) {
+                    my @headers = $items[0]->_parse_format_summary;
+                    row {
+                        for (@headers) {
+                            th { $_->{prop} }
+                        }
+                    }
+                }
+
                 for my $record (sort { $a->luid <=> $b->luid } @items) {
                     my $type = $record->type;
                     my $uuid = $record->uuid;
@@ -33,8 +42,7 @@ template record_table => sub {
                             my $prop = $_->{prop};
                             cell {
                                 attr {
-                                    id    => "$type-$uuid-$prop",
-                                    class => $prop,
+                                    class => "prop-$prop",
                                 };
                                 outs $_->{value}
                             }
