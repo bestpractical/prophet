@@ -24,8 +24,6 @@ template record_table => sub {
                 if (@items) {
                     my @headers = $items[0]->_parse_format_summary;
                     row {
-                        th { outs_raw '&nbsp;' };
-
                         for (@headers) {
                             th { $_->{prop} }
                         }
@@ -40,20 +38,26 @@ template record_table => sub {
                     row {
                         attr { id => "$type-$uuid", class => "$type" };
 
-                        cell {
-                            a {
-                                attr { href => "$uuid.html" };
-                                outs "(view)";
-                            }
-                        };
+                        for my $i (0 .. $#atoms) {
+                            my $atom = $atoms[$i];
+                            my $prop = $atom->{prop};
 
-                        for (@atoms) {
-                            my $prop = $_->{prop};
                             cell {
                                 attr {
                                     class => "prop-$prop",
                                 };
-                                outs $_->{value}
+
+                                if ($i == 0) {
+                                    a {
+                                        attr {
+                                            href => "$uuid.html",
+                                        };
+                                        outs $atom->{value};
+                                    }
+                                }
+                                else {
+                                    outs $atom->{value};
+                                }
                             }
                         }
                     }
