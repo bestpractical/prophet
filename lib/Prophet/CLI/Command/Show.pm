@@ -8,11 +8,20 @@ sub run {
     my $self = shift;
 
     my $record = $self->_load_record;
-    print $self->stringify_props(
-        record => $record,
-        batch   => $self->has_arg('batch'),
-        verbose => $self->has_arg('verbose'),
-    );
+
+    # XXX: this should go away once we have publish-as-html
+    if ($self->has_arg('html')) {
+        require Prophet::Server::View;
+        Template::Declare->init(roots => ['Prophet::Server::View']);
+        print Template::Declare->show('record' => $record);
+    }
+    else {
+        print $self->stringify_props(
+            record => $record,
+            batch   => $self->has_arg('batch'),
+            verbose => $self->has_arg('verbose'),
+        );
+    }
 }
 
 =head2 stringify_props

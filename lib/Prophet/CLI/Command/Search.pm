@@ -59,6 +59,7 @@ sub run {
     $self->$display_method($records);
 }
 
+# XXX: this should go away once we have publish-as-html
 sub display_html {
     my $self = shift;
     my $records = shift;
