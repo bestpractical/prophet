@@ -28,10 +28,10 @@ sub render_templates_into {
     my $self = shift;
     my $dir  = shift;
 
-    my @types = @{ $self->app_handle->handle->list_types };
-    for my $type (@types) {
-        next if $self->should_skip_type($type);
+    # allow user to specify a specific type to render
+    my @types = $self->type || $self->types_to_render;
 
+    for my $type (@types) {
         my $subdir = $dir->subdir($type);
         $subdir->mkpath;
 
@@ -57,6 +57,13 @@ sub should_skip_type {
     return 1 if $type eq '_merge_tickets';
 
     return 0;
+}
+
+sub types_to_render {
+    my $self = shift;
+
+    return grep { !$self->should_skip_type($_) }
+           @{ $self->app_handle->handle->list_types };
 }
 
 __PACKAGE__->meta->make_immutable;
