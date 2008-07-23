@@ -10,6 +10,8 @@ override run => sub {
     $self->set_arg(from => $self->app_handle->default_replica_type.":file://".$s
 elf->app_handle->handle->fs_root);
 
+    $self->set_arg(db_uuid => $self->app_handle->handle->db_uuid);
+
     super();
 };
 

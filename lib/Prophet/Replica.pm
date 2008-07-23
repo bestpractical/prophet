@@ -35,6 +35,12 @@ has url => (
     isa => 'Str',
 );
 
+has _alt_urls => (
+    is      => 'rw',
+    isa     => 'ArrayRef',
+    default => sub { [] },
+);
+
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
 

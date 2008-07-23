@@ -3,11 +3,24 @@ use Moose;
 extends 'Prophet::CLI::Command';
 
 sub run {
-
     my $self = shift;
 
-    my $source = Prophet::Replica->new( { url => $self->arg('from') } );
-    my $target = Prophet::Replica->new( { url => $self->arg('to') } );
+    my (@alt_from, @alt_to);
+
+    if ($self->has_arg('db_uuid')) {
+        push @alt_from, join '/', $self->arg('from'), $self->arg('db_uuid');
+        push @alt_to,   join '/', $self->arg('to'),   $self->arg('db_uuid');
+    }
+
+    my $source = Prophet::Replica->new(
+        url       => $self->arg('from'),
+        _alt_urls => \@alt_from,
+    );
+
+    my $target = Prophet::Replica->new(
+        url       => $self->arg('to'),
+        _alt_urls => \@alt_to,
+    );
 
     $target->import_resolutions_from_remote_replica(
         from  => $source,
