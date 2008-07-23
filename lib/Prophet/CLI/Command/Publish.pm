@@ -1,9 +1,7 @@
 package Prophet::CLI::Command::Publish;
 use Moose;
 extends 'Prophet::CLI::Command::Export';
-
-use File::Temp 'tempdir';
-use File::Rsync;
+with 'Prophet::CLI::PublishCommand';
 
 before run => sub {
     my $self = shift;
@@ -12,13 +10,7 @@ before run => sub {
 
 before run => sub {
     my $self = shift;
-    my $dir = tempdir(CLEANUP => 1);
-
-    my $uuid = $self->app_handle->handle->db_uuid;
-    $dir .= "/$uuid";
-    mkdir $dir;
-
-    $self->set_arg(path => $dir);
+    $self->set_arg(path => $self->tempdir);
 };
 
 after run => sub {
@@ -26,16 +18,10 @@ after run => sub {
     my $from = $self->arg('path');
     my $to   = $self->arg('to');
 
-    my $rsync = File::Rsync->new;
-    $rsync->exec({
-        src       => $from,
-        dst       => $to,
-        recursive => 1,
-        verbose   => $self->has_arg('verbose'),
-    });
-
-    warn $_ for $rsync->err;
-    print $_ for $rsync->out;
+    $self->publish_dir(
+        from => $from,
+        to   => $to,
+    );
 
     print "Publish complete.\n";
 };
