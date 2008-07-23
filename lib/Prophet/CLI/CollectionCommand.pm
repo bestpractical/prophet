@@ -1,12 +1,17 @@
-#!/usr/bin/env perl
 package Prophet::CLI::CollectionCommand;
 use Moose::Role;
+with 'Prophet::CLI::RecordCommand';
+
+use Params::Validate;
 
 sub get_collection_object {
     my $self = shift;
-    my %args = @_;
+    my %args = validate(@_, {
+        type => { default => $self->type },
+    });
 
-    my $class = $self->_get_record_class->collection_class;
+    my $record_class = $self->_get_record_class(type => $args{type});
+    my $class = $record_class->collection_class;
     Prophet::App->require_module($class);
 
     my $records = $class->new(
