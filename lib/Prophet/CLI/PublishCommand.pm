@@ -1,16 +1,17 @@
 package Prophet::CLI::PublishCommand;
 use Moose::Role;
 
+use Path::Class;
 use File::Temp ();
 use File::Rsync;
 
 sub tempdir {
     my $self = shift;
-    my $dir = File::Temp::tempdir(CLEANUP => 1);
-
+    my $tmp = File::Temp::tempdir(CLEANUP => 1);
     my $uuid = $self->app_handle->handle->db_uuid;
-    $dir .= "/$uuid";
-    mkdir $dir;
+
+    my $dir = dir($tmp, $uuid);
+    $dir->mkpath;
 
     return $dir;
 }
