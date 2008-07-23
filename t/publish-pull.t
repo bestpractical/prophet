@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 6;
+use Prophet::Test tests => 8;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -23,9 +23,23 @@ as_bob {
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
 
+# see if uuid intuition works
+# e.g. I hand you a url, http://sartak.org/misc/sd, and Prophet figures out
+# that you really want http://sartak.org/misc/sd/DATABASE-UUID
+as_charlie {
+    my $cli  = Prophet::CLI->new();
+    $cli->app_handle->handle->set_db_uuid($alice_uuid);
+
+    TODO: {
+        local $TODO = "not finished yet";
+        run_ok( 'prophet', ['pull', '--from', "file:$alice_published", '--force'] );
+        run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], "publish database uuid intuition works" );
+    }
+};
+
 TODO: {
     local $TODO = "force currently required because db_uuid generation happens too early";
-    as_charlie {
+    as_david {
         run_ok( 'prophet', ['pull', '--from', "file:$path"] );
     };
 };
