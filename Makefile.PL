@@ -26,6 +26,7 @@ requires('Scalar::Defer');
 requires('Moose' => '0.54'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
+requires('XML::Atom::SimpleFeed');
 
 features(
     'Web server' => [
@@ -40,7 +41,6 @@ features(
         -default => 1,
         'Template::Declare', # Template::Declare::Tags
     ],
-
 
     'Subversion replica support' => [
         -default => 0,

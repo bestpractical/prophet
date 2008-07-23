@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use base 'Template::Declare';
 use Template::Declare::Tags;
+use Params::Validate;
 
 template '/' => sub {
     html {
@@ -97,6 +98,44 @@ template record => sub {
         }
     }
 };
+
+sub generate_changeset_feed {
+    my $self = shift;
+    my %args = validate(@_, {
+        handle => 1,
+        title  => 0,
+    });
+
+    my $handle = $args{handle};
+    my $title = $args{title} || 'Prophet replica ' . $handle->uuid;
+
+    require XML::Atom::SimpleFeed;
+
+    my $feed = XML::Atom::SimpleFeed->new(
+        id     => "urn:uuid:" . $handle->uuid,
+        title  => $title,
+        author => $ENV{USER},
+    );
+
+    my $newest = $handle->latest_sequence_no;
+    my $start = $newest - 20;
+    $start = 0 if $start < 0;
+
+    $handle->traverse_changesets(
+        after    => $start,
+        callback => sub {
+            my $change = shift;
+
+            $feed->add_entry(
+                title => 'Changeset ' . $change->sequence_no,
+                # need uuid or absolute link :(
+                category => 'Changeset',
+            );
+        },
+    );
+
+    return $feed;
+}
 
 1;
 
