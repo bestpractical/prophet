@@ -73,6 +73,15 @@ template record => sub {
 
     html {
         body {
+            p {
+                a {
+                    attr {
+                        href => "index.html",
+                    };
+                    outs "index";
+                }
+            }
+            hr {}
             dl {
                 dt { 'UUID' }
                 dd { $record->uuid }
