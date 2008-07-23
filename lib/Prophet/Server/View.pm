@@ -63,5 +63,27 @@ template record_table => sub {
     }
 };
 
+template record => sub {
+    my $self = shift;
+    my $record = shift;
+
+    html {
+        body {
+            dl {
+                dt { 'UUID' }
+                dd { $record->uuid }
+                dt { 'LUID' }
+                dd { $record->luid };
+
+                my $props = $record->get_props;
+                for my $prop (sort keys %$props) {
+                    dt { $prop }
+                    dd { $props->{$prop} }
+                }
+            }
+        }
+    }
+};
+
 1;
 
