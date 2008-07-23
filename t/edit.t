@@ -1,7 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 34;
-use Prophet::Test;
+use Prophet::Test tests => 34;
 use File::Temp qw'tempdir';
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
