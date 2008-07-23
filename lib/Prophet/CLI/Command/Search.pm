@@ -43,20 +43,7 @@ sub run {
     my $search_cb = $self->get_search_callback();
     $records->matching($search_cb);
 
-    my $display_method = $self->has_arg('html')
-                       ? 'display_html'
-                       : 'display_terminal';
-    $self->$display_method($records);
-}
-
-# XXX: this should go away once we have publish-as-html
-sub display_html {
-    my $self = shift;
-    my $records = shift;
-
-    require Prophet::Server::View;
-    Template::Declare->init(roots => ['Prophet::Server::View']);
-    print Template::Declare->show('record_table' => $records);
+    $self->display_terminal($records);
 }
 
 sub display_terminal {
