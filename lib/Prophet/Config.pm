@@ -17,17 +17,21 @@ has config_files => (
 );
 
 has config => (
-    metaclass => 'Collection::Hash',
-    is        => 'rw',
-    isa       => 'HashRef',
-    lazy      => 0,
-    default   => sub { shift->load_from_files },
-    provides  => {
-        get   => 'get',
-        set   => 'set',
-        keys  => 'list'
+    metaclass   => 'Collection::Hash',
+    is          => 'rw',
+    isa         => 'HashRef',
+    lazy        => 0,
+    default     => sub { shift->load_from_files },
+    provides    => {
+        get     => 'get',
+        set     => 'set',
+        keys    => 'list',
     },
 );
+
+sub aliases {
+    return $_[0]->config->{_aliases};
+}
 
 #sub prophet_config_file { dir($ENV{HOME}, ".prophetrc") }
 sub app_config_file { 
@@ -63,7 +67,13 @@ sub load_from_file {
     for my $line ($file->slurp) {
         $line =~ s/\#.*$//; # strip comments
         next unless ($line =~ /^([^:]+?)\s*=\s*(.*)$/);
-            $config->{$1} = $2;
+        my $key = $1;
+        my $val = $2;
+        if ($key =~ m!alias\s+(.+)!) {
+            $config->{_aliases}->{$1} = $val;
+        } else { 
+            $config->{$key} = $val;
+        }
     }
 }
 

@@ -17,6 +17,7 @@ can_ok($config  => 'load_from_files');
 can_ok($config, 'get');
 can_ok($config, 'set');
 can_ok($config, 'list');
+can_ok($config, 'aliases');
 
 is($config->get('_does_not_exist'), undef);
 is($config->set('_does_not_exist' => 'hey you!'), 'hey you!');
@@ -40,8 +41,11 @@ is (scalar @keys,0);
 my $conf = Prophet::Config->new(app_handle => Prophet::CLI->new->app_handle);
 # interrogate its config to see if we have any config options set
 my @keys = $conf->list;
-is (scalar @keys,2);
+is (scalar @keys,3);
+# test the alias
+is($conf->aliases->{tlist}, "ticket list", "Got correct alias");
 }
+
 
 # run the cli "show config" command 
 # make sure it matches with our file

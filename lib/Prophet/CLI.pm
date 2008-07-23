@@ -97,8 +97,13 @@ our %CMD_MAP = (
 sub _get_cmd_obj {
     my $self = shift;
 
-    my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ }
-                   @{ $self->primary_commands };
+    my $aliases  = $self->app_handle->config->aliases;
+    my $tmp      = $self->primary_commands;
+    if ($aliases->{$tmp->[0]}) {
+        @ARGV = split ' ', $aliases->{$tmp->[0]};
+        return $self->run_one_command;
+    }
+    my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $tmp };
 
     my @possible_classes;
 
