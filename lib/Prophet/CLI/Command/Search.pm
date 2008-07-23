@@ -2,21 +2,11 @@ package Prophet::CLI::Command::Search;
 use Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
-has '+uuid' => ( required => 0);
+with 'Prophet::CLI::CollectionCommand';
 
-sub get_collection_object {
-    my $self = shift;
-
-    my $class = $self->_get_record_class->collection_class;
-    Prophet::App->require_module($class);
-    my $records = $class->new(
-        app_handle => $self->app_handle,
-        handle => $self->app_handle->handle,
-        type   => $self->type
-    );
-
-    return $records;
-}
+has '+uuid' => (
+    required => 0,
+);
 
 sub get_search_callback {
     my $self = shift;
