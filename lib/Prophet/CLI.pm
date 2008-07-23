@@ -139,6 +139,12 @@ sub _get_cmd_obj {
         type     => $self->type,
     );
 
+    # undef causes type constraint violations
+    for my $key (keys %constructor_args) {
+        delete $constructor_args{$key}
+            if !defined($constructor_args{$key});
+    }
+
     $constructor_args{uuid} = $self->uuid
         if $self->has_uuid;
 
