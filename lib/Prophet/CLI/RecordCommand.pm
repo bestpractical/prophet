@@ -1,5 +1,6 @@
 package Prophet::CLI::RecordCommand;
 use Moose::Role;
+use Params::Validate;
 
 has type => (
     is       => 'rw',
@@ -18,17 +19,29 @@ has record_class => (
     isa => 'Prophet::Record',
 );
 
-
 sub _get_record_class {
     my $self = shift;
-     my $args = { app_handle => $self->cli->app_handle, handle => $self->cli->app_handle->handle, type => $self->type };
-    if (my $class =  $self->record_class ) {
-        Prophet::App->require_module($class);
-        return $class->new( $args);
-    } elsif ( $self->type ) {
-        return $self->_type_to_record_class( $self->type )->new($args);
-    } else { Carp::confess("I was asked to get a record object, but I have neither a type nor a record class")}
+    my %args = validate(@_, {
+        type => { default => $self->type },
+    });
 
+    my $constructor_args = {
+        app_handle => $self->cli->app_handle,
+        handle     => $self->cli->app_handle->handle,
+        type       => $args{type},
+    };
+
+    if ($args{type}) {
+        my $class = $self->_type_to_record_class($args{type});
+        return $class->new($constructor_args);
+    }
+    elsif (my $class = $self->record_class) {
+        Prophet::App->require_module($class);
+        return $class->new($constructor_args);
+    }
+    else {
+        Carp::confess("I was asked to get a record object, but I have neither a type nor a record class");
+    }
 }
 
 sub _load_record {
