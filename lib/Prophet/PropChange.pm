@@ -47,21 +47,14 @@ sub summary {
     my $old  = $self->old_value;
     my $new  = $self->new_value;
 
-    if (!defined($old)) {
-        return sprintf 'Property "%s" was added, value "%s".',
-               $name,
-               $new;
+    if (!defined($old) {
+        return qq{Property "$name" was added, value "$new".};
     }
     elsif (!defined($new)) {
-        return sprintf 'Property "%s" was removed, value was "%s".',
-               $name,
-               $new;
+        return qq{Property "$name" was removed, value was "$old".};
     }
 
-    return sprintf 'Property "%s" changed from "%s" to "%s".',
-           $name,
-           $old,
-           $new;
+    return qq{Property "$name" changed from "$old" to "$new".};
 }
 
 __PACKAGE__->meta->make_immutable;
