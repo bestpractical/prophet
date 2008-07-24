@@ -49,7 +49,8 @@ our $REPLICA_TYPE_MAP = {};
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
 for ( __PACKAGE__->core_replica_types) {
-   $_->require; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
+   $_->require or die $@; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
+
    # and tries to load Prophet::Replica::SVN::ReplayEditor;
    __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) 
 }

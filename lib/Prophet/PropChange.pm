@@ -47,7 +47,7 @@ sub summary {
     my $old  = $self->old_value;
     my $new  = $self->new_value;
 
-    if (!defined($old) {
+    if (!defined($old)) {
         return qq{Property "$name" was added, value "$new".};
     }
     elsif (!defined($new)) {
