@@ -17,14 +17,19 @@ around run => sub {
     my $orig = shift;
     my $self = shift;
 
+    # if the user specifies nothing, then publish the replica
+    $self->set_arg('replica' => 1)
+        if !$self->has_arg('html');
+
     # if we have the html argument, populate the tempdir with rendered templates
     if ($self->has_arg('html')) {
         $self->render_templates_into($self->arg('path'));
-        return;
     }
 
     # otherwise, do the normal prophet export this replica
-    return $self->$orig(@_);
+    if ($self->has_arg('replica')) {
+        $self->$orig(@_);
+    }
 };
 
 # the tempdir is populated, now publish it
