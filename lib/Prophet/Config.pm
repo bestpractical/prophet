@@ -103,8 +103,7 @@ of it.
 
 =head2 new
 
-Takes no arguments. Automatically loads the config for you. This is actually
-a singleton so multiple calls to new get the same config.
+Takes no arguments. Automatically loads the config for you.
 
 =cut
 
