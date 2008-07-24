@@ -11,8 +11,9 @@ use JSON;
 use Prophet::ChangeSet;
 use Prophet::Conflict;
 
-has _db_uuid => (
-    is => 'rw',
+has '+db_uuid' => (
+    lazy    => 1,
+    default => sub { shift->_read_file('database-uuid') },
 );
 
 has _uuid => (
@@ -227,13 +228,6 @@ sub set_replica_uuid {
         content => $uuid
     );
 
-}
-
-sub db_uuid {
-    my $self = shift;
-    $self->_db_uuid( $self->_read_file('database-uuid') )
-        unless $self->_db_uuid;
-    return $self->_db_uuid;
 }
 
 before set_db_uuid => sub {
