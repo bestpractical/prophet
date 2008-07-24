@@ -293,10 +293,10 @@ sub as_user {
 
     #  diag("I am $username. My replica id is ".replica_uuid());
 
+    my $ret = $coderef->();
+
     $REPLICA_UUIDS{$username} = replica_uuid();
     $DATABASE_UUIDS{$username} = database_uuid();
-
-    my $ret = $coderef->();
 
     return $ret;
 }
