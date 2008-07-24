@@ -14,9 +14,18 @@ sub run {
     for my $prop_conflict ( @{ $conflicting_change->prop_conflicts } ) {
 
         print $prop_conflict->name . ": \n";
-        print "(T)ARGET     " . $prop_conflict->target_value . "\n";
-        print "SOURCE (O)LD " . $prop_conflict->source_old_value . "\n";
-        print "SOURCE (N)EW " . $prop_conflict->source_new_value . "\n";
+
+        my %values;
+        for (qw/target_value source_old_value source_new_value/) {
+            $values{$_} = $prop_conflict->$_;
+            $values{$_} = "(undefined)"
+                if !defined($values{$_});
+        }
+
+
+        print "(T)ARGET     $values{target_value}\n";
+        print "SOURCE (O)LD $values{source_old_value}\n";
+        print "SOURCE (N)EW $values{source_new_value}\n";
 
         while ( my $choice = lc( substr( <STDIN> || 'T', 0, 1 ) ) ) {
 
