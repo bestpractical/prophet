@@ -41,6 +41,29 @@ What L</name> changed I<to>.
 
 =cut
 
+sub summary {
+    my $self = shift;
+    my $name = $self->name;
+    my $old  = $self->old_value;
+    my $new  = $self->new_value;
+
+    if (!defined($old)) {
+        return sprintf 'Property "%s" was added, value "%s".',
+               $name,
+               $new;
+    }
+    elsif (!defined($new)) {
+        return sprintf 'Property "%s" was removed, value was "%s".',
+               $name,
+               $new;
+    }
+
+    return sprintf 'Property "%s" changed from "%s" to "%s".',
+           $name,
+           $old,
+           $new;
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
