@@ -96,13 +96,52 @@ Open a connection to the SVN source identified by C<$self->url>.
 
 sub BUILD {
     my $self = shift;
-    $self->{url}
-        =~ s/^prophet://;  # url-based constructor in ::replica should do better
-    $self->{url} =~ s{/$}{};
-    $self->_probe_or_create_db();
+    my $args = shift;
+
+    for ($self->{url}, @{ $self->{_alt_urls} }) {
+        s/^prophet://;  # url-based constructor in ::replica should do better
+        s{/$}{};
+    }
+
+    $self->_try_alt_urls($args);
+    $self->_probe_or_create_db;
 }
 
 sub state_handle { return shift; }
+
+sub _try_alt_urls {
+    my $self = shift;
+    my $args = shift;
+
+    return unless @{ $self->{_alt_urls} };
+
+    # try each URL in turn. since the "url" attribute is usually specified
+    # directly by the user (and the others are calculated from that), we
+    # save the error caused by the "url" attribute to throw if all
+    # alternates fail
+
+    my $error;
+    for my $url ($self->{url}, @{ $self->{_alt_urls} }) {
+        my $new_self = eval {
+            my $obj = $self->new(%$args, url => $url, _alt_urls => []);
+            $obj->_probe_or_create_db;
+            $obj;
+        };
+
+        if ($new_self) {
+            # XXX: yes this is a little offensive. but we can't outright replace
+            # $self this late in the game, and we cannot foresee which
+            # attributes will need clearing, so this is the simplest way to
+            # make sure everything is consistent
+            %$self = %$new_self;
+            return 1;
+        }
+
+        $error ||= $@;
+    }
+
+    die $error if $error;
+}
 
 sub _probe_or_create_db {
     my $self = shift;

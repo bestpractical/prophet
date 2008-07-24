@@ -30,11 +30,8 @@ as_charlie {
     my $cli  = Prophet::CLI->new();
     $cli->app_handle->handle->set_db_uuid($alice_uuid);
 
-    TODO: {
-        local $TODO = "not finished yet";
-        run_ok( 'prophet', ['pull', '--from', "file:$alice_published", '--force'] );
-        run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], "publish database uuid intuition works" );
-    }
+    run_ok( 'prophet', ['pull', '--from', "file:$alice_published", '--force'] );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], "publish database uuid intuition works" );
 };
 
 TODO: {
