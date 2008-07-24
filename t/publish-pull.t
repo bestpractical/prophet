@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 8;
+use Prophet::Test tests => 10;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -34,10 +34,9 @@ as_charlie {
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], "publish database uuid intuition works" );
 };
 
-TODO: {
-    local $TODO = "force currently required because db_uuid generation happens too early";
-    as_david {
-        run_ok( 'prophet', ['pull', '--from', "file:$path"] );
-    };
+as_david {
+    run_ok( 'prophet', ['pull', '--from', "file:$path"] );
 };
 
+is(database_uuid_for('alice'), database_uuid_for('david'), "pull propagated the database uuid properly");
+isnt(replica_uuid_for('alice'), replica_uuid_for('david'), "pull created a new replica uuid");

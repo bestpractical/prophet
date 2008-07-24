@@ -149,6 +149,13 @@ sub import_changesets {
 
     my $source = $args{'from'};
 
+    # they have no changes, that means they're probably creating a new replica
+    # of a database, so copy the db_uuid
+    if ($self->latest_sequence_no == 0) {
+        my $uuid = $source->db_uuid;
+        $self->set_db_uuid($uuid) if $uuid;
+    }
+
     $source->traverse_new_changesets(
         for      => $self,
         force    => $args{'force'},
