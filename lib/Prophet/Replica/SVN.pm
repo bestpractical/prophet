@@ -73,7 +73,7 @@ sub _setup_repo_connection {
     my $self = shift;
     my %args = validate( @_, { repository => 1, db_uuid => 0 } );
     $self->fs_root( $args{'repository'} );
-    $self->db_uuid( $args{'db_uuid'} ) if ( $args{'db_uuid'} );
+    $self->set_db_uuid( $args{'db_uuid'} ) if ( $args{'db_uuid'} );
     
     my $repos = eval { SVN::Repos::open( $self->fs_root ); };
     # If we couldn't open the repository handle, we should create it
@@ -226,14 +226,14 @@ sub _determine_db_uuid {
 
     for my $key ( keys %{ $self->_current_root->dir_entries("/") } ) {
         if ( $key =~ /^_prophet-/ ) {
-            $self->db_uuid($key);
+            $self->set_db_uuid($key);
             return DETECTED_DB_UUID;
         }
     }
 
     # no luck. create one
 
-    $self->db_uuid( "_prophet-" . Data::UUID->new->create_str() );
+    $self->set_db_uuid( "_prophet-" . Data::UUID->new->create_str() );
     return CREATED_DB_UUID;
 }
 

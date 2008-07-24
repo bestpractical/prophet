@@ -26,8 +26,9 @@ has is_state_handle => (
 );
 
 has db_uuid => (
-    is  => 'rw',
-    isa => 'Str',
+    is     => 'rw',
+    isa    => 'Str',
+    writer => 'set_db_uuid',
 );
 
 has url => (

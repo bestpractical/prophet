@@ -236,15 +236,14 @@ sub db_uuid {
     return $self->_db_uuid;
 }
 
-sub set_db_uuid {
+before set_db_uuid => sub {
     my $self = shift;
     my $uuid = shift;
     $self->_write_file(
         path    => 'database-uuid',
         content => $uuid
     );
-
-}
+};
 
 =head1 Internals of record handling
 
