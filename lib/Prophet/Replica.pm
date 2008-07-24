@@ -152,7 +152,7 @@ sub import_changesets {
 
     # they have no changes, that means they're probably creating a new replica
     # of a database, so copy the db_uuid
-    if ($self->latest_sequence_no == 0) {
+    if (($self->latest_sequence_no||0) == 0) {
         my $uuid = $source->db_uuid;
         $self->set_db_uuid($uuid) if $uuid;
     }
