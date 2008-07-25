@@ -46,13 +46,10 @@ as_alice {
         );
     };
 
-    TODO: {
-        local $TODO = "regex comparisons not implemented yet";
-        run_output_matches('prophet', [qw(search --type Bug -- status=~n)],
-            [qr/first ticket summary/, qr/other ticket summary/],
-            "found two tickets with status=~n",
-        );
-    };
+    run_output_matches('prophet', [qw(search --type Bug -- status=~n)],
+        [qr/first ticket summary/, qr/other ticket summary/],
+        "found two tickets with status=~n",
+    );
 
     TODO: {
         local $TODO = "regex comparisons not implemented yet";

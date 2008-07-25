@@ -19,14 +19,14 @@ sub get_search_callback {
                 return 0;
             }
     } elsif (scalar $self->prop_names > 0) {
-        my $expected_props = $self->props;
+        my @expected = $self->prop_set;
         return sub {
             my $item = shift;
             my $props = $item->get_props;
 
-            for (keys %$expected_props) {
-                return 0 if not defined $props->{$_};
-                return 0 unless $props->{$_} eq $expected_props->{$_};
+            for (@expected) {
+                my $got = $props->{ $_->{name} };
+                return 0 unless $self->cmp_ok($_->{value}, $_->{cmp}, $got);
             }
 
             return 1;
@@ -34,6 +34,28 @@ sub get_search_callback {
     } else {
         return sub {1}
     }
+}
+
+sub cmp_ok {
+    my $self = shift;
+    my ($expected, $cmp, $got) = @_;
+
+    if ($cmp eq '=') {
+        return 0 if not defined $got;
+        return 0 unless $got eq $expected;
+    }
+    elsif ($cmp eq '=~') {
+        return 0 if not defined $got;
+        return 0 unless $got =~ $expected;
+    }
+    elsif ($cmp eq '!=' || $cmp eq '<>') {
+        return 0 if $got eq $expected;
+    }
+    elsif ($cmp eq '!~') {
+        return 0 if $got =~ $expected;
+    }
+
+    return 1;
 }
 
 sub run {
