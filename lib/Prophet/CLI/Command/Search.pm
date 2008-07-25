@@ -57,7 +57,7 @@ sub cmp_ok {
         return 0 if not defined $got;
         return 0 unless $got =~ $expected;
     }
-    elsif ($cmp eq '!=' || $cmp eq '<>') {
+    elsif ($cmp eq '!=' || $cmp eq '<>' || $cmp eq 'ne') {
         return 0 if $got eq $expected;
     }
     elsif ($cmp eq '!~') {
