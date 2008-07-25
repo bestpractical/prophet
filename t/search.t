@@ -38,13 +38,10 @@ as_alice {
         );
     };
 
-    TODO: {
-        local $TODO = "negative comparisons not implemented yet";
-        run_output_matches('prophet', [qw(search --type Bug -- status!=new)],
-            [qr/other ticket summary/, qr/stalled ticket summary/],
-            "found two tickets with status!=new",
-        );
-    };
+    run_output_matches('prophet', [qw(search --type Bug -- status!=new)],
+        [qr/other ticket summary/, qr/bad ticket summary/],
+        "found two tickets with status!=new",
+    );
 
     run_output_matches('prophet', [qw(search --type Bug -- status=~n)],
         [qr/first ticket summary/, qr/other ticket summary/],
@@ -54,7 +51,7 @@ as_alice {
     TODO: {
         local $TODO = "regex comparisons not implemented yet";
         run_output_matches('prophet', [qw(search --type Bug -- summary=~first|stalled)],
-            [qr/first ticket summary/, qr/stalled ticket summary/],
+            [qr/first ticket summary/, qr/bad ticket summary/],
             "found two tickets with status=~first|stalled",
         );
     };
@@ -62,7 +59,7 @@ as_alice {
     TODO: {
         local $TODO = "regex comparisons not implemented yet";
         run_output_matches('prophet', [qw(search --type Bug -- status !=new summary=~first|stalled)],
-            [qr/stalled ticket summary/],
+            [qr/bad ticket summary/],
             "found two tickets with status=~first|stalled",
         );
     };
