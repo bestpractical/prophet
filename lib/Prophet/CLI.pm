@@ -231,6 +231,10 @@ sub parse_args {
                 $cmp = $val;
                 $val = shift @ARGV;
             }
+            else {
+                # perhaps they said "foo =~bar"..
+                $cmp = $1 if $val =~ s/^($cmp_re)//;
+            }
         }
 
         if ($sep == 1) {
