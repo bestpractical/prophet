@@ -186,6 +186,8 @@ This routine pulls arguments passed on the command line out of ARGV and sticks t
 
 =cut
 
+sub cmp_regex { '!=|<>|=~|!~|=|\bne\b' }
+
 sub parse_args {
     my $self = shift;
 
@@ -199,6 +201,7 @@ sub parse_args {
     );
 
     $self->primary_commands( \@primary );
+    my $cmp_re = $self->cmp_regex;
 
     while (my $name = shift @ARGV) {
         die "$name doesn't look like --argument"
@@ -213,13 +216,22 @@ sub parse_args {
         my $val;
 
         ($name, $cmp, $val) = ($1, $2, $3)
-            if $name =~ /^(.*?)(!=|<>|=~|!~|=)(.*)$/;
+            if $name =~ /^(.*?)($cmp_re)(.*)$/;
         $name =~ s/^--//;
 
         # no value specified, pull it from the next argument, unless the next
         # argument is another option
-        $val = shift @ARGV
-            if !defined($val) && @ARGV && $ARGV[0] !~ /^--/;
+        if (!defined($val)) {
+            $val = shift @ARGV
+                if @ARGV && $ARGV[0] !~ /^--/;
+
+            # but wait! does the value look enough like a comparator? if so,
+            # shift off another one (if we can)
+            if ($val =~ /^(?:$cmp_re)$/ && @ARGV && $ARGV[0] !~ /^--/) {
+                $cmp = $val;
+                $val = shift @ARGV;
+            }
+        }
 
         if ($sep == 1) {
             $self->add_to_prop_set({

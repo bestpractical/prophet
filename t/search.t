@@ -1,12 +1,12 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Prophet::Test tests => 13;
+use Prophet::Test tests => 14;
 
 as_alice {
     run_ok('prophet', [qw(create --type=Bug --), 'summary=first ticket summary', 'status=new'], "created a record as alice");
     run_ok('prophet', [qw(create --type=Bug --), 'summary=other ticket summary', 'status=open'], "created a record as alice");
-    run_ok('prophet', [qw(create --type=Bug --), 'summary=bad ticket summary', 'status=stalled'], "created a record as alice");
+    run_ok('prophet', [qw(create --type=Bug --), 'summary=bad ticket summary', 'status=stalled', 'cmp=ne'], "created a record as alice");
 
     run_output_matches('prophet', [qw(search --type Bug --regex .)],
         [qr/first ticket summary/,
@@ -60,10 +60,15 @@ as_alice {
 
     TODO: {
         local $TODO = "regex comparisons not implemented yet";
-        run_output_matches('prophet', [qw(search --type Bug -- status != new summary =~ first|bad)],
+        run_output_matches('prophet', [qw(search --type Bug -- status ne new summary =~ first|bad)],
             [qr/bad ticket summary/],
             "found two tickets with status=~first|bad",
         );
     };
+
+    run_output_matches('prophet', [qw(search --type Bug -- cmp ne)],
+        [qr/bad ticket summary/],
+        "found the ticket with cmp=ne (which didn't treat 'ne' as a comparator)",
+    );
 };
 
