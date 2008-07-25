@@ -49,12 +49,12 @@ sub cmp_ok {
     my $self = shift;
     my ($expected, $cmp, $got) = @_;
 
+    $got = '' if !defined($got); # avoid undef warnings
+
     if ($cmp eq '=') {
-        return 0 if not defined $got;
         return 0 unless $got eq $expected;
     }
     elsif ($cmp eq '=~') {
-        return 0 if not defined $got;
         return 0 unless $got =~ $expected;
     }
     elsif ($cmp eq '!=' || $cmp eq '<>' || $cmp eq 'ne') {
