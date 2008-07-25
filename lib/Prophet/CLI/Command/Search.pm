@@ -19,14 +19,23 @@ sub get_search_callback {
                 return 0;
             }
     } elsif (scalar $self->prop_names > 0) {
-        my @expected = $self->prop_set;
+        my %prop_checks;
+        for my $check ($self->prop_set) {
+            push @{ $prop_checks{ $check->{name} } }, $check;
+        }
+
         return sub {
             my $item = shift;
             my $props = $item->get_props;
 
-            for (@expected) {
-                my $got = $props->{ $_->{name} };
-                return 0 unless $self->cmp_ok($_->{value}, $_->{cmp}, $got);
+            for my $prop (keys %prop_checks) {
+                my $got = $props->{$prop};
+                my $ok = 0;
+                for my $check (@{ $prop_checks{$prop} }) {
+                    $ok = 1
+                        if $self->cmp_ok($check->{value}, $check->{cmp}, $got);
+                }
+                return 0 if !$ok;
             }
 
             return 1;

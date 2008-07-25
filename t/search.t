@@ -30,13 +30,10 @@ as_alice {
         "found no tickets with status=closed",
     );
 
-    TODO: {
-        local $TODO = "props are stored in a flat hash, so we can't do OR yet";
-        run_output_matches('prophet', [qw(search --type Bug -- status=new status=open)],
-            [qr/first ticket summary/, qr/other ticket summary/],
-            "found two tickets with status=new OR status=open",
-        );
-    };
+    run_output_matches('prophet', [qw(search --type Bug -- status=new status=open)],
+        [qr/first ticket summary/, qr/other ticket summary/],
+        "found two tickets with status=new OR status=open",
+    );
 
     run_output_matches('prophet', [qw(search --type Bug -- status!=new)],
         [qr/other ticket summary/, qr/bad ticket summary/],
