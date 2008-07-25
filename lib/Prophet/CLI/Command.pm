@@ -8,7 +8,7 @@ has cli => (
     handles => [
         qw/args  set_arg  arg  has_arg  delete_arg  arg_names/,
         qw/props set_prop prop has_prop delete_prop prop_names/,
-        'app_handle', 'run_one_command',
+        'prop_set', 'app_handle', 'run_one_command',
     ],
 );
 

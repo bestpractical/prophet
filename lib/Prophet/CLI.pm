@@ -79,6 +79,17 @@ has props => (
     },
 );
 
+has prop_set => (
+    metaclass  => 'Collection::Array',
+    is         => 'rw',
+    isa        => 'ArrayRef',
+    default    => sub { [] },
+    auto_deref => 1,
+    provides   => {
+        push => 'add_to_prop_set',
+    },
+);
+
 =head2 _record_cmd
 
 handles the subcommand for a particular type
@@ -193,20 +204,30 @@ sub parse_args {
         die "$name doesn't look like --argument"
             if $sep == 0 && $name !~ /^--/;
 
-        my $val;
-
         if ($name eq '--' || $name eq '--props') {
             ++$sep;
             next;
         }
 
-        ($name,$val)= split(/=/,$name,2) if ($name =~/=/);
+        my $cmp = '=';
+        my $val;
+
+        ($name, $cmp, $val) = ($1, $2, $3)
+            if $name =~ /^(.*?)(!=|<>|=~|!~|=)(.*)$/;
         $name =~ s/^--//;
 
         # no value specified, pull it from the next argument, unless the next
         # argument is another option
         $val = shift @ARGV
             if !defined($val) && @ARGV && $ARGV[0] !~ /^--/;
+
+        if ($sep == 1) {
+            $self->add_to_prop_set({
+                name  => $name,
+                cmp   => $cmp,
+                value => $val,
+            });
+        }
 
         my $setter = $sep_method[$sep] or next;
         $self->$setter($name => $val);
