@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Prophet::Test tests => 12;
+use Prophet::Test tests => 13;
 
 as_alice {
     run_ok('prophet', [qw(create --type=Bug --), 'summary=first ticket summary', 'status=new'], "created a record as alice");
@@ -56,6 +56,14 @@ as_alice {
     TODO: {
         local $TODO = "regex comparisons not implemented yet";
         run_output_matches('prophet', [qw(search --type Bug -- status !=new summary=~first|bad)],
+            [qr/bad ticket summary/],
+            "found two tickets with status=~first|bad",
+        );
+    };
+
+    TODO: {
+        local $TODO = "regex comparisons not implemented yet";
+        run_output_matches('prophet', [qw(search --type Bug -- status != new summary =~ first|bad)],
             [qr/bad ticket summary/],
             "found two tickets with status=~first|bad",
         );
