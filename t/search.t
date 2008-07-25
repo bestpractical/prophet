@@ -48,19 +48,16 @@ as_alice {
         "found two tickets with status=~n",
     );
 
-    TODO: {
-        local $TODO = "regex comparisons not implemented yet";
-        run_output_matches('prophet', [qw(search --type Bug -- summary=~first|stalled)],
-            [qr/first ticket summary/, qr/bad ticket summary/],
-            "found two tickets with status=~first|stalled",
-        );
-    };
+    run_output_matches('prophet', [qw(search --type Bug -- summary=~first|bad)],
+        [qr/first ticket summary/, qr/bad ticket summary/],
+        "found two tickets with status=~first|stalled",
+    );
 
     TODO: {
         local $TODO = "regex comparisons not implemented yet";
-        run_output_matches('prophet', [qw(search --type Bug -- status !=new summary=~first|stalled)],
+        run_output_matches('prophet', [qw(search --type Bug -- status !=new summary=~first|bad)],
             [qr/bad ticket summary/],
-            "found two tickets with status=~first|stalled",
+            "found two tickets with status=~first|bad",
         );
     };
 };
