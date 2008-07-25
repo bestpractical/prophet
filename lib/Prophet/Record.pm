@@ -232,6 +232,8 @@ sub set_props {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
 
+    confess "set_props called on a record that hasn't been loaded or created yet." if !$self->uuid;
+
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) || return undef;
     $self->handle->set_record_props(
@@ -250,6 +252,9 @@ Returns a hash of this record's properties as currently set in the database.
 
 sub get_props {
     my $self = shift;
+
+    confess "get_props called on a record that hasn't been loaded or created yet." if !$self->uuid;
+
     return $self->handle->get_record_props(
         uuid => $self->uuid,
         type => $self->type
@@ -280,6 +285,9 @@ TODO: how is this different than setting it to an empty value?
 sub delete_prop {
     my $self = shift;
     my %args = validate( @_, { name => 1 } );
+
+    confess "delete_prop called on a record that hasn't been loaded or created yet." if !$self->uuid;
+
     $self->handle->delete_record_prop(
         uuid => $self->uuid,
         name => $args{'name'}
