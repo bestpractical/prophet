@@ -223,7 +223,7 @@ sub parse_args {
 
         if ($sep == 1) {
             $self->add_to_prop_set({
-                name  => $name,
+                prop  => $name,
                 cmp   => $cmp,
                 value => $val,
             });

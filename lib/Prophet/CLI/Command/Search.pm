@@ -21,7 +21,7 @@ sub get_search_callback {
     } elsif (scalar $self->prop_names > 0) {
         my %prop_checks;
         for my $check ($self->prop_set) {
-            push @{ $prop_checks{ $check->{name} } }, $check;
+            push @{ $prop_checks{ $check->{prop} } }, $check;
         }
 
         return sub {
