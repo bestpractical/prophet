@@ -62,5 +62,6 @@ features(
 );
 
 all_from('lib/Prophet.pm');
+install_script('bin/prophet');
 auto_install;
 WriteAll();
