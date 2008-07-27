@@ -21,6 +21,8 @@ my $path = dir($alice_published)->file($alice_uuid);
 as_bob {
     run_ok( 'prophet', ['pull', '--from', "file:$path", '--force'] );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+    run_ok( 'prophet', ['pull', '--all', '--force'] );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
 
 # see if uuid intuition works

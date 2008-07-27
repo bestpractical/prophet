@@ -3,20 +3,51 @@ use Moose;
 extends 'Prophet::CLI::Command::Merge';
 
 override run => sub {
-    my $self = shift;
+    my $self  = shift;
 
-    die "Please specify a --from.\n" if !$self->has_arg('from');
+    my @from;
+    my %replicas = $self->_read_cached_upstream_replicas;
+    if ($self->has_arg('from')) { 
+        my $from = $self->arg('from');
+        push @from, $from;
+        unless (exists $replicas{$from}) {
+            $replicas{$from} = 1;
+            $self->_write_cached_upstream_replicas(%replicas);
+        }
+    }
 
-    $self->set_arg(to => $self->cli->app_handle->default_replica_type.":file://"
-.$self->cli->app_handle->handle->fs_root);
+    if ($self->has_arg('all')) {
+        push @from, keys %replicas;
+    }
 
+    die "Please specify a --from.\n" unless @from;
+
+    
+    $self->set_arg(to => $self->cli->app_handle->default_replica_type.":file://".$self->cli->app_handle->handle->fs_root);
     $self->set_arg(db_uuid => $self->app_handle->handle->db_uuid);
 
-    super();
+    for my $from (@from) {
+            print "Pulling from $from\n" if $self->has_arg('all');
+            $self->set_arg(from => $from);
+            super();
+    }
 };
+
+sub _read_cached_upstream_replicas {
+    my $self = shift;
+    return map { $_ => 1 } $self->cli->app_handle->resdb_handle->_read_cached_upstream_replicas;
+}
+
+sub _write_cached_upstream_replicas {
+    my $self  = shift;
+    my %repos = @_;
+    return $self->cli->app_handle->resdb_handle->_write_cached_upstream_replicas(keys %repos);
+}
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
+
+
 
 1;
 
