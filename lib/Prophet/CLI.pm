@@ -225,6 +225,8 @@ sub parse_args {
             $val = shift @ARGV
                 if @ARGV && $ARGV[0] !~ /^--/;
 
+            no warnings 'uninitialized';
+
             # but wait! does the value look enough like a comparator? if so,
             # shift off another one (if we can)
             if ($val =~ /^(?:$cmp_re)$/ && @ARGV && $ARGV[0] !~ /^--/) {
