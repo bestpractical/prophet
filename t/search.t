@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Prophet::Test tests => 14;
+use Prophet::Test tests => 15;
 
 as_alice {
     run_ok('prophet', [qw(create --type=Bug --), 'summary=first ticket summary', 'status=new'], "created a record as alice");
@@ -63,6 +63,11 @@ as_alice {
     run_output_matches('prophet', [qw(search --type Bug -- cmp ne)],
         [qr/bad ticket summary/],
         "found the ticket with cmp=ne (which didn't treat 'ne' as a comparator)",
+    );
+
+    run_output_matches('prophet', [qw(search --type Bug --regex=new -- status=~n)],
+        [qr/first ticket summary/],
+        "found a ticket with regex and props working together",
     );
 };
 
