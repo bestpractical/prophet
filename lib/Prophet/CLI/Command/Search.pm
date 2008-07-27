@@ -11,23 +11,18 @@ has '+uuid' => (
 sub get_search_callback {
     my $self = shift;
 
-    if ( my $regex = $self->arg('regex') ) {
-            return sub {
-                my $item  = shift;
-                my $props = $item->get_props;
-                map { return 1 if $props->{$_} =~ $regex } keys %$props;
-                return 0;
-            }
-    } elsif (scalar $self->prop_names > 0) {
-        my %prop_checks;
-        for my $check ($self->prop_set) {
-            push @{ $prop_checks{ $check->{prop} } }, $check;
-        }
+    my %prop_checks;
+    for my $check ($self->prop_set) {
+        push @{ $prop_checks{ $check->{prop} } }, $check;
+    }
 
-        return sub {
-            my $item = shift;
-            my $props = $item->get_props;
+    my $regex = $self->arg('regex');
 
+    return sub {
+        my $item = shift;
+        my $props = $item->get_props;
+
+        if ($self->prop_names > 0) {
             for my $prop (keys %prop_checks) {
                 my $got = $props->{$prop};
                 my $ok = 0;
@@ -37,12 +32,22 @@ sub get_search_callback {
                 }
                 return 0 if !$ok;
             }
+        }
 
-            return 1;
-        };
-    } else {
-        return sub {1}
-    }
+        # if they specify a regex, it must match
+        if ($regex) {
+            my $ok = 0;
+            for (values %$props) {
+                if (/$regex/) {
+                    $ok = 1;
+                    last;
+                }
+            }
+            return 0 if !$ok;
+        }
+
+        return 1;
+    };
 }
 
 sub cmp_ok {
