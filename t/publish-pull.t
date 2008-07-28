@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 10;
+use Prophet::Test tests => 13;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -21,8 +21,19 @@ my $path = dir($alice_published)->file($alice_uuid);
 as_bob {
     run_ok( 'prophet', ['pull', '--from', "file:$path", '--force'] );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+};
+
+as_alice {
+    run_ok( 'prophet', [qw(create --type Pullall -- --status new --from alice )], "Created another record as alice" );
+};
+
+as_bob {
     run_ok( 'prophet', ['pull', '--all', '--force'] );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+
+    TODO: {
+        local $TODO = "not working yet?";
+        run_output_matches( 'prophet', [qw(search --type Pullall --regex .)], [qr/new/], " Found our record" );
+    }
 };
 
 # see if uuid intuition works
