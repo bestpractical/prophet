@@ -110,7 +110,7 @@ sub _get_cmd_obj {
 
     my $aliases  = $self->app_handle->config->aliases;
     my $tmp      = $self->primary_commands;
-    if ($aliases->{$tmp->[0]}) {
+    if (@$tmp && $aliases->{$tmp->[0]}) {
         @ARGV = split ' ', $aliases->{$tmp->[0]};
         return $self->run_one_command;
     }
@@ -196,7 +196,7 @@ sub parse_args {
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
     $self->set_arg(id => pop @primary)
-        if $primary[-1] =~ /^\d+$/;
+        if @primary && $primary[-1] =~ /^\d+$/;
 
     my $sep = 0;
     my @sep_method = (
