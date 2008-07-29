@@ -194,6 +194,10 @@ sub parse_args {
     my @primary;
     push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
 
+    # "ticket show 4" should DWIM and "ticket show --id=4"
+    $self->set_arg(id => pop @primary)
+        if $primary[-1] =~ /^\d+$/;
+
     my $sep = 0;
     my @sep_method = (
         'set_arg',
