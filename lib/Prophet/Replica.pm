@@ -1021,6 +1021,10 @@ sub log {
 
 sub log_fatal {
     my $self = shift;
+
+    # always skip this fatal_error function when generating a stack trace
+    local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+
     $self->log(@_);
     Carp::confess(@_);
 }
