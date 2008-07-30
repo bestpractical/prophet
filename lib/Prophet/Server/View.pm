@@ -108,31 +108,21 @@ template record_changesets => sub {
     my $record = shift;
     my $uuid = $record->uuid;
 
-    my @changesets = $record->handle->changesets_for_record(
-        uuid => $uuid,
-        type => $record->type,
-    );
-
     ol {
-        for my $changeset (@changesets) {
-            my @changes = grep { $_->record_uuid eq $uuid } $changeset->changes;
-            next if @changes == 0;
+        for my $change ($record->changes) {
+            my @prop_changes = $change->prop_changes;
+            next if @prop_changes == 0;
 
-            for my $change (@changes) {
-                my @prop_changes = $change->prop_changes;
-                next if @prop_changes == 0;
+            if (@prop_changes == 1) {
+                li { $prop_changes[0]->summary };
+                next;
+            }
 
-                if (@prop_changes == 1) {
-                    li { $prop_changes[0]->summary };
-                    next;
-                }
-
-                li {
-                    ul {
-                        for my $prop_change (@prop_changes) {
-                            li {
-                                outs $prop_change->summary;
-                            }
+            li {
+                ul {
+                    for my $prop_change (@prop_changes) {
+                        li {
+                            outs $prop_change->summary;
                         }
                     }
                 }

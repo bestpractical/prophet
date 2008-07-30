@@ -309,11 +309,21 @@ sub delete {
 
 sub changesets {
     my $self = shift;
-    my @changesets = $self->handle->changesets_for_record(uuid => 
-    $self->uuid, type => $self->type
+    return $self->handle->changesets_for_record(
+        uuid => $self->uuid,
+        type => $self->type,
     );
 }
 
+sub changes {
+    my $self = shift;
+    my $uuid = $self->uuid;
+    my @changesets = $self->changesets;
+
+    return grep { $_->record_uuid eq $uuid }
+            map { $_->changes }
+            @changesets;
+}
 
 sub validate_props {
     my $self   = shift;
