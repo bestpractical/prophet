@@ -357,6 +357,13 @@ sub canonicalize_props {
     return 1;
 }
 
+=head2 default_props $props_ref
+
+Takes a reference to a hash of props and looks up the defaults for those
+props, if they exist. Sets the values of the props in the hash to the defaults.
+
+=cut
+
 sub default_props {
     my $self   = shift;
     my $props  = shift;
@@ -376,7 +383,7 @@ sub default_props {
 
 =head2 format_summary
 
-returns a formated string that is the summary for the record.
+returns a formatted string that is the summary for the record.
 
 =cut
 
