@@ -339,10 +339,16 @@ sub run_one_command {
     }
 }
 
-=head2 run_another_command ( args => $hashref, props => $hashref, type => 'str' )
+=head2 run_another_command ( args => $hashref, props => $arrayref, type => 'str' )
 
 A hook for running a second command from within a command without having
 to use the commandline argument parsing.
+
+C<props> should be an array reference of hashes containing the keys C<prop>,
+C<cmp>, and C<value>, such as what is expected by the C<prop_set> attribute
+(see L<parse_args>'s use of C<add_to_prop_set>).
+
+C<args> should be a simple array of arg / value pairs.
 
 If C<type>, C<uuid>, or C<primary_commands> are not passed in, the values
 from the previous command run are used.
@@ -365,8 +371,10 @@ sub run_another_command {
         }
     }
     if (my $props = $args{props}) {
-        foreach my $prop (keys %$props) {
-            $self->set_prop($prop => $props->{$prop});
+        foreach my $prop (@$props) {
+            my $key = $prop->{prop};
+            my $value = $prop->{value};
+            $self->set_prop($key => $value);
             $self->add_to_prop_set($prop);
         }
     }
@@ -391,7 +399,7 @@ Clears all of the current object's set arguments.
 sub clear_args {
     my $self = shift;
 
-    foreach my $arg ($self->args) {
+    foreach my $arg (keys %{$self->args}) {
         $self->delete_arg($arg);
     }
 }
@@ -405,7 +413,7 @@ Clears all of the current object's set properties.
 sub clear_props {
     my $self = shift;
 
-    foreach my $prop ($self->props) {
+    foreach my $prop (keys %{$self->props}) {
         $self->delete_prop($prop);
     }
     $self->prop_set( ( ) );
