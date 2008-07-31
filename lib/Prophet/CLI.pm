@@ -106,6 +106,17 @@ our %CMD_MAP = (
     list => 'search',
 );
 
+=head2 _get_cmd_obj
+
+Attempts to determine a command object based on aliases and the currently
+set commands, arguments, and properties. Returns the class on success;
+dies on failure.
+
+This routine will use a C<CLI::Command::NotFound> class as a last resort, so
+failure should occur rarely if ever.
+
+=cut
+
 sub _get_cmd_obj {
     my $self = shift;
 
@@ -265,7 +276,6 @@ sub parse_args {
                 value => $val,
             });
         }
-
         my $setter = $sep_method[$sep] or next;
         $self->$setter($name => $val);
     }
@@ -307,6 +317,18 @@ sub set_type_and_uuid {
     }
 }
 
+=head2 run_one_command
+
+Runs a command specified by commandline arguments given in ARGV. To use in
+a commandline front-end, create a L<Prophet::CLI> object and pass in
+your main app class as app_class, then run this routine.
+
+Example:
+
+my $cli = Prophet::CLI->new({ app_class => 'App::SD' });
+$cli->run_one_command;
+
+=cut
 
 sub run_one_command {
     my $self = shift;
@@ -315,6 +337,78 @@ sub run_one_command {
     if ( my $cmd_obj = $self->_get_cmd_obj() ) {
         $cmd_obj->run();
     }
+}
+
+=head2 run_another_command ( args => $hashref, props => $hashref, type => 'str' )
+
+A hook for running a second command from within a command without having
+to use the commandline argument parsing.
+
+If C<type>, C<uuid>, or C<primary_commands> are not passed in, the values
+from the previous command run are used.
+
+=cut
+
+sub run_another_command {
+    my $self = shift;
+    my %args = @_;
+
+    $self->clear_args();
+    $self->clear_props();
+
+    if (my $cmd_args = $args{args}) {
+        foreach my $arg (keys %$cmd_args) {
+            if ($arg eq 'uuid') {
+                $self->uuid($cmd_args->{$arg});
+            }
+            $self->set_arg($arg => $cmd_args->{$arg});
+        }
+    }
+    if (my $props = $args{props}) {
+        foreach my $prop (keys %$props) {
+            $self->set_prop($prop => $props->{$prop});
+            $self->add_to_prop_set($prop);
+        }
+    }
+    if (my $type = $args{type}) {
+        $self->type($type);
+    }
+
+    if (my $primary_commands = $args{primary_commands}) {
+        $self->primary_commands($primary_commands);
+    }
+    if ( my $cmd_obj = $self->_get_cmd_obj() ) {
+        $cmd_obj->run();
+    }
+}
+
+=head2 clear_args
+
+Clears all of the current object's set arguments.
+
+=cut
+
+sub clear_args {
+    my $self = shift;
+
+    foreach my $arg ($self->args) {
+        $self->delete_arg($arg);
+    }
+}
+
+=head2 clear_props
+
+Clears all of the current object's set properties.
+
+=cut
+
+sub clear_props {
+    my $self = shift;
+
+    foreach my $prop ($self->props) {
+        $self->delete_prop($prop);
+    }
+    $self->prop_set( ( ) );
 }
 
 =head2 invoke [outhandle], ARGV
