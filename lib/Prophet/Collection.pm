@@ -51,17 +51,15 @@ as a collection.
 
 =head1 METHODS
 
-
 =head2 new { handle => L<Prophet::Replica>, type => $TYPE }
 
-Instantiate a new, empty L<Prophet::Collection> object to find items of type C<$TYPE>
-
-
-=cut
+Instantiate a new, empty L<Prophet::Collection> object to find items of type
+C<$TYPE>.
 
 =head2 matching $CODEREF
 
-Find all L<Prophet::Record>s of this collection's C<type> where $CODEREF returns true.
+Find all L<Prophet::Record>s of this collection's C<type> where $CODEREF
+returns true.
 
 =cut
 
