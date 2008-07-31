@@ -63,6 +63,7 @@ has args => (
         delete => 'delete_arg',
         keys   => 'arg_names',
     },
+    documentation => "This is a reference to the key-value pairs passed in on the commandline",
 );
 
 has props => (
@@ -180,13 +181,27 @@ sub _try_to_load_cmd_class {
     return undef;
 }
 
-=head2 parse_args
+=head2 cmp_regex
 
-This routine pulls arguments passed on the command line out of ARGV and sticks them in L</args>. The keys have leading "--" stripped.
+Returns the regex to use for matching argument key/value separators.
 
 =cut
 
 sub cmp_regex { '!=|<>|=~|!~|=|\bne\b' }
+
+=head2 parse_args
+
+This routine pulls arguments (specified by --key=value or --key value) and
+properties (specified by --props key=value or -- key=value) passed on the
+command line out of ARGV and sticks them in L</args> or L</props> and
+L</prop_set> as necessary. Argument keys have leading "--" stripped.
+
+If a key is not given a value on the command line, its value is set to undef.
+
+More complicated separators such as =~ (for regexes) are also handled (see
+L</cmp_regex> for details).
+
+=cut
 
 sub parse_args {
     my $self = shift;
@@ -258,7 +273,11 @@ sub parse_args {
 
 =head2 set_type_and_uuid
 
-When working with individual records, it is often the case that we'll be expecting a --type argument and then a mess of other key-value pairs.
+When working with individual records, it is often the case that we'll be
+expecting a --type argument and then a mess of other key-value pairs.
+
+This routine figures out and sets C<type> and C<uuid> from the arguments given
+on the command-line, if possible. Being unable to figure out a uuid is fatal.
 
 =cut
 
@@ -288,13 +307,6 @@ sub set_type_and_uuid {
     }
 }
 
-=head2 args [$ARGS]
-
-Returns a reference to the key-value pairs passed in on the command line
-
-If passed a hashref, sets the args to taht;
-
-=cut
 
 sub run_one_command {
     my $self = shift;
