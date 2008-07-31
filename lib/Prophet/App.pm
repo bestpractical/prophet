@@ -36,6 +36,7 @@ has config => (
         Prophet::Config->require;
         return Prophet::Config->new(app_handle => $self);
     },
+    documentation => "This is the config instance for the running application",
 );
 
 use constant DEFAULT_REPLICA_TYPE => 'prophet';
@@ -80,13 +81,6 @@ sub require_module {
     }
     $@ = '';
 }
-
-=head2 config
-
-Returns the L<Prophet::Config> instance for the running application
-
-=cut
-
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
