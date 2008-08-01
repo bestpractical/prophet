@@ -339,10 +339,10 @@ sub run_one_command {
     }
 }
 
-=head2 run_another_command ( args => $hashref, props => $arrayref, type => 'str' )
+=head2 change_attributes ( args => $hashref, props => $arrayref, type => 'str' )
 
-A hook for running a second command from within a command without having
-to use the commandline argument parsing.
+A hook for modifying attributes to prepare for running other commands from
+within a command.
 
 C<props> should be an array reference of hashes containing the keys C<prop>,
 C<cmp>, and C<value>, such as what is expected by the C<prop_set> attribute
@@ -355,7 +355,7 @@ from the previous command run are used.
 
 =cut
 
-sub run_another_command {
+sub change_attributes {
     my $self = shift;
     my %args = @_;
 
@@ -381,12 +381,8 @@ sub run_another_command {
     if (my $type = $args{type}) {
         $self->type($type);
     }
-
     if (my $primary_commands = $args{primary_commands}) {
         $self->primary_commands($primary_commands);
-    }
-    if ( my $cmd_obj = $self->_get_cmd_obj() ) {
-        $cmd_obj->run();
     }
 }
 
@@ -399,7 +395,7 @@ Clears all of the current object's set arguments.
 sub clear_args {
     my $self = shift;
 
-    foreach my $arg (keys %{$self->args}) {
+    foreach my $arg ($self->arg_names) {
         $self->delete_arg($arg);
     }
 }
@@ -413,7 +409,7 @@ Clears all of the current object's set properties.
 sub clear_props {
     my $self = shift;
 
-    foreach my $prop (keys %{$self->props}) {
+    foreach my $prop ($self->prop_names) {
         $self->delete_prop($prop);
     }
     $self->prop_set( ( ) );
