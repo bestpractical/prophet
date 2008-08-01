@@ -2,7 +2,6 @@ package Prophet::ReplicaExporter;
 use Moose;
 use Params::Validate qw(:all);
 use Path::Class;
-use UNIVERSAL::require;
 
 has source_replica => (
     is  => 'rw',

@@ -6,14 +6,11 @@ author('clkao and jesse');
 license('Perl');
 
 requires('Params::Validate');
-requires('List::MoreUtils');
-requires('Class::Accessor');
 requires('IPC::Run3');
 requires('File::Rsync');
 requires('Data::UUID');
 requires('Path::Class');
 requires('Test::Exception');
-requires('UNIVERSAL::require');
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
@@ -32,7 +29,6 @@ features(
     'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
-        'Test::HTTP::Server::Simple',
         'Test::WWW::Mechanize' => '1.16',
         'HTTP::Server::Simple'
     ],
@@ -48,17 +44,15 @@ features(
     ],
     'Maintainer testing tools' => [
         -default   => 1,
+        'Test::HTTP::Server::Simple',
         'Acme::MetaSyntactic',
+        'YAML::Syck' => 0,
         'Test::Pod::Coverage'
     ],
     q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
         -default => 0,
         'Devel::Gladiator'
     ],
-    'Testing' => [
-        -default => 1,
-        'YAML::Syck' => 0
-    ]
 );
 
 all_from('lib/Prophet.pm');

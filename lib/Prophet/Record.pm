@@ -3,7 +3,6 @@ use Moose;
 use MooseX::ClassAttribute;
 use Params::Validate;
 use Data::UUID;
-use List::MoreUtils qw/uniq/;
 use Prophet::App; # for require_module. Kinda hacky
 
 use constant collection_class => 'Prophet::Collection';
@@ -85,7 +84,7 @@ Instantiates a new, empty L<Prophet::Record/> of type $type.
 
 sub register_reference {
     my ( $class, $accessor, $foreign_class, @args ) = @_;
-    $foreign_class->require();
+    Prophet::App->require($foreign_class);
     if ( $foreign_class->isa('Prophet::Collection') ) {
         return $class->register_collection_reference(
             $accessor => $foreign_class,
@@ -112,7 +111,7 @@ sub register_collection_reference {
     my %args = validate( @args, { by => 1 } );
     no strict 'refs';
 
-    Prophet::App->require_module( $collection_class->record_class );
+    Prophet::App->require( $collection_class->record_class );
 
     *{ $class . "::$accessor" } = sub {
         my $self       = shift;
@@ -324,6 +323,11 @@ sub changes {
             map { $_->changes }
             @changesets;
 }
+
+
+# uniq ganked from List::MoreUtils 0.21 
+sub uniq (@) { my %h; map { $h{$_}++ == 0 ? $_ : () } @_; }
+
 
 sub validate_props {
     my $self   = shift;

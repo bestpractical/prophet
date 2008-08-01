@@ -2,7 +2,6 @@ package Prophet::Replica::SVN;
 use Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
-use UNIVERSAL::require;
 
 # require rather than use to make them late-binding
 use Prophet::ChangeSet;

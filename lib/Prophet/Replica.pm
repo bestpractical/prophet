@@ -1,7 +1,6 @@
 package Prophet::Replica;
 use Moose;
 use Params::Validate qw(:all);
-use UNIVERSAL::require;
 use Data::UUID;
 use Path::Class;
 
@@ -44,12 +43,13 @@ has _alt_urls => (
 
 use constant state_db_uuid => 'state';
 use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
+use Prophet::App;
 
 our $REPLICA_TYPE_MAP = {};
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
 for ( __PACKAGE__->core_replica_types) {
-   $_->require or die $@; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
+Prophet::App->require($_) or die $@; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
 
    # and tries to load Prophet::Replica::SVN::ReplayEditor;
    __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) 
@@ -97,7 +97,7 @@ around new => sub {
 
     return $orig->($class, %args) if $class eq $new_class;
 
-    $new_class->require;
+    Prophet::App->require($new_class);
     return $new_class->new(%args);
 };
 
@@ -245,7 +245,7 @@ sub integrate_changeset {
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
-            $args{resolver_class}->require || die $@;
+            Prophet::App->require($args{resolver_class}) || die $@;
             $conflict->resolvers(
                 [   sub {
                         $args{resolver_class}->new->run(@_);
@@ -539,7 +539,7 @@ See C<Prophet::ReplicaExporter>
 sub export_to {
     my $self = shift;
     my %args = validate( @_, { path => 1, } );
-    Prophet::ReplicaExporter->require();
+    require Prophet::ReplicaExporter;
 
     my $exporter = Prophet::ReplicaExporter->new({target_path => dir($args{'path'}), source_replica => $self});
     $exporter->export();

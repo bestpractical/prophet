@@ -182,12 +182,12 @@ sub _get_cmd_obj {
 sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
-    Prophet::App->require_module($class);
+    Prophet::App->try_to_require($class);
     return $class if $class->isa('Prophet::CLI::Command');
 
     warn "Invalid class $class - not a subclass of Prophet::CLI::Command."
         if $class !~ /::$/ # don't warn about "Prophet::CLI::Command::" (which happens on "./bin/sd")
-        && Class::MOP::is_class_loaded($class);
+        && Prophet::App->already_required($class);
 
     return undef;
 }
