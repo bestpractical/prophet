@@ -49,10 +49,10 @@ features(
         'YAML::Syck' => 0,
         'Test::Pod::Coverage'
     ],
-    q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
-        -default => 0,
-        'Devel::Gladiator'
-    ],
+#    q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
+#        -default => 0,
+#        'Devel::Gladiator'
+#    ],
 );
 
 all_from('lib/Prophet.pm');
