@@ -218,11 +218,11 @@ sub parse_args {
     my $self = shift;
 
     my @primary;
-    push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
+    push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] !~ /^--/ );
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
     $self->set_arg(id => pop @primary)
-        if @primary && $primary[-1] =~ /^\d+$/;
+        if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-)/i;
 
     my $sep = 0;
     my @sep_method = (
