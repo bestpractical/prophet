@@ -30,7 +30,6 @@ features(
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
         'Test::WWW::Mechanize' => '1.16',
-        'HTTP::Server::Simple'
     ],
 
     'HTML display' => [
