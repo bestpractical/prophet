@@ -9,6 +9,17 @@ has creator => (
     isa => 'Str',
 );
 
+has created => (
+    is      => 'rw',
+    isa     => 'Str',
+    default => sub {
+        my ($sec, $min, $hour, $day, $month, $year) = gmtime;
+        return sprintf '%04d-%02d-%02d %02d:%02d:%02d',
+            $year, $month, $day,
+            $hour, $min, $sec;
+    },
+);
+
 has source_uuid => (
     is  => 'rw',
     isa => 'Str',
@@ -123,7 +134,7 @@ Returns true if this changeset has any changes
 =cut
 
 our @SERIALIZE_PROPS
-    = (qw(creator sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
+    = (qw(creator created sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
 
 sub as_hash {
     my $self = shift;
