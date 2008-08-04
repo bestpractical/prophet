@@ -659,7 +659,7 @@ sub _read_file {
 
 sub begin_edit {
     my $self = shift;
-    my $source = shift;
+    my $source = shift; # the changeset that we're replaying, if applicable
 
     my $creator = $source ? $source->creator : $self->changeset_creator;
     my $created = $source && $source->created;
