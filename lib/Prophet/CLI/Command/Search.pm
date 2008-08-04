@@ -8,6 +8,18 @@ has '+uuid' => (
     required => 0,
 );
 
+has 'sort_routine' => (
+    is => 'rw',
+    isa => 'CodeRef',
+    required => 0,
+    # default subs are executed immediately, hence the weird syntax for coderefs
+    default => sub { sub {
+            my @records = @_;
+            return (sort { $a->luid <=> $b->luid } @records);
+        } },
+    documentation => 'A subroutine which takes a list of records and returns them sorted in some way.',
+);
+
 sub get_search_callback {
     my $self = shift;
 
@@ -82,11 +94,21 @@ sub run {
     $self->display_terminal($records);
 }
 
+=head2 display_terminal $records
+
+Takes a collection of records, sorts it according to C<$sort_routine>,
+and then prints it to standard output using L<Prophet::Record->format_summary>
+as the format.
+
+=cut
+
 sub display_terminal {
     my $self = shift;
     my $records = shift;
 
-    for ( sort { $a->luid <=> $b->luid } $records->items ) {
+    my $sort_routine = $self->sort_routine;
+
+    for ( &$sort_routine($records->items) ) {
             print $_->format_summary . "\n";
     }
 }
