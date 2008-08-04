@@ -4,6 +4,11 @@ use MooseX::AttributeHelpers;
 use Prophet::Change;
 use Params::Validate;
 
+has creator => (
+    is  => 'rw',
+    isa => 'Str',
+);
+
 has source_uuid => (
     is  => 'rw',
     isa => 'Str',
@@ -118,7 +123,7 @@ Returns true if this changeset has any changes
 =cut
 
 our @SERIALIZE_PROPS
-    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
+    = (qw(creator sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
 
 sub as_hash {
     my $self = shift;
