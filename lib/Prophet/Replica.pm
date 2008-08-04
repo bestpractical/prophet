@@ -1029,6 +1029,8 @@ sub log_fatal {
     Carp::confess(@_);
 }
 
+sub changeset_creator { $ENV{PROPHET_USER} || $ENV{USER} }
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
