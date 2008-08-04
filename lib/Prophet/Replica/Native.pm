@@ -659,8 +659,11 @@ sub _read_file {
 
 sub begin_edit {
     my $self = shift;
-    $self->current_edit(
-        Prophet::ChangeSet->new( { source_uuid => $self->uuid } ) );
+    my $changeset = Prophet::ChangeSet->new({
+        creator     => $self->changeset_creator,
+        source_uuid => $self->uuid,
+    });
+    $self->current_edit($changeset);
     $self->current_edit_records([]);
 
 }
