@@ -57,6 +57,7 @@ is_deeply(
         {   #'sequence_no'          => 3,
             #'original_sequence_no' => 3, # the number is different on different replica types
             'creator'              => 'bob',
+            'created'              => $changesets->[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
@@ -115,6 +116,7 @@ is_deeply(
         #     'sequence_no'          => 4,  # the number varies based on replica type
         #    'original_sequence_no' => 4,
             'creator'              => 'bob',
+            'created'              => $changes[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),

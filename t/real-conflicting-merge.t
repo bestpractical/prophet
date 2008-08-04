@@ -173,6 +173,7 @@ sub check_bob_final_state_ok {
                     }
                 },
                 creator              => 'bob',
+                created              => $changesets[0]->created,
                 is_nullification     => 1,
                 is_resolution        => undef,
                 sequence_no          => ( replica_last_rev() - 2 ),
@@ -182,6 +183,7 @@ sub check_bob_final_state_ok {
             },
             {
                 creator              => 'alice',
+                created              => $changesets[1]->created,
                 is_nullification     => undef,
                 is_resolution        => undef,
                 sequence_no          => ( replica_last_rev() - 1 ),
@@ -216,6 +218,7 @@ sub check_bob_final_state_ok {
 
             {
                 creator              => 'bob',
+                created              => $changesets[2]->created,
                 is_nullification     => undef,
                 is_resolution        => 1,
                 sequence_no          => replica_last_rev(),
