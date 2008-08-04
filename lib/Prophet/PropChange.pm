@@ -48,13 +48,13 @@ sub summary {
     my $new  = $self->new_value;
 
     if (!defined($old)) {
-        return qq{Property "$name" was added, value "$new".};
+        return qq{+ "$name" set to "$new"};
     }
     elsif (!defined($new)) {
-        return qq{Property "$name" was removed, value was "$old".};
+        return qq{- "$name" "$old" deleted.};
     }
 
-    return qq{Property "$name" changed from "$old" to "$new".};
+    return qq{> "$name" changed from "$old" to "$new".};
 }
 
 __PACKAGE__->meta->make_immutable;
