@@ -113,7 +113,7 @@ as_bob {
     is_deeply(
         $null_as_hash,
         {
-
+            creator              => undef,
             is_nullification     => 1,
             is_resolution        => undef,
             original_sequence_no => undef,
@@ -152,6 +152,7 @@ as_bob {
     is_deeply(
         $from_alice_as_hash,
         {
+            creator              => 'alice',
             is_nullification     => undef,
             is_resolution        => undef,
             source_uuid          => undef,

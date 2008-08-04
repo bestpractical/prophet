@@ -172,6 +172,7 @@ sub check_bob_final_state_ok {
                         }
                     }
                 },
+                creator              => 'bob',
                 is_nullification     => 1,
                 is_resolution        => undef,
                 sequence_no          => ( replica_last_rev() - 2 ),
@@ -180,6 +181,7 @@ sub check_bob_final_state_ok {
                 original_source_uuid => replica_uuid(),
             },
             {
+                creator              => 'alice',
                 is_nullification     => undef,
                 is_resolution        => undef,
                 sequence_no          => ( replica_last_rev() - 1 ),
@@ -213,6 +215,7 @@ sub check_bob_final_state_ok {
             },
 
             {
+                creator              => 'bob',
                 is_nullification     => undef,
                 is_resolution        => 1,
                 sequence_no          => replica_last_rev(),
