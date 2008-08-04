@@ -296,13 +296,13 @@ sub record_changeset_and_integration {
     my $self      = shift;
     my $changeset = shift;
 
-    $self->begin_edit;
+    $self->begin_edit($changeset);
     $self->record_changes($changeset);
 
     my $state_handle = $self->state_handle;
     my $inside_edit = $state_handle->current_edit ? 1 : 0;
 
-    $state_handle->begin_edit() unless ($inside_edit);
+    $state_handle->begin_edit($changeset) unless ($inside_edit);
     $state_handle->record_integration_of_changeset($changeset);
     $state_handle->commit_edit() unless ($inside_edit);
     $self->_set_original_source_metadata_for_current_edit($changeset);
@@ -771,7 +771,7 @@ sub record_resolutions {
 
     return unless $changeset->has_changes;
 
-    $self->begin_edit();
+    $self->begin_edit($changeset);
     $self->record_changes($changeset);
     $res_handle->_record_resolution($_) for $changeset->changes;
     $self->commit_edit();
@@ -813,7 +813,7 @@ sub record_changes {
     $self->_unimplemented ('record_changes') unless ($self->can_write_changesets);
     eval {
         my $inside_edit = $self->current_edit ? 1 : 0;
-        $self->begin_edit() unless ($inside_edit);
+        $self->begin_edit($changeset) unless ($inside_edit);
         $self->integrate_changes($changeset);
         $self->_after_record_changes($changeset);
         $self->commit_edit() unless ($inside_edit);
