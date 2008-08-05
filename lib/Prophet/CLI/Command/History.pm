@@ -21,7 +21,7 @@ sub run {
         # separate each changeset
         print "Changeset ".$changeset->original_sequence_no .'@'.$changeset->original_source_uuid."\n";
 
-        no warnings 'undef'; # old changesets don't have creator
+        no warnings 'uninitialized'; # old changesets don't have creator
         print "by " . $changeset->creator . '@' . $changeset->original_source_uuid."\n";
         print "\n";
 
