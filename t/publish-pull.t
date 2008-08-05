@@ -25,15 +25,12 @@ as_bob {
 
 as_alice {
     run_ok( 'prophet', [qw(create --type Pullall -- --status new --from alice )], "Created another record as alice" );
+    run_ok( 'prophet', [qw(publish --to), $alice_published] );
 };
 
 as_bob {
     run_ok( 'prophet', ['pull', '--all', '--force'] );
-
-    TODO: {
-        local $TODO = "not working yet?";
-        run_output_matches( 'prophet', [qw(search --type Pullall --regex .)], [qr/new/], " Found our record" );
-    }
+    run_output_matches( 'prophet', [qw(search --type Pullall --regex .)], [qr/new/], " Found our record" );
 };
 
 # see if uuid intuition works
