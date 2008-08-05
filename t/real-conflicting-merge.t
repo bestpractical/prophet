@@ -172,7 +172,7 @@ sub check_bob_final_state_ok {
                         }
                     }
                 },
-                creator              => 'bob',
+                creator              => undef,
                 created              => $changesets[0]->created,
                 is_nullification     => 1,
                 is_resolution        => undef,
