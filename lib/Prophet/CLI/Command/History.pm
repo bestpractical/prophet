@@ -20,6 +20,7 @@ sub run {
 
         # separate each changeset
         print "Changeset ".$changeset->original_sequence_no .'@'.$changeset->original_source_uuid."\n";
+        print "by " . $changeset->creator . '@' . $changeset->original_source_uuid."\n";
         print "\n";
 
         for my $prop_change (@prop_changes) {
