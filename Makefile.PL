@@ -24,7 +24,7 @@ requires('Moose' => '0.54'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
-requires('Path::Dispatcher');
+requires('Path::Dispatcher'); # Path::Dispatcher::Declarative
 
 features(
     'Web server' => [
