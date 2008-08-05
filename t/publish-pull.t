@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 22;
+use Prophet::Test tests => 28;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -73,18 +73,18 @@ for my $user ('alice', 'bob', 'charlie', 'david') {
         changeset   => $changesets->[0],
         user        => $user,
         record_type => 'Bug',
+        record_uuid => $bug_uuid,
         sequence_no => 1,
         merge       => $user ne 'alice',
-        uuid        => $bug_uuid,
         name        => "$user\'s first changeset",
     );
     changeset_ok(
         changeset   => $changesets->[1],
         user        => $user,
         record_type => 'Pullall',
+        record_uuid => $pullall_uuid,
         sequence_no => 2,
         merge       => $user ne 'alice',
-        uuid        => $pullall_uuid,
         name        => "$user\'s second changeset",
     );
 }
@@ -97,12 +97,50 @@ sub changeset_ok {
         user        => 1,
         sequence_no => 1,
         record_type => 1,
+        record_uuid => 1,
         merge       => 1,
-        uuid        => 1,
         name        => 0,
     });
 
     my $changeset = $args{changeset}->as_hash;
+
+    my $changes = {
+        $args{record_uuid} => {
+            change_type  => 'add_file',
+            record_type  => $args{record_type},
+            prop_changes => {
+                status => {
+                    old_value => undef,
+                    new_value => 'new',
+                },
+                from => {
+                    old_value => undef,
+                    new_value => 'alice',
+                },
+            },
+        },
+    };
+
+    if ($args{merge}) {
+        my $change_type = $args{sequence_no} > 1
+                        ? 'update_file'
+                        : 'add_file';
+
+        my $prev_changeset_num = $args{sequence_no} > 1
+                               ? $args{sequence_no} - 1
+                               : undef;
+
+        $changes->{ replica_uuid_for('alice') } = {
+            change_type  => $change_type,
+            record_type  => '_merge_tickets',
+            prop_changes => {
+                'last-changeset' => {
+                    old_value => $prev_changeset_num,
+                    new_value => $args{sequence_no},
+                }
+            }
+        };
+    }
 
     is_deeply($changeset, {
         creator              => 'alice',
@@ -113,22 +151,7 @@ sub changeset_ok {
         source_uuid          => replica_uuid_for($args{user}),
         original_sequence_no => $args{sequence_no},
         original_source_uuid => replica_uuid_for('alice'),
-        changes              => {
-            $args{uuid} => {
-                change_type  => 'add_file',
-                record_type  => $args{record_type},
-                prop_changes => {
-                    status => {
-                        old_value => undef,
-                        new_value => 'new',
-                    },
-                    from => {
-                        old_value => undef,
-                        new_value => 'alice',
-                    },
-                },
-            },
-        },
+        changes              => $changes,
     }, $args{name});
 }
 
