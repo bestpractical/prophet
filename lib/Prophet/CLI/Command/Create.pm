@@ -4,6 +4,12 @@ extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 has '+uuid' => ( required => 0);
 
+has record => (
+    is  => 'rw',
+    isa => 'Prophet::Record',
+    documentation => 'The record object of the created record.',
+);
+
 sub run {
     my $self   = shift;
     my $record = $self->_get_record_class;
@@ -16,8 +22,9 @@ sub run {
         return;
     }
 
-    print "Created " . $record->record_type . " " . $record->luid . " (".$record->uuid.")"."\n";
+    $self->record($record);
 
+    print "Created " . $record->record_type . " " . $record->luid . " (".$record->uuid.")"."\n";
 }
 
 __PACKAGE__->meta->make_immutable;

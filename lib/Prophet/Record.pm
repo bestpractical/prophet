@@ -3,7 +3,6 @@ use Moose;
 use MooseX::ClassAttribute;
 use Params::Validate;
 use Data::UUID;
-use List::MoreUtils qw/uniq/;
 use Prophet::App; # for require_module. Kinda hacky
 
 use constant collection_class => 'Prophet::Collection';
@@ -14,7 +13,7 @@ Prophet::Record
 
 =head1 DESCRIPTION
 
-This class represents a base class for any record in a Prophet database
+This class represents a base class for any record in a Prophet database.
 
 =cut
 
@@ -55,21 +54,17 @@ class_has REFERENCES => (
     is      => 'rw',
     isa     => 'HashRef',
     default => sub { {} },
+    documentation => 'A hash of accessor_name => collection_class references.',
 );
 
 class_has PROPERTIES => (
     is      => 'rw',
     isa     => 'HashRef',
     default => sub { {} },
+    documentation => 'A hash of properties that a record class declares.',
 );
 
-sub declared_props {
-    return sort keys %{ $_[0]->PROPERTIES };
-}
-
 my $UUIDGEN = Data::UUID->new();
-
-sub record_type { $_[0]->type }
 
 =head1 METHODS
 
@@ -77,15 +72,38 @@ sub record_type { $_[0]->type }
 
 Instantiates a new, empty L<Prophet::Record/> of type $type.
 
+=head2 declared_props
+
+Returns a sorted list of the names of the record's declared properties.
+Declared properties are always validated even if the user provides no value
+for that prop. This can be used for such things as requiring records to
+have certain props in order to be created, for example.
+
 =cut
 
-=head2 register_reference
+sub declared_props {
+    return sort keys %{ $_[0]->PROPERTIES };
+}
+
+=head2 record_type
+
+Returns the record's type.
+
+=cut
+
+sub record_type { $_[0]->type }
+
+=head2 register_reference $class, $accessor, $foreign_class, @args
+
+Registers a reference to a foreign class to this record. The
+foreign class must be of type L<Prophet::Collection> or
+L<Prophet::Record>, or else a fatal error is triggered.
 
 =cut
 
 sub register_reference {
     my ( $class, $accessor, $foreign_class, @args ) = @_;
-    $foreign_class->require();
+    Prophet::App->require($foreign_class);
     if ( $foreign_class->isa('Prophet::Collection') ) {
         return $class->register_collection_reference(
             $accessor => $foreign_class,
@@ -101,9 +119,9 @@ sub register_reference {
 
 =head2 register_collection_reference $accessor, $collection_class, by => $key_in_model
 
-Registers and create accessor in current class the associated
+Registers and creates an accessor in the current class to the associated
 collection C<$collection_class>, which refers to the current class by
-$key_in_model in the model class of $collection_class.
+C<$key_in_model> in the model class of C<$collection_class>.
 
 =cut
 
@@ -112,7 +130,7 @@ sub register_collection_reference {
     my %args = validate( @args, { by => 1 } );
     no strict 'refs';
 
-    Prophet::App->require_module( $collection_class->record_class );
+    Prophet::App->require( $collection_class->record_class );
 
     *{ $class . "::$accessor" } = sub {
         my $self       = shift;
@@ -224,7 +242,7 @@ Automatically canonicalizes and validates the props in question.
 
 In case of failure, returns false.
 
-On success, returns ____
+On success, returns true.
 
 =cut
 
@@ -306,6 +324,14 @@ sub delete {
 
 }
 
+=head2 changesets
+
+Returns an ordered list of changeset objects for all changesets containing
+changes to the record specified by this record object.
+
+Note that changesets may include changes to other records.
+
+=cut
 
 sub changesets {
     my $self = shift;
@@ -314,6 +340,13 @@ sub changesets {
         type => $self->type,
     );
 }
+
+=head2 changes
+
+Returns an ordered list of all the change objects that represent changes
+to the record specified by this record object.
+
+=cut
 
 sub changes {
     my $self = shift;
@@ -324,6 +357,32 @@ sub changes {
             map { $_->changes }
             @changesets;
 }
+
+=head2 uniq @list
+
+The C<List::MoreUtils::uniq> function (taken from version 0.21).
+
+Returns a new list by stripping duplicate values in @list. The order of
+elements in the returned list is the same as in @list. In scalar
+context, returns the number of unique elements in @list.
+
+    my @x = uniq 1, 1, 2, 2, 3, 5, 3, 4; # returns 1 2 3 5 4
+    my $x = uniq 1, 1, 2, 2, 3, 5, 3, 4; # returns 5
+
+=cut
+
+sub uniq (@) { my %h; map { $h{$_}++ == 0 ? $_ : () } @_; }
+
+=head2 validate_props $propsref
+
+Takes a reference to a props hash and validates each prop in the
+hash or in the C<PROPERTIES> attribute that has a validation routine
+(C<validate_prop_$prop>).
+
+Dies if any prop fails validation. Returns true on success. Returns
+false if any prop is not allowable (prop name fails validation).
+
+=cut
 
 sub validate_props {
     my $self   = shift;
@@ -343,7 +402,24 @@ sub validate_props {
     return 1;
 }
 
+=head2 _validate_prop_name
+
+A hook to allow forcing users to only use certain prop names.
+
+Currently just returns true for all inputs.
+
+=cut
+
 sub _validate_prop_name {1}
+
+=head2 canonicalize_props $propsref
+
+Takes a hashref to a props hash and canonicalizes each one if a
+C<canonicalize_prop_$prop> routine is available.
+
+Returns true on completion.
+
+=cut
 
 sub canonicalize_props {
     my $self   = shift;
@@ -356,6 +432,14 @@ sub canonicalize_props {
     }
     return 1;
 }
+
+=head2 default_props $props_ref
+
+Takes a reference to a hash of props and looks up the defaults for those
+props, if they exist (by way of C<default_prop_$prop> routines). Sets the
+values of the props in the hash to the defaults.
+
+=cut
 
 sub default_props {
     my $self   = shift;
@@ -374,14 +458,31 @@ sub default_props {
     return 1;
 }
 
-=head2 format_summary
+=head2 _default_summary_format
 
-returns a formated string that is the summary for the record.
+A string of the default summary format for record types that do not
+define their own summary format.
+
+A summary format should consist of format_string,field pairs, separated
+by | characters.
+
+Fields that are not property names must start with the C<$> character and be
+handled in the C<atom_value> routine.
+
+Example:
+
+C<'%s,$luid | %s,summary | %s,status'>
 
 =cut
 
-
 sub _default_summary_format { 'No summary format defined for this record type' }
+
+=head2 _summary_format
+
+Tries to find the summary format for the record type. Returns
+L<_default_summary_format> if nothing better can be found.
+
+=cut
 
 sub _summary_format {
     my $self = shift;
@@ -390,15 +491,45 @@ sub _summary_format {
         || $self->_default_summary_format;
 }
 
+=head2 _atomize_summary_format [$format]
+
+Splits a summary format into pieces (separated by arbitrary whitespace and
+the | character). Returns the split list.
+
+If no summary format is supplied, this routine attempts to find one by
+calling L<_summary_format>.
+
+=cut
+
 sub _atomize_summary_format {
     my $self = shift;
     my $format = shift || $self->_summary_format;
     return split /\s*\|\s*/, $format;
 }
 
+=head2 _parse_summary_format
+
+Parses the summary format for this record's type (or the default summary
+format if no type-specific format exists).
+
+Returns a list of hashrefs to hashes which contain the following keys:
+C<format>, C<prop>, C<value>, and C<formatted>
+
+(These are the format string, the property to be formatted, the value
+of that property, and the atom formatted according to C<format_atom>,
+respectively.)
+
+If no format string is supplied in a given format atom, C<%s> is used.
+
+If a format atom C<$value>'s value does not start with a C<$> character, it is
+swapped with the value of the prop C<$value> (or the string "(no value)".
+
+All values are filtered through the function C<atom_value>.
+
+=cut
+
 sub _parse_format_summary {
     my $self   = shift;
-    my $format = shift;
 
     my $props = $self->get_props;
 
@@ -432,6 +563,13 @@ sub _parse_format_summary {
     return @out;
 }
 
+=head2 format_summary
+
+Returns a formatted string that is the summary for the record. In an
+array context, returns a list of 
+
+=cut
+
 sub format_summary {
     my $self = shift;
 
@@ -439,6 +577,17 @@ sub format_summary {
     return @out if wantarray;
     return join ' ', map { $_->{formatted} } @out;
 }
+
+=head2 atom_value $value_in
+
+Takes an input value from a summary format atom and returns either its
+output value or itself (because it is a property and its value should be
+retrieved from the props attribute instead).
+
+For example, an input value of "$uuid" would return the record object's
+C<uuid> field.
+
+=cut
 
 sub atom_value {
     my $self     = shift;
@@ -452,6 +601,12 @@ sub atom_value {
 
     return $value_in;
 }
+
+=head2 format_atom $string => $value
+
+Takes a format string / value pair and returns a formatted string for printing.
+
+=cut
 
 sub format_atom {
     my $self = shift;
@@ -473,8 +628,13 @@ sub find_or_create_luid {
     return $luid;
 }
 
+=head2 colorize $field, $value
 
+Colorizes the given property / value pair according to the field's
+own C<color_prop_$field> routine, or else the generic L<color_prop> routine
+if a specific routine does not exist.
 
+=cut
 
 sub colorize {
         my $self = shift;

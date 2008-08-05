@@ -36,7 +36,7 @@ sub _get_record_class {
         return $class->new($constructor_args);
     }
     elsif (my $class = $self->record_class) {
-        Prophet::App->require_module($class);
+        Prophet::App->require($class);
         return $class->new($constructor_args);
     }
     else {
@@ -56,11 +56,11 @@ sub _type_to_record_class {
     my $self = shift;
     my $type = shift;
     my $try = $self->cli->app_class . "::Model::" . ucfirst( lc($type) );
-    Prophet::App->require_module($try);    # don't care about fails
+    Prophet::App->try_to_require($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
 
     $try = $self->cli->app_class . "::Record";
-    Prophet::App->require_module($try);    # don't care about fails
+    Prophet::App->try_to_require($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
     return 'Prophet::Record';
 }

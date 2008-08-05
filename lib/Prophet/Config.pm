@@ -109,7 +109,7 @@ Takes no arguments. Automatically loads the config for you.
 
 =head2 prophet_config_file
 
-The file which controls configuration for all Prophet apps. C<$HOME/.prophetc>.
+The file which controls configuration for all Prophet apps. C<$HOME/.prophetrc>.
 
 =head2 app_config_file
 

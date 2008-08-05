@@ -63,6 +63,7 @@ has args => (
         delete => 'delete_arg',
         keys   => 'arg_names',
     },
+    documentation => "This is a reference to the key-value pairs passed in on the commandline",
 );
 
 has props => (
@@ -97,13 +98,25 @@ handles the subcommand for a particular type
 =cut
 
 our %CMD_MAP = (
-    ls   => 'search',
-    new  => 'create',
-    edit => 'update',
-    rm   => 'delete',
-    del  => 'delete',
-    list => 'search',
+    ls      => 'search',
+    new     => 'create',
+    edit    => 'update',
+    rm      => 'delete',
+    del     => 'delete',
+    list    => 'search',
+    display => 'show',
 );
+
+=head2 _get_cmd_obj
+
+Attempts to determine a command object based on aliases and the currently
+set commands, arguments, and properties. Returns the class on success;
+dies on failure.
+
+This routine will use a C<CLI::Command::NotFound> class as a last resort, so
+failure should occur rarely if ever.
+
+=cut
 
 sub _get_cmd_obj {
     my $self = shift;
@@ -170,33 +183,47 @@ sub _get_cmd_obj {
 sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;
-    Prophet::App->require_module($class);
+    Prophet::App->try_to_require($class);
     return $class if $class->isa('Prophet::CLI::Command');
 
     warn "Invalid class $class - not a subclass of Prophet::CLI::Command."
         if $class !~ /::$/ # don't warn about "Prophet::CLI::Command::" (which happens on "./bin/sd")
-        && Class::MOP::is_class_loaded($class);
+        && Prophet::App->already_required($class);
 
     return undef;
 }
 
-=head2 parse_args
+=head2 cmp_regex
 
-This routine pulls arguments passed on the command line out of ARGV and sticks them in L</args>. The keys have leading "--" stripped.
+Returns the regex to use for matching argument key/value separators.
 
 =cut
 
 sub cmp_regex { '!=|<>|=~|!~|=|\bne\b' }
 
+=head2 parse_args
+
+This routine pulls arguments (specified by --key=value or --key value) and
+properties (specified by --props key=value or -- key=value) passed on the
+command line out of ARGV and sticks them in L</args> or L</props> and
+L</prop_set> as necessary. Argument keys have leading "--" stripped.
+
+If a key is not given a value on the command line, its value is set to undef.
+
+More complicated separators such as =~ (for regexes) are also handled (see
+L</cmp_regex> for details).
+
+=cut
+
 sub parse_args {
     my $self = shift;
 
     my @primary;
-    push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] =~ /^\w+$/ && $ARGV[0] !~ /^--/ );
+    push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] !~ /^--/ );
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
     $self->set_arg(id => pop @primary)
-        if @primary && $primary[-1] =~ /^\d+$/;
+        if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-)/i;
 
     my $sep = 0;
     my @sep_method = (
@@ -250,7 +277,6 @@ sub parse_args {
                 value => $val,
             });
         }
-
         my $setter = $sep_method[$sep] or next;
         $self->$setter($name => $val);
     }
@@ -258,7 +284,11 @@ sub parse_args {
 
 =head2 set_type_and_uuid
 
-When working with individual records, it is often the case that we'll be expecting a --type argument and then a mess of other key-value pairs.
+When working with individual records, it is often the case that we'll be
+expecting a --type argument and then a mess of other key-value pairs.
+
+This routine figures out and sets C<type> and C<uuid> from the arguments given
+on the command-line, if possible. Being unable to figure out a uuid is fatal.
 
 =cut
 
@@ -288,11 +318,16 @@ sub set_type_and_uuid {
     }
 }
 
-=head2 args [$ARGS]
+=head2 run_one_command
 
-Returns a reference to the key-value pairs passed in on the command line
+Runs a command specified by commandline arguments given in ARGV. To use in
+a commandline front-end, create a L<Prophet::CLI> object and pass in
+your main app class as app_class, then run this routine.
 
-If passed a hashref, sets the args to taht;
+Example:
+
+my $cli = Prophet::CLI->new({ app_class => 'App::SD' });
+$cli->run_one_command;
 
 =cut
 
@@ -303,6 +338,82 @@ sub run_one_command {
     if ( my $cmd_obj = $self->_get_cmd_obj() ) {
         $cmd_obj->run();
     }
+}
+
+=head2 change_attributes ( args => $hashref, props => $arrayref, type => 'str' )
+
+A hook for modifying attributes to prepare for running other commands from
+within a command.
+
+C<props> should be an array reference of hashes containing the keys C<prop>,
+C<cmp>, and C<value>, such as what is expected by the C<prop_set> attribute
+(see L<parse_args>'s use of C<add_to_prop_set>).
+
+C<args> should be a simple array of arg / value pairs.
+
+If C<type>, C<uuid>, or C<primary_commands> are not passed in, the values
+from the previous command run are used.
+
+=cut
+
+sub change_attributes {
+    my $self = shift;
+    my %args = @_;
+
+    $self->clear_args();
+    $self->clear_props();
+
+    if (my $cmd_args = $args{args}) {
+        foreach my $arg (keys %$cmd_args) {
+            if ($arg eq 'uuid') {
+                $self->uuid($cmd_args->{$arg});
+            }
+            $self->set_arg($arg => $cmd_args->{$arg});
+        }
+    }
+    if (my $props = $args{props}) {
+        foreach my $prop (@$props) {
+            my $key = $prop->{prop};
+            my $value = $prop->{value};
+            $self->set_prop($key => $value);
+            $self->add_to_prop_set($prop);
+        }
+    }
+    if (my $type = $args{type}) {
+        $self->type($type);
+    }
+    if (my $primary_commands = $args{primary_commands}) {
+        $self->primary_commands($primary_commands);
+    }
+}
+
+=head2 clear_args
+
+Clears all of the current object's set arguments.
+
+=cut
+
+sub clear_args {
+    my $self = shift;
+
+    foreach my $arg ($self->arg_names) {
+        $self->delete_arg($arg);
+    }
+}
+
+=head2 clear_props
+
+Clears all of the current object's set properties.
+
+=cut
+
+sub clear_props {
+    my $self = shift;
+
+    foreach my $prop ($self->prop_names) {
+        $self->delete_prop($prop);
+    }
+    $self->prop_set( ( ) );
 }
 
 =head2 invoke [outhandle], ARGV

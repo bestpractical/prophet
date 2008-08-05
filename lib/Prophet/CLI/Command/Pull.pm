@@ -4,25 +4,17 @@ extends 'Prophet::CLI::Command::Merge';
 
 override run => sub {
     my $self  = shift;
-
     my @from;
+
+    my $from = $self->arg('from');
+    push @from, $from if $from;
+
     my %replicas = $self->_read_cached_upstream_replicas;
-    if ($self->has_arg('from')) { 
-        my $from = $self->arg('from');
-        push @from, $from;
-        unless (exists $replicas{$from}) {
-            $replicas{$from} = 1;
-            $self->_write_cached_upstream_replicas(%replicas);
-        }
-    }
+    push @from, keys %replicas
+        if $self->has_arg('all');
 
-    if ($self->has_arg('all')) {
-        push @from, keys %replicas;
-    }
+    die "Please specify a --from, or --all.\n" if @from == 0;
 
-    die "Please specify a --from.\n" unless @from;
-
-    
     $self->set_arg(to => $self->cli->app_handle->default_replica_type.":file://".$self->cli->app_handle->handle->fs_root);
     $self->set_arg(db_uuid => $self->app_handle->handle->db_uuid);
 
@@ -30,6 +22,11 @@ override run => sub {
             print "Pulling from $from\n" if $self->has_arg('all');
             $self->set_arg(from => $from);
             super();
+    }
+
+    if ($from && !exists $replicas{$from}) {
+        $replicas{$from} = 1;
+        $self->_write_cached_upstream_replicas(%replicas);
     }
 };
 

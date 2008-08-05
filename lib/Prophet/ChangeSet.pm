@@ -4,6 +4,24 @@ use MooseX::AttributeHelpers;
 use Prophet::Change;
 use Params::Validate;
 
+has creator => (
+    is  => 'rw',
+    isa => 'Maybe[Str]',
+);
+
+has created => (
+    is      => 'rw',
+    isa     => 'Maybe[Str]',
+    default => sub {
+        my ($sec, $min, $hour, $day, $month, $year) = gmtime;
+        $year += 1900;
+        $month--;
+        return sprintf '%04d-%02d-%02d %02d:%02d:%02d',
+            $year, $month, $day,
+            $hour, $min, $sec;
+    },
+);
+
 has source_uuid => (
     is  => 'rw',
     isa => 'Str',
@@ -118,7 +136,7 @@ Returns true if this changeset has any changes
 =cut
 
 our @SERIALIZE_PROPS
-    = (qw(sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
+    = (qw(creator created sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
 
 sub as_hash {
     my $self = shift;

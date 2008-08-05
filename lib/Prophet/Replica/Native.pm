@@ -87,6 +87,7 @@ use constant cas_root          => 'cas';
 use constant record_cas_dir    => dir( __PACKAGE__->cas_root => 'records' );
 use constant changeset_cas_dir => dir( __PACKAGE__->cas_root => 'changesets' );
 use constant record_dir        => 'records';
+use constant userdata_dir      => 'userdata';
 use constant changeset_index   => 'changesets.idx';
 
 =head2 BUILD
@@ -175,7 +176,8 @@ sub initialize {
     dir( $self->fs_root, $_ )->mkpath
         for (
         $self->record_dir,     $self->cas_root,
-        $self->record_cas_dir, $self->changeset_cas_dir
+        $self->record_cas_dir, $self->changeset_cas_dir,
+        $self->userdata_dir
         );
 
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
@@ -659,8 +661,21 @@ sub _read_file {
 
 sub begin_edit {
     my $self = shift;
-    $self->current_edit(
-        Prophet::ChangeSet->new( { source_uuid => $self->uuid } ) );
+    my %args = validate(@_, {
+        source => 0, # the changeset that we're replaying, if applicable
+    });
+
+    my $source = $args{source};
+
+    my $creator = $source ? $source->creator : $self->changeset_creator;
+    my $created = $source && $source->created;
+
+    my $changeset = Prophet::ChangeSet->new({
+        source_uuid => $self->uuid,
+        creator     => $creator,
+        $created ? (created => $created) : (),
+    });
+    $self->current_edit($changeset);
     $self->current_edit_records([]);
 
 }
@@ -855,6 +870,36 @@ sub type_exists {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
     return $self->_file_exists( $self->_record_type_root( $args{'type'} ) );
+}
+
+=head2 read_userdata_file
+
+Returns the contents of the given file in this replica's userdata directory.
+Returns C<undef> if the file does not exist.
+
+=cut
+
+sub read_userdata_file {
+    my $self = shift;
+    my %args = validate( @_, { path => 1 } );
+
+    $self->_read_file(file($self->userdata_dir, $args{path}));
+}
+
+=head2 write_userdata_file
+
+Writes the given string to the given file in this replica's userdata directory.
+
+=cut
+
+sub write_userdata_file {
+    my $self = shift;
+    my %args = validate( @_, { path => 1, content => 1 } );
+
+    $self->_write_file(
+        path    => file($self->userdata_dir, $args{path}),
+        content => $args{content},
+    );
 }
 
 __PACKAGE__->meta->make_immutable;
