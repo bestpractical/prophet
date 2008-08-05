@@ -545,53 +545,6 @@ sub export_to {
     $exporter->export();
 }
 
-=head2 metadata_directory
-
-=cut
-
-sub metadata_directory {
-    my $self = shift;
-    return $ENV{PROPHET_METADATA_DIRECTORY} if $ENV{PROPHET_METADATA_DIRECTORY};
-    return dir($ENV{HOME}, '.prophet-meta', $self->uuid);
-}
-
-=head2 read_metadata_file
-
-Returns the contents of the given file in this replica's metadata directory.
-Returns C<undef> if the file does not exist.
-
-=cut
-
-sub read_metadata_file {
-    my $self = shift;
-    my %args = validate( @_, { path => 1 } );
-    my $file = file($self->metadata_directory, $args{path});
-
-    return undef if !-f $file;
-    return scalar $file->slurp;
-}
-
-=head2 write_metadata_file
-
-Writes the given string to the given file in this replica's metadata directory.
-
-=cut
-
-sub write_metadata_file {
-    my $self = shift;
-    my %args = validate( @_, { path => 1, content => 1 } );
-    my $file = file($self->metadata_directory, $args{path});
-
-    my $parent = $file->parent;
-    if (!-d $parent) {
-        $parent->mkpath || die "Failed to create directory " . $file->parent;
-    }
-
-    my $fh = $file->openw;
-    print $fh $args{content};
-    close $fh || die $!;
-}
-
 =head1 methods to be implemented by a replica backend
 
 
@@ -656,17 +609,17 @@ sub _create_luid {
     return ++$map->{'_meta'}{'maximum_luid'};
 }
 
-sub _do_metadata_read {
+sub _do_userdata_read {
     my $self    = shift;
     my $path    = shift;
     my $default = shift;
-    my $json = $self->read_metadata_file( path => $path ) || $default;
+    my $json = $self->read_userdata_file( path => $path ) || $default;
     require JSON;
     return JSON::from_json($json, { utf8 => 1 });
 
 }
 
-sub _do_metadata_write {
+sub _do_userdata_write {
     my $self  = shift;
     my $path  = shift;
     my $value = shift;
@@ -674,26 +627,24 @@ sub _do_metadata_write {
     require JSON;
     my $content = JSON::to_json($value, { canonical => 1, pretty => 0, utf8 => 1 });
 
-    $self->write_metadata_file(
+    $self->write_userdata_file(
         path    => $path,
         content => $content,
     );
 
 }
 
-# NOTE: to be honest I'm not sure this is the correct way to do this
-# or if there should be a more generic metadata store somewhere
 sub _upstream_replica_cache_file { "upstream-replica-cache" }
 
 sub _read_cached_upstream_replicas {
     my $self = shift;
-    return @{ $self->_do_metadata_read( $self->_upstream_replica_cache_file, '[]' ) || [] };
+    return @{ $self->_do_userdata_read( $self->_upstream_replica_cache_file, '[]' ) || [] };
 }
 
 sub _write_cached_upstream_replicas {
     my $self     = shift;
     my @replicas = @_;
-    return $self->_do_metadata_write( $self->_upstream_replica_cache_file, [@replicas] );
+    return $self->_do_userdata_write( $self->_upstream_replica_cache_file, [@replicas] );
 
 }
 
@@ -701,14 +652,14 @@ sub _guid2luid_file { "local-id-cache" }
 
 sub _read_guid2luid_mappings {
     my $self = shift;
-    return $self->_do_metadata_read( $self->_guid2luid_file, '{}' );
+    return $self->_do_userdata_read( $self->_guid2luid_file, '{}' );
 }
 
 sub _write_guid2luid_mappings {
     my $self = shift;
     my $map  = shift;
 
-    return $self->_do_metadata_write( $self->_guid2luid_file, $map );
+    return $self->_do_userdata_write( $self->_guid2luid_file, $map );
 }
 
 sub _read_luid2guid_mappings {
