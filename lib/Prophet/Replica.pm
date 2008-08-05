@@ -462,7 +462,7 @@ sub traverse_new_changesets {
     );
 }
 
-=head2 news_changesets_for Prophet::Replica
+=head2 new_changesets_for Prophet::Replica
 
 DEPRECATED: use traverse_new_changesets instead
 
