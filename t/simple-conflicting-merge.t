@@ -113,7 +113,8 @@ as_bob {
     is_deeply(
         $null_as_hash,
         {
-
+            creator              => undef,
+            created              => undef,
             is_nullification     => 1,
             is_resolution        => undef,
             original_sequence_no => undef,
@@ -139,7 +140,7 @@ as_bob {
     my $applied_as_hash = $applied_null->as_hash;
 
     # these aren't available yet in the memory-version
-    $applied_as_hash->{$_} = undef for qw(sequence_no source_uuid original_source_uuid original_sequence_no);
+    $applied_as_hash->{$_} = undef for qw(sequence_no source_uuid original_source_uuid original_sequence_no created);
     is_deeply( $applied_as_hash, $null_as_hash );
 
 
@@ -148,10 +149,12 @@ as_bob {
 
     my $from_alice_as_hash = $from_alice->as_hash;
 
-    $from_alice_as_hash->{$_} = undef for qw(sequence_no source_uuid);
+    $from_alice_as_hash->{$_} = undef for qw(sequence_no source_uuid created);
     is_deeply(
         $from_alice_as_hash,
         {
+            creator              => 'alice',
+            created              => undef,
             is_nullification     => undef,
             is_resolution        => undef,
             source_uuid          => undef,

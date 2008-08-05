@@ -659,8 +659,21 @@ sub _read_file {
 
 sub begin_edit {
     my $self = shift;
-    $self->current_edit(
-        Prophet::ChangeSet->new( { source_uuid => $self->uuid } ) );
+    my %args = validate(@_, {
+        source => 0, # the changeset that we're replaying, if applicable
+    });
+
+    my $source = $args{source};
+
+    my $creator = $source ? $source->creator : $self->changeset_creator;
+    my $created = $source && $source->created;
+
+    my $changeset = Prophet::ChangeSet->new({
+        source_uuid => $self->uuid,
+        creator     => $creator,
+        $created ? (created => $created) : (),
+    });
+    $self->current_edit($changeset);
     $self->current_edit_records([]);
 
 }

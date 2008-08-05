@@ -82,7 +82,10 @@ sub generate_resolution {
         $self->resolvers,
         sub { Prophet::Resolver::Failed->new->run(@_) },
     );
-    my $resolutions = Prophet::ChangeSet->new( { is_resolution => 1 } );
+    my $resolutions = Prophet::ChangeSet->new({
+        creator       => $self->prophet_handle->changeset_creator,
+        is_resolution => 1,
+    });
     for my $conflicting_change ( @{ $self->conflicting_changes } ) {
         for (@resolvers) {
             if ( my $resolution = $_->( $conflicting_change, $self, $resdb ) ) {
@@ -206,7 +209,11 @@ everything needed to nullify the conflicting state of the replica.
 
 sub generate_nullification_changeset {
     my $self = shift;
-    my $nullification = Prophet::ChangeSet->new( { is_nullification => 1 } );
+    my $nullification = Prophet::ChangeSet->new({
+        is_nullification => 1,
+        creator => undef,
+        created => undef,
+    });
 
     for my $conflict ( @{ $self->conflicting_changes } ) {
         my $nullify_conflict

@@ -145,16 +145,15 @@ sub _recode_changeset {
     my $self      = shift;
     my $entry     = shift;
     my $revprops  = shift;
-    my $changeset = Prophet::ChangeSet->new(
-        {   sequence_no          => $entry->{'revision'},
-            source_uuid          => $self->uuid,
-            original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
-            original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
-            is_nullification     => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'nullification' ) ? 1 : undef,
-            is_resolution        => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'resolution' ) ? 1 : undef,
-
-        }
-    );
+    my $changeset = Prophet::ChangeSet->new({
+        creator              => $self->changeset_creator,
+        sequence_no          => $entry->{'revision'},
+        source_uuid          => $self->uuid,
+        original_source_uuid => $revprops->{'prophet:original-source'} || $self->uuid,
+        original_sequence_no => $revprops->{'prophet:original-sequence-no'} || $entry->{'revision'},
+        is_nullification     => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'nullification' ) ? 1 : undef,
+        is_resolution        => ( ( $revprops->{'prophet:special-type'} || '' ) eq 'resolution' ) ? 1 : undef,
+    });
 
     # add each record's changes to the changeset
     for my $path ( keys %{ $entry->{'paths'} } ) {
