@@ -98,12 +98,13 @@ handles the subcommand for a particular type
 =cut
 
 our %CMD_MAP = (
-    ls   => 'search',
-    new  => 'create',
-    edit => 'update',
-    rm   => 'delete',
-    del  => 'delete',
-    list => 'search',
+    ls      => 'search',
+    new     => 'create',
+    edit    => 'update',
+    rm      => 'delete',
+    del     => 'delete',
+    list    => 'search',
+    display => 'show',
 );
 
 =head2 _get_cmd_obj
