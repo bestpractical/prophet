@@ -7,10 +7,16 @@ use File::Temp 'tempdir';
 use Path::Class;
 use Params::Validate;
 
+my ($bug_uuid, $pullall_uuid);
+
 my $alice_published = tempdir(CLEANUP => 1);
 
 as_alice {
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
+    run_output_matches( 'prophet',
+        [qw(create --type Bug -- --status new --from alice )],
+        [qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/],
+        "Created a Bug record as alice");
+    ok($bug_uuid, "got a uuid for the Bug record");
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 
     run_ok( 'prophet', [qw(publish --to), $alice_published] );
@@ -25,7 +31,12 @@ as_bob {
 };
 
 as_alice {
-    run_ok( 'prophet', [qw(create --type Pullall -- --status new --from alice )], "Created another record as alice" );
+    run_output_matches( 'prophet',
+        [qw(create --type Pullall -- --status new --from alice )],
+        [qr/Created Pullall \d+ \((\S+)\)(?{ $pullall_uuid = $1 })/],
+        "Created a Pullall record as alice");
+    ok($pullall_uuid, "got a uuid for the Pullall record");
+
     run_ok( 'prophet', [qw(publish --to), $alice_published] );
 };
 
@@ -56,22 +67,25 @@ for my $user ('alice', 'bob', 'charlie', 'david') {
     my $replica = Prophet::Replica->new({ url => repo_uri_for($user) });
     my $changesets = $replica->fetch_changesets(after => 0);
 
-    diag "Verifying $user\'s first changeset";
+    is(@$changesets, 2, "two changesets for $user");
+
     changeset_ok(
         changeset   => $changesets->[0],
         user        => $user,
         record_type => 'Bug',
         sequence_no => 1,
         merge       => $user ne 'alice',
+        uuid        => $bug_uuid,
+        name        => "$user\'s first changeset",
     );
-
-    diag "Verifying $user\'s second changeset";
     changeset_ok(
         changeset   => $changesets->[1],
         user        => $user,
         record_type => 'Pullall',
         sequence_no => 2,
         merge       => $user ne 'alice',
+        uuid        => $pullall_uuid,
+        name        => "$user\'s second changeset",
     );
 }
 
@@ -84,44 +98,37 @@ sub changeset_ok {
         sequence_no => 1,
         record_type => 1,
         merge       => 1,
+        uuid        => 1,
+        name        => 0,
     });
 
-    my $changeset = $args{changeset};
+    my $changeset = $args{changeset}->as_hash;
 
-    is_deeply($changeset, bless {
+    is_deeply($changeset, {
         creator              => 'alice',
-        created              => $changeset->created,
+        created              => $changeset->{created},
         is_resolution        => undef,
         is_nullification     => undef,
-        sequence_no          => $args{sequence_no},,
+        sequence_no          => $args{sequence_no},
         source_uuid          => replica_uuid_for($args{user}),
         original_sequence_no => $args{sequence_no},
         original_source_uuid => replica_uuid_for('alice'),
-        changes              => [
-            bless({
+        changes              => {
+            $args{uuid} => {
                 change_type  => 'add_file',
                 record_type  => $args{record_type},
-                record_uuid  => $changeset->changes->[0]->record_uuid,
-                prop_changes => [
-                    bless({
-                        name      => 'status',
+                prop_changes => {
+                    status => {
                         old_value => undef,
                         new_value => 'new',
-                    }, 'Prophet::PropChange'),
-                    bless {
-                        name      => 'from',
+                    },
+                    from => {
                         old_value => undef,
                         new_value => 'alice',
-                    }, 'Prophet::PropChange',
-                ],
-            }, 'Prophet::Change'),
-
-            # need to account for the merge ticket except in the original
-            # replica
-            $args{merge}
-            ? $changeset->changes->[1]
-            : ()
-        ],
-    }, 'Prophet::ChangeSet');
+                    },
+                },
+            },
+        },
+    }, $args{name});
 }
 
