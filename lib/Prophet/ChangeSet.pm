@@ -6,12 +6,12 @@ use Params::Validate;
 
 has creator => (
     is  => 'rw',
-    isa => 'Str',
+    isa => 'Maybe[Str]',
 );
 
 has created => (
     is      => 'rw',
-    isa     => 'Str',
+    isa     => 'Maybe[Str]',
     default => sub {
         my ($sec, $min, $hour, $day, $month, $year) = gmtime;
         $year += 1900;

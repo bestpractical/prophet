@@ -210,8 +210,9 @@ everything needed to nullify the conflicting state of the replica.
 sub generate_nullification_changeset {
     my $self = shift;
     my $nullification = Prophet::ChangeSet->new({
-        creator          => $self->prophet_handle->changeset_creator,
         is_nullification => 1,
+        creator => undef,
+        created => undef,
     });
 
     for my $conflict ( @{ $self->conflicting_changes } ) {
