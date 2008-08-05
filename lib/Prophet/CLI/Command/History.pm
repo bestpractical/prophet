@@ -22,12 +22,15 @@ sub run {
         print "Changeset ".$changeset->original_sequence_no .'@'.$changeset->original_source_uuid."\n";
 
         no warnings 'uninitialized'; # old changesets don't have creator
-        print "by " . $changeset->creator . '@' . $changeset->original_source_uuid."\n";
-        print "\n";
+        print "by "
+            . $changeset->creator . '@' . $changeset->original_source_uuid
+            ." at " . $changeset->created . "\n";
 
         for my $prop_change (@prop_changes) {
             print "  ".$prop_change->summary, "\n";
         }
+
+        print "\n";
     }
 }
 
