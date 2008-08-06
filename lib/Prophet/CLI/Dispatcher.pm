@@ -14,8 +14,25 @@ on qr{(.*)} => sub {
     my $cli = shift;
     my %args = @_;
 
-    my $class = join '::', split ' ', $1;
-    $args{got_command}->($class);
+    my @possible_classes;
+
+    my @pieces = split ' ', $1;
+
+    for my $main ($cli->app_class, "Prophet") {
+        push @possible_classes, $main
+                              . "::CLI::Command::"
+                              . ucfirst lc $pieces[-1];
+    }
+
+    for my $main ($cli->app_class, "Prophet") {
+        push @possible_classes, $main . "::CLI::Command::NotFound";
+    }
+
+    for my $class (@possible_classes) {
+        if ($cli->_try_to_load_cmd_class($class)) {
+            return $args{got_command}->($class);
+        }
+    }
 };
 
 1;
