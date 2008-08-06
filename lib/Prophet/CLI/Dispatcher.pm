@@ -10,23 +10,14 @@ on qr{ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
     run($1, $cli, @_);
 };
 
-on qr{(.*)} => sub {
+on qr{^(\w+)} => sub {
     my $cli = shift;
     my %args = @_;
 
-    my @possible_classes;
-
-    my @pieces = split ' ', $1;
-
-    for my $main ($cli->app_class, "Prophet") {
-        push @possible_classes, $main
-                              . "::CLI::Command::"
-                              . ucfirst lc $pieces[-1];
-    }
-
-    for my $main ($cli->app_class, "Prophet") {
-        push @possible_classes, $main . "::CLI::Command::NotFound";
-    }
+    my @possible_classes = (
+        ("Prophet::CLI::Command::" . ucfirst lc $1),
+        "Prophet::CLI::Command::Notound",
+    );
 
     for my $class (@possible_classes) {
         if ($cli->_try_to_load_cmd_class($class)) {
