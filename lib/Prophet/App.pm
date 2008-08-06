@@ -60,7 +60,7 @@ sub _load_replica_types {
     for my $package ( $self->app_replica_types) {
         $self->require($package);
         next unless $package->can('scheme');
-        Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package) 
+        Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package)
     }
 }
 
@@ -87,16 +87,16 @@ sub _require {
     my $self = shift;
     my %args = ( module => undef, quiet => undef, @_);
     my $class = $args{'module'};
-    
+
     # Quick hack to silence warnings.
     # Maybe some dependencies were lost.
     unless ($class) {
         warn sprintf("no class was given at %s line %d\n", (caller)[1,2]);
         return 0;
-    }   
-    
+    }
+
     return 1 if $self->already_required($class);
-    
+
     # .pm might already be there in a weird interaction in Module::Pluggable
     my $file = $class;
     $file .= ".pm"
@@ -120,6 +120,18 @@ sub _require {
     }
 
     return 1;
+}
+
+=head2 already_required class
+
+Helper function to test whether a given class has already been require'd.
+
+=cut
+
+sub already_required {
+    my ($self, $class) = @_;
+    my $path =  join('/', split(/::/,$class)).".pm";
+    return ( $INC{$path} ? 1 : 0);
 }
 
 __PACKAGE__->meta->make_immutable;

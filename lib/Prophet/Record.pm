@@ -281,7 +281,7 @@ sub get_props {
 
 =head2 prop $name
 
-Returns the current value of the property C<$name> for this record. 
+Returns the current value of the property C<$name> for this record.
 (This is a convenience method wrapped around L</get_props>.
 
 =cut
@@ -294,7 +294,7 @@ sub prop {
 
 =head2 delete_prop { name => $name }
 
-Deletes the current value for the property $name. 
+Deletes the current value for the property $name.
 
 TODO: how is this different than setting it to an empty value?
 
@@ -436,7 +436,8 @@ sub canonicalize_props {
 =head2 default_props $props_ref
 
 Takes a reference to a hash of props and looks up the defaults for those
-props, if they exist. Sets the values of the props in the hash to the defaults.
+props, if they exist (by way of C<default_prop_$prop> routines). Sets the
+values of the props in the hash to the defaults.
 
 =cut
 
@@ -459,7 +460,8 @@ sub default_props {
 
 =head2 _default_summary_format
 
-returns a formatted string that is the summary for the record.
+A string of the default summary format for record types that do not
+define their own summary format.
 
 A summary format should consist of format_string,field pairs, separated
 by | characters.
@@ -564,7 +566,7 @@ sub _parse_format_summary {
 =head2 format_summary
 
 Returns a formatted string that is the summary for the record. In an
-array context, returns a list of 
+array context, returns a list of
 
 =cut
 
