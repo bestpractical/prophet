@@ -108,6 +108,15 @@ our %CMD_MAP = (
     display => 'show',
 );
 
+=head2 dispatcher -> Class
+
+Returns the dispatcher used to dispatch command lines. You'll want to override
+this in your subclass.
+
+=cut
+
+sub dispatcher { "Prophet::CLI::Dispatcher" }
+
 =head2 _get_cmd_obj
 
 Attempts to determine a command object based on aliases and the currently
@@ -130,7 +139,7 @@ sub _get_cmd_obj {
         got_command => sub { $class = shift },
     );
 
-    Prophet::CLI::Dispatcher->run($command, $self, %dispatcher_args);
+    $self->dispatcher->run($command, $self, %dispatcher_args);
 
     die "I don't know how to parse '$command'. Are you sure that's a valid command?" unless $class;
 
