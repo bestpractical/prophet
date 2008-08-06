@@ -136,7 +136,8 @@ sub _get_cmd_obj {
     # yeah this kind of sucks but there's no sane way to tell 
     my $class;
     my %dispatcher_args = (
-        got_command => sub { $class = shift },
+        got_command    => sub { $class = shift },
+        dispatching_on => $self->primary_commands,
     );
 
     $self->dispatcher->run($command, $self, %dispatcher_args);
