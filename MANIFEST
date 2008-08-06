@@ -73,7 +73,6 @@ Makefile
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
-META.yml
 t/01-dependencies.t
 t/99-pod-coverage.t
 t/99-pod.t
