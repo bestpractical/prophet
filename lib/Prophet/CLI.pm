@@ -340,23 +340,17 @@ sub run_one_command {
     }
 }
 
-=head2 change_attributes ( args => $hashref, props => $arrayref, type => 'str' )
+=head2 run_another_command ( args => $hashref, props => $hashref, type => 'str' )
 
-A hook for modifying attributes to prepare for running other commands from
-within a command.
-
-C<props> should be an array reference of hashes containing the keys C<prop>,
-C<cmp>, and C<value>, such as what is expected by the C<prop_set> attribute
-(see L<parse_args>'s use of C<add_to_prop_set>).
-
-C<args> should be a simple array of arg / value pairs.
+A hook for running a second command from within a command without having
+to use the commandline argument parsing.
 
 If C<type>, C<uuid>, or C<primary_commands> are not passed in, the values
 from the previous command run are used.
 
 =cut
 
-sub change_attributes {
+sub run_another_command {
     my $self = shift;
     my %args = @_;
 
@@ -372,18 +366,20 @@ sub change_attributes {
         }
     }
     if (my $props = $args{props}) {
-        foreach my $prop (@$props) {
-            my $key = $prop->{prop};
-            my $value = $prop->{value};
-            $self->set_prop($key => $value);
+        foreach my $prop (keys %$props) {
+            $self->set_prop($prop => $props->{$prop});
             $self->add_to_prop_set($prop);
         }
     }
     if (my $type = $args{type}) {
         $self->type($type);
     }
+
     if (my $primary_commands = $args{primary_commands}) {
         $self->primary_commands($primary_commands);
+    }
+    if ( my $cmd_obj = $self->_get_cmd_obj() ) {
+        $cmd_obj->run();
     }
 }
 
@@ -396,7 +392,7 @@ Clears all of the current object's set arguments.
 sub clear_args {
     my $self = shift;
 
-    foreach my $arg ($self->arg_names) {
+    foreach my $arg ($self->args) {
         $self->delete_arg($arg);
     }
 }
@@ -410,7 +406,7 @@ Clears all of the current object's set properties.
 sub clear_props {
     my $self = shift;
 
-    foreach my $prop ($self->prop_names) {
+    foreach my $prop ($self->props) {
         $self->delete_prop($prop);
     }
     $self->prop_set( ( ) );

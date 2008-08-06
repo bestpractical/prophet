@@ -122,20 +122,6 @@ sub _require {
     return 1;
 }
 
-=head2 already_required class
-
-Helper function to test whether a given class has already been require'd.
-
-=cut
-    
-    
-sub already_required {
-    my ($self, $class) = @_;
-    my $path =  join('/', split(/::/,$class)).".pm";
-    return ( $INC{$path} ? 1 : 0);
-}
-
-
 __PACKAGE__->meta->make_immutable;
 no Moose;
 

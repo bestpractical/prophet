@@ -436,8 +436,7 @@ sub canonicalize_props {
 =head2 default_props $props_ref
 
 Takes a reference to a hash of props and looks up the defaults for those
-props, if they exist (by way of C<default_prop_$prop> routines). Sets the
-values of the props in the hash to the defaults.
+props, if they exist. Sets the values of the props in the hash to the defaults.
 
 =cut
 
@@ -460,8 +459,7 @@ sub default_props {
 
 =head2 _default_summary_format
 
-A string of the default summary format for record types that do not
-define their own summary format.
+returns a formatted string that is the summary for the record.
 
 A summary format should consist of format_string,field pairs, separated
 by | characters.
