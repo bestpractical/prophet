@@ -19,6 +19,16 @@ has record_class => (
     isa => 'Prophet::Record',
 );
 
+=head2 _get_record_class [{ type => 'type' }]
+
+Tries to determine a record class from either the given type argument or
+the current object's C<$type> attribute.
+
+Returns a new instance of the record class on success, or throws a fatal
+error with a stack trace on failure.
+
+=cut
+
 sub _get_record_class {
     my $self = shift;
     my %args = validate(@_, {
@@ -44,13 +54,29 @@ sub _get_record_class {
     }
 }
 
+=head2 _load_record
+
+Attempts to load the record specified by the C<uuid> attribute.
+
+Returns the loaded record on success, or throws a fatal error if no
+record can be found.
+
+=cut
+
 sub _load_record {
     my $self = shift;
     my $record = $self->_get_record_class;
-        $record->load( uuid => $self->uuid )
+    $record->load( uuid => $self->uuid )
         || $self->fatal_error("I couldn't find the record " . $self->uuid);
     return $record;
 }
+
+=head2 _type_to_record_class $type
+
+Takes a type and tries to figure out a record class name from it.
+Returns C<'Prophet::Record'> if no better class name is found.
+
+=cut
 
 sub _type_to_record_class {
     my $self = shift;
