@@ -13,7 +13,9 @@ sub edit_record {
 sub run {
     my $self = shift;
 
+    $self->require_uuid;
     my $record = $self->_load_record;
+
     my $result = $record->set_props( props => $self->edit_record($record) );
     if ($result) {
         print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";

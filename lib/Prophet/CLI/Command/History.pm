@@ -6,7 +6,9 @@ with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
 
+    $self->require_uuid;
     my $record = $self->_load_record;
+
     print "History for record " . $record->luid . " (" . $record->uuid . ")\n\n";
     for my $changeset ($record->changesets) {
         my @changes = grep { $_->record_uuid eq $record->uuid }

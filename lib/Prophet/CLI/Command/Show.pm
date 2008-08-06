@@ -7,6 +7,7 @@ with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
 
+    $self->require_uuid;
     my $record = $self->_load_record;
 
     print $self->stringify_props(
