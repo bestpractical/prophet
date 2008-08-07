@@ -20,7 +20,16 @@ sub publish_dir {
 
     push @args, $args{to};
 
-    system("rsync", @args);
+    my $rsync = $ENV{RSYNC} || "rsync";
+    my $ret = system($rsync, @args);
+
+    if ($ret == -1) {
+        die "You must have 'rsync' installed to use this command.
+
+If you have rsync but it's not in your path, set environment variable \$RSYNC to the absolute path of your rsync executable.\n";
+    }
+
+    return $ret;
 }
 
 no Moose::Role;
