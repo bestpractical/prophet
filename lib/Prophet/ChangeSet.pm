@@ -160,6 +160,34 @@ sub new_from_hashref {
     return $self;
 }
 
+sub as_string {
+    my $self = shift;
+    my $out = '';
+
+    $out .= "Changeset "
+         .  $self->original_sequence_no . '@' . $self->original_source_uuid
+         .  "\n";
+
+    no warnings 'uninitialized'; # old changesets don't have creator
+    $out .= "by "
+         .  $self->creator . '@' . $self->original_source_uuid
+         .  " at " . $self->created . "\n";
+
+    for my $change ($self->changes) {
+        my @prop_changes = $change->prop_changes;
+        next if @prop_changes == 0;
+
+        for my $prop_change (@prop_changes) {
+            $out .= "  " . $prop_change->summary . "\n";
+        }
+        $out .= "\n";
+    }
+
+    $out .= "\n";
+
+    return $out;
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
