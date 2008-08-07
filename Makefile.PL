@@ -7,7 +7,6 @@ license('Perl');
 
 requires('Params::Validate');
 requires('IPC::Run3');
-requires('File::Rsync');
 requires('Data::UUID');
 requires('Path::Class');
 requires('Test::Exception');
