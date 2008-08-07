@@ -58,11 +58,25 @@ sub _do_merge {
                    ? 'Prophet::Resolver::AlwaysSource'
                    : ();
 
-    $target->import_changesets(
+    my %import_args = (
         from  => $source,
         resdb => $self->app_handle->resdb_handle,
         force => $self->has_arg('force'),
-        ( $resolver ? (resolver_class => $resolver) : () ),
+    );
+
+    $import_args{resolver_class} = $resolver
+        if $resolver;
+
+    if ($self->has_arg('verbose')) {
+        $import_args{reporting_callback} = sub {
+            my %args = @_;
+            my $changeset = $args{changeset};
+            print $changeset->as_string;
+        };
+    }
+
+    $target->import_changesets(
+        %import_args,
     );
 }
 
