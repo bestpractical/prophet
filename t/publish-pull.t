@@ -23,7 +23,7 @@ as_alice {
 };
 
 my $alice_uuid = database_uuid_for('alice');
-my $path = dir($alice_published)->file($alice_uuid);
+my $path = dir($alice_published);
 
 as_bob {
     run_ok( 'prophet', ['pull', '--from', "file:$path", '--force'] );
