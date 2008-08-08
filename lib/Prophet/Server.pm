@@ -1,21 +1,35 @@
 package Prophet::Server;
-use Moose;
+use warnings;
+use strict;
 
 Prophet::App->try_to_require('HTTP::Server::Simple::Bonjour');
 if (Prophet::App->already_required('HTTP::Server::Simple::Bonjour')){
-    extends 'HTTP::Server::Simple::Bonjour';
+   use base qw'HTTP::Server::Simple::Bonjour';
 }
-extends 'HTTP::Server::Simple::CGI';
+use base qw'HTTP::Server::Simple::CGI';
+
+
 
 use Prophet::Server::View;
 use Params::Validate qw/:all/;
 use JSON;
 use Path::Class;
 
-has app_handle => (
-    isa => 'Prophet::App',
-    is => 'rw'
-);
+# Support for the bonjour replica type
+our $DB_UUID;
+sub service_name { $DB_UUID }
+sub service_type { '_prophet._tcp' }
+
+sub app_handle {
+    my $self = shift;
+    if (@_) {
+        $self->{'app_handle'} = shift;
+        $DB_UUID = $self->{'app_handle'}->handle->db_uuid;
+    }
+    return $self->{'app_handle'};
+}
+# we can't moose until we sort out HTTP::Server::Simple with bonjour
+#has app_handle => ( isa => 'Prophet::App', is => 'rw');
 
 sub new {
     my $class = shift;

@@ -3,32 +3,66 @@ use Moose;
 extends 'Prophet::CLI::Command::Merge';
 
 override run => sub {
-    my $self  = shift;
+    my $self = shift;
     my @from;
 
-    my $from = $self->arg('from');
-    push @from, $from if $from;
+    $self->set_arg( db_uuid => $self->app_handle->handle->db_uuid ) 
+        unless ($self->arg('db_uuid'));
 
-    my %replicas = $self->_read_cached_upstream_replicas;
-    push @from, keys %replicas
-        if $self->has_arg('all');
+    push @from, $self->arg('from') if $self->arg('from');
 
-    die "Please specify a --from, or --all.\n" if @from == 0;
+    my %previous_sources = $self->_read_cached_upstream_replicas;
+    push @from, keys %previous_sources if $self->has_arg('all');
 
-    $self->set_arg(to => $self->cli->app_handle->default_replica_type.":file://".$self->cli->app_handle->handle->fs_root);
-    $self->set_arg(db_uuid => $self->app_handle->handle->db_uuid);
+    my @bonjour_replicas = $self->find_bonjour_replicas;
 
-    for my $from (@from) {
-            print "Pulling from $from\n" if $self->has_arg('all');
-            $self->set_arg(from => $from);
-            super();
+    die "Please specify a --from, --local or --all.\n"
+        unless ( $self->has_arg('from')
+        || $self->has_arg('local')
+        || $self->has_arg('all') );
+
+    $self->set_arg( to => $self->cli->app_handle->default_replica_type
+            . ":file://"
+            . $self->cli->app_handle->handle->fs_root );
+
+    for my $from ( @from, @bonjour_replicas ) {
+        print "Pulling from $from\n";
+        #if ( $self->has_arg('all') || $self->has_arg('local') );
+        $self->set_arg( from => $from );
+        super();
     }
 
-    if ($from && !exists $replicas{$from}) {
-        $replicas{$from} = 1;
-        $self->_write_cached_upstream_replicas(%replicas);
+    if ( $self->arg('from') && !exists $previous_sources{$self->arg('from')} ) {
+        $previous_sources{$self->arg('from')} = 1;
+        $self->_write_cached_upstream_replicas(%previous_sources);
     }
 };
+
+sub find_bonjour_replicas {
+    my $self = shift;
+    my @bonjour_replicas;
+    if ( $self->has_arg('local') ) {
+        Prophet::App->try_to_require('Net::Bonjour');
+        if ( Prophet::App->already_required('Net::Bonjour') ) {
+            print "Probing for local database replicas with Bonjour\n";
+            my $res = Net::Bonjour->new('prophet');
+            $res->discover;
+            foreach my $entry ( $res->entries ) {
+                if ( $entry->name eq $self->arg('db_uuid') ) {
+                    print "Found a database replica on " . $entry->hostname."\n";
+                    my $uri = URI->new();
+                    $uri->scheme( 'http' );
+                    $uri->host($entry->hostname);
+                    $uri->port( $entry->port );
+                    $uri->path('replica/');
+                    push @bonjour_replicas,  $uri->canonical.""; #scalarize
+                }
+            }
+        }
+
+    }
+    return @bonjour_replicas;
+}
 
 sub _read_cached_upstream_replicas {
     my $self = shift;
