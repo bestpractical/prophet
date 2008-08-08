@@ -390,8 +390,7 @@ sub conflicts_from_changeset {
 
     return undef unless $conflict->has_conflicting_changes;
 
-    require YAML;
-    $self->log("Conflicting changeset: ".YAML::Dump($conflict));
+    $self->log("Conflicting changeset: ".JSON::to_json($conflict, {allow_blessed => 1}));
 
     return $conflict;
 
