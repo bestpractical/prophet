@@ -13,7 +13,7 @@ use Prophet::Conflict;
 
 has '+db_uuid' => (
     lazy    => 1,
-    default => sub { shift->_read_file('database-uuid') },
+    default => sub { shift->read_file('database-uuid') },
 );
 
 has _uuid => (
@@ -24,7 +24,7 @@ has _uuid => (
 has replica_version => (
     is      => 'ro',
     lazy    => 1,
-    default => sub { shift->_read_file('replica-version') }
+    default => sub { shift->read_file('replica-version') }
 );
 
 has fs_root_parent => (
@@ -191,7 +191,7 @@ sub initialize {
 
 sub latest_sequence_no {
     my $self = shift;
-    $self->_read_file('latest-sequence-no');
+    $self->read_file('latest-sequence-no');
 }
 
 sub set_latest_sequence_no {
@@ -218,7 +218,7 @@ Return the replica SVN repository's UUID
 
 sub uuid {
     my $self = shift;
-    $self->_uuid( $self->_read_file('replica-uuid') ) unless $self->_uuid;
+    $self->_uuid( $self->read_file('replica-uuid') ) unless $self->_uuid;
     return $self->_uuid;
 }
 
@@ -342,7 +342,7 @@ sub _read_record_index {
         type => $args{type}
     );
 
-    my $index = $self->_read_file($idx_filename);
+    my $index = $self->read_file($idx_filename);
     return undef unless $index;
 
     # XXX TODO THIS CODE IS HACKY AND SHOULD BE SHOT;
@@ -382,7 +382,7 @@ sub _read_serialized_record {
     );
 
     return undef unless $casfile;
-    return from_json( $self->_read_file($casfile), { utf8 => 1 } );
+    return from_json( $self->read_file($casfile), { utf8 => 1 } );
 }
 
 sub _record_index_filename {
@@ -493,7 +493,7 @@ sub _get_changeset_index_entry {
         );
 
         my $changeset = $self->_deserialize_changeset(
-            content              => $self->_read_file($casfile),
+            content              => $self->read_file($casfile),
             original_source_uuid => $orig_uuid,
             original_sequence_no => $orig_seq,
             sequence_no          => $seq
@@ -529,7 +529,7 @@ sub traverse_changesets {
 
 sub _read_changeset_index {
     my $self =shift;
-    my $chgidx    = $self->_read_file( $self->changeset_index );
+    my $chgidx    = $self->read_file( $self->changeset_index );
     return \$chgidx;
 }
 
@@ -635,25 +635,25 @@ sub _file_exists {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
 
-    if ( $self->fs_root ) {
-        my $path = file( $self->fs_root, $file );
-        if    ( -f $path ) { return 1 }
-        elsif ( -d $path ) { return 2 }
-        else               { return 0 }
-    } else {
-        return $self->_read_file($file) ? 1 : 0;
+    if (! $self->fs_root ) {
+        # HTTP Replica
+        return $self->read_file($file) ? 1 : 0;
     }
+
+    my $path = file( $self->fs_root, $file );
+   if    ( -f $path ) { return 1 }
+   elsif ( -d $path ) { return 2 }
+   else               { return 0 }
 }
 
-sub _read_file {
+sub read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
     if ( $self->fs_root ) {
-        if ( $self->_file_exists($file) ) {
-            return scalar file( $self->fs_root => $file )->slurp;
-        } else {
-            return undef;
-        }
+        my $qualified_file = file( $self->fs_root => $file );
+        return undef unless dir($self->fs_root)->subsumes($qualified_file);
+        return scalar $qualified_file->slurp if  $self->_file_exists($file);
+        return undef;
     } else {    # http replica
         return LWP::Simple::get( $self->url . "/" . $file );
     }
@@ -883,7 +883,7 @@ sub read_userdata_file {
     my $self = shift;
     my %args = validate( @_, { path => 1 } );
 
-    $self->_read_file(file($self->userdata_dir, $args{path}));
+    $self->read_file(file($self->userdata_dir, $args{path}));
 }
 
 =head2 write_userdata_file
