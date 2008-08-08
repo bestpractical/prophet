@@ -32,6 +32,21 @@ sub run {
     print "Merge complete.\n";
 }
 
+=head2 _do_merge $source $target
+
+Merges changesets from the source replica into the target replica.
+
+Fails fatally if the source and target are the same, or the target is
+not writable.
+
+Conflicts are resolved by either the resolver specified in the
+C<PROPHET_RESOLVER> environmental variable, the C<prefer> argument
+(can be set to C<to> or C<from>, in which case Prophet will
+always prefer changesets from one replica or the other), or by
+using a default resolver.
+
+=cut
+
 sub _do_merge {
     my ( $self, $source, $target ) = @_;
 

@@ -9,9 +9,9 @@ override run => sub {
     $self->set_arg( db_uuid => $self->app_handle->handle->db_uuid ) 
         unless ($self->arg('db_uuid'));
 
-    push @from, $self->arg('from') if $self->arg('from');
-
     my %previous_sources = $self->_read_cached_upstream_replicas;
+    push @from, $self->arg('from')
+        if ($self->arg('from') && !$previous_sources{$self->arg('from')});
     push @from, keys %previous_sources if $self->has_arg('all');
 
     my @bonjour_replicas = $self->find_bonjour_replicas;
@@ -37,6 +37,14 @@ override run => sub {
         $self->_write_cached_upstream_replicas(%previous_sources);
     }
 };
+
+=head2 find_bonjour_replicas
+
+Probes the local network for bonjour replicas if the local arg is specified.
+
+Returns a list of found replica URIs.
+
+=cut
 
 sub find_bonjour_replicas {
     my $self = shift;
@@ -64,10 +72,25 @@ sub find_bonjour_replicas {
     return @bonjour_replicas;
 }
 
+=head2 _read_cached_upstream_replicas
+
+Returns a hash containing url => 1 pairs, where the URLs are the replicas that
+have been previously pulled from.
+
+=cut
+
 sub _read_cached_upstream_replicas {
     my $self = shift;
     return map { $_ => 1 } $self->cli->app_handle->resdb_handle->_read_cached_upstream_replicas;
 }
+
+=head2 _write_cached_upstream_replicas %replicas
+
+Writes the replica URLs given in C<keys %replicas> to the current Prophet
+repository's upstream replica cache (these replicas will be pulled from when a
+user specifies --all).
+
+=cut
 
 sub _write_cached_upstream_replicas {
     my $self  = shift;
