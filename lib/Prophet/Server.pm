@@ -1,17 +1,21 @@
 package Prophet::Server;
-use strict;
-use warnings;
-use base 'HTTP::Server::Simple::CGI';
+use Moose;
+
+Prophet::App->try_to_require('HTTP::Server::Simple::Bonjour');
+if (Prophet::App->already_required('HTTP::Server::Simple::Bonjour')){
+    extends 'HTTP::Server::Simple::Bonjour';
+}
+extends 'HTTP::Server::Simple::CGI';
 
 use Prophet::Server::View;
 use Params::Validate qw/:all/;
 use JSON;
+use Path::Class;
 
-sub prophet_handle {
-    my $self = shift;
-    $self->{'_prophet_handle'} = shift if @_;
-    return $self->{'_prophet_handle'};
-}
+has app_handle => (
+    isa => 'Prophet::App',
+    is => 'rw'
+);
 
 sub new {
     my $class = shift;
@@ -35,6 +39,22 @@ sub handle_request_get {
     my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
     my $p = $cgi->path_info;
 
+
+    if ($p =~ qr{^/+replica/+(.*)$}) {
+        my $repo_file = $1;
+        my $file_obj = file($repo_file);
+        return undef unless $self->app_handle->handle->can('read_file');
+
+       my $content =$self->app_handle->handle->read_file($repo_file);
+       return unless length($content);
+       return $self->_send_content(
+            content_type => 'application/prophet-needs-a-better-type',
+            content      => $content
+        );
+
+
+    }
+
     if (Template::Declare->has_template($p)) {
         my $content = Template::Declare->show($p);
 
@@ -47,7 +67,7 @@ sub handle_request_get {
     if ( $p =~ m|^/records\.json$| ) {
         $self->_send_content(
             content_type => 'text/x-json',
-            content      => to_json( $self->prophet_handle->list_types )
+            content      => to_json( $self->app_handle->handle->list_types )
         );
 
     } elsif ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {
@@ -73,7 +93,7 @@ sub handle_request_get {
 
     elsif ( $p =~ m|^/records/(.*).json| ) {
         my $type = $1;
-        my $col = Prophet::Collection->new( handle => $self->prophet_handle, type => $type );
+        my $col = Prophet::Collection->new( handle => $self->app_handle->handle, type => $type );
         $col->matching( sub {1} );
         warn "Query language not implemented yet.";
         return $self->_send_content(
@@ -118,9 +138,9 @@ sub load_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 0 } );
 
-    my $record = Prophet::Record->new( handle => $self->prophet_handle, type => $args{type} );
+    my $record = Prophet::Record->new( handle => $self->app_handle->handle, type => $args{type} );
     if ( $args{'uuid'} ) {
-        return undef unless ( $self->prophet_handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
+        return undef unless ( $self->app_handle->handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
         $record->load( uuid => $args{uuid} );
     }
     return $record;

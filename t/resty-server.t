@@ -16,7 +16,7 @@ my $ua  = Test::WWW::Mechanize->new();
 my $cli = Prophet::CLI->new();
 my $s   = Prophet::TestServer->new();
 
-$s->prophet_handle( $cli->app_handle->handle );
+$s->app_handle( $cli->app_handle );
 
 my $url_root = $s->started_ok("start up my web server");
 

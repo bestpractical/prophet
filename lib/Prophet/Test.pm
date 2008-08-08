@@ -76,7 +76,7 @@ sub in_gladiator (&) {
         $types->{ ref($_) }++;
     }
     map { $types->{$_} || delete $types->{$_} } keys %$types;
-    warn YAML::Dump($types);
+    warn YAML::Syck::Dump($types);
 
 }
 

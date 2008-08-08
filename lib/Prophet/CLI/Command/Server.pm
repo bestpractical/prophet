@@ -9,7 +9,7 @@ sub run {
     my $self = shift;
 
     my $server = Prophet::Server->new( $self->arg('port') || 8080 );
-    $server->prophet_handle( $self->app_handle->handle );
+    $server->app_handle( $self->app_handle );
     $server->run;
 }
 
