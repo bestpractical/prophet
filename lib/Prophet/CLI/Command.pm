@@ -33,7 +33,7 @@ if it is not set.
 sub require_uuid {
     my $self    = shift;
 
-    if (!$self->uuid) {
+    if (!$self->has_uuid) {
         my $type = $self->type;
         my $name = (split /::/, $self->meta->name)[-1];
         die "\u$type \l$name requires a luid or uuid (use --id to specify).\n";

@@ -3,15 +3,17 @@ use Moose::Role;
 use Params::Validate;
 
 has type => (
-    is       => 'rw',
-    isa      => 'Str',
-    required => 0,
+    is        => 'rw',
+    isa       => 'Str',
+    required  => 0,
+    predicate => 'has_type',
 );
 
 has uuid => (
-    is       => 'rw',
-    isa      => 'Str',
-    required => 0,
+    is        => 'rw',
+    isa       => 'Str',
+    required  => 0,
+    predicate => 'has_uuid',
 );
 
 has record_class => (
