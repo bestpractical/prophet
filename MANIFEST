@@ -69,7 +69,6 @@ lib/Prophet/Server/View.pm
 lib/Prophet/Test.pm
 lib/Prophet/Test/Arena.pm
 lib/Prophet/Test/Participant.pm
-Makefile
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
