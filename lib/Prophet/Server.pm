@@ -28,6 +28,9 @@ sub app_handle {
     }
     return $self->{'app_handle'};
 }
+
+sub handle { shift->app_handle->handle }
+
 # we can't moose until we sort out HTTP::Server::Simple with bonjour
 #has app_handle => ( isa => 'Prophet::App', is => 'rw');
 
