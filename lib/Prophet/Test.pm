@@ -209,6 +209,8 @@ sub run_output_matches_unordered {
     my $args = shift;
     my $output = shift;
     my ($val, $out, $err)  = run_script( $cmd, $args);
+
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
     is_deeply([sort split(/\n/,$out)], [sort @$output]);
 }
 
