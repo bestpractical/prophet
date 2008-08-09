@@ -4,6 +4,8 @@ extends 'Prophet::CLI::Command::Export';
 with 'Prophet::CLI::PublishCommand';
 with 'Prophet::CLI::CollectionCommand';
 
+use Path::Class;
+
 before run => sub {
     my $self = shift;
     die "Please specify a --to.\n" unless $self->has_arg('to');
@@ -17,17 +19,29 @@ around run => sub {
     my $orig = shift;
     my $self = shift;
 
+    my $export_html = $self->has_arg('html');
+    my $export_replica = $self->has_arg('replica');
+
     # if the user specifies nothing, then publish the replica
-    $self->set_arg('replica' => 1)
-        if !$self->has_arg('html');
+    $export_replica = 1 if !$export_html;
 
     # if we have the html argument, populate the tempdir with rendered templates
-    if ($self->has_arg('html')) {
-        $self->render_templates_into($self->arg('path'));
+    if ($export_html) {
+        my $path = dir($self->arg('path'));
+
+        # if they specify both html and replica, then stick rendered templates
+        # into a subdirectory. if they specify only html, assume they really
+        # want to publish directly into the specified directory
+        if ($export_replica) {
+            $path = $path->subdir('html');
+            $path->mkpath;
+        }
+
+        $self->render_templates_into($path);
     }
 
     # otherwise, do the normal prophet export this replica
-    if ($self->has_arg('replica')) {
+    if ($export_replica) {
         $self->$orig(@_);
     }
 };
