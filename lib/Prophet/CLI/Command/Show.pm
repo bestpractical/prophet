@@ -51,11 +51,11 @@ sub stringify_props {
         if ($args{verbose}) {
             my %already_shown = map { $_ => 1 } @show_props;
             push @show_props, grep { !$already_shown{$_} }
-                              keys %$props;
+                              sort keys %$props;
         }
     }
     else {
-        @show_props = ('id', keys %$props);
+        @show_props = ('id', sort keys %$props);
     }
 
     # kind of ugly but it simplifies the code
