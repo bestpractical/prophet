@@ -10,7 +10,11 @@ use constant record_class => 'Prophet::Record';
 has app_handle => (
     is  => 'rw',
     isa => 'Maybe[Prophet::App]',
-    required => 0
+    required => 0,
+    trigger => sub {
+        my ($self, $app) = @_;
+        $self->handle($app->handle);
+    },
 );
 
 has handle => (
