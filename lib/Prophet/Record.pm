@@ -135,8 +135,8 @@ sub register_collection_reference {
     *{ $class . "::$accessor" } = sub {
         my $self       = shift;
         my $collection = $collection_class->new(
-            handle => $self->handle,
-            type   => $collection_class->record_class->type
+            app_handle => $self->app_handle,
+            type       => $collection_class->record_class->type
         );
         $collection->matching( sub { ($_[0]->prop( $args{by} )||'') eq $self->uuid }
         );
