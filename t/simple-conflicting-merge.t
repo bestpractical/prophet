@@ -31,11 +31,12 @@ as_bob {
     run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
         'prophet',
-        [ 'show','--type', 'Bug', '--uuid', $record_id ],
+        [ 'show', '--batch', '--type', 'Bug', '--uuid', $record_id ],
         [
-            qr/id:     (\d+) \($record_id\)/,
+            qr/id: (\d+) \($record_id\)/,
+              'creator: alice@' . replica_uuid_for('alice'),
+              'from: alice',
               'status: stalled',
-              'from:   alice',
         ],
         'content is correct'
     );
@@ -48,8 +49,9 @@ as_alice {
         ['show', '--type', 'Bug', '--uuid', $record_id, '--batch', ],
         [
             qr/id: (\d+) \($record_id\)/,
-              'status: stalled',
+              'creator: alice@' . replica_uuid_for('alice'),
               'from: alice',
+              'status: stalled',
         ],
         'content is correct'
     );

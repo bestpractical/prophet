@@ -72,6 +72,10 @@ is_deeply(
                         'status' => {
                             'new_value' => 'open',
                             'old_value' => undef
+                        },
+                        'creator' => {
+                            'new_value' => 'bob@' . replica_uuid_for('bob'),
+                            'old_value' => undef
                         }
                     },
                     'record_type' => 'Bug'
@@ -131,7 +135,11 @@ is_deeply(
                         'status' => {
                             'new_value' => 'new',
                             'old_value' => undef
-                        }
+                        },
+                        'creator' => {
+                            'new_value' => 'bob@' . replica_uuid_for('bob'),
+                            'old_value' => undef,
+                        },
                     },
                     'record_type' => 'Bug'
                 }
