@@ -1,14 +1,15 @@
 package Prophet::Server;
 use warnings;
 use strict;
+use Prophet::App;
 
-Prophet::App->try_to_require('HTTP::Server::Simple::Bonjour');
-if (Prophet::App->already_required('HTTP::Server::Simple::Bonjour')){
-   use base qw'HTTP::Server::Simple::Bonjour';
+BEGIN {
+    if (Prophet::App->try_to_require('HTTP::Server::Simple::Bonjour')) {
+        our @ISA = 'HTTP::Server::Simple::Bonjour';
+    }
 }
+
 use base qw'HTTP::Server::Simple::CGI';
-
-
 
 use Prophet::Server::View;
 use Params::Validate qw/:all/;
