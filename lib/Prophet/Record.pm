@@ -462,6 +462,20 @@ sub default_props {
     return 1;
 }
 
+=head2 default_prop_creator
+
+Default the creator of every record to the changeset_creator @ replica uuid
+
+=cut
+
+sub default_prop_creator {
+    my $self = shift;
+
+    return sprintf '%s@%s',
+        $self->handle->changeset_creator,
+        $self->handle->uuid;
+}
+
 =head2 _default_summary_format
 
 A string of the default summary format for record types that do not
