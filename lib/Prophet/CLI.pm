@@ -227,10 +227,6 @@ sub parse_args {
         if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-)/i;
 
     my $sep = 0;
-    my @sep_method = (
-        'set_arg',
-        'set_prop',
-    );
 
     $self->primary_commands( \@primary );
     my $cmp_re = $self->cmp_regex;
@@ -278,8 +274,9 @@ sub parse_args {
                 value => $val,
             });
         }
-        my $setter = $sep_method[$sep] or next;
-        $self->$setter($name => $val);
+        else {
+            $self->set_arg($name => $val);
+        }
     }
 }
 
@@ -429,6 +426,13 @@ sub invoke {
     select $ofh if $ofh;
     return $ret;
 }
+
+after add_to_prop_set => sub {
+    my $self = shift;
+    my $args = shift;
+
+    $self->set_prop($args->{prop} => $args->{value});
+};
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
