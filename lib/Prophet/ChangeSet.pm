@@ -162,6 +162,12 @@ sub new_from_hashref {
 
 sub as_string {
     my $self = shift;
+    my %args = validate(@_, {
+        change_filter => 0,
+    });
+
+    my $change_filter = $args{change_filter};
+
     my $out = '';
 
     $out .= "Changeset "
@@ -176,6 +182,10 @@ sub as_string {
     for my $change ($self->changes) {
         my @prop_changes = $change->prop_changes;
         next if @prop_changes == 0;
+
+        if ($change_filter) {
+            next unless $change_filter->($change);
+        }
 
         for my $prop_change (@prop_changes) {
             $out .= "  " . $prop_change->summary . "\n";
