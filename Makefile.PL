@@ -23,13 +23,12 @@ requires('Moose' => '0.54'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
-requires('Net::Bonjour');
+
 features(
     'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
         'Test::WWW::Mechanize' => '1.16',
-        'HTTP::Server::Simple::Bonjour'
     ],
 
     'HTML display' => [
@@ -52,6 +51,12 @@ features(
 #        -default => 0,
 #        'Devel::Gladiator'
 #    ],
+    'Bonjour support' => [
+        -default => 0,
+        'Net::Bonjour',
+        'HTTP::Server::Simple::Bonjour',
+    ],
+
 );
 
 all_from('lib/Prophet.pm');
