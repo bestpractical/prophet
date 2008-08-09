@@ -51,9 +51,13 @@ has luid => (
 );
 
 class_has REFERENCES => (
-    is      => 'rw',
-    isa     => 'HashRef',
-    default => sub { {} },
+    metaclass => 'Collection::Hash',
+    is        => 'rw',
+    isa       => 'HashRef',
+    default   => sub { {} },
+    provides  => {
+        keys => 'reference_methods',
+    },
     documentation => 'A hash of accessor_name => collection_class references.',
 );
 
