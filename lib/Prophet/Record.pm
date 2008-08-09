@@ -669,6 +669,28 @@ sub color_prop {
     return ($property, $value);
 }
 
+=head2 history_as_string
+
+Returns this record's changesets as a single string.
+
+=cut
+
+sub history_as_string {
+    my $self = shift;
+    my $out = "History for record "
+            . $self->luid
+            . " (" . $self->uuid . ")"
+            . "\n\n";
+
+    for my $changeset ($self->changesets) {
+        $out .= $changeset->as_string(change_filter => sub {
+            shift->record_uuid eq $self->uuid
+        });
+    }
+
+    return $out;
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 no MooseX::ClassAttribute;

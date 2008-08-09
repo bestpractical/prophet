@@ -9,12 +9,7 @@ sub run {
     $self->require_uuid;
     my $record = $self->_load_record;
 
-    print "History for record " . $record->luid . " (" . $record->uuid . ")\n\n";
-    for my $changeset ($record->changesets) {
-        print $changeset->as_string(change_filter => sub {
-            shift->record_uuid eq $record->uuid
-        });
-    }
+    print $record->history_as_string;
 }
 
 __PACKAGE__->meta->make_immutable;
