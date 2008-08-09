@@ -170,14 +170,12 @@ sub as_string {
 
     my $out = '';
 
-    $out .= "Changeset "
-         .  $self->original_sequence_no . '@' . $self->original_source_uuid
-         .  "\n";
-
-    no warnings 'uninitialized'; # old changesets don't have creator
-    $out .= "by "
-         .  $self->creator . '@' . $self->original_source_uuid
-         .  " at " . $self->created . "\n";
+    $out .= sprintf "Changeset %d@%s\n",
+                $self->original_sequence_no,
+                $self->original_source_uuid;
+    $out .= sprintf "by %s at %s\n",
+                ($self->creator || '(unknown)'),
+                $self->created;
 
     for my $change ($self->changes) {
         my @prop_changes = $change->prop_changes;
