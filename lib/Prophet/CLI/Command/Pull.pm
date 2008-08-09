@@ -81,7 +81,7 @@ have been previously pulled from.
 
 sub _read_cached_upstream_replicas {
     my $self = shift;
-    return map { $_ => 1 } $self->cli->app_handle->resdb_handle->_read_cached_upstream_replicas;
+    return map { $_ => 1 } $self->cli->app_handle->handle->_read_cached_upstream_replicas;
 }
 
 =head2 _write_cached_upstream_replicas %replicas
@@ -95,7 +95,7 @@ user specifies --all).
 sub _write_cached_upstream_replicas {
     my $self  = shift;
     my %repos = @_;
-    return $self->cli->app_handle->resdb_handle->_write_cached_upstream_replicas(keys %repos);
+    return $self->cli->app_handle->handle->_write_cached_upstream_replicas(keys %repos);
 }
 
 __PACKAGE__->meta->make_immutable;
