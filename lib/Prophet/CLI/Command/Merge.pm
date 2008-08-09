@@ -27,9 +27,17 @@ sub run {
         force => $self->has_arg('force'),
     );
 
-    $self->_do_merge( $source, $target );
+    my $changesets = $self->_do_merge( $source, $target );
 
-    print "Merge complete.\n";
+    if ($changesets == 0) {
+        print "No new changesets.\n";
+    }
+    elsif ($changesets == 1) {
+        print "Merged one changeset.\n";
+    }
+    else {
+        print "Merged $changesets changesets.\n";
+    }
 }
 
 =head2 _do_merge $source $target
@@ -44,6 +52,8 @@ C<PROPHET_RESOLVER> environmental variable, the C<prefer> argument
 (can be set to C<to> or C<from>, in which case Prophet will
 always prefer changesets from one replica or the other), or by
 using a default resolver.
+
+Returns the number of changesets merged.
 
 =cut
 
@@ -82,17 +92,21 @@ sub _do_merge {
     $import_args{resolver_class} = $resolver
         if $resolver;
 
-    if ($self->has_arg('verbose')) {
-        $import_args{reporting_callback} = sub {
-            my %args = @_;
-            my $changeset = $args{changeset};
-            print $changeset->as_string;
-        };
-    }
+    my $changesets = 0;
+    my $verbose = $self->has_arg('verbose');
+
+    $import_args{reporting_callback} = sub {
+        my %args = @_;
+        my $changeset = $args{changeset};
+        print $changeset->as_string if $verbose;
+        $changesets++;
+    };
 
     $target->import_changesets(
         %import_args,
     );
+
+    return $changesets;
 }
 
 __PACKAGE__->meta->make_immutable;
