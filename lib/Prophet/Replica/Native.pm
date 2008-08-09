@@ -652,7 +652,7 @@ sub read_file {
     if ( $self->fs_root ) {
         my $qualified_file = file( $self->fs_root => $file );
         return undef unless dir($self->fs_root)->subsumes($qualified_file);
-        return scalar $qualified_file->slurp if  $self->_file_exists($file);
+        return eval { scalar $qualified_file->slurp };
         return undef;
     } else {    # http replica
         return LWP::Simple::get( $self->url . "/" . $file );
