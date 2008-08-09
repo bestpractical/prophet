@@ -6,7 +6,7 @@ override run => sub {
     my $self = shift;
     my @from;
 
-    $self->set_arg( db_uuid => $self->app_handle->handle->db_uuid ) 
+    $self->set_arg( db_uuid => $self->handle->db_uuid ) 
         unless ($self->arg('db_uuid'));
 
     my %previous_sources = $self->_read_cached_upstream_replicas;
@@ -23,7 +23,7 @@ override run => sub {
 
     $self->set_arg( to => $self->cli->app_handle->default_replica_type
             . ":file://"
-            . $self->cli->app_handle->handle->fs_root );
+            . $self->handle->fs_root );
 
     for my $from ( @from, @bonjour_replicas ) {
         print "Pulling from $from\n";
@@ -81,7 +81,7 @@ have been previously pulled from.
 
 sub _read_cached_upstream_replicas {
     my $self = shift;
-    return map { $_ => 1 } $self->cli->app_handle->handle->_read_cached_upstream_replicas;
+    return map { $_ => 1 } $self->handle->_read_cached_upstream_replicas;
 }
 
 =head2 _write_cached_upstream_replicas %replicas
@@ -95,7 +95,7 @@ user specifies --all).
 sub _write_cached_upstream_replicas {
     my $self  = shift;
     my %repos = @_;
-    return $self->cli->app_handle->handle->_write_cached_upstream_replicas(keys %repos);
+    return $self->handle->_write_cached_upstream_replicas(keys %repos);
 }
 
 __PACKAGE__->meta->make_immutable;

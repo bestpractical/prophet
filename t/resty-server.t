@@ -27,7 +27,7 @@ sub url {
 $ua->get_ok( url('records.json') );
 is( $ua->content, '[]' );
 
-my $car = Prophet::Record->new( handle => $cli->app_handle->handle, type => 'Cars' );
+my $car = Prophet::Record->new( handle => $cli->handle, type => 'Cars' );
 my ($uuid) = $car->create( props => { wheels => 4, windshields => 1 } );
 ok( $uuid, "Created record $uuid" );
 
@@ -58,7 +58,7 @@ if ( $ua->uri =~ /Cars\/(.*)\.json/ ) {
     ok( 0, "Failed to get the new record's uri" );
 }
 
-my $car2 = Prophet::Record->new( handle => $cli->app_handle->handle, type => 'Cars' );
+my $car2 = Prophet::Record->new( handle => $cli->handle, type => 'Cars' );
 $car2->load( uuid => $new_uuid );
 is_deeply( $car2->get_props, { wheels => 3, seatbelts => 'sure!' }, "The thing we created remotely worked just great" );
 

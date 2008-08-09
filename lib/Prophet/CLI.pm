@@ -26,6 +26,7 @@ has app_handle => (
     is      => 'rw',
     isa     => 'Prophet::App',
     lazy    => 1,
+    handles => [qw/handle resdb_handle config/],
     default => sub {
         $_[0]->app_class->require;
         return $_[0]->app_class->new;
@@ -121,7 +122,7 @@ failure should occur rarely if ever.
 sub _get_cmd_obj {
     my $self = shift;
 
-    my $aliases  = $self->app_handle->config->aliases;
+    my $aliases  = $self->config->aliases;
     my $tmp      = $self->primary_commands;
     if (@$tmp && $aliases->{$tmp->[0]}) {
         @ARGV = split ' ', $aliases->{$tmp->[0]};
@@ -307,7 +308,7 @@ sub set_type_and_uuid {
         $self->uuid($uuid);
     }
     elsif ( my $luid = $self->delete_arg('luid')) {
-        my $uuid = $self->app_handle->handle->find_uuid_by_luid(luid => $luid);
+        my $uuid = $self->handle->find_uuid_by_luid(luid => $luid);
         die "I have no UUID mapped to the local id '$luid'\n" if !defined($uuid);
         $self->uuid($uuid);
     }

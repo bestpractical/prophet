@@ -57,9 +57,9 @@ sub handle_request_get {
     if ($p =~ qr{^/+replica/+(.*)$}) {
         my $repo_file = $1;
         my $file_obj = file($repo_file);
-        return undef unless $self->app_handle->handle->can('read_file');
+        return undef unless $self->handle->can('read_file');
 
-       my $content =$self->app_handle->handle->read_file($repo_file);
+       my $content = $self->handle->read_file($repo_file);
        return unless length($content);
        return $self->_send_content(
             content_type => 'application/prophet-needs-a-better-type',
@@ -81,7 +81,7 @@ sub handle_request_get {
     if ( $p =~ m|^/records\.json$| ) {
         $self->_send_content(
             content_type => 'text/x-json',
-            content      => to_json( $self->app_handle->handle->list_types )
+            content      => to_json( $self->handle->list_types )
         );
 
     } elsif ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {
@@ -107,7 +107,7 @@ sub handle_request_get {
 
     elsif ( $p =~ m|^/records/(.*).json| ) {
         my $type = $1;
-        my $col = Prophet::Collection->new( handle => $self->app_handle->handle, type => $type );
+        my $col = Prophet::Collection->new( handle => $self->handle, type => $type );
         $col->matching( sub {1} );
         warn "Query language not implemented yet.";
         return $self->_send_content(
@@ -152,9 +152,9 @@ sub load_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 0 } );
 
-    my $record = Prophet::Record->new( handle => $self->app_handle->handle, type => $args{type} );
+    my $record = Prophet::Record->new( handle => $self->handle, type => $args{type} );
     if ( $args{'uuid'} ) {
-        return undef unless ( $self->app_handle->handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
+        return undef unless ( $self->handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
         $record->load( uuid => $args{uuid} );
     }
     return $record;

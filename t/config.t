@@ -30,7 +30,7 @@ is_deeply([$config->list], ['_does_not_exist'], "The deep structures match");
 my $a = Prophet::CLI->new();
 can_ok($a, 'app_handle');
 can_ok($a->app_handle, 'config');
-my $c = $a->app_handle->config;
+my $c = $a->config;
 
 # interrogate its config to see if we have any config options set
 my @keys = $c->list;

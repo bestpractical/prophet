@@ -6,13 +6,13 @@ sub run {
 
     my $self = shift;
 
-    my $config = $self->app_handle->config;
+    my $config = $self->config;
    
     print "Configuration:\n\n";
     my @files =@{$config->config_files};
     if (!scalar @files) {
         print "No configuration files found. ".
-            " Either create a file called 'prophetrc' inside of ". $self->app_handle->handle->fs_root ." or set the PROPHET_APP_CONFIG environement variable.\n\n";
+            " Either create a file called 'prophetrc' inside of ". $self->handle->fs_root ." or set the PROPHET_APP_CONFIG environement variable.\n\n";
         return;
     }
     for my $file (@files) {

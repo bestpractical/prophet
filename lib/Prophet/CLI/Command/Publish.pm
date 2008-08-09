@@ -103,7 +103,7 @@ sub types_to_render {
     my $self = shift;
 
     return grep { !$self->should_skip_type($_) }
-           @{ $self->app_handle->handle->list_types };
+           @{ $self->handle->list_types };
 }
 
 __PACKAGE__->meta->make_immutable;

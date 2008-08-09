@@ -37,7 +37,7 @@ sub _get_record_class {
 
     my $constructor_args = {
         app_handle => $self->cli->app_handle,
-        handle     => $self->cli->app_handle->handle,
+        handle     => $self->cli->handle,
         type       => $args{type},
     };
 

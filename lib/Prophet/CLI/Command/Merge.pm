@@ -75,7 +75,7 @@ sub _do_merge {
 
     my %import_args = (
         from  => $source,
-        resdb => $self->app_handle->resdb_handle,
+        resdb => $self->resdb_handle,
         force => $self->has_arg('force'),
     );
 

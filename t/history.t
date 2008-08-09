@@ -19,7 +19,7 @@ use Prophet::Test tests => 8;
 use Test::Exception;
 
     my $cli = Prophet::CLI->new();
-    my $rec = App::Record::Thingy->new( handle => $cli->app_handle->handle, type => 'foo' );
+    my $rec = App::Record::Thingy->new( handle => $cli->handle, type => 'foo' );
 
     ok( $rec->create( props => { foo => 'bar', point => '123' } ) );
 is($rec->prop('foo'), 'bar');

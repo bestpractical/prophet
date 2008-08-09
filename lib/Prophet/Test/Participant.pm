@@ -137,9 +137,9 @@ sub dump_state {
 
     my $state;
 
-    my $records  = Prophet::Collection->new( handle => $cli->app_handle->handle, type => 'Scratch' );
-    my $merges = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
-    my $resolutions = Prophet::Collection->new( handle => $cli->app_handle->resdb_handle, type => '_prophet_resolution' );
+    my $records  = Prophet::Collection->new( handle => $cli->handle, type => 'Scratch' );
+    my $merges = Prophet::Collection->new( handle => $cli->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
+    my $resolutions = Prophet::Collection->new( handle => $cli->resdb_handle, type => '_prophet_resolution' );
 
     $records->matching( sub       {1} );
     $resolutions->matching( sub {1} );

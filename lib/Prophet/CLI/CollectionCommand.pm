@@ -16,7 +16,7 @@ sub get_collection_object {
 
     my $records = $class->new(
         app_handle => $self->app_handle,
-        handle     => $self->app_handle->handle,
+        handle     => $self->handle,
         type       => $args{type} || $self->type,
     );
 
