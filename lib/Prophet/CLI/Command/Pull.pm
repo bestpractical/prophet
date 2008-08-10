@@ -11,7 +11,7 @@ override run => sub {
 
     my %previous_sources = $self->_read_cached_upstream_replicas;
     push @from, $self->arg('from')
-        if ($self->arg('from') && !$previous_sources{$self->arg('from')});
+        if ($self->arg('from') && ( !$self->has_arg('all') || !$previous_sources{$self->arg('from')}));
     push @from, keys %previous_sources if $self->has_arg('all');
 
     my @bonjour_replicas = $self->find_bonjour_replicas;
