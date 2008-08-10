@@ -671,11 +671,10 @@ sub _read_file {
 sub _slurp {
     my $self = shift;
     my $abspath = shift;
-    open (my $fh, "<", "$abspath") || die $!;
-    my @lines = <$fh>;
-    close $fh;
-    return join('',@lines);
 
+    open (my $fh, "<", "$abspath") || die $!;
+    local $/;
+    return scalar <$fh>;
 }
 
 sub begin_edit {
