@@ -660,7 +660,7 @@ sub _read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
     if ( $self->fs_root ) {
-        return eval { $self->_slurp (file( $self->fs_root => $file )) };
+        return eval { scalar file( $self->fs_root => $file )->slurp };
     } else {    # http replica
         return LWP::Simple::get( $self->url . "/" . $file );
     }
@@ -668,14 +668,6 @@ sub _read_file {
 
 }
 
-sub _slurp {
-    my $self = shift;
-    my $abspath = shift;
-
-    open (my $fh, "<", "$abspath") || die $!;
-    local $/;
-    return scalar <$fh>;
-}
 
 sub begin_edit {
     my $self = shift;
