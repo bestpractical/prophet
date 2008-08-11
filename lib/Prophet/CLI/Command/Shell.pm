@@ -4,9 +4,26 @@ use Moose;
 extends 'Prophet::CLI::Command';
 use Path::Class 'file';
 
+has name => (
+    is => 'ro',
+    isa => 'Str',
+    default => sub { file($0)->basename },
+);
+
+has term => (
+    is      => 'ro',
+    isa     => 'Term::ReadLine',
+    lazy    => 1,
+    handles => [qw/readline addhistory/],
+    default => sub {
+        require Term::ReadLine;
+        return Term::ReadLine->new("Prophet shell");
+    },
+);
+
 sub prompt {
-    my $binary = file($0)->basename;
-    return "$binary> ";
+    my $self = shift;
+    return $self->name . '> ';
 }
 
 sub run {
@@ -14,12 +31,10 @@ sub run {
 
     local $| = 1;
 
-    while (1) {
-        print $self->prompt;
-        my $input = <>;
-        last if !defined($input);
+    while (defined(local $_ = $self->readline($self->prompt))) {
+        next if /^\s*$/;
 
-        local @ARGV = split ' ', $input;
+        local @ARGV = split ' ', $_;
         eval { $self->run_one_command };
         warn $@ if $@;
     }
