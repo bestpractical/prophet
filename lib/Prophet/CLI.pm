@@ -114,6 +114,9 @@ Attempts to determine a command object based on aliases and the currently
 set commands, arguments, and properties. Returns the class on success;
 dies on failure.
 
+This routine will use a C<CLI::Command::Shell> class if no arguments are
+specified.
+
 This routine will use a C<CLI::Command::NotFound> class as a last resort, so
 failure should occur rarely if ever.
 
@@ -129,6 +132,10 @@ sub _get_cmd_obj {
         return $self->run_one_command;
     }
     my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $tmp };
+
+    # allow overriding of default command. "./prophet" starts a prophet shell
+    @commands = $self->_default_command
+        if @commands == 0;
 
     my @possible_classes;
 
@@ -180,6 +187,15 @@ sub _get_cmd_obj {
 
     return $class->new(%constructor_args);
 }
+
+=head2 _default_command
+
+Returns the "default" command for use when no arguments were specified on the
+command line. In Prophet, it's "shell" but your subclass can change that.
+
+=cut
+
+sub _default_command { "shell" }
 
 sub _try_to_load_cmd_class {
     my $self = shift;
