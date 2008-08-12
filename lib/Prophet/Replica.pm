@@ -452,10 +452,11 @@ sub traverse_new_changesets {
     $self->log("Evaluating changesets to apply to ".substr($args{'for'}->uuid,0,6). " starting with ".  $args{for}->last_changeset_from_source( $self->uuid ));
 
 
+    my $callback = $args{callback};
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
         callback => sub {
-            $args{callback}->( $_[0] )
+            $callback->( $_[0] )
                 if $self->should_send_changeset( changeset => $_[0], to => $args{for} );
         }
     );
