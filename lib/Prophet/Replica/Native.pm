@@ -125,6 +125,7 @@ sub _try_alt_urls {
     my $error;
     for my $url ($self->{url}, @{ $self->{_alt_urls} }) {
         my $new_self = eval {
+            local $SIG{__DIE__} = 'DEFAULT';
             my $obj = $self->new(%$args, url => $url, _alt_urls => []);
             $obj->_probe_or_create_db;
             $obj;
@@ -662,7 +663,10 @@ sub _read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
     if ( $self->fs_root ) {
-        return eval { $self->_slurp (file( $self->fs_root => $file )) };
+        return eval {
+            local $SIG{__DIE__} = 'DEFAULT';
+            $self->_slurp (file( $self->fs_root => $file ))
+        };
     } else {    # http replica
         return LWP::Simple::get( $self->url . "/" . $file );
     }

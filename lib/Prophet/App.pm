@@ -104,7 +104,11 @@ sub _require {
 
     $file =~ s/::/\//g;
 
-    my $retval = eval  {CORE::require "$file"} ;
+    my $retval = eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        CORE::require "$file"
+    };
+
     my $error = $@;
     if (my $message = $error) {
         $message =~ s/ at .*?\n$//;

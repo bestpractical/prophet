@@ -74,7 +74,10 @@ sub _setup_repo_connection {
     $self->fs_root( $args{'repository'} );
     $self->set_db_uuid( $args{'db_uuid'} ) if ( $args{'db_uuid'} );
     
-    my $repos = eval { SVN::Repos::open( $self->fs_root ); };
+    my $repos = eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        SVN::Repos::open( $self->fs_root );
+    };
     # If we couldn't open the repository handle, we should create it
     if ( $@ && !-d $self->fs_root ) {
         $repos = SVN::Repos::create( $self->fs_root, undef, undef, undef, undef, $self->_pool );
@@ -341,7 +344,10 @@ sub _set_record_props {
 
     my $file = $self->_file_for( uuid => $args{uuid}, type => $args{type} );
     foreach my $prop ( keys %{ $args{'props'} } ) {
-        eval { $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef ) };
+        eval {
+            local $SIG{__DIE__} = 'DEFAULT';
+            $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef )
+        };
         Carp::confess($@) if ($@);
     }
 }

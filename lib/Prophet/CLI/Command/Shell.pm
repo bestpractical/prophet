@@ -35,7 +35,10 @@ sub run {
     while (defined(local $_ = $self->readline($self->prompt))) {
         next if /^\s*$/;
         local @ARGV = split ' ', $_;
-        eval { $self->run_one_command };
+        eval {
+            local $SIG{__DIE__} = 'DEFAULT';
+            $self->run_one_command;
+        };
         warn $@ if $@;
     }
 }

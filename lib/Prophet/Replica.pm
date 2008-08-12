@@ -763,6 +763,7 @@ sub record_changes {
     my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
     $self->_unimplemented ('record_changes') unless ($self->can_write_changesets);
     eval {
+        local $SIG{__DIE__} = 'DEFAULT';
         my $inside_edit = $self->current_edit ? 1 : 0;
         $self->begin_edit(source => $changeset) unless ($inside_edit);
         $self->integrate_changes($changeset);

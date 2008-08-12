@@ -445,7 +445,10 @@ sub invoke {
 
     local *ARGV = \@args;
     $ofh = select $output if $output;
-    my $ret = eval { $self->run_one_command };
+    my $ret = eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        $self->run_one_command
+    };
     warn $@ if $@;
     select $ofh if $ofh;
     return $ret;
