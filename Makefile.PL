@@ -54,7 +54,6 @@ features(
     'Bonjour support' => [
         -default => 0,
         'Net::Bonjour',
-        'HTTP::Server::Simple::Bonjour',
     ],
 
 );
