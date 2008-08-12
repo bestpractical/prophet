@@ -1,47 +1,42 @@
 package Prophet::Server;
-use warnings;
-use strict;
-use Prophet::App;
-
-BEGIN {
-    if (Prophet::App->try_to_require('HTTP::Server::Simple::Bonjour')) {
-        our @ISA = 'HTTP::Server::Simple::Bonjour';
-    }
-}
-
-use base qw'HTTP::Server::Simple::CGI';
+use Moose;
+extends qw'HTTP::Server::Simple::CGI';
 
 use Prophet::Server::View;
 use Params::Validate qw/:all/;
 use JSON;
-use Path::Class;
 
-# Support for the bonjour replica type
-our $DB_UUID;
-sub service_name { $DB_UUID }
-sub service_type { '_prophet._tcp' }
+has app_handle => ( isa => 'Prophet::App', is => 'rw',
+    handles => [ qw/handle/]
+);
 
-sub app_handle {
-    my $self = shift;
-    if (@_) {
-        $self->{'app_handle'} = shift;
-        $DB_UUID = $self->{'app_handle'}->handle->db_uuid;
+has read_only => ( is => 'rw', isa => 'Bool');
+
+before run => sub {
+    my $self      = shift;
+    my $publisher = eval {
+        require Net::Rendezvous::Publish;
+        Net::Rendezvous::Publish->new;
+    };
+    if ($publisher) {
+        $publisher->publish(
+            name   => $self->handle->db_uuid,
+            type   => '_prophet._tcp',
+            port   => $self->port,
+            domain => 'local',
+        );
+    } else {
+        warn 
+            "Publisher backend is not available. Install one of the ".
+            "Net::Rendezvous::Publish::Backend modules from CPAN.";
     }
-    return $self->{'app_handle'};
-}
+};
 
-sub handle { shift->app_handle->handle }
-
-# we can't moose until we sort out HTTP::Server::Simple with bonjour
-#has app_handle => ( isa => 'Prophet::App', is => 'rw');
-
-sub new {
-    my $class = shift;
+before new => sub {
     Template::Declare->init(roots => ['Prophet::Server::View']);
-    return $class->SUPER::new(@_);
-}
+};
 
-sub handle_request {
+override handle_request => sub {
     my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server'} ,  { isa => 'CGI' } );
     my $http_status;
     if ( my $sub = $self->can( 'handle_request_' . lc( $cgi->request_method ) ) ) {
@@ -50,7 +45,7 @@ sub handle_request {
     unless ($http_status) {
         $self->_send_404;
     }
-}
+};
 
 sub handle_request_get {
     my $self = shift;
@@ -60,7 +55,6 @@ sub handle_request_get {
 
     if ($p =~ qr{^/+replica/+(.*)$}) {
         my $repo_file = $1;
-        my $file_obj = file($repo_file);
         return undef unless $self->handle->can('read_file');
 
        my $content = $self->handle->read_file($repo_file);
@@ -124,6 +118,9 @@ sub handle_request_get {
 
 sub handle_request_post {
     my $self = shift;
+
+    return $self->_send_401 if ($self->read_only);
+
     my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
     my $p = $cgi->path_info;
     if ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {
@@ -172,6 +169,12 @@ sub _send_content {
     print "Content-Length: " . length( $args{'content'} ) . "\r\n\r\n";
     print $args{'content'};
     return '200';
+}
+
+sub _send_401 {
+    my $self = shift;
+    print "HTTP/1.0 401 READONLY_SERVER\r\n";
+    return '401';
 }
 
 sub _send_404 {

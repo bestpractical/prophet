@@ -31,9 +31,9 @@ sub run {
 
     local $| = 1;
 
+    $self->cli->interactive_shell(1);
     while (defined(local $_ = $self->readline($self->prompt))) {
         next if /^\s*$/;
-
         local @ARGV = split ' ', $_;
         eval { $self->run_one_command };
         warn $@ if $@;

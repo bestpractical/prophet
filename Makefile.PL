@@ -25,10 +25,6 @@ requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
 
 features(
-    'Prophet shell' => [
-        -default => 1,
-        'Term::ReadLine',
-    ],
     'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
@@ -58,7 +54,6 @@ features(
     'Bonjour support' => [
         -default => 0,
         'Net::Bonjour',
-        'HTTP::Server::Simple::Bonjour',
     ],
 );
 
