@@ -14,6 +14,7 @@ sub run {
 
     local $| = 1;
 
+    $self->cli->interactive_shell(1);
     while (1) {
         print $self->prompt;
         my $input = <>;

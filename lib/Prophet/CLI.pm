@@ -92,6 +92,14 @@ has prop_set => (
     },
 );
 
+has interactive_shell => ( 
+    is => 'rw',
+    isa => 'Bool',
+    default => sub { 0}
+);
+
+
+
 =head2 _record_cmd
 
 handles the subcommand for a particular type
