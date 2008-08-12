@@ -248,10 +248,12 @@ before set_db_uuid => sub {
 sub _write_record {
     my $self = shift;
     my %args = validate( @_, { record => { isa => 'Prophet::Record' }, } );
+    my $record = $args{'record'};
+
     $self->_write_serialized_record(
-        type  => $args{'record'}->type,
-        uuid  => $args{'record'}->uuid,
-        props => $args{'record'}->get_props
+        type  => $record->type,
+        uuid  => $record->uuid,
+        props => $record->get_props,
     );
 }
 
