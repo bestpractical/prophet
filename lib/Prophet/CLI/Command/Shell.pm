@@ -37,7 +37,7 @@ sub run {
         local @ARGV = split ' ', $_;
         eval {
             local $SIG{__DIE__} = 'DEFAULT';
-            $self->run_one_command;
+            $self->cli->run_one_command;
         };
         warn $@ if $@;
     }

@@ -10,7 +10,6 @@ has cli => (
         qw/props set_prop prop has_prop delete_prop prop_names/,
         qw/app_handle handle resdb_handle config/,
         'add_to_prop_set', 'prop_set',
-        'run_one_command', 'run_another_command',
     ],
 );
 
