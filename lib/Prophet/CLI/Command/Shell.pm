@@ -29,7 +29,7 @@ sub prompt {
 sub preamble {
     return join "\n",
         "Prophet $Prophet::VERSION",
-        'Type "help", "about", or "copying for more information.',
+        'Type "help", "about", or "copying" for more information.',
 }
 
 sub read {
