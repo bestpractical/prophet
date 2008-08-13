@@ -286,7 +286,7 @@ sub get_props {
 =head2 prop $name
 
 Returns the current value of the property C<$name> for this record.
-(This is a convenience method wrapped around L</get_props>.
+(This is a convenience method wrapped around L</get_props>).
 
 =cut
 
@@ -299,8 +299,7 @@ sub prop {
 =head2 delete_prop { name => $name }
 
 Deletes the current value for the property $name.
-
-TODO: how is this different than setting it to an empty value?
+(This is currently equivalent to setting the prop to ''.)
 
 =cut
 
@@ -310,10 +309,12 @@ sub delete_prop {
 
     confess "delete_prop called on a record that hasn't been loaded or created yet." if !$self->uuid;
 
-    $self->handle->delete_record_prop(
-        uuid => $self->uuid,
-        name => $args{'name'}
-    );
+    $self->set_prop(name => $args{'name'}, value => '');
+
+#    $self->handle->delete_record_prop(
+#        uuid => $self->uuid,
+#        name => $args{'name'}
+#    );
 }
 
 =head2 delete
