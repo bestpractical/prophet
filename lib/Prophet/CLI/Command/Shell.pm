@@ -34,6 +34,10 @@ sub run {
     $self->cli->interactive_shell(1);
     while (defined(local $_ = $self->readline($self->prompt))) {
         next if /^\s*$/;
+
+        last if /^\s*q(?:uit)?\s*$/i
+             || /^\s*exit\s*$/i;
+
         local @ARGV = split ' ', $_;
         eval {
             local $SIG{__DIE__} = 'DEFAULT';
