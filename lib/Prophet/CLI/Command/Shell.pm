@@ -68,6 +68,25 @@ sub run {
     }
 }
 
+# make the REPL history persistent
+around run => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my $hist = $ENV{PROPHET_HISTFILE}
+            || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
+    my $len = $ENV{PROPHET_HISTLEN} || 100;
+
+    $self->term->stifle_history($len);
+    $self->term->ReadHistory($hist)
+        if -f $hist;
+
+    $self->$orig(@_);
+
+    $self->term->WriteHistory($hist)
+        or warn "Unable to write to shell history file $hist";
+};
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
