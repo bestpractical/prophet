@@ -32,6 +32,24 @@ sub preamble {
         'Type "help", "about", or "copying for more information.',
 }
 
+sub read {
+    my $self = shift;
+    $self->readline($self->prompt);
+}
+
+sub eval {
+    my $self = shift;
+    my $line = shift;
+
+    local @ARGV = split ' ', $line;
+
+    eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        $self->cli->run_one_command;
+    };
+    warn $@ if $@;
+}
+
 sub run {
     my $self = shift;
 
@@ -40,18 +58,13 @@ sub run {
     print $self->preamble . "\n";
 
     $self->cli->interactive_shell(1);
-    while (defined(local $_ = $self->readline($self->prompt))) {
+    while (defined(local $_ = $self->read)) {
         next if /^\s*$/;
 
         last if /^\s*q(?:uit)?\s*$/i
              || /^\s*exit\s*$/i;
 
-        local @ARGV = split ' ', $_;
-        eval {
-            local $SIG{__DIE__} = 'DEFAULT';
-            $self->cli->run_one_command;
-        };
-        warn $@ if $@;
+        $self->eval($_);
     }
 }
 
