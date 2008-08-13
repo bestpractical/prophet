@@ -26,10 +26,18 @@ sub prompt {
     return $self->name . '> ';
 }
 
+sub preamble {
+    return join "\n",
+        "Prophet $Prophet::VERSION",
+        'Type "help", "about", or "copying for more information.',
+}
+
 sub run {
     my $self = shift;
 
     local $| = 1;
+
+    print $self->preamble . "\n";
 
     $self->cli->interactive_shell(1);
     while (defined(local $_ = $self->readline($self->prompt))) {
