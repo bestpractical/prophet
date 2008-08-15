@@ -12,7 +12,7 @@ has name => (
 
 has term => (
     is      => 'ro',
-    isa     => 'Term::ReadLine',
+    isa     => 'Term::ReadLine::Stub',
     lazy    => 1,
     handles => [qw/readline addhistory/],
     default => sub {
