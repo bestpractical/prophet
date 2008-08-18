@@ -69,7 +69,7 @@ sub _load_record {
     my $self = shift;
     my $record = $self->_get_record_class;
     $record->load( uuid => $self->uuid )
-        || $self->fatal_error("I couldn't find the record " . $self->uuid);
+        || $self->fatal_error("I couldn't find the " . $self->type . ' ' . $self->uuid);
     return $record;
 }
 

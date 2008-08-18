@@ -7,7 +7,20 @@ sub edit_record {
     my $self   = shift;
     my $record = shift;
 
-    return $self->edit_props('edit');
+    my $props = $record->get_props;
+    # don't feed in existing values if we're not interactively editing
+    my $defaults = $self->has_arg('edit') ? $props : undef;
+
+    my @ordering = ( );
+    # we want props in $record->props_to_show to show up in the editor if --edit
+    # is supplied too
+    if ($record->can('props_to_show') && $self->has_arg('edit')) {
+        @ordering = $record->props_to_show;
+        map { $props->{$_} = '' if !exists($props->{$_}) } @ordering;
+    }
+
+    return $self->edit_props(arg => 'edit', defaults => $defaults,
+        ordering => \@ordering);
 }
 
 sub run {
@@ -16,7 +29,9 @@ sub run {
     $self->require_uuid;
     my $record = $self->_load_record;
 
-    my $result = $record->set_props( props => $self->edit_record($record) );
+    my $new_props = $self->edit_record($record);
+    my $result = $record->set_props( props => $new_props );
+
     if ($result) {
         print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
 
@@ -26,7 +41,6 @@ sub run {
             . $record->luid . " ("
             . $record->uuid
             . ") not updated.\n";
-
     }
 }
 

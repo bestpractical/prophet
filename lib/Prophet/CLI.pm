@@ -220,7 +220,7 @@ sub _try_to_load_cmd_class {
 
 =head2 cmp_regex
 
-Returns the regex to use for matching argument key/value separators.
+Returns the regex to use for matching property key/value separators.
 
 =cut
 
