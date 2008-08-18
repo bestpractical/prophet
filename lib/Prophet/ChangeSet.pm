@@ -164,18 +164,19 @@ sub as_string {
     my $self = shift;
     my %args = validate(@_, {
         change_filter => 0,
+        change_header => 0,
     });
 
     my $change_filter = $args{change_filter};
 
     my $out = '';
 
-    $out .= sprintf "Changeset %d@%s\n",
+    $out .= sprintf "Change %d by %s at %s\n\t\t\t\t\(%d@%s)\n\n",
+            $self->sequence_no,
+                ($self->creator || '(unknown)'),
+                $self->created,
                 $self->original_sequence_no,
                 $self->original_source_uuid;
-    $out .= sprintf "by %s at %s\n",
-                ($self->creator || '(unknown)'),
-                $self->created;
 
     for my $change ($self->changes) {
         my @prop_changes = $change->prop_changes;
@@ -183,6 +184,10 @@ sub as_string {
 
         if ($change_filter) {
             next unless $change_filter->($change);
+        }
+
+        if ($args{change_header}) {
+          $out .=   $args{change_header}->($change);
         }
 
         for my $prop_change (@prop_changes) {
