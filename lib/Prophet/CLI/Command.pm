@@ -79,8 +79,8 @@ sub edit_hash {
     my %args = @_;
     my $hash = $args{'hash'};
     my @ordering = @{ $args{'ordering'} || [] };
-    my $do_not_edit = $record->can('props_not_to_edit') ? $record->props_not_to_edit : '';
     my $record = $self->_get_record_class;
+    my $do_not_edit = $record->can('props_not_to_edit') ? $record->props_not_to_edit : '';
 
     if (@ordering) {
         # add any keys not in @ordering to the end of it
@@ -110,6 +110,7 @@ sub edit_hash {
             $filtered->{$prop} = $val unless !($val);
         }
     }
+    no warnings 'uninitialized';
 
     # if a key is deleted intentionally, set its value to ''
     foreach my $prop (keys %$hash) {
@@ -118,7 +119,6 @@ sub edit_hash {
         }
     }
 
-    no warnings 'uninitialized';
     # filter out unchanged keys as they clutter changesets if they're set again
     map { delete $filtered->{$_} if $hash->{$_} eq $filtered->{$_} } keys %$filtered;
 
