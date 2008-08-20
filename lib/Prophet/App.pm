@@ -55,7 +55,7 @@ sub BUILD {
 sub _load_replica_types {
     my $self = shift;
     my $replica_class = blessed($self)."::Replica";
-    my $except = $replica_class."::(.*)::";
+    my $except = "\Q$replica_class\E::.*::";
     Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
     for my $package ( $self->app_replica_types) {
         $self->require($package);
