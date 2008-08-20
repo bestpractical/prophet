@@ -281,13 +281,15 @@ sub parse_args {
 
             # but wait! does the value look enough like a comparator? if so,
             # shift off another one (if we can)
-            if ($val =~ /^(?:$cmp_re)$/ && @ARGV && $ARGV[0] !~ /^--/) {
-                $cmp = $val;
-                $val = shift @ARGV;
-            }
-            else {
-                # perhaps they said "foo =~bar"..
-                $cmp = $1 if $val =~ s/^($cmp_re)//;
+            if ($collecting_props) {
+                if ($val =~ /^(?:$cmp_re)$/ && @ARGV && $ARGV[0] !~ /^--/) {
+                    $cmp = $val;
+                    $val = shift @ARGV;
+                }
+                else {
+                    # perhaps they said "foo =~bar"..
+                    $cmp = $1 if $val =~ s/^($cmp_re)//;
+                }
             }
         }
 
