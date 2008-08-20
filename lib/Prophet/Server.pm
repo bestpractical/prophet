@@ -60,7 +60,7 @@ sub handle_request_get {
        my $content = $self->handle->read_file($repo_file);
        return unless length($content);
        return $self->_send_content(
-            content_type => 'application/prophet-needs-a-better-type',
+            content_type => 'application/x-prophet',
             content      => $content
         );
 
