@@ -63,6 +63,7 @@ has args => (
         exists => 'has_arg',
         delete => 'delete_arg',
         keys   => 'arg_names',
+        clear  => 'clear_args',
     },
     documentation => "This is a reference to the key-value pairs passed in on the commandline",
 );
@@ -78,6 +79,7 @@ has props => (
         exists => 'has_prop',
         delete => 'delete_prop',
         keys   => 'prop_names',
+        clear  => 'clear_props',
     },
 );
 
@@ -405,34 +407,11 @@ sub change_attributes {
     }
 }
 
-=head2 clear_args
-
-Clears all of the current object's set arguments.
-
-=cut
-
-sub clear_args {
+# clear the prop_set too!
+after clear_props => sub {
     my $self = shift;
-
-    foreach my $arg ($self->arg_names) {
-        $self->delete_arg($arg);
-    }
-}
-
-=head2 clear_props
-
-Clears all of the current object's set properties.
-
-=cut
-
-sub clear_props {
-    my $self = shift;
-
-    foreach my $prop ($self->prop_names) {
-        $self->delete_prop($prop);
-    }
     $self->prop_set( ( ) );
-}
+};
 
 =head2 invoke [outhandle], ARGV
 
