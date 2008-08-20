@@ -114,7 +114,10 @@ sub register_reference {
             @args
         );
     } elsif ( $foreign_class->isa('Prophet::Record') ) {
-        die "One-to-one relationships are not yet implemented";
+        return $class->register_record_reference(
+            $accessor => $foreign_class,
+            @args
+        );
     } else {
         die "Your foreign class ($foreign_class) must be a subclass of Prophet::Record or Prophet::Collection";
     }
@@ -140,7 +143,7 @@ sub register_collection_reference {
         my $self       = shift;
         my $collection = $collection_class->new(
             app_handle => $self->app_handle,
-            type       => $collection_class->record_class->type
+            type       => $collection_class->record_class->type,
         );
         $collection->matching( sub { ($_[0]->prop( $args{by} )||'') eq $self->uuid }
         );
@@ -149,8 +152,43 @@ sub register_collection_reference {
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor}
-        = { %args, type => $collection_class->record_class };
+    $class->REFERENCES->{$accessor} = {
+        %args,
+        type => $collection_class->record_class,
+    };
+}
+
+=head2 register_record_reference $accessor, $record_class, by => $key_in_model
+
+Registers and creates an accessor in the current class to the associated
+record C<$record_class>, which refers to the current class by
+C<$key_in_model> in the model class of C<$collection_class>.
+
+=cut
+
+sub register_record_reference {
+    my ( $class, $accessor, $record_class, @args ) = @_;
+    my %args = validate( @args, { by => 1 } );
+    no strict 'refs';
+
+    Prophet::App->require( $record_class );
+
+    *{ $class . "::$accessor" } = sub {
+        my $self       = shift;
+        my $record = $record_class->new(
+            app_handle => $self->app_handle,
+            type       => $collection_class->record_class->type,
+        );
+        $record->load(uuid => $self->prop($args{by}));
+        return $record;
+    };
+
+    # XXX: add validater for $args{by} in $model->record_class
+
+    $class->REFERENCES->{$accessor} = {
+        %args,
+        type => $record_class,
+    };
 }
 
 =head2 create { props => { %hash_of_kv_pairs } }
