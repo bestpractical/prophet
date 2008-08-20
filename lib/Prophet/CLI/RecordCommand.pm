@@ -21,7 +21,7 @@ has record_class => (
     isa => 'Prophet::Record',
 );
 
-=head2 _get_record_class [{ type => 'type' }]
+=head2 _get_record_object [{ type => 'type' }]
 
 Tries to determine a record class from either the given type argument or
 the current object's C<$type> attribute.
@@ -31,7 +31,7 @@ error with a stack trace on failure.
 
 =cut
 
-sub _get_record_class {
+sub _get_record_object {
     my $self = shift;
     my %args = validate(@_, {
         type => { default => $self->type },
@@ -67,7 +67,7 @@ record can be found.
 
 sub _load_record {
     my $self = shift;
-    my $record = $self->_get_record_class;
+    my $record = $self->_get_record_object;
     $record->load( uuid => $self->uuid )
         || $self->fatal_error("I couldn't find the " . $self->type . ' ' . $self->uuid);
     return $record;

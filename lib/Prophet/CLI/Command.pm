@@ -79,7 +79,7 @@ sub edit_hash {
     my %args = @_;
     my $hash = $args{'hash'};
     my @ordering = @{ $args{'ordering'} || [] };
-    my $record = $self->_get_record_class;
+    my $record = $self->_get_record_object;
     my $do_not_edit = $record->can('props_not_to_edit') ? $record->props_not_to_edit : '';
 
     if (@ordering) {

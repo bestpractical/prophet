@@ -12,7 +12,7 @@ has record => (
 
 sub run {
     my $self   = shift;
-    my $record = $self->_get_record_class;
+    my $record = $self->_get_record_object;
     my ($val, $msg) = $record->create( props => $self->edit_props );
     if (!$val) {
         warn "Unable to create record: " . $msg . "\n";
