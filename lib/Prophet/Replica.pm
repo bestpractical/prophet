@@ -127,7 +127,8 @@ sub _url_to_replica_class {
     my $self = shift;
     my $url  = shift;
 
-    my ($scheme, $real_url) = split /:/, $url;
+    my ($scheme, $real_url) = $url =~ /^([^:]*):(.*)$/;
+
     my $type_map = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme};
     $real_url = $url if $type_map->{keep_scheme};
 
