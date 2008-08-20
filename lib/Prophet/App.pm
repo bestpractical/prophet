@@ -72,7 +72,6 @@ sub default_replica_type {
 sub require {
     my $self = shift;
     my $class = shift;
-    return undef unless $class;
     $self->_require(module => $class);
 }
 

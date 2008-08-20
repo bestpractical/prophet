@@ -28,7 +28,6 @@ has app_handle => (
     lazy    => 1,
     handles => [qw/handle resdb_handle config/],
     default => sub {
-        $_[0]->app_class->require;
         return $_[0]->app_class->new;
     },
 );
