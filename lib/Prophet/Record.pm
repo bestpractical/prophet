@@ -114,7 +114,7 @@ sub register_reference {
             @args
         );
     } elsif ( $foreign_class->isa('Prophet::Record') ) {
-
+        die "One-to-one relationships are not yet implemented";
     } else {
         die "Your foreign class ($foreign_class) must be a subclass of Prophet::Record or Prophet::Collection";
     }
