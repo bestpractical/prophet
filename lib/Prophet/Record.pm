@@ -177,7 +177,7 @@ sub register_record_reference {
         my $self       = shift;
         my $record = $record_class->new(
             app_handle => $self->app_handle,
-            type       => $collection_class->record_class->type,
+            type       => $record_class->type,
         );
         $record->load(uuid => $self->prop($args{by}));
         return $record;
