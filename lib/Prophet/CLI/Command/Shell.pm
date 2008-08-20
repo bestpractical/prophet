@@ -69,6 +69,9 @@ sub run {
 }
 
 # make the REPL history persistent
+# we use eval here because only some Term::ReadLine subclasses support
+# persistent history. it also seems that ->can doesn't work because of AUTOLOAD
+# trickery. :(
 around run => sub {
     my $orig = shift;
     my $self = shift;
@@ -77,14 +80,20 @@ around run => sub {
             || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
     my $len = $ENV{PROPHET_HISTLEN} || 100;
 
-    $self->term->stifle_history($len);
-    $self->term->ReadHistory($hist)
-        if -f $hist;
+    eval {
+        local $SIG{__DIE__};
+        $self->term->stifle_history($len);
+        $self->term->ReadHistory($hist)
+            if -f $hist;
+    };
 
     $self->$orig(@_);
 
-    $self->term->WriteHistory($hist)
-        or warn "Unable to write to shell history file $hist";
+    eval {
+        local $SIG{__DIE__};
+        $self->term->WriteHistory($hist)
+            or warn "Unable to write to shell history file $hist";
+    };
 };
 
 __PACKAGE__->meta->make_immutable;
