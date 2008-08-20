@@ -116,6 +116,10 @@ sub register_reference {
     } elsif ( $foreign_class->isa('Prophet::Record') ) {
         return $class->register_record_reference(
             $accessor => $foreign_class,
+
+            # default the lookup property to be the name of the accessor
+            by        => $accessor,
+
             @args
         );
     } else {
