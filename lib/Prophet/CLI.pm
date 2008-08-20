@@ -250,17 +250,17 @@ sub parse_args {
     $self->set_arg(id => pop @primary)
         if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-)/i;
 
-    my $sep = 0;
+    my $collecting_props = 0;
 
     $self->primary_commands( \@primary );
     my $cmp_re = $self->cmp_regex;
 
     while (my $name = shift @ARGV) {
         die "$name doesn't look like --argument"
-            if $sep == 0 && $name !~ /^--/;
+            if !$collecting_props && $name !~ /^--/;
 
         if ($name eq '--' || $name eq '--props') {
-            ++$sep;
+            $collecting_props = 1;
             next;
         }
 
@@ -291,7 +291,7 @@ sub parse_args {
             }
         }
 
-        if ($sep == 1) {
+        if ($collecting_props) {
             $self->add_to_prop_set({
                 prop  => $name,
                 cmp   => $cmp,
