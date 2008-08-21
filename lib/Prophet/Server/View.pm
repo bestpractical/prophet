@@ -113,8 +113,8 @@ template record => sub {
 
             show record_changesets => $record;
 
-            # linked records
-            for my $method ($record->reference_methods) {
+            # linked collections
+            for my $method ($record->collection_reference_methods) {
                 my $collection = $record->$method;
                 next if $collection->count == 0;
 
