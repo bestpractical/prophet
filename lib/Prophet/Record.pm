@@ -18,7 +18,7 @@ This class represents a base class for any record in a Prophet database.
 =cut
 
 has app_handle => (
-    isa => 'Maybe[Prophet::App]',
+    isa      => 'Maybe[Prophet::App]',
     is       => 'rw',
     required => 0,
 );
@@ -181,6 +181,7 @@ sub register_record_reference {
         my $self       = shift;
         my $record = $record_class->new(
             app_handle => $self->app_handle,
+            handle     => $self->handle,
             type       => $record_class->type,
         );
         $record->load(uuid => $self->prop($args{by}));
