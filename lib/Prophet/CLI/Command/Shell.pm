@@ -41,6 +41,9 @@ sub eval {
     my $self = shift;
     my $line = shift;
 
+    $self->cli->clear_args;
+    $self->cli->clear_props;
+
     local @ARGV = split ' ', $line;
 
     eval {
