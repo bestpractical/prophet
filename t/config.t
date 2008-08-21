@@ -11,6 +11,7 @@ use_ok('Prophet::CLI');
 # Test basic config file parsing
 use_ok('Prophet::Config');
 my $config = Prophet::Config->new(app_handle => Prophet::CLI->new->app_handle);
+
 isa_ok($config => 'Prophet::Config');
 can_ok($config  => 'load_from_files');
 

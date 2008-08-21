@@ -1,4 +1,4 @@
-package Prophet::Replica::SVN;
+package Prophet::Replica::svn;
 use Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
@@ -13,9 +13,9 @@ has ra => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        require Prophet::Replica::SVN::Util;
-        my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::SVN::Util->get_auth_providers );
-        my $config = Prophet::Replica::SVN::Util->svnconfig;
+        require Prophet::Replica::svn::Util;
+        my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::svn::Util->get_auth_providers );
+        my $config = Prophet::Replica::svn::Util->svnconfig;
         return SVN::Ra->new(url => $self->url, config => $config, auth => $baton, pool => $self->_pool);
     },
 );
@@ -132,8 +132,8 @@ sub _fetch_changeset {
     my $self   = shift;
     my $rev    = shift;
 
-    require Prophet::Replica::SVN::ReplayEditor;
-    my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
+    require Prophet::Replica::svn::ReplayEditor;
+    my $editor = Prophet::Replica::svn::ReplayEditor->new( _debug => 0 );
     my $pool = SVN::Pool->new_default;
 
     # This horrible hack is here because I have no idea how to pass custom variables into the editor

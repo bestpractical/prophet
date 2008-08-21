@@ -11,7 +11,7 @@ has handle => (
         my $self = shift;
         my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new({ url => $type.':file://' . $root });
+        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self});
     },
 );
 
@@ -46,23 +46,6 @@ use constant DEFAULT_REPLICA_TYPE => 'prophet';
 Prophet::App
 
 =cut
-
-sub BUILD {
-    my $self = shift;
-    $self->_load_replica_types();
-}
-
-sub _load_replica_types {
-    my $self = shift;
-    my $replica_class = blessed($self)."::Replica";
-    my $except = "\Q$replica_class\E::.*::";
-    Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
-    for my $package ( $self->app_replica_types) {
-        $self->require($package);
-        next unless $package->can('scheme');
-        Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package)
-    }
-}
 
 sub default_replica_type {
     my $self = shift;

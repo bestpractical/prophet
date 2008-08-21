@@ -14,11 +14,13 @@ sub run {
 
     my $source = Prophet::Replica->new(
         url       => $self->arg('from'),
+        app_handle => $self->app_handle,
         _alt_urls => \@alt_from,
     );
 
     my $target = Prophet::Replica->new(
         url       => $self->arg('to'),
+        app_handle => $self->app_handle,
         _alt_urls => \@alt_to,
     );
 

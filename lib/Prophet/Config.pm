@@ -21,7 +21,7 @@ has config => (
     is          => 'rw',
     isa         => 'HashRef',
     lazy        => 0,
-    default     => sub { shift->load_from_files },
+    default     => sub {shift->load_from_files;},
     provides    => {
         get     => 'get',
         set     => 'set',
@@ -35,8 +35,8 @@ sub aliases {
 
 sub app_config_file { 
     my $self = shift;
-    $ENV{'PROPHET_APP_CONFIG'} || file( $self->app_handle->handle->fs_root => "prophetrc" ) 
 
+    $ENV{'PROPHET_APP_CONFIG'} || file( $self->app_handle->handle->fs_root => "prophetrc" ) ;
 }
 
 #my $singleton;
@@ -46,7 +46,6 @@ sub load_from_files {
     my $self = shift;
     my @config = @_;
     @config = grep { -f $_ } $self->app_config_file if !@config;
-
     my $config = {};
 
     for my $file (@config) {

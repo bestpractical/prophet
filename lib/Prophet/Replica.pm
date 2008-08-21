@@ -41,28 +41,18 @@ has _alt_urls => (
     default => sub { [] },
 );
 
+
+has app_handle => (
+    is => 'ro',
+    isa => 'Prophet::App',
+    weak_ref => 1
+);
+
+
 use constant state_db_uuid => 'state';
-use Module::Pluggable search_path => 'Prophet::Replica', sub_name => 'core_replica_types', require => 0, except => qr/Prophet::Replica::(.*)::/;
 use Prophet::App;
 
-our $REPLICA_TYPE_MAP = {};
 our $MERGETICKET_METATYPE = '_merge_tickets';
-
-for ( __PACKAGE__->core_replica_types) {
-Prophet::App->require($_) or die $@; # Require here, rather than with the autorequire from Module::Pluggable as that goes too far
-
-   # and tries to load Prophet::Replica::SVN::ReplayEditor;
-   __PACKAGE__->register_replica_scheme(scheme => $_->scheme, class => $_) 
-}
-
- # register some aliases
-__PACKAGE__->register_replica_scheme(%{ $REPLICA_TYPE_MAP->{prophet} }, scheme => 'file');
-
-__PACKAGE__->register_replica_scheme(
-    %{ $REPLICA_TYPE_MAP->{prophet} },
-    scheme      => 'http',
-    keep_scheme => 1,
-);
 
 =head1 NAME
 
@@ -89,33 +79,19 @@ around new => sub {
     my $class = shift;
     my %args  = @_ == 1 ? %{ $_[0] } : @_;
 
-    my ($new_class, $scheme, $url) = $class->_url_to_replica_class($args{url});
+    my ($new_class, $scheme, $url) = $class->_url_to_replica_class(%args);
 
     if (!$new_class) {
-        $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url}). I can handle the following replica types: " . join(', ', sort keys %$REPLICA_TYPE_MAP) . ", and possibly more)");
+        $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url}).");
     }
 
-    return $orig->($class, %args) if $class eq $new_class;
-
-    Prophet::App->require($new_class);
-    return $new_class->new(%args);
+    if ( $class eq $new_class) { 
+        return $orig->($class, %args) 
+    } else {
+        Prophet::App->require($new_class);
+        return $new_class->new(%args);
+        }
 };
-
-=head2 register_replica_scheme { class=> Some::Perl::Class, scheme => 'scheme:' }
-
-B<Class Method>. Register a URI scheme C<scheme> to point to a replica object of type C<class>.
-
-=cut
-
-sub register_replica_scheme {
-    my $class = shift;
-    my %args = validate(@_, { class => 1, scheme => 1, keep_scheme => 0 });
-
-    $Prophet::Replica::REPLICA_TYPE_MAP->{$args{'scheme'}} = {
-        class       => $args{'class'},
-        keep_scheme => $args{'keep_scheme'},
-    };
-}
 
 =head2 _url_to_replica_class
 
@@ -125,14 +101,17 @@ Returns the replica class for the given url.
 
 sub _url_to_replica_class {
     my $self = shift;
-    my $url  = shift;
+    my %args = (@_);
+    my $url = $args{'url'};
+    my ( $scheme, $real_url ) = $url =~ /^([^:]*):(.*)$/;
 
-    my ($scheme, $real_url) = $url =~ /^([^:]*):(.*)$/;
-
-    my $type_map = $Prophet::Replica::REPLICA_TYPE_MAP->{$scheme};
-    $real_url = $url if $type_map->{keep_scheme};
-
-    return ($type_map->{class}, $scheme, $real_url);
+    for my $class ( 
+        ref( $args{app_handle} ) . "::Replica::" . $scheme,
+        "Prophet::Replica::".$scheme ) {
+        Prophet::App->try_to_require($class) || next;
+        return ( $class, $scheme, $real_url );
+    }
+    return undef;
 }
 
 sub import_changesets {

@@ -1,19 +1,19 @@
 use warnings;
 use strict;
 
-package Prophet::Replica::SVN::ReplayEditor;
+package Prophet::Replica::svn::ReplayEditor;
 use SVN::Delta;
 use base qw/SVN::Delta::Editor/;
 
 
 =head1 NAME
 
-Prophet::Replica::SVN::ReplayEditor
+Prophet::Replica::svn::ReplayEditor
 
 =head1 DESCRIPTION
 
 This class encapsulates a Subversion "replay" editor.  Prophet's
-Subversion synchronization client (L<Prophet::Replica::SVN>)
+Subversion synchronization client (L<Prophet::Replica::svn>)
 uses it to turn a set of subversion
 deltas into a set of L<Prophet::ChangeSet> objects.
 

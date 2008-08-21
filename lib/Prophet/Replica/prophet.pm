@@ -1,4 +1,4 @@
-package Prophet::Replica::Native;
+package Prophet::Replica::prophet;
 use Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
