@@ -158,7 +158,8 @@ sub register_collection_reference {
 
     $class->REFERENCES->{$accessor} = {
         %args,
-        type => $collection_class->record_class,
+        arity => 'collection',
+        type  => $collection_class->record_class,
     };
 }
 
@@ -192,7 +193,8 @@ sub register_record_reference {
 
     $class->REFERENCES->{$accessor} = {
         %args,
-        type => $record_class,
+        arity => 'scalar',
+        type  => $record_class,
     };
 }
 
@@ -751,6 +753,32 @@ sub history_as_string {
     }
 
     return $out;
+}
+
+=head2 record_reference_methods
+
+Returns a list of method names that refer to other individual records
+
+=cut
+
+sub record_reference_methods {
+    my $self = shift;
+
+    return grep { $self->REFERENCES->{$_}{arity} eq 'record' }
+           $self->reference_methods;
+}
+
+=head2 collection_reference_methods
+
+Returns a list of method names that refer to collections
+
+=cut
+
+sub collection_reference_methods {
+    my $self = shift;
+
+    return grep { $self->REFERENCES->{$_}{arity} eq 'collection' }
+           $self->reference_methods;
 }
 
 __PACKAGE__->meta->make_immutable;
