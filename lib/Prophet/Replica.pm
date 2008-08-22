@@ -480,6 +480,31 @@ sub traverse_new_changesets {
     );
 }
 
+=head2 new_changesets_for Prophet::Replica
+
+DEPRECATED: use traverse_new_changesets instead
+
+Returns the local changesets that have not yet been seen by the replica we're passing in.
+
+=cut
+
+
+sub new_changesets_for {
+    my $self = shift;
+
+    # the first argument is always the replica
+    unshift @_, 'replica';
+    my %args = validate(@_, {
+        replica  => { isa => 'Prophet::Replica' },
+        force    => 0,
+    });
+
+    my @result;
+    $self->traverse_new_changesets( for => $args{replica}, callback => sub { push @result, $_[0] }, force => $args{force} );
+
+    return \@result;
+}
+
 =head3 should_send_changeset { to => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
 
 Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>.
@@ -856,7 +881,7 @@ single record, this is what you'd override.
 sub integrate_changes {
     my ($self, $changeset) = validate_pos( @_, {isa => 'Prophet::Replica'},
                                           { isa => 'Prophet::ChangeSet' } );
-    $self->_integrate_change($_, $changeset) for ( $changeset->changes );
+    $self->_integrate_change($_) for ( $changeset->changes );
 }
 
 =head2 _integrate_change L<Prophet::Change>
