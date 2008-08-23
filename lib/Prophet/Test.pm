@@ -267,6 +267,7 @@ Returns a hash of key-value pairs of the form
 sub replica_merge_tickets {
     my $self    = shift;
     my $cli     = Prophet::CLI->new();
+    require Prophet::Collection;
     my $tickets = Prophet::Collection->new( handle => $cli->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
     $tickets->matching( sub {1} );
     return { map { $_->uuid => $_->prop('last-changeset') } $tickets->items };
@@ -391,7 +392,7 @@ sub run_command {
     sub load_record {
         my $type = shift;
         my $uuid = shift;
-
+        require Prophet::Record;
         my $record = Prophet::Record->new(handle => $connection, type => $type);
         $record->load(uuid => $uuid);
         return $record;

@@ -3,8 +3,6 @@ use Moose;
 use MooseX::ClassAttribute;
 
 use Prophet;
-use Prophet::Record;
-use Prophet::Collection;
 use Prophet::Replica;
 use Prophet::CLI::Command;
 
@@ -19,6 +17,7 @@ has app_class => (
 has record_class => (
     is      => 'rw',
     isa     => 'ClassName',
+    lazy    => 1,
     default => 'Prophet::Record',
 );
 

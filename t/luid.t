@@ -1,10 +1,11 @@
 use warnings;
 use strict;
-use Test::More tests => 10;
+use Test::More tests => 11;
 
 use File::Temp qw'tempdir';
 
 use_ok('Prophet::CLI');
+use_ok('Prophet::Record');
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 $ENV{'PROPHET_METADATA_DIRECTORY'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 

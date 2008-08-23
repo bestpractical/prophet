@@ -2,6 +2,8 @@ package Prophet::ReplicaExporter;
 use Moose;
 use Params::Validate qw(:all);
 use Path::Class;
+use Prophet::Record;
+use Prophet::Collection;
 
 has source_replica => (
     is  => 'rw',

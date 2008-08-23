@@ -5,7 +5,6 @@ use Params::Validate qw(:all);
 
 # require rather than use to make them late-binding
 use Prophet::ChangeSet;
-use Prophet::Conflict;
 
 has ra => (
     is      => 'rw',

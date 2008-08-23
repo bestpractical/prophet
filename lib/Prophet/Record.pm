@@ -2,7 +2,6 @@ package Prophet::Record;
 use Moose;
 use MooseX::ClassAttribute;
 use Params::Validate;
-use Data::UUID;
 use Prophet::App; # for require_module. Kinda hacky
 
 use constant collection_class => 'Prophet::Collection';
@@ -68,7 +67,13 @@ class_has PROPERTIES => (
     documentation => 'A hash of properties that a record class declares.',
 );
 
-my $UUIDGEN = Data::UUID->new();
+
+class_has uuid_generator => (
+    is => 'ro',
+    isa => 'Data::UUID',
+    lazy => 1,
+    default => sub { require Data::UUID; Data::UUID->new()}
+);
 
 =head1 METHODS
 
@@ -212,7 +217,7 @@ In case of failure, returns undef.
 sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
-    my $uuid = $UUIDGEN->create_str;
+    my $uuid = $self->uuid_generator->create_str;
 
     $self->default_props($args{'props'});
     $self->canonicalize_props( $args{'props'} );

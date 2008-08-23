@@ -105,6 +105,7 @@ sub handle_request_get {
 
     elsif ( $p =~ m|^/records/(.*).json| ) {
         my $type = $1;
+        require Prophet::Collection;
         my $col = Prophet::Collection->new( handle => $self->handle, type => $type );
         $col->matching( sub {1} );
         warn "Query language not implemented yet.";
@@ -152,7 +153,7 @@ sub handle_request_post {
 sub load_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 0 } );
-
+    require Prophet::Record;
     my $record = Prophet::Record->new( handle => $self->handle, type => $args{type} );
     if ( $args{'uuid'} ) {
         return undef unless ( $self->handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );

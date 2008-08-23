@@ -1,6 +1,8 @@
 package Prophet::CLI::RecordCommand;
 use Moose::Role;
 use Params::Validate;
+use Prophet::Record;
+
 
 has type => (
     is        => 'rw',

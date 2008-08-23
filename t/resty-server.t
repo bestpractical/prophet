@@ -8,9 +8,11 @@ BEGIN {
 
 }
 
-use Prophet::Test tests => 25;
+use Prophet::Test tests => 26;
 use Test::WWW::Mechanize;
 use JSON;
+
+use_ok('Prophet::Record');
 
 my $ua  = Test::WWW::Mechanize->new();
 my $cli = Prophet::CLI->new();

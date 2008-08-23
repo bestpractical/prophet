@@ -392,7 +392,7 @@ Returns undef if the current changeset wouldn't generate a conflict.
 sub conflicts_from_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
-
+    require Prophet::Conflict;
     my $conflict = Prophet::Conflict->new( { changeset => $changeset,
                                              prophet_handle => $self} );
 
@@ -966,6 +966,7 @@ sub _retrieve_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
 
+    require Prophet::Record;
     my $entry = Prophet::Record->new( handle => $self, type => $name );
     unless ( $entry->load( uuid => $source_uuid )) {
         return undef;

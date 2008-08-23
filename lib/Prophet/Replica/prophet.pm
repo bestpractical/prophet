@@ -9,7 +9,6 @@ use File::Find::Rule;
 use JSON;
 
 use Prophet::ChangeSet;
-use Prophet::Conflict;
 
 has '+db_uuid' => (
     lazy    => 1,
