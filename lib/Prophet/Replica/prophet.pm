@@ -8,7 +8,6 @@ use Digest::SHA1 qw(sha1_hex);
 use File::Find::Rule;
 use JSON;
 
-use Prophet::ChangeSet;
 
 has '+db_uuid' => (
     lazy    => 1,
@@ -573,6 +572,8 @@ sub _deserialize_changeset {
             sequence_no          => 1
         }
     );
+
+    require Prophet::ChangeSet;
     my $content_struct = from_json( $args{content} , { utf8 => 1 });
     my $changeset      = Prophet::ChangeSet->new_from_hashref($content_struct);
 
@@ -694,6 +695,7 @@ sub begin_edit {
     my $creator = $source ? $source->creator : $self->changeset_creator;
     my $created = $source && $source->created;
 
+    require Prophet::ChangeSet;
     my $changeset = Prophet::ChangeSet->new({
         source_uuid => $self->uuid,
         creator     => $creator,

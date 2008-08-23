@@ -9,7 +9,7 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-requires('Test::Exception');
+build_requires('Test::Exception');
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
@@ -32,7 +32,6 @@ features(
     'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
-        'Test::WWW::Mechanize' => '1.16',
     ],
 
     'HTML display' => [
@@ -49,6 +48,7 @@ features(
         'Test::HTTP::Server::Simple',
         'Acme::MetaSyntactic',
         'YAML::Syck' => 0,
+        'Test::WWW::Mechanize' => '1.16',
         'Test::Pod::Coverage'
     ],
 #    q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
