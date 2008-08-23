@@ -881,10 +881,11 @@ single record, this is what you'd override.
 sub integrate_changes {
     my ($self, $changeset) = validate_pos( @_, {isa => 'Prophet::Replica'},
                                           { isa => 'Prophet::ChangeSet' } );
-    $self->_integrate_change($_) for ( $changeset->changes );
+    $self->_integrate_change($_, $changeset) for ( $changeset->changes );
+
 }
 
-=head2 _integrate_change L<Prophet::Change>
+=head2 _integrate_change L<Prophet::Change> <Prophet::ChangeSet>
 
 Integrates the given change into the current replica. Used in
 L</integrate_changes>.
@@ -893,7 +894,9 @@ L</integrate_changes>.
 
 sub _integrate_change {
     my ($self, $change) = validate_pos(@_, { isa => 'Prophet::Replica' },
-                                           { isa => 'Prophet::Change' } );
+                                           { isa => 'Prophet::Change' }, 
+                                           { isa => 'Prophet::ChangeSet' } 
+);
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {
