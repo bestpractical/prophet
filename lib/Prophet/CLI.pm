@@ -357,13 +357,19 @@ your main app class as app_class, then run this routine.
 
 Example:
 
-my $cli = Prophet::CLI->new({ app_class => 'App::SD' });
+ my $cli = Prophet::CLI->new({ app_class => 'App::SD' });
 $cli->run_one_command;
 
 =cut
 
 sub run_one_command {
     my $self = shift;
+	{ #  really, we shouldn't be doing this stuff from the command dispatcher
+	    $self->type('');
+	    $self->clear_args();
+	    $self->clear_props();
+	}
+
     $self->parse_args();
     $self->set_type_and_uuid();
     if ( my $cmd_obj = $self->_get_cmd_obj() ) {
