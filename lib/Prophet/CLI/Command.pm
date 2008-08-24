@@ -8,10 +8,7 @@ has cli => (
     isa => 'Prophet::CLI',
     weak_ref => 1,
     handles => [
-        qw/args  set_arg  arg  has_arg  delete_arg  arg_names/,
-        qw/props set_prop prop has_prop delete_prop prop_names/,
         qw/app_handle handle resdb_handle config/,
-        'add_to_prop_set', 'prop_set',
     ],
 );
 
@@ -19,6 +16,12 @@ has context => (
     is => 'rw',
     isa => 'Prophet::CLIContext',
     lazy => 1,
+    handles => [ 
+        qw/args  set_arg  arg  has_arg  delete_arg  arg_names/,
+        qw/props set_prop prop has_prop delete_prop prop_names/,
+        'add_to_prop_set', 'prop_set',
+    ],
+
     default => sub {
         return Prophet::CLIContext->new( app_handle => shift->app_handle);
     }

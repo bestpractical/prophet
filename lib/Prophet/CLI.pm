@@ -36,7 +36,6 @@ has app_handle => (
 has context => (
     is => 'rw',
     isa => 'Prophet::CLIContext',
-    handles => [qw/has_arg set_arg arg delete_arg arg_hash prop_get set_prop prop_set prop_names props/],
     lazy => 1,
     default => sub {
         return Prophet::CLIContext->new( app_handle => shift->app_handle);
