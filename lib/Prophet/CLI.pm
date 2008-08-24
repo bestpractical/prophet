@@ -81,6 +81,9 @@ has props => (
     },
 );
 
+# clear the prop_set too!
+after clear_props => sub { my $self = shift; $self->prop_set( ( ) ); };
+
 has prop_set => (
     metaclass  => 'Collection::Array',
     is         => 'rw',
@@ -91,6 +94,10 @@ has prop_set => (
         push => 'add_to_prop_set',
     },
 );
+after add_to_prop_set => sub {
+    my $self = shift; my $args = shift; $self->set_prop($args->{prop} => $args->{value})
+};
+
 
 has interactive_shell => ( 
     is => 'rw',
@@ -364,7 +371,7 @@ sub run_one_command {
     }
 }
 
-=head2 change_attributes ( args => $hashref, props => $hashref, type => 'str' )
+=head2 mutate_attributes ( args => $hashref, props => $hashref, type => 'str' )
 
 A hook for running a second command from within a command without having       
 to use the commandline argument parsing.  
@@ -374,7 +381,7 @@ from the previous command run are used.
 
 =cut
 
-sub change_attributes {
+sub mutate_attributes {
     my $self = shift;
     my %args = @_;
 
@@ -405,12 +412,6 @@ sub change_attributes {
     }
 }
 
-# clear the prop_set too!
-after clear_props => sub {
-    my $self = shift;
-    $self->prop_set( ( ) );
-};
-
 =head2 invoke [outhandle], ARGV
 
 Run the given command. If outhandle is true, select that as the file handle
@@ -433,12 +434,6 @@ sub invoke {
     return $ret;
 }
 
-after add_to_prop_set => sub {
-    my $self = shift;
-    my $args = shift;
-
-    $self->set_prop($args->{prop} => $args->{value});
-};
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

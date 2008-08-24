@@ -81,7 +81,7 @@ around run => sub {
 
     my $hist = $ENV{PROPHET_HISTFILE}
             || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
-    my $len = $ENV{PROPHET_HISTLEN} || 100;
+    my $len = $ENV{PROPHET_HISTLEN} || 500;
 
     eval {
         local $SIG{__DIE__};
