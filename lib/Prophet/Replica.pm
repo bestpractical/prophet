@@ -1,6 +1,7 @@
 package Prophet::Replica;
 use Moose;
 use Params::Validate qw(:all);
+use Path::Class;
 
 use constant state_db_uuid => 'state';
 
@@ -560,7 +561,7 @@ sub export_to {
     my %args = validate( @_, { path => 1, } );
     require Prophet::ReplicaExporter;
 
-    my $exporter = Prophet::ReplicaExporter->new({target_path => $args{'path'}, source_replica => $self});
+    my $exporter = Prophet::ReplicaExporter->new({target_path => dir($args{'path'}), source_replica => $self});
     $exporter->export();
 }
 

@@ -4,7 +4,10 @@ extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use LWP::Simple ();
 use Path::Class;
-use JSON qw(from_json to_json);
+use Digest::SHA1 qw(sha1_hex);
+use File::Find::Rule;
+use Data::UUID;
+use JSON;
 
 
 has '+db_uuid' => (
@@ -600,8 +603,7 @@ sub _write_to_cas {
     } elsif ( $args{'data'} ) {
         $content = to_json($args{'data'}, { canonical => 1, pretty=> 0, utf8=>1}  );
     }
-    require Digest::SHA1;
-    my $fingerprint = Digest::SHA1::sha1_hex($content);
+    my $fingerprint = sha1_hex($content);
     my $content_filename = file(
         $args{'cas_dir'},
             $self->_hashed_dir_name($fingerprint)
@@ -870,7 +872,6 @@ sub list_records {
     my $self = shift;
     my %args = validate( @_ => { type => 1 } );
 
-    require File::Find::Rule;
     #return just the filenames, which, File::Find::Rule doesn't seem capable of
         my @record_uuids = map { my @path = split( qr'/', $_ ); pop @path }
             File::Find::Rule->file->maxdepth(3)->in(
@@ -886,7 +887,6 @@ sub list_records {
 sub list_types {
     my $self = shift;
 
-    require File::Find::Rule;
     return [ map { my @path = split( qr'/', $_ ); pop @path }
             File::Find::Rule->mindepth(1)->maxdepth(1)
             ->in( dir( $self->fs_root, $self->record_dir ) ) ];
