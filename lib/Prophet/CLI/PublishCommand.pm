@@ -12,7 +12,7 @@ sub publish_dir {
 
     my @args;
     push @args, '--recursive';
-    push @args, '--verbose' if $self->has_arg('verbose');
+    push @args, '--verbose' if $self->context->has_arg('verbose');
 
     push @args, '--';
 

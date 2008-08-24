@@ -15,6 +15,17 @@ has cli => (
     ],
 );
 
+has context => (
+    is => 'rw',
+    isa => 'Prophet::CLIContext',
+    lazy => 1,
+    default => sub {
+        return Prophet::CLIContext->new( app_handle => shift->app_handle);
+    }
+
+);
+
+
 sub fatal_error {
     my $self   = shift;
     my $reason = shift;
