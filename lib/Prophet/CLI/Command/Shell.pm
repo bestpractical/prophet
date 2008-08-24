@@ -21,6 +21,13 @@ has term => (
     },
 );
 
+    our $HIST = $ENV{PROPHET_HISTFILE}
+            || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
+    our $LEN = $ENV{PROPHET_HISTLEN} || 500;
+
+
+
+
 sub prompt {
     my $self = shift;
     return $self->name . '> ';
@@ -72,32 +79,39 @@ sub run {
 }
 
 # make the REPL history persistent
-# we use eval here because only some Term::ReadLine subclasses support
-# persistent history. it also seems that ->can doesn't work because of AUTOLOAD
-# trickery. :(
 around run => sub {
     my $orig = shift;
     my $self = shift;
-
-    my $hist = $ENV{PROPHET_HISTFILE}
-            || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
-    my $len = $ENV{PROPHET_HISTLEN} || 500;
-
-    eval {
-        local $SIG{__DIE__};
-        $self->term->stifle_history($len);
-        $self->term->ReadHistory($hist)
-            if -f $hist;
-    };
-
+    $self->_read_repl_history();
     $self->$orig(@_);
+    $self->_write_repl_history();
+};
+
+
+# we use eval here because only some Term::ReadLine subclasses support
+# persistent history. it also seems that ->can doesn't work because of AUTOLOAD
+# trickery. :(
+
+sub _read_repl_history {
+    my $self = shift;
+    eval {
+        local $SIG{__DIE__};
+        $self->term->stifle_history($LEN);
+        $self->term->ReadHistory($HIST)
+            if -f $HIST;
+    };
+}
+
+sub _write_repl_history {
+    my $self = shift;
 
     eval {
         local $SIG{__DIE__};
-        $self->term->WriteHistory($hist)
-            or warn "Unable to write to shell history file $hist";
+        $self->term->WriteHistory($HIST)
+            or warn "Unable to write to shell history file $HIST";
     };
-};
+}
+
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
