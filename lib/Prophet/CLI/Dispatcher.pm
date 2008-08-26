@@ -14,8 +14,10 @@ on qr{^(\w+)} => sub {
     my $cli = shift;
     my %args = @_;
 
+    my $cmd = __PACKAGE__->resolve_builtin_aliases($1);
+
     my @possible_classes = (
-        ("Prophet::CLI::Command::" . ucfirst lc $1),
+        ("Prophet::CLI::Command::" . ucfirst lc $cmd),
         "Prophet::CLI::Command::Notound",
     );
 
@@ -25,6 +27,27 @@ on qr{^(\w+)} => sub {
         }
     }
 };
+
+my %CMD_MAP = (
+    ls      => 'search',
+    new     => 'create',
+    edit    => 'update',
+    rm      => 'delete',
+    del     => 'delete',
+    list    => 'search',
+    display => 'show',
+);
+
+sub resolve_builtin_aliases {
+    my $self = shift;
+    my @cmds = @_;
+
+    if (my $replacement = $CMD_MAP{ lc $cmds[-1] }) {
+        $cmds[-1] = $replacement;
+    }
+
+    return wantarray ? @cmds : $cmds[-1];
+}
 
 1;
 

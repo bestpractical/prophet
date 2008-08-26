@@ -98,16 +98,6 @@ handles the subcommand for a particular type
 
 =cut
 
-our %CMD_MAP = (
-    ls      => 'search',
-    new     => 'create',
-    edit    => 'update',
-    rm      => 'delete',
-    del     => 'delete',
-    list    => 'search',
-    display => 'show',
-);
-
 =head2 dispatcher -> Class
 
 Returns the dispatcher used to dispatch command lines. You'll want to override
