@@ -115,15 +115,6 @@ sub _get_cmd_obj {
     return $class->new(%constructor_args);
 }
 
-=head2 _default_command
-
-Returns the "default" command for use when no arguments were specified on the
-command line. In Prophet, it's "shell" but your subclass can change that.
-
-=cut
-
-sub _default_command { "shell" }
-
 sub _try_to_load_cmd_class {
     my $self = shift;
     my $class = shift;

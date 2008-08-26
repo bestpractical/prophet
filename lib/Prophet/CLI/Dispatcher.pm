@@ -28,6 +28,11 @@ on qr{^(\w+)} => sub {
     }
 };
 
+on qr{^\s*$} => sub {
+    run(__PACKAGE__->default_command, @_);
+
+};
+
 my %CMD_MAP = (
     ls      => 'search',
     new     => 'create',
@@ -48,6 +53,15 @@ sub resolve_builtin_aliases {
 
     return wantarray ? @cmds : $cmds[-1];
 }
+
+=head2 default_command
+
+Returns the "default" command for use when no arguments were specified on the
+command line. In Prophet, it's "shell" but your subclass can change that.
+
+=cut
+
+sub default_command { "shell" }
 
 1;
 
