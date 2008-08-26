@@ -5,13 +5,12 @@ use Path::Dispatcher::Declarative -base;
 
 # "ticket display $ID" -> "ticket display --id=$ID"
 on qr{ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
-    my $cli = shift;
-    $cli->set_arg(id => $2);
-    run($1, $cli, @_);
+    my %args = @_;
+    $args{cli}->set_arg(id => $2);
+    run($1, %args);
 };
 
 on qr{^(\w+)} => sub {
-    my $cli = shift;
     my %args = @_;
 
     my $cmd = __PACKAGE__->resolve_builtin_aliases($1);
@@ -20,6 +19,8 @@ on qr{^(\w+)} => sub {
         ("Prophet::CLI::Command::" . ucfirst lc $cmd),
         "Prophet::CLI::Command::Notound",
     );
+
+    my $cli = $args{cli};
 
     for my $class (@possible_classes) {
         if ($cli->_try_to_load_cmd_class($class)) {
