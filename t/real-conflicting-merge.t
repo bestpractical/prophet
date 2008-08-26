@@ -18,7 +18,7 @@ my $record_id;
 as_bob {
 
     like(run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/);
-    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force'), qr/Merge complete/, "Sync ran ok!");
+    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force'), qr/Merged one changeset/, "Sync ran ok!");
 
     # check our local replicas
     my $out = run_command(qw(search --type Bug --regex .));
@@ -34,8 +34,9 @@ as_bob {
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
         qr/id: (\d+) \($record_id\)/,
-          'status: stalled',
+          'creator: alice@' . replica_uuid_for('alice'),
           'from: alice',
+          'status: stalled',
         ],
         'content is correct'
     );
@@ -49,8 +50,9 @@ as_alice {
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
             qr/id: (\d+) \($record_id\)/,
-              'status: open',
+              'creator: alice@' . replica_uuid_for('alice'),
               'from: alice',
+              'status: open',
         ],
         'content is correct'
     );

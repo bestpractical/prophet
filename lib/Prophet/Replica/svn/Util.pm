@@ -1,5 +1,5 @@
 # XXX CARGO CULTED FROM SVK::Util;
-package Prophet::Replica::SVN::Util;
+package Prophet::Replica::svn::Util;
 use Moose;
 use MooseX::ClassAttribute;
 
@@ -9,7 +9,7 @@ my $pool = SVN::Pool->new;
 
 =head1 NAME
 
-Prophet::Replica::SVN
+Prophet::Replica::svn::Util
 
 =head1 DESCRIPTION
 

@@ -11,7 +11,7 @@ has handle => (
         my $self = shift;
         my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new({ url => $type.':file://' . $root });
+        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self});
     },
 );
 
@@ -47,23 +47,6 @@ Prophet::App
 
 =cut
 
-sub BUILD {
-    my $self = shift;
-    $self->_load_replica_types();
-}
-
-sub _load_replica_types {
-    my $self = shift;
-    my $replica_class = blessed($self)."::Replica";
-    my $except = $replica_class."::(.*)::";
-    Module::Pluggable->import( search_path => $replica_class, sub_name => 'app_replica_types', require => 0, except => qr/$except/);
-    for my $package ( $self->app_replica_types) {
-        $self->require($package);
-        next unless $package->can('scheme');
-        Prophet::Replica->register_replica_scheme(scheme => $package->scheme, class => $package) 
-    }
-}
-
 sub default_replica_type {
     my $self = shift;
     return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
@@ -72,7 +55,6 @@ sub default_replica_type {
 sub require {
     my $self = shift;
     my $class = shift;
-    return undef unless $class;
     $self->_require(module => $class);
 }
 
@@ -87,16 +69,16 @@ sub _require {
     my $self = shift;
     my %args = ( module => undef, quiet => undef, @_);
     my $class = $args{'module'};
-    
+
     # Quick hack to silence warnings.
     # Maybe some dependencies were lost.
     unless ($class) {
         warn sprintf("no class was given at %s line %d\n", (caller)[1,2]);
         return 0;
-    }   
-    
+    }
+
     return 1 if $self->already_required($class);
-    
+
     # .pm might already be there in a weird interaction in Module::Pluggable
     my $file = $class;
     $file .= ".pm"
@@ -104,7 +86,11 @@ sub _require {
 
     $file =~ s/::/\//g;
 
-    my $retval = eval  {CORE::require "$file"} ;
+    my $retval = eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        CORE::require "$file"
+    };
+
     my $error = $@;
     if (my $message = $error) {
         $message =~ s/ at .*?\n$//;
@@ -127,14 +113,12 @@ sub _require {
 Helper function to test whether a given class has already been require'd.
 
 =cut
-    
-    
+
 sub already_required {
     my ($self, $class) = @_;
     my $path =  join('/', split(/::/,$class)).".pm";
     return ( $INC{$path} ? 1 : 0);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

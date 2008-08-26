@@ -76,7 +76,7 @@ sub in_gladiator (&) {
         $types->{ ref($_) }++;
     }
     map { $types->{$_} || delete $types->{$_} } keys %$types;
-    warn YAML::Dump($types);
+    warn YAML::Syck::Dump($types);
 
 }
 
@@ -209,6 +209,8 @@ sub run_output_matches_unordered {
     my $args = shift;
     my $output = shift;
     my ($val, $out, $err)  = run_script( $cmd, $args);
+
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
     is_deeply([sort split(/\n/,$out)], [sort @$output]);
 }
 
@@ -243,13 +245,13 @@ sub repo_uri_for {
 sub replica_uuid {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
-    return $cli->app_handle->handle->uuid;
+    return $cli->handle->uuid;
 }
 
 sub database_uuid {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
-    return $cli->app_handle->handle->db_uuid;
+    return $cli->handle->db_uuid;
 }
 
 =head2 replica_merge_tickets
@@ -265,7 +267,8 @@ Returns a hash of key-value pairs of the form
 sub replica_merge_tickets {
     my $self    = shift;
     my $cli     = Prophet::CLI->new();
-    my $tickets = Prophet::Collection->new( handle => $cli->app_handle->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
+    require Prophet::Collection;
+    my $tickets = Prophet::Collection->new( handle => $cli->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
     $tickets->matching( sub {1} );
     return { map { $_->uuid => $_->prop('last-changeset') } $tickets->items };
 
@@ -273,7 +276,7 @@ sub replica_merge_tickets {
 
 sub replica_last_rev {
     my $cli = Prophet::CLI->new();
-    return $cli->app_handle->handle->latest_sequence_no;
+    return $cli->handle->latest_sequence_no;
 }
 
 =head2 as_user USERNAME CODEREF
@@ -290,8 +293,6 @@ sub as_user {
     my $coderef  = shift;
     local $ENV{'PROPHET_USER'} = $username;
     local $ENV{'PROPHET_REPO'} = repo_path_for($username);
-
-    #  diag("I am $username. My replica id is ".replica_uuid());
 
     my $ret = $coderef->();
 
@@ -386,15 +387,12 @@ sub run_command {
 }
 
 {
-    my $connection = lazy {
-        my $cli = Prophet::CLI->new();
-        $cli->app_handle->handle;
-    };
+    my $connection = lazy { Prophet::CLI->new->handle };
 
     sub load_record {
         my $type = shift;
         my $uuid = shift;
-
+        require Prophet::Record;
         my $record = Prophet::Record->new(handle => $connection, type => $type);
         $record->load(uuid => $uuid);
         return $record;

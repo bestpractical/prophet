@@ -16,7 +16,7 @@ sub BUILD {
     my $cli  = Prophet::CLI->new();
 
     # XXX TODO this $cli object should be a Prophet::App object
-    my $state_handle_url =      $cli->app_handle->default_replica_type . ":" . $cli->app_handle->handle->url;
+    my $state_handle_url =      $cli->app_handle->default_replica_type . ":" . $cli->handle->url;
     $self->log( "Connecting to state database ".$state_handle_url);
     $self->state_handle(
         Prophet::Replica->new(

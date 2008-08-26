@@ -2,7 +2,6 @@ package Prophet::Record;
 use Moose;
 use MooseX::ClassAttribute;
 use Params::Validate;
-use Data::UUID;
 use Prophet::App; # for require_module. Kinda hacky
 
 use constant collection_class => 'Prophet::Collection';
@@ -18,7 +17,7 @@ This class represents a base class for any record in a Prophet database.
 =cut
 
 has app_handle => (
-    isa => 'Maybe[Prophet::App]',
+    isa      => 'Maybe[Prophet::App]',
     is       => 'rw',
     required => 0,
 );
@@ -51,9 +50,13 @@ has luid => (
 );
 
 class_has REFERENCES => (
-    is      => 'rw',
-    isa     => 'HashRef',
-    default => sub { {} },
+    metaclass => 'Collection::Hash',
+    is        => 'rw',
+    isa       => 'HashRef',
+    default   => sub { {} },
+    provides  => {
+        keys => 'reference_methods',
+    },
     documentation => 'A hash of accessor_name => collection_class references.',
 );
 
@@ -64,7 +67,13 @@ class_has PROPERTIES => (
     documentation => 'A hash of properties that a record class declares.',
 );
 
-my $UUIDGEN = Data::UUID->new();
+
+class_has uuid_generator => (
+    is => 'ro',
+    isa => 'Data::UUID',
+    lazy => 1,
+    default => sub { require Data::UUID; Data::UUID->new()}
+);
 
 =head1 METHODS
 
@@ -110,7 +119,14 @@ sub register_reference {
             @args
         );
     } elsif ( $foreign_class->isa('Prophet::Record') ) {
+        return $class->register_record_reference(
+            $accessor => $foreign_class,
 
+            # default the lookup property to be the name of the accessor
+            by        => $accessor,
+
+            @args
+        );
     } else {
         die "Your foreign class ($foreign_class) must be a subclass of Prophet::Record or Prophet::Collection";
     }
@@ -135,8 +151,8 @@ sub register_collection_reference {
     *{ $class . "::$accessor" } = sub {
         my $self       = shift;
         my $collection = $collection_class->new(
-            handle => $self->handle,
-            type   => $collection_class->record_class->type
+            app_handle => $self->app_handle,
+            type       => $collection_class->record_class->type,
         );
         $collection->matching( sub { ($_[0]->prop( $args{by} )||'') eq $self->uuid }
         );
@@ -145,8 +161,46 @@ sub register_collection_reference {
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor}
-        = { %args, type => $collection_class->record_class };
+    $class->REFERENCES->{$accessor} = {
+        %args,
+        arity => 'collection',
+        type  => $collection_class->record_class,
+    };
+}
+
+=head2 register_record_reference $accessor, $record_class, by => $key_in_model
+
+Registers and creates an accessor in the current class to the associated
+record C<$record_class>, which refers to the current class by
+C<$key_in_model> in the model class of C<$collection_class>.
+
+=cut
+
+sub register_record_reference {
+    my ( $class, $accessor, $record_class, @args ) = @_;
+    my %args = validate( @args, { by => 1 } );
+    no strict 'refs';
+
+    Prophet::App->require( $record_class );
+
+    *{ $class . "::$accessor" } = sub {
+        my $self       = shift;
+        my $record = $record_class->new(
+            app_handle => $self->app_handle,
+            handle     => $self->handle,
+            type       => $record_class->type,
+        );
+        $record->load(uuid => $self->prop($args{by}));
+        return $record;
+    };
+
+    # XXX: add validater for $args{by} in $model->record_class
+
+    $class->REFERENCES->{$accessor} = {
+        %args,
+        arity => 'scalar',
+        type  => $record_class,
+    };
 }
 
 =head2 create { props => { %hash_of_kv_pairs } }
@@ -163,7 +217,7 @@ In case of failure, returns undef.
 sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
-    my $uuid = $UUIDGEN->create_str;
+    my $uuid = $self->uuid_generator->create_str;
 
     $self->default_props($args{'props'});
     $self->canonicalize_props( $args{'props'} );
@@ -281,8 +335,8 @@ sub get_props {
 
 =head2 prop $name
 
-Returns the current value of the property C<$name> for this record. 
-(This is a convenience method wrapped around L</get_props>.
+Returns the current value of the property C<$name> for this record.
+(This is a convenience method wrapped around L</get_props>).
 
 =cut
 
@@ -294,9 +348,8 @@ sub prop {
 
 =head2 delete_prop { name => $name }
 
-Deletes the current value for the property $name. 
-
-TODO: how is this different than setting it to an empty value?
+Deletes the current value for the property $name.
+(This is currently equivalent to setting the prop to ''.)
 
 =cut
 
@@ -306,10 +359,12 @@ sub delete_prop {
 
     confess "delete_prop called on a record that hasn't been loaded or created yet." if !$self->uuid;
 
-    $self->handle->delete_record_prop(
-        uuid => $self->uuid,
-        name => $args{'name'}
-    );
+    $self->set_prop(name => $args{'name'}, value => '');
+
+#    $self->handle->delete_record_prop(
+#        uuid => $self->uuid,
+#        name => $args{'name'}
+#    );
 }
 
 =head2 delete
@@ -458,6 +513,20 @@ sub default_props {
     return 1;
 }
 
+=head2 default_prop_creator
+
+Default the creator of every record to the changeset_creator @ replica uuid
+
+=cut
+
+sub default_prop_creator {
+    my $self = shift;
+
+    return sprintf '%s@%s',
+        $self->handle->changeset_creator,
+        $self->handle->uuid;
+}
+
 =head2 _default_summary_format
 
 A string of the default summary format for record types that do not
@@ -566,7 +635,7 @@ sub _parse_format_summary {
 =head2 format_summary
 
 Returns a formatted string that is the summary for the record. In an
-array context, returns a list of 
+array context, returns a list of
 
 =cut
 
@@ -667,6 +736,54 @@ sub color_prop {
     my $value    = shift;
 
     return ($property, $value);
+}
+
+=head2 history_as_string
+
+Returns this record's changesets as a single string.
+
+=cut
+
+sub history_as_string {
+    my $self = shift;
+    my $out = "History for record "
+            . $self->luid
+            . " (" . $self->uuid . ")"
+            . "\n\n";
+
+    for my $changeset ($self->changesets) {
+        $out .= $changeset->as_string(change_filter => sub {
+            shift->record_uuid eq $self->uuid
+        });
+    }
+
+    return $out;
+}
+
+=head2 record_reference_methods
+
+Returns a list of method names that refer to other individual records
+
+=cut
+
+sub record_reference_methods {
+    my $self = shift;
+
+    return grep { $self->REFERENCES->{$_}{arity} eq 'record' }
+           $self->reference_methods;
+}
+
+=head2 collection_reference_methods
+
+Returns a list of method names that refer to collections
+
+=cut
+
+sub collection_reference_methods {
+    my $self = shift;
+
+    return grep { $self->REFERENCES->{$_}{arity} eq 'collection' }
+           $self->reference_methods;
 }
 
 __PACKAGE__->meta->make_immutable;

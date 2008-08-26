@@ -7,10 +7,9 @@ license('Perl');
 
 requires('Params::Validate');
 requires('IPC::Run3');
-requires('File::Rsync');
 requires('Data::UUID');
 requires('Path::Class');
-requires('Test::Exception');
+build_requires('Test::Exception');
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
@@ -26,11 +25,15 @@ requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
 requires('Path::Dispatcher'); # Path::Dispatcher::Declarative
 
+use Term::ReadLine; # if we don't do this, ::Perl fails
 features(
+    'Improved interactive shell' => [
+        -default => 1,
+        'Term::ReadLine::Perl'
+        ],
     'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
-        'Test::WWW::Mechanize' => '1.16',
     ],
 
     'HTML display' => [
@@ -47,12 +50,17 @@ features(
         'Test::HTTP::Server::Simple',
         'Acme::MetaSyntactic',
         'YAML::Syck' => 0,
+        'Test::WWW::Mechanize' => '1.16',
         'Test::Pod::Coverage'
     ],
 #    q{Devel::Gladiator support (contact sky@crucially.net if it's not on CPAN)} => [
 #        -default => 0,
 #        'Devel::Gladiator'
 #    ],
+    'Bonjour support' => [
+        -default => 0,
+        'Net::Bonjour',
+    ],
 );
 
 all_from('lib/Prophet.pm');

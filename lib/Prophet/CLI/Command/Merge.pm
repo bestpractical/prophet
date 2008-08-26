@@ -14,11 +14,13 @@ sub run {
 
     my $source = Prophet::Replica->new(
         url       => $self->arg('from'),
+        app_handle => $self->app_handle,
         _alt_urls => \@alt_from,
     );
 
     my $target = Prophet::Replica->new(
         url       => $self->arg('to'),
+        app_handle => $self->app_handle,
         _alt_urls => \@alt_to,
     );
 
@@ -27,10 +29,35 @@ sub run {
         force => $self->has_arg('force'),
     );
 
-    $self->_do_merge( $source, $target );
+    my $changesets = $self->_do_merge( $source, $target );
 
-    print "Merge complete.\n";
+    if ($changesets == 0) {
+        print "No new changesets.\n";
+    }
+    elsif ($changesets == 1) {
+        print "Merged one changeset.\n";
+    }
+    else {
+        print "Merged $changesets changesets.\n";
+    }
 }
+
+=head2 _do_merge $source $target
+
+Merges changesets from the source replica into the target replica.
+
+Fails fatally if the source and target are the same, or the target is
+not writable.
+
+Conflicts are resolved by either the resolver specified in the
+C<PROPHET_RESOLVER> environmental variable, the C<prefer> argument
+(can be set to C<to> or C<from>, in which case Prophet will
+always prefer changesets from one replica or the other), or by
+using a default resolver.
+
+Returns the number of changesets merged.
+
+=cut
 
 sub _do_merge {
     my ( $self, $source, $target ) = @_;
@@ -58,12 +85,30 @@ sub _do_merge {
                    ? 'Prophet::Resolver::AlwaysSource'
                    : ();
 
-    $target->import_changesets(
+    my %import_args = (
         from  => $source,
-        resdb => $self->app_handle->resdb_handle,
+        resdb => $self->resdb_handle,
         force => $self->has_arg('force'),
-        ( $resolver ? (resolver_class => $resolver) : () ),
     );
+
+    $import_args{resolver_class} = $resolver
+        if $resolver;
+
+    my $changesets = 0;
+    my $verbose = $self->has_arg('verbose');
+
+    $import_args{reporting_callback} = sub {
+        my %args = @_;
+        my $changeset = $args{changeset};
+        print $changeset->as_string if $verbose;
+        $changesets++;
+    };
+
+    $target->import_changesets(
+        %import_args,
+    );
+
+    return $changesets;
 }
 
 __PACKAGE__->meta->make_immutable;

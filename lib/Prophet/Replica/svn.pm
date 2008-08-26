@@ -1,11 +1,10 @@
-package Prophet::Replica::SVN;
+package Prophet::Replica::svn;
 use Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 
 # require rather than use to make them late-binding
 use Prophet::ChangeSet;
-use Prophet::Conflict;
 
 has ra => (
     is      => 'rw',
@@ -13,9 +12,9 @@ has ra => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        require Prophet::Replica::SVN::Util;
-        my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::SVN::Util->get_auth_providers );
-        my $config = Prophet::Replica::SVN::Util->svnconfig;
+        require Prophet::Replica::svn::Util;
+        my ( $baton, $ref ) = SVN::Core::auth_open_helper( Prophet::Replica::svn::Util->get_auth_providers );
+        my $config = Prophet::Replica::svn::Util->svnconfig;
         return SVN::Ra->new(url => $self->url, config => $config, auth => $baton, pool => $self->_pool);
     },
 );
@@ -74,7 +73,10 @@ sub _setup_repo_connection {
     $self->fs_root( $args{'repository'} );
     $self->set_db_uuid( $args{'db_uuid'} ) if ( $args{'db_uuid'} );
     
-    my $repos = eval { SVN::Repos::open( $self->fs_root ); };
+    my $repos = eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        SVN::Repos::open( $self->fs_root );
+    };
     # If we couldn't open the repository handle, we should create it
     if ( $@ && !-d $self->fs_root ) {
         $repos = SVN::Repos::create( $self->fs_root, undef, undef, undef, undef, $self->_pool );
@@ -129,8 +131,8 @@ sub _fetch_changeset {
     my $self   = shift;
     my $rev    = shift;
 
-    require Prophet::Replica::SVN::ReplayEditor;
-    my $editor = Prophet::Replica::SVN::ReplayEditor->new( _debug => 0 );
+    require Prophet::Replica::svn::ReplayEditor;
+    my $editor = Prophet::Replica::svn::ReplayEditor->new( _debug => 0 );
     my $pool = SVN::Pool->new_default;
 
     # This horrible hack is here because I have no idea how to pass custom variables into the editor
@@ -341,7 +343,10 @@ sub _set_record_props {
 
     my $file = $self->_file_for( uuid => $args{uuid}, type => $args{type} );
     foreach my $prop ( keys %{ $args{'props'} } ) {
-        eval { $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef ) };
+        eval {
+            local $SIG{__DIE__} = 'DEFAULT';
+            $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef )
+        };
         Carp::confess($@) if ($@);
     }
 }

@@ -8,15 +8,17 @@ BEGIN {
 
 }
 
-use Prophet::Test tests => 25;
+use Prophet::Test tests => 26;
 use Test::WWW::Mechanize;
 use JSON;
+
+use_ok('Prophet::Record');
 
 my $ua  = Test::WWW::Mechanize->new();
 my $cli = Prophet::CLI->new();
 my $s   = Prophet::TestServer->new();
 
-$s->prophet_handle( $cli->app_handle->handle );
+$s->app_handle( $cli->app_handle );
 
 my $url_root = $s->started_ok("start up my web server");
 
@@ -27,7 +29,7 @@ sub url {
 $ua->get_ok( url('records.json') );
 is( $ua->content, '[]' );
 
-my $car = Prophet::Record->new( handle => $cli->app_handle->handle, type => 'Cars' );
+my $car = Prophet::Record->new( handle => $cli->handle, type => 'Cars' );
 my ($uuid) = $car->create( props => { wheels => 4, windshields => 1 } );
 ok( $uuid, "Created record $uuid" );
 
@@ -35,7 +37,7 @@ $ua->get_ok( url('records.json') );
 is( $ua->content, '["Cars"]' );
 
 $ua->get_ok( url( 'records', 'Cars', $uuid . ".json" ) );
-is( $ua->content, '{"wheels":"4","windshields":"1"}' );
+is( $ua->content, '{"creator":"'.$car->default_prop_creator.'","wheels":"4","windshields":"1"}' );
 
 $ua->get( url( 'records', 'Cars', "1234.json" ) );
 is( $ua->status, '404' );
@@ -43,7 +45,7 @@ is( $ua->status, '404' );
 $ua->post_ok( url( 'records', 'Cars', $uuid . ".json" ), { wheels => 6 } );
 
 $ua->get_ok( url( 'records', 'Cars', $uuid . ".json" ) );
-is( $ua->content, '{"wheels":"6","windshields":"1"}' );
+is( $ua->content, '{"creator":"'.$car->default_prop_creator.'","wheels":"6","windshields":"1"}' );
 
 $ua->post( url( 'records', 'Cars', "doesnotexist.json" ), { wheels => 6 } );
 is( $ua->status, '404', "Can't update a nonexistant car" );
@@ -58,9 +60,9 @@ if ( $ua->uri =~ /Cars\/(.*)\.json/ ) {
     ok( 0, "Failed to get the new record's uri" );
 }
 
-my $car2 = Prophet::Record->new( handle => $cli->app_handle->handle, type => 'Cars' );
+my $car2 = Prophet::Record->new( handle => $cli->handle, type => 'Cars' );
 $car2->load( uuid => $new_uuid );
-is_deeply( $car2->get_props, { wheels => 3, seatbelts => 'sure!' }, "The thing we created remotely worked just great" );
+is_deeply( $car2->get_props, { creator => $car2->default_prop_creator, wheels => 3, seatbelts => 'sure!' }, "The thing we created remotely worked just great" );
 
 diag("testing property-level access");
 $ua->get_ok( url( 'records', 'Cars', $uuid, 'wheels' ) );

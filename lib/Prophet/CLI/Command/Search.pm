@@ -20,6 +20,8 @@ has 'sort_routine' => (
     documentation => 'A subroutine which takes a list of records and returns them sorted in some way.',
 );
 
+sub default_match { 1 }
+
 sub get_search_callback {
     my $self = shift;
 
@@ -33,8 +35,11 @@ sub get_search_callback {
     return sub {
         my $item = shift;
         my $props = $item->get_props;
+        my $did_limit = 0;
 
         if ($self->prop_names > 0) {
+            $did_limit = 1;
+
             for my $prop (keys %prop_checks) {
                 my $got = $props->{$prop};
                 my $ok = 0;
@@ -48,7 +53,9 @@ sub get_search_callback {
 
         # if they specify a regex, it must match
         if ($regex) {
+            $did_limit = 1;
             my $ok = 0;
+
             for (values %$props) {
                 if (/$regex/) {
                     $ok = 1;
@@ -57,6 +64,8 @@ sub get_search_callback {
             }
             return 0 if !$ok;
         }
+
+        return $self->default_match($item) if !$did_limit;
 
         return 1;
     };

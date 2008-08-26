@@ -23,7 +23,7 @@ as_alice {
 };
 
 my $alice_uuid = database_uuid_for('alice');
-my $path = dir($alice_published)->file($alice_uuid);
+my $path = dir($alice_published);
 
 as_bob {
     run_ok( 'prophet', ['pull', '--from', "file:$path", '--force'] );
@@ -50,7 +50,7 @@ as_bob {
 # that you really want http://sartak.org/misc/sd/DATABASE-UUID
 as_charlie {
     my $cli  = Prophet::CLI->new();
-    $cli->app_handle->handle->set_db_uuid($alice_uuid);
+    $cli->handle->set_db_uuid($alice_uuid);
 
     run_ok( 'prophet', ['pull', '--from', "file:$alice_published", '--force'] );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], "publish database uuid intuition works" );
@@ -116,6 +116,10 @@ sub changeset_ok {
                 from => {
                     old_value => undef,
                     new_value => 'alice',
+                },
+                creator => {
+                    old_value => undef,
+                    new_value => 'alice@' . replica_uuid_for('alice'),
                 },
             },
         },

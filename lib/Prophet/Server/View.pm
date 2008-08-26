@@ -14,56 +14,68 @@ template '/' => sub {
     }
 };
 
+sub record_table {
+    my %args = validate(@_, {
+        records    => 1,
+        url_prefix => { default => '' },
+    });
+
+    my $records = $args{records};
+    my $prefix  = $args{url_prefix};
+
+    table {
+        my @items = $records ? $records->items : ();
+        if (@items) {
+            my @headers = $items[0]->_parse_format_summary;
+            row {
+                for (@headers) {
+                    th { $_->{prop} }
+                }
+            }
+        }
+
+        for my $record (sort { $a->luid <=> $b->luid } @items) {
+            my $type = $record->type;
+            my $uuid = $record->uuid;
+            my @atoms = $record->format_summary;
+
+            row {
+                attr { id => "$type-$uuid", class => "$type" };
+
+                for my $i (0 .. $#atoms) {
+                    my $atom = $atoms[$i];
+                    my $prop = $atom->{prop};
+
+                    cell {
+                        attr {
+                            class => "prop-$prop",
+                        };
+
+                        if ($i == 0) {
+                            a {
+                                attr {
+                                    href => "$prefix$uuid.html",
+                                };
+                                outs $atom->{value};
+                            }
+                        }
+                        else {
+                            outs $atom->{value};
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 template record_table => sub {
     my $self = shift;
     my $records = shift;
 
     html {
         body {
-            table {
-                my @items = $records ? $records->items : ();
-                if (@items) {
-                    my @headers = $items[0]->_parse_format_summary;
-                    row {
-                        for (@headers) {
-                            th { $_->{prop} }
-                        }
-                    }
-                }
-
-                for my $record (sort { $a->luid <=> $b->luid } @items) {
-                    my $type = $record->type;
-                    my $uuid = $record->uuid;
-                    my @atoms = $record->format_summary;
-
-                    row {
-                        attr { id => "$type-$uuid", class => "$type" };
-
-                        for my $i (0 .. $#atoms) {
-                            my $atom = $atoms[$i];
-                            my $prop = $atom->{prop};
-
-                            cell {
-                                attr {
-                                    class => "prop-$prop",
-                                };
-
-                                if ($i == 0) {
-                                    a {
-                                        attr {
-                                            href => "$uuid.html",
-                                        };
-                                        outs $atom->{value};
-                                    }
-                                }
-                                else {
-                                    outs $atom->{value};
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            record_table(records => $records);
         }
     }
 };
@@ -94,11 +106,29 @@ template record => sub {
                     dt { $prop }
                     dd { $props->{$prop} }
                 }
-            }
+            };
+
             hr {}
             h3 { "History" };
 
             show record_changesets => $record;
+
+            # linked collections
+            for my $method ($record->collection_reference_methods) {
+                my $collection = $record->$method;
+                next if $collection->count == 0;
+
+                my $type = $collection->record_class->type;
+
+                hr {}
+                h3 { "Linked $type records" }
+
+                record_table(
+                    records    => $collection,
+                    url_prefix => "../$type/",
+                );
+            }
+
         }
     }
 };

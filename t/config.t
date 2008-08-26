@@ -11,6 +11,7 @@ use_ok('Prophet::CLI');
 # Test basic config file parsing
 use_ok('Prophet::Config');
 my $config = Prophet::Config->new(app_handle => Prophet::CLI->new->app_handle);
+
 isa_ok($config => 'Prophet::Config');
 can_ok($config  => 'load_from_files');
 
@@ -30,7 +31,7 @@ is_deeply([$config->list], ['_does_not_exist'], "The deep structures match");
 my $a = Prophet::CLI->new();
 can_ok($a, 'app_handle');
 can_ok($a->app_handle, 'config');
-my $c = $a->app_handle->config;
+my $c = $a->config;
 
 # interrogate its config to see if we have any config options set
 my @keys = $c->list;

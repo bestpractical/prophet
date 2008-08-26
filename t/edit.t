@@ -22,9 +22,9 @@ cleanup();
 # ------------
 
 $out = run_command('create', '--type=Robot Master', '--edit');
-like($out, $created_re);
+# $out only captures STDOUT, not STDERR
+is($out, '', 'Create aborted on no editor input');
 is($invoked_editor, 1, "Editor invoked once");
-ok($uuid, "got a uuid");
 cleanup();
 
 # ------------
@@ -34,6 +34,7 @@ editor(sub {
 name: Shadow Man
 weapon: Shadow Blade
 weakness: Top Spin
+strength: 
 TEXT
 });
 
@@ -46,6 +47,7 @@ is($shadow_man->uuid, $uuid, "correct uuid");
 is($shadow_man->prop('name'), 'Shadow Man', 'correct name');
 is($shadow_man->prop('weapon'), 'Shadow Blade', 'correct weapon');
 is($shadow_man->prop('weakness'), 'Top Spin', 'correct weakness');
+is($shadow_man->prop('strength'), undef, 'strength not set');
 cleanup();
 
 # ------------
@@ -97,7 +99,7 @@ my $crash_man2 = load_record('Robot Master', $uuid);
 is($crash_man2->uuid, $uuid, "correct uuid");
 is($crash_man2->prop('name'), 'Clash Man', 'corrected name');
 is($crash_man2->prop('weapon'), 'Clash Bomb', 'corrected weapon');
-is($crash_man2->prop('weakness'), 'Air Shooter', 'same weakness');
+is($crash_man2->prop('weakness'), undef, 'weakness deleted');
 cleanup();
 
 # ------------

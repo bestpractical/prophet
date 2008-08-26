@@ -40,8 +40,9 @@ as_bob {
         ['show', '--type', 'Bug', '--uuid', $record_id, '--batch'],
         [
             qr/id: (\d+) \($record_id\)/,
-              'status: stalled',
+              "creator: alice\@" . replica_uuid_for('alice'),
               'from: alice',
+              'status: stalled',
         ],
         'content is correct'
     );
@@ -58,8 +59,8 @@ as_bob {
 
     ok( -e $path->file('changesets.idx'), 'found changesets index' );
     my $latest = $path->file('latest-sequence-no')->slurp;
-    is( $latest, $cli->app_handle->handle->latest_sequence_no );
-    use_ok('Prophet::Replica::Native');
+    is( $latest, $cli->handle->latest_sequence_no );
+    use_ok('Prophet::Replica::prophet');
     diag("Checking changesets in $path");
     my $changesets =  Prophet::Replica->new( { url => 'prophet:file://' . $path } )->fetch_changesets( after => 0 );
     my @changesets = grep {$_->has_changes} @$changesets;

@@ -3,35 +3,33 @@ use Moose::Role;
 
 use Path::Class;
 use File::Temp ();
-use File::Rsync;
 
-sub tempdir {
-    my $self = shift;
-    my $tmp = File::Temp::tempdir(CLEANUP => 1);
-    my $uuid = $self->app_handle->handle->db_uuid;
-
-    my $dir = dir($tmp, $uuid);
-    $dir->mkpath;
-
-    return $dir;
-}
+sub tempdir { dir(File::Temp::tempdir(CLEANUP => 1)) }
 
 sub publish_dir {
     my $self = shift;
     my %args = @_;
 
-    my $rsync = File::Rsync->new;
-    $rsync->exec({
-        src       => $args{from},
-        dst       => $args{to},
-        recursive => 1,
-        verbose   => $self->has_arg('verbose'),
-    });
+    my @args;
+    push @args, '--recursive';
+    push @args, '--verbose' if $self->context->has_arg('verbose');
 
-    warn $_ for $rsync->err;
-    print $_ for $rsync->out;
+    push @args, '--';
 
-    return $rsync;
+    push @args, dir($args{from})->children;
+
+    push @args, $args{to};
+
+    my $rsync = $ENV{RSYNC} || "rsync";
+    my $ret = system($rsync, @args);
+
+    if ($ret == -1) {
+        die "You must have 'rsync' installed to use this command.
+
+If you have rsync but it's not in your path, set environment variable \$RSYNC to the absolute path of your rsync executable.\n";
+    }
+
+    return $ret;
 }
 
 no Moose::Role;

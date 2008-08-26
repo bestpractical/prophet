@@ -7,7 +7,7 @@ use File::Temp qw'tempdir';
 use_ok('Prophet::CLI');
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 my $cli = Prophet::CLI->new();
-my $cxn = $cli->app_handle->handle;
+my $cxn = $cli->handle;
 
 isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 use_ok('Prophet::Record');

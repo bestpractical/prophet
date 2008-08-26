@@ -21,7 +21,7 @@ has config => (
     is          => 'rw',
     isa         => 'HashRef',
     lazy        => 0,
-    default     => sub { shift->load_from_files },
+    default     => sub {shift->load_from_files;},
     provides    => {
         get     => 'get',
         set     => 'set',
@@ -33,11 +33,10 @@ sub aliases {
     return $_[0]->config->{_aliases};
 }
 
-#sub prophet_config_file { dir($ENV{HOME}, ".prophetrc") }
 sub app_config_file { 
     my $self = shift;
-    $ENV{'PROPHET_APP_CONFIG'} || file( $self->app_handle->handle->fs_root => "prophetrc" ) 
 
+    $ENV{'PROPHET_APP_CONFIG'} || file( $self->app_handle->handle->fs_root => "prophetrc" ) ;
 }
 
 #my $singleton;
@@ -47,8 +46,6 @@ sub load_from_files {
     my $self = shift;
     my @config = @_;
     @config = grep { -f $_ } $self->app_config_file if !@config;
-    #@config = grep { -f $_ } $self->prophet_config_file, $self->app_config_file if !@config;
-
     my $config = {};
 
     for my $file (@config) {
@@ -107,10 +104,6 @@ Takes no arguments. Automatically loads the config for you.
 
 =cut
 
-=head2 prophet_config_file
-
-The file which controls configuration for all Prophet apps. C<$HOME/.prophetrc>.
-
 =head2 app_config_file
 
 The file which controls configuration for this application.
@@ -119,7 +112,7 @@ C<$PROPHET_REPO/prophetrc>.
 =head2 load_from_files [files]
 
 Loads the given config files. If no files are passed in, it will use the
-default of L</prophet_config_file> and L</app_config_file>.
+default of L</app_config_file>.
 
 =head2 load_from_file file
 
