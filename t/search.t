@@ -15,7 +15,7 @@ as_alice {
         "Found our records",
     );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status=new)],
+    run_output_matches('prophet', [qw(ls --type Bug -- status=new)],
         [qr/first ticket summary/],
         "found the only ticket with status=new",
     );
