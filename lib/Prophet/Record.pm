@@ -330,7 +330,7 @@ sub get_props {
     return $self->handle->get_record_props(
         uuid => $self->uuid,
         type => $self->type
-    );
+    ) || {};
 }
 
 =head2 prop $name

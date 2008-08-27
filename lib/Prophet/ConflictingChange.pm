@@ -73,7 +73,7 @@ sub fingerprint {
 
     my $struct = $self->as_hash;
     for ( @{ $struct->{prop_conflicts} } ) {
-        $_->{choices} = [ sort ( delete $_->{source_new_value}, delete $_->{target_value} ) ];
+        $_->{choices} = [ sort grep { defined} ( delete $_->{source_new_value}, delete $_->{target_value} ) ];
     }
 
     return  sha1_hex(to_json($struct, {utf8 => 1, canonical => 1}));
