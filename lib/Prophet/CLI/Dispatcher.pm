@@ -52,6 +52,8 @@ sub resolve_builtin_aliases {
         $cmds[-1] = $replacement;
     }
 
+    @cmds = map { ucfirst lc } @cmds;
+
     return wantarray ? @cmds : $cmds[-1];
 }
 
