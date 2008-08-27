@@ -5,6 +5,7 @@ use MooseX::ClassAttribute;
 use Prophet;
 use Prophet::Replica;
 use Prophet::CLI::Command;
+use Prophet::CLI::Dispatcher;
 use Prophet::CLIContext;
 
 use List::Util 'first';
@@ -56,15 +57,14 @@ handles the subcommand for a particular type
 
 =cut
 
-our %CMD_MAP = (
-    ls      => 'search',
-    new     => 'create',
-    edit    => 'update',
-    rm      => 'delete',
-    del     => 'delete',
-    list    => 'search',
-    display => 'show',
-);
+=head2 dispatcher -> Class
+
+Returns the dispatcher used to dispatch command lines. You'll want to override
+this in your subclass.
+
+=cut
+
+sub dispatcher { "Prophet::CLI::Dispatcher" }
 
 =head2 _get_cmd_obj
 
@@ -83,50 +83,20 @@ failure should occur rarely if ever.
 sub _get_cmd_obj {
     my $self = shift;
 
-    my $aliases  = $self->config->aliases;
-    my $tmp      = $self->context->primary_commands;
-    if (@$tmp && $aliases->{$tmp->[0]}) {
-        @ARGV = split ' ', $aliases->{$tmp->[0]};
-        return $self->run_one_command;
-    }
-    my @commands = map { exists $CMD_MAP{$_} ? $CMD_MAP{$_} : $_ } @{ $tmp };
+    my $command = join ' ', @{ $self->context->primary_commands };
 
-    # allow overriding of default command. "./prophet" starts a prophet shell
-    @commands = $self->_default_command
-        if @commands == 0;
+    # yeah this kind of sucks but there's no sane way to tell 
+    my $class;
+    my %dispatcher_args = (
+        cli            => $self,
+        context        => $self->context,
+        got_command    => sub { $class = shift },
+        dispatching_on => $self->context->primary_commands,
+    );
 
-    my @possible_classes;
+    $self->dispatcher->run($command, %dispatcher_args);
 
-    my @to_try = @commands;
-
-    while (@to_try) {
-
-        # App::SD::CLI::Command::Ticket::Comment::List
-        my $cmd = $self->app_class . "::CLI::Command::" . join('::', map { ucfirst lc $_ } @to_try);
-
-        push @possible_classes, $cmd;
-        shift @to_try;
-        # throw away that top-level "Ticket" option
-    }
-
-    my @extreme_fallback_commands;
-
-    # App::SD::CLI::Command::List
-    # Prophet::CLI::Command::List
-    for my $main ($self->app_class, 'Prophet') {
-        push @extreme_fallback_commands, $main . "::CLI::Command::" . ucfirst(lc $commands[-1]);
-    }
-
-    # App::SD::CLI::Command::NotFound
-    # Prophet::CLI::Command::NotFound
-    for my $main ($self->app_class, 'Prophet') {
-        push @extreme_fallback_commands, $main . "::CLI::Command::NotFound";
-    }
-
-    my $class = first { $self->_try_to_load_cmd_class($_) }
-                @possible_classes, @extreme_fallback_commands;
-
-    die "I don't know how to parse '" . join( " ", @{ $self->context->primary_commands } ) . "'. Are you sure that's a valid command?" unless ($class);
+    die "I don't know how to parse '$command'. Are you sure that's a valid command?" unless $class;
 
     my %constructor_args = (
         cli      => $self,
@@ -146,15 +116,6 @@ sub _get_cmd_obj {
 
     return $class->new(%constructor_args);
 }
-
-=head2 _default_command
-
-Returns the "default" command for use when no arguments were specified on the
-command line. In Prophet, it's "shell" but your subclass can change that.
-
-=cut
-
-sub _default_command { "shell" }
 
 sub _try_to_load_cmd_class {
     my $self = shift;
