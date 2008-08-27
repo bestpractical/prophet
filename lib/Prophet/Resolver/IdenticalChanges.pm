@@ -45,7 +45,11 @@ sub run {
     my $resolution = Prophet::Change->new_from_conflict($conflicting_change);
 
     for my $prop_change ( @{ $conflicting_change->prop_conflicts } ) {
-        return 0 unless $prop_change->target_value eq $prop_change->source_new_value;
+        next if ((!defined $prop_change->target_value || $prop_change->target_value  eq '')
+                
+                && ( !defined $prop_change->source_new_value || $prop_change->source_new_value eq ''));
+        next if $prop_change->target_value eq $prop_change->source_new_value;
+        return 0; 
     }
 
     $conflict->autoresolved(1);

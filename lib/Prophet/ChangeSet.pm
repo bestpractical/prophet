@@ -162,45 +162,36 @@ sub new_from_hashref {
 
 sub as_string {
     my $self = shift;
-    my %args = validate(@_, {
-        change_filter => 0,
-        change_header => 0,
-    });
-
-    my $change_filter = $args{change_filter};
-
-    my $out = '';
-
-    $out .= sprintf "Change %d by %s at %s\n\t\t\t\t\(%d@%s)\n\n",
-            $self->sequence_no,
-                ($self->creator || '(unknown)'),
-                $self->created,
-                $self->original_sequence_no,
-                $self->original_source_uuid;
-
-    for my $change ($self->changes) {
-        my @prop_changes = $change->prop_changes;
-        next if @prop_changes == 0;
-
-        if ($change_filter) {
-            next unless $change_filter->($change);
+    my %args = validate(
+        @_,
+        {   change_filter => 0,
+            change_header => 0,
+            header_callback => 0
         }
+    );
 
-        if ($args{change_header}) {
-          $out .=   $args{change_header}->($change);
-        }
 
-        for my $prop_change (@prop_changes) {
-            $out .= "  " . $prop_change->summary . "\n";
-        }
+    my $out = $args{header_callback} ? $args{header_callback}->($self) :  $self->description_as_string;
+
+    for my $change ( $self->changes ) {
+        next if $args{change_filter} && !$args{change_filter}->($change);
+        $out .= $change->as_string( header_callback => $args{change_header} );
         $out .= "\n";
     }
 
     $out .= "\n";
-
     return $out;
 }
 
+sub description_as_string {
+    my $self = shift;
+     sprintf "Change %d by %s at %s\n\t\t\t\t\(%d@%s)\n\n",
+        $self->sequence_no,
+        ( $self->creator || '(unknown)' ),
+        $self->created,
+        $self->original_sequence_no,
+        $self->original_source_uuid;
+    }
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
