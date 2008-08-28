@@ -84,8 +84,8 @@ sub _do_merge {
 
     my $changesets = 0;
 
-    my $source_latest = $source->latest_sequence_no();
-    my $source_last_seen = $target->last_changeset_from_source($source->uuid);
+    my $source_latest = $source->latest_sequence_no() || 0;
+    my $source_last_seen = $target->last_changeset_from_source($source->uuid) || 0;
 
     if( $self->has_arg('verbose') ) {
         print "Integrating changes from ".$source_last_seen . " to ". $source_latest."\n";
