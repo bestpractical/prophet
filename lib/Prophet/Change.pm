@@ -126,7 +126,7 @@ sub as_string {
     my %args         = validate( @_, { header_callback => 0, } );
     my $out          = "";
     my @prop_changes = $self->prop_changes;
-    next if @prop_changes == 0;
+    return undef if @prop_changes == 0;
     $out .= $args{header_callback}->($self) if ( $args{header_callback} );
 
     for my $prop_change (@prop_changes) {
