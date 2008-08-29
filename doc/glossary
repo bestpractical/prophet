@@ -92,6 +92,11 @@ does not perform a merge, since the replica uuid is the same for both copies.
 Pushing and pulling merge changes from two different replicas. Pushing to or
 pulling from an empty replica creates it and assigns it a new replica uuid.
 
+=head2 Foreign Replica
+
+A (possibly read-only) data store that is not a Prophet replica (such as RT or
+Twitter). A Prophet replica can act as a gateway to a foreign replica.
+
 =head1 NON-TERMS
 
 =head2 Node
