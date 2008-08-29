@@ -317,9 +317,10 @@ sub record_changeset_and_integration {
 
     return;
 }
+
 =head3 last_changeset_from_source $SOURCE_UUID
 
-Returns the last changeset id seen from the source identified by $SOURCE_UUID.
+Returns the last changeset id seen from the replica identified by $SOURCE_UUID.
 
 =cut
 
@@ -455,54 +456,35 @@ sub traverse_new_changesets {
         }
     );
 
-    if ( $self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid ) {
-        unless ($args{'force'}) {
-            die "You are trying to merge two different databases! This is NOT\n".
-            "recommended. If you really want to do this,  add '--force' to\n".
-            "your commandline.\n\n"
-            . "Local database:  " . $self->db_uuid      . "\n"
-            . "Remote database: " . $args{for}->db_uuid . "\n";
-        }
-    }
+    $self->_check_db_uuids_on_merge(for => $args{for}, force => $args{'force'});
 
-
-    $self->log("Evaluating changesets to apply to ".substr($args{'for'}->uuid,0,6). " starting with ".  $args{for}->last_changeset_from_source( $self->uuid ));
-
-
-    my $callback = $args{callback};
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
-        callback => sub {
-            $callback->( $_[0] )
-                if $self->should_send_changeset( changeset => $_[0], to => $args{for} );
+        callback => sub { $args{callback}->( $_[0] ) if $self->should_send_changeset( changeset => $_[0], to        => $args{for});
         }
     );
 }
 
-=head2 new_changesets_for Prophet::Replica
-
-DEPRECATED: use traverse_new_changesets instead
-
-Returns the local changesets that have not yet been seen by the replica we're passing in.
-
-=cut
-
-
-sub new_changesets_for {
+sub _check_db_uuids_on_merge {
     my $self = shift;
-
-    # the first argument is always the replica
-    unshift @_, 'replica';
-    my %args = validate(@_, {
-        replica  => { isa => 'Prophet::Replica' },
-        force    => 0,
-    });
-
-    my @result;
-    $self->traverse_new_changesets( for => $args{replica}, callback => sub { push @result, $_[0] }, force => $args{force} );
-
-    return \@result;
+    my %args = validate( @_,
+        {   for   => { isa => 'Prophet::Replica' },
+            force => 0,
+        });
+    if (   $self->db_uuid && $args{for}->db_uuid
+        && $self->db_uuid ne $args{for}->db_uuid ) {
+        unless ( $args{'force'} ) {
+            die "You are trying to merge two different databases! This is NOT\n"
+                . "recommended. If you really want to do this,  add '--force' to\n"
+                . "your commandline.\n\n"
+                . "Local database:  "
+                . $self->db_uuid . "\n"
+                . "Remote database: "
+                . $args{for}->db_uuid . "\n";
+        }
+    }
 }
+
 
 =head3 should_send_changeset { to => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
 
@@ -527,7 +509,7 @@ sub should_send_changeset {
 
 =head3 fetch_changesets { after => SEQUENCE_NO }
 
-Fetch all changesets from the source.
+Fetch all changesets from this replica after the local sequence number SEQUENCE_NO.
 
 Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 

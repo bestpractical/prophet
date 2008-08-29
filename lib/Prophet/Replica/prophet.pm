@@ -434,8 +434,7 @@ sub _write_record_index_entry {
     # XXX TODO: skip if the index already has this version of the record;
     # XXX TODO FETCH THAT
     my $record_last_changed_changeset = $args{'changeset_id'} || 0;
-    my $index_row
-        = pack( 'NH40', $record_last_changed_changeset, $args{cas_key} );
+    my $index_row = pack( 'NH40', $record_last_changed_changeset, $args{cas_key} );
     print $record_index $index_row || die $!;
     close $record_index;
 }

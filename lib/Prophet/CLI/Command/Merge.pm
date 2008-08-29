@@ -31,6 +31,14 @@ sub run {
 
     my $changesets = $self->_do_merge( $source, $target );
 
+    $self->print_report($changesets);
+}
+
+
+sub print_report {
+    my $self = shift;
+    my $changesets = shift;
+    print "\n";
     if ($changesets == 0) {
         print "No new changesets.\n";
     }
@@ -62,6 +70,58 @@ Returns the number of changesets merged.
 sub _do_merge {
     my ( $self, $source, $target ) = @_;
 
+    my %import_args = (
+        from  => $source,
+        resdb => $self->resdb_handle,
+        force => $self->has_arg('force'),
+    );
+
+    local $| = 1;
+
+    $self->validate_merge_replicas($source => $target);
+
+    $import_args{resolver_class} = $self->merge_resolver();
+
+    my $changesets = 0;
+
+    my $source_latest = $source->latest_sequence_no();
+    my $source_last_seen = $target->last_changeset_from_source($source->uuid);
+
+    if( $self->has_arg('verbose') ) {
+        print "Integrating changes from ".$source_last_seen . " to ". $source_latest."\n";
+    }
+
+
+    if( $self->has_arg('verbose') ) {
+        $import_args{reporting_callback} = sub {
+            my %args = @_;
+            print $args{changeset}->as_string;
+            $changesets++;
+        };
+    } else {
+        require Time::Progress;
+        my $progress = Time::Progress->new();
+        $progress->attr( max => ($source_latest - $source_last_seen));
+
+        $import_args{reporting_callback} = sub {
+            my %args = @_;
+            $changesets++;
+            print $progress->report( "%30b %p %E // ". ($args{changeset}->created || 'Undated'). " " .(sprintf("%-12s",$args{changeset}->creator||'')) ."\r" , $changesets);
+
+        };
+
+    }
+
+    $target->import_changesets( %import_args);
+    return $changesets;
+}
+
+
+sub validate_merge_replicas {
+    my $self = shift;
+    my $source = shift;
+    my $target = shift;
+
     if ( $target->uuid eq $source->uuid ) {
         $self->fatal_error(
                   "You appear to be trying to merge two identical replicas. "
@@ -74,42 +134,20 @@ sub _do_merge {
                 . " does not accept changesets. Perhaps it's unwritable."
         );
     }
+}
+
+sub merge_resolver {
+    my $self = shift;
 
     my $prefer = $self->arg('prefer') || 'none';
 
-    my $resolver = $ENV{'PROPHET_RESOLVER'}
-                   ? 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'}
-                 : $prefer eq 'to'
-                   ? 'Prophet::Resolver::AlwaysTarget'
-                 : $prefer eq 'from'
-                   ? 'Prophet::Resolver::AlwaysSource'
-                   : ();
-
-    my %import_args = (
-        from  => $source,
-        resdb => $self->resdb_handle,
-        force => $self->has_arg('force'),
-    );
-
-    $import_args{resolver_class} = $resolver
-        if $resolver;
-
-    my $changesets = 0;
-    my $verbose = $self->has_arg('verbose');
-
-    $import_args{reporting_callback} = sub {
-        my %args = @_;
-        my $changeset = $args{changeset};
-        print $changeset->as_string if $verbose;
-        $changesets++;
-    };
-
-    $target->import_changesets(
-        %import_args,
-    );
-
-    return $changesets;
+    my $resolver = $ENV{'PROPHET_RESOLVER'} ? 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'}
+        : $prefer eq 'to'   ? 'Prophet::Resolver::AlwaysTarget'
+        : $prefer eq 'from' ? 'Prophet::Resolver::AlwaysSource'
+        :                     ();
+    return $resolver;
 }
+
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
