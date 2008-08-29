@@ -166,20 +166,24 @@ sub as_string {
         @_,
         {   change_filter => 0,
             change_header => 0,
-            header_callback => 0
+            header_callback => 0,
+            skip_empty => 0
         }
     );
 
-
-    my $out = $args{header_callback} ? $args{header_callback}->($self) :  $self->description_as_string;
+    
+    my $body = '';
 
     for my $change ( $self->changes ) {
         next if $args{change_filter} && !$args{change_filter}->($change);
-        $out .= $change->as_string( header_callback => $args{change_header} );
-        $out .= "\n";
+        $body .= $change->as_string( header_callback => $args{change_header} );
+        $body .= "\n";
     }
 
-    $out .= "\n";
+    return '' if !$body && $args{'skip_empty'};
+
+    my $header  = $args{header_callback} ? $args{header_callback}->($self) :  $self->description_as_string;
+    my $out  = $header ."\n".$body."\n";
     return $out;
 }
 
