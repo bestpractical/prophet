@@ -63,7 +63,7 @@ sub edit_text {
     my $text = shift;
 
     # don't invoke the editor in a script, the test will appear to hang
-    die "Tried to invoke an editor in a test script!";
+    die "Tried to invoke an editor in a test script!"
         if $ENV{IN_PROPHET_TEST_COMMAND};
 
     require Proc::InvokeEditor;
