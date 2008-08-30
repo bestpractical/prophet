@@ -499,7 +499,7 @@ sub should_send_changeset {
 
     $self->log("Should I send " .$args{changeset}->original_sequence_no .
         " from ".substr($args{changeset}->original_source_uuid,0,6) . " to " .
-        substr($args{'to'}->uuid, 0, 6));
+        $args{'to'}->display_id);
 
     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
     return undef if $args{'to'}->has_seen_changeset( $args{'changeset'} );
@@ -1087,7 +1087,7 @@ environmental variable is set).
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
-    print STDERR "# ".substr($self->uuid,0,6)." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
+    print STDERR "# ".$self->display_id." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
 }
 
 =head2 log_fatal $MSG
@@ -1113,6 +1113,18 @@ The string to use as the creator of a changeset.
 =cut
 
 sub changeset_creator { $ENV{PROPHET_USER} || $ENV{USER} }
+
+=head2 display_id
+
+If the user has a "friendly" name for this replica, then use it. Otherwise,
+display the replica's uuid.
+
+=cut
+
+sub display_id {
+    my $self = shift;
+    return $self->uuid;
+}
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

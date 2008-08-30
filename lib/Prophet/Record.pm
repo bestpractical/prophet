@@ -524,7 +524,7 @@ sub default_prop_creator {
 
     return sprintf '%s@%s',
         $self->handle->changeset_creator,
-        $self->handle->uuid;
+        $self->handle->display_id;
 }
 
 =head2 _default_summary_format
