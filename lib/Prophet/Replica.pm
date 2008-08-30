@@ -230,7 +230,7 @@ sub integrate_changeset {
     my $changeset = $args{'changeset'};
 
     $self->log("Considering changeset ".$changeset->original_sequence_no .
-        " from " . $self->display_id($changeset->original_source_uuid));
+        " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
@@ -250,7 +250,7 @@ sub integrate_changeset {
     return unless $changeset->has_changes;
 
     if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
-        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_id($changeset->original_source_uuid));
+        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
@@ -283,7 +283,7 @@ sub integrate_changeset {
 
     } else {
         $self->log("Integrating changeset ".$changeset->original_sequence_no .
-            " from " . $self->display_id($changeset->original_source_uuid));
+            " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
     }
@@ -346,7 +346,7 @@ sub has_seen_changeset {
 
     $self->log("Checking to see if we've ever seen changeset " .
         $changeset->original_sequence_no . " from " .
-        $self->display_id($changeset->original_source_uuid));
+        $self->display_name_for_uuid($changeset->original_source_uuid));
 
     # If the changeset originated locally, we never want it
     if  ($changeset->original_source_uuid eq $self->uuid ) {
@@ -499,8 +499,8 @@ sub should_send_changeset {
                                changeset => { isa => 'Prophet::ChangeSet' } });
 
     $self->log("Should I send " .$args{changeset}->original_sequence_no .
-        " from ".$self->display_id($args{changeset}->original_source_uuid) . " to " .
-        $args{'to'}->display_id);
+        " from ".$self->display_name_for_uuid($args{changeset}->original_source_uuid) . " to " .
+        $args{'to'}->display_name_for_uuid);
 
     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
     return undef if $args{'to'}->has_seen_changeset( $args{'changeset'} );
@@ -1088,7 +1088,7 @@ environmental variable is set).
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
-    print STDERR "# ".$self->display_id." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
+    print STDERR "# ".$self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
 }
 
 =head2 log_fatal $MSG
@@ -1115,7 +1115,7 @@ The string to use as the creator of a changeset.
 
 sub changeset_creator { $ENV{PROPHET_USER} || $ENV{USER} }
 
-=head2 display_id [uuid]
+=head2 display_name_for_uuid [uuid]
 
 If the user has a "friendly" name for this replica, then use it. Otherwise,
 display the replica's uuid.
@@ -1124,13 +1124,13 @@ If you pass in a uuid, it will be used instead of the replica's uuid.
 
 =cut
 
-sub display_id {
+sub display_name_for_uuid {
     my $self = shift;
     my $uuid = shift || $self->uuid;
 
     return $uuid if !$self->has_app_handle;
 
-    return $self->app_handle->config->display_id($uuid);
+    return $self->app_handle->config->display_name_for_uuid($uuid);
 }
 
 __PACKAGE__->meta->make_immutable;

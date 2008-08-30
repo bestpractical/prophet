@@ -74,7 +74,7 @@ sub load_from_file {
     }
 }
 
-sub display_id {
+sub display_name_for_uuid {
     my $self = shift;
     my $uuid = shift;
 
@@ -138,7 +138,7 @@ Sets a specific config setting.
 
 List all configuration options
 
-=head2 display_id UUID
+=head2 display_name_for_uuid UUID
 
 Returns a "friendly" id for the given uuid.
 
