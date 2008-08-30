@@ -1123,7 +1123,7 @@ display the replica's uuid.
 
 sub display_id {
     my $self = shift;
-    return $self->uuid;
+    return $self->app_handle->config->display_id($self->uuid);
 }
 
 __PACKAGE__->meta->make_immutable;
