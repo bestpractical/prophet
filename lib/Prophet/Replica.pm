@@ -52,9 +52,10 @@ has _alt_urls => (
 );
 
 has app_handle => (
-    is => 'ro',
-    isa => 'Prophet::App',
-    weak_ref => 1
+    is        => 'ro',
+    isa       => 'Prophet::App',
+    weak_ref  => 1,
+    predicate => 'has_app_handle',
 );
 
 our $MERGETICKET_METATYPE = '_merge_tickets';
@@ -229,7 +230,7 @@ sub integrate_changeset {
     my $changeset = $args{'changeset'};
 
     $self->log("Considering changeset ".$changeset->original_sequence_no .
-        " from " . substr($changeset->original_source_uuid,0,6));
+        " from " . $self->display_id($changeset->original_source_uuid));
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
@@ -249,7 +250,7 @@ sub integrate_changeset {
     return unless $changeset->has_changes;
 
     if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
-        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . substr($changeset->original_source_uuid,0,6));
+        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_id($changeset->original_source_uuid));
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
@@ -282,7 +283,7 @@ sub integrate_changeset {
 
     } else {
         $self->log("Integrating changeset ".$changeset->original_sequence_no .
-            " from " . substr($changeset->original_source_uuid,0,6));
+            " from " . $self->display_id($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
     }
@@ -345,7 +346,7 @@ sub has_seen_changeset {
 
     $self->log("Checking to see if we've ever seen changeset " .
         $changeset->original_sequence_no . " from " .
-        substr($changeset->original_source_uuid,0,6));
+        $self->display_id($changeset->original_source_uuid));
 
     # If the changeset originated locally, we never want it
     if  ($changeset->original_source_uuid eq $self->uuid ) {
@@ -498,7 +499,7 @@ sub should_send_changeset {
                                changeset => { isa => 'Prophet::ChangeSet' } });
 
     $self->log("Should I send " .$args{changeset}->original_sequence_no .
-        " from ".substr($args{changeset}->original_source_uuid,0,6) . " to " .
+        " from ".$self->display_id($args{changeset}->original_source_uuid) . " to " .
         $args{'to'}->display_id);
 
     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
@@ -1114,16 +1115,22 @@ The string to use as the creator of a changeset.
 
 sub changeset_creator { $ENV{PROPHET_USER} || $ENV{USER} }
 
-=head2 display_id
+=head2 display_id [uuid]
 
 If the user has a "friendly" name for this replica, then use it. Otherwise,
 display the replica's uuid.
+
+If you pass in a uuid, it will be used instead of the replica's uuid.
 
 =cut
 
 sub display_id {
     my $self = shift;
-    return $self->app_handle->config->display_id($self->uuid);
+    my $uuid = shift || $self->uuid;
+
+    return $uuid if !$self->has_app_handle;
+
+    return $self->app_handle->config->display_id($uuid);
 }
 
 __PACKAGE__->meta->make_immutable;

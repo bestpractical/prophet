@@ -78,7 +78,7 @@ sub display_id {
     my $self = shift;
     my $uuid = shift;
 
-    my $friendly = $self->config->get("display_$uuid");
+    my $friendly = $self->get("display_$uuid");
     return defined($friendly) ? $friendly : $uuid;
 }
 
