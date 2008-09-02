@@ -50,14 +50,10 @@ has luid => (
 );
 
 class_has REFERENCES => (
-    metaclass => 'Collection::Hash',
     is        => 'rw',
     isa       => 'HashRef',
     default   => sub { {} },
-    provides  => {
-        keys => 'reference_methods',
-    },
-    documentation => 'A hash of accessor_name => collection_class references.',
+    documentation => 'A hash of class_name => references.',
 );
 
 class_has PROPERTIES => (
@@ -161,7 +157,7 @@ sub register_collection_reference {
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor} = {
+    $class->REFERENCES->{$class}{$accessor} = {
         %args,
         arity => 'collection',
         type  => $collection_class->record_class,
@@ -196,7 +192,7 @@ sub register_record_reference {
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor} = {
+    $class->REFERENCES->{$class}{$accessor} = {
         %args,
         arity => 'scalar',
         type  => $record_class,
@@ -768,9 +764,11 @@ Returns a list of method names that refer to other individual records
 
 sub record_reference_methods {
     my $self = shift;
+    my $class = blessed($self) || $self;
+    my %accessors = %{ $self->REFERENCES->{$class} || {} };
 
-    return grep { $self->REFERENCES->{$_}{arity} eq 'record' }
-           $self->reference_methods;
+    return grep { $accessors{$_}{arity} eq 'record' }
+           keys %accessors;
 }
 
 =head2 collection_reference_methods
@@ -781,9 +779,11 @@ Returns a list of method names that refer to collections
 
 sub collection_reference_methods {
     my $self = shift;
+    my $class = blessed($self) || $self;
+    my %accessors = %{ $self->REFERENCES->{$class} || {} };
 
-    return grep { $self->REFERENCES->{$_}{arity} eq 'collection' }
-           $self->reference_methods;
+    return grep { $accessors{$_}{arity} eq 'collection' }
+           keys %accessors;
 }
 
 __PACKAGE__->meta->make_immutable;
