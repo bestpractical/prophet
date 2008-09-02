@@ -119,7 +119,11 @@ sub changeset_ok {
                 },
                 creator => {
                     old_value => undef,
-                    new_value => 'alice@' . replica_uuid_for('alice'),
+                    new_value => 'alice',
+                },
+                original_replica => {
+                    old_value => undef,
+                    new_value => replica_uuid_for('alice'),
                 },
             },
         },

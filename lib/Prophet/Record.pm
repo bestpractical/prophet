@@ -511,16 +511,24 @@ sub default_props {
 
 =head2 default_prop_creator
 
-Default the creator of every record to the changeset_creator @ replica uuid
+Default the creator of every record to the changeset_creator (usually C<$USER>)
 
 =cut
 
 sub default_prop_creator {
     my $self = shift;
+    return $self->handle->changeset_creator;
+}
 
-    return sprintf '%s@%s',
-        $self->handle->changeset_creator,
-        $self->handle->uuid;
+=head2 default_prop_original_replica
+
+Default the original_replica of every record to the replica's uuid
+
+=cut
+
+sub default_prop_original_replica {
+    my $self = shift;
+    return $self->handle->uuid;
 }
 
 =head2 _default_summary_format

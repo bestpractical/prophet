@@ -85,9 +85,13 @@ is_deeply(
                             'old_value' => undef
                         },
                         'creator' => {
-                            'new_value' => 'bob@' . replica_uuid_for('bob'),
+                            'new_value' => 'bob',
                             'old_value' => undef
-                        }
+                        },
+                        'original_replica' => {
+                            'new_value' => replica_uuid_for('bob'),
+                            'old_value' => undef
+                        },
                     },
                     'record_type' => 'Bug'
                 }
@@ -156,7 +160,11 @@ is_deeply(
                             'old_value' => undef
                         },
                         'creator' => {
-                            'new_value' => 'bob@' . replica_uuid_for('bob'),
+                            'new_value' => 'bob',
+                            'old_value' => undef,
+                        },
+                        'original_replica' => {
+                            'new_value' => replica_uuid_for('bob'),
                             'old_value' => undef,
                         },
                     },

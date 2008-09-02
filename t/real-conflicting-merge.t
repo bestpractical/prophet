@@ -34,8 +34,9 @@ as_bob {
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
         qr/id: (\d+) \($record_id\)/,
-          'creator: alice@' . replica_uuid_for('alice'),
+          'creator: alice',
           'from: alice',
+          'original_replica: ' . replica_uuid_for('alice'),
           'status: stalled',
         ],
         'content is correct'
@@ -50,8 +51,9 @@ as_alice {
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
             qr/id: (\d+) \($record_id\)/,
-              'creator: alice@' . replica_uuid_for('alice'),
+              'creator: alice',
               'from: alice',
+              'original_replica: ' . replica_uuid_for('alice'),
               'status: open',
         ],
         'content is correct'
