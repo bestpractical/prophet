@@ -24,6 +24,7 @@ requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
 requires('Path::Dispatcher'); # Path::Dispatcher::Declarative
+requires('Time::Progress'); # Path::Dispatcher::Declarative
 
 use Term::ReadLine; # if we don't do this, ::Perl fails
 features(
