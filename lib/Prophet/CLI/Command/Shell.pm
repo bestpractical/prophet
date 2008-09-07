@@ -47,11 +47,6 @@ sub read {
 sub eval {
     my $self = shift;
     my $line = shift;
- 
-
-    # XXX TODO - really, we should be replacing the context and cli objects here and handing fresh ones in for the this eval
-    $self->context->clear_args;
-    $self->context->clear_props;
 
     eval {
         local $SIG{__DIE__} = 'DEFAULT';

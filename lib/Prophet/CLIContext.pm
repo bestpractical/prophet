@@ -139,7 +139,7 @@ Sets up this context object's arguments and key/value pairs from an array that l
 
 sub setup_from_args {
     my $self = shift;
-    $self->parse_args(@ARGV);
+    $self->parse_args(@_);
     $self->set_type_and_uuid();
 
 }

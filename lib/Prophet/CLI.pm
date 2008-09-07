@@ -141,13 +141,14 @@ your main app class as app_class, then run this routine.
 Example:
 
  my $cli = Prophet::CLI->new({ app_class => 'App::SD' });
-$cli->run_one_command(@ARGV);
+ $cli->run_one_command(@ARGV);
 
 =cut
 
 sub run_one_command {
     my $self = shift;
-    my @args = (@_ || @ARGV);
+    my @args = (@_);
+
      #  really, we shouldn't be doing this stuff from the command dispatcher
 
    $self->context(Prophet::CLIContext->new( app_handle => $self->app_handle)); 
@@ -157,7 +158,7 @@ sub run_one_command {
     }
 }
 
-=head2 invoke [outhandle], ARGV
+=head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY
 
 Run the given command. If outhandle is true, select that as the file handle
 for the duration of the command.
@@ -168,11 +169,10 @@ sub invoke {
     my ($self, $output, @args) = @_;
     my $ofh;
 
-    local *ARGV = \@args;
     $ofh = select $output if $output;
     my $ret = eval {
         local $SIG{__DIE__} = 'DEFAULT';
-        $self->run_one_command
+        $self->run_one_command(@args);
     };
     warn $@ if $@;
     select $ofh if $ofh;

@@ -4,5 +4,4 @@ use strict;
 
 use Prophet::CLI;
 my $cli = Prophet::CLI->new();
-$cli->run_one_command();
-
+$cli->run_one_command(@ARGV);

@@ -6,7 +6,6 @@ use Test::Exception;
 
 use Prophet::Test tests => 16;
 use Test::Exception;
-
 as_alice {
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );

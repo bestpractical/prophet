@@ -177,7 +177,6 @@ sub call_func {
     Carp::cluck unless ref $_[0];
 
     my @args = @{ shift @_ };
-    local (@ARGV) = (@args);
     my $cli = Prophet::CLI->new();
 
     my $str = '';
@@ -190,7 +189,7 @@ sub call_func {
         $p->('SVN::Pool');    
     };
 
-    $ret = $cli->run_one_command();
+    $ret = $cli->run_one_command(@args);
     select($old_fh) if defined $old_fh;
 
     return ( $ret, $str, undef );
