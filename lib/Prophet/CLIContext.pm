@@ -130,12 +130,30 @@ Returns the regex to use for matching property key/value separators.
 
 sub cmp_regex { '!=|<>|=~|!~|=|\bne\b' }
 
-=head2 parse_args
 
-This routine pulls arguments (specified by --key=value or --key value) and
-properties (specified by --props key=value or -- key=value) passed on the
-command line out of ARGV and sticks them in L</args> or L</props> and
-L</prop_set> as necessary. Argument keys have leading "--" stripped.
+=head2 setup_from_args
+
+Sets up this context object's arguments and key/value pairs from an array that looks like an @ARGV.
+
+=cut
+
+sub setup_from_args {
+    my $self = shift;
+    $self->parse_args(@ARGV);
+    $self->set_type_and_uuid();
+
+}
+
+
+
+
+=head2 parse_args @args
+
+This routine pulls arguments (specified by --key=value or --key
+value) and properties (specified by --props key=value or -- key=value)
+as passed on the command line out of ARGV (or something else emulating
+ARGV) and sticks them in L</args> or L</props> and L</prop_set> as
+necessary. Argument keys have leading "--" stripped.
 
 If a key is not given a value on the command line, its value is set to undef.
 
@@ -145,10 +163,10 @@ L</cmp_regex> for details).
 =cut
 
 sub parse_args {
-    my $self = shift;
-
+    my $self = shift; 
+    my @args = (@_);
     my @primary;
-    push @primary, shift @ARGV while ( $ARGV[0] && $ARGV[0] !~ /^--/ );
+    push @primary, shift @args while ( $args[0] && $args[0] !~ /^--/ );
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
     $self->set_arg( id => pop @primary )
@@ -159,7 +177,7 @@ sub parse_args {
     $self->primary_commands( \@primary );
     my $cmp_re = $self->cmp_regex;
 
-    while ( my $name = shift @ARGV ) {
+    while ( my $name = shift @args ) {
         die "$name doesn't look like --argument"
             if !$collecting_props && $name !~ /^--/;
 
@@ -178,17 +196,17 @@ sub parse_args {
         # no value specified, pull it from the next argument, unless the next
         # argument is another option
         if ( !defined($val) ) {
-            $val = shift @ARGV
-                if @ARGV && $ARGV[0] !~ /^--/;
+            $val = shift @args
+                if @args && $args[0] !~ /^--/;
 
             no warnings 'uninitialized';
 
             # but wait! does the value look enough like a comparator? if so,
             # shift off another one (if we can)
             if ($collecting_props) {
-                if ( $val =~ /^(?:$cmp_re)$/ && @ARGV && $ARGV[0] !~ /^--/ ) {
+                if ( $val =~ /^(?:$cmp_re)$/ && @args && $args[0] !~ /^--/ ) {
                     $cmp = $val;
-                    $val = shift @ARGV;
+                    $val = shift @args;
                 } else {
 
                     # perhaps they said "foo =~bar"..

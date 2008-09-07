@@ -96,7 +96,7 @@ sub _get_cmd_obj {
 
     $self->dispatcher->run($command, %dispatcher_args);
 
-    die "I don't know how to parse '$command'. Are you sure that's a valid command?" unless $class;
+    die "I don't know how to parse '$command'. Are you sure that's a valid command?\n" unless $class;
 
     my %constructor_args = (
         cli      => $self,
@@ -133,25 +133,25 @@ sub _try_to_load_cmd_class {
 
 =head2 run_one_command
 
-Runs a command specified by commandline arguments given in ARGV. To use in
-a commandline front-end, create a L<Prophet::CLI> object and pass in
+Runs a command specified by commandline arguments given in an
+ARGV-like array of argumnents and key value pairs . To use in a
+commandline front-end, create a L<Prophet::CLI> object and pass in
 your main app class as app_class, then run this routine.
 
 Example:
 
  my $cli = Prophet::CLI->new({ app_class => 'App::SD' });
-$cli->run_one_command;
+$cli->run_one_command(@ARGV);
 
 =cut
 
 sub run_one_command {
     my $self = shift;
+    my @args = (@_ || @ARGV);
      #  really, we shouldn't be doing this stuff from the command dispatcher
-     $self->context(Prophet::CLIContext->new( app_handle => $self->app_handle)); 
-	
 
-    $self->context->parse_args();
-    $self->context->set_type_and_uuid();
+   $self->context(Prophet::CLIContext->new( app_handle => $self->app_handle)); 
+   $self->context->setup_from_args(@args);
     if ( my $cmd_obj = $self->_get_cmd_obj() ) {
         $cmd_obj->run();
     }

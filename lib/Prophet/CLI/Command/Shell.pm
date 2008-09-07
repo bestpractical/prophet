@@ -47,15 +47,15 @@ sub read {
 sub eval {
     my $self = shift;
     my $line = shift;
+ 
 
+    # XXX TODO - really, we should be replacing the context and cli objects here and handing fresh ones in for the this eval
     $self->context->clear_args;
     $self->context->clear_props;
 
-    local @ARGV = split ' ', $line;
-
     eval {
         local $SIG{__DIE__} = 'DEFAULT';
-        $self->cli->run_one_command;
+        $self->cli->run_one_command(split ' ', $line);
     };
     warn $@ if $@;
 }
@@ -68,13 +68,13 @@ sub run {
     print $self->preamble . "\n";
 
     $self->cli->interactive_shell(1);
-    while (defined(local $_ = $self->read)) {
-        next if /^\s*$/;
+    while ( defined(my $cmd = $self->read)) {
+        next if $cmd =~ /^\s*$/;
 
-        last if /^\s*q(?:uit)?\s*$/i
-             || /^\s*exit\s*$/i;
+        last if $cmd =~ /^\s*q(?:uit)?\s*$/i
+             || $cmd =~ /^\s*exit\s*$/i;
 
-        $self->eval($_);
+        $self->eval($cmd);
     }
 }
 

@@ -15,6 +15,7 @@ requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');
 requires('JSON' => '2.00');
+requires('JSON::XS');
 requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
