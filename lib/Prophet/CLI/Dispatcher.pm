@@ -17,7 +17,7 @@ on qr{^(\w+)} => sub {
 
     my @possible_classes = (
         ("Prophet::CLI::Command::" . ucfirst lc $cmd),
-        "Prophet::CLI::Command::Notound",
+        "Prophet::CLI::Command::NotFound",
     );
 
     my $cli = $args{cli};

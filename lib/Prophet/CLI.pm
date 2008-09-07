@@ -95,7 +95,6 @@ sub _get_cmd_obj {
     );
 
     $self->dispatcher->run($command, %dispatcher_args);
-
     die "I don't know how to parse '$command'. Are you sure that's a valid command?\n" unless $class;
 
     my %constructor_args = (
