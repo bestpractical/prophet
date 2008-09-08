@@ -6,6 +6,12 @@ use Template::Declare::Tags;
 use Prophet::Server::ViewHelpers;
 use Params::Validate;
 
+our $APP_HANDLE;
+sub app_handle {
+    my $self = shift;
+    $APP_HANDLE = shift if (@_);
+    return $APP_HANDLE;
+}
 sub default_page_title { 'Prophet' }
 
 template head => sub {

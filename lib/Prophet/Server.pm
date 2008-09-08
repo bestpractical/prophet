@@ -79,6 +79,7 @@ sub _handle_request_get_template {
 
 
     if (Template::Declare->has_template($p)) {
+        Prophet::Server::View->app_handle($self->app_handle);
         my $content = Template::Declare->show($p);
 
         return $self->_send_content(
@@ -88,7 +89,7 @@ sub _handle_request_get_template {
 
     }
 
-}
+};
 
 sub _handle_request_get_replica {
 	my $self = shift;
