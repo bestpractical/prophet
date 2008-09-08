@@ -32,9 +32,18 @@ before run => sub {
     }
 };
 
-before new => sub {
-    Template::Declare->init(roots => ['Prophet::Server::View']);
-};
+sub setup_template_roots {
+    my $self = shift;
+    my $view_class = ref( $self->app_handle ) . "::Server::View";
+
+    if ( Prophet::App->try_to_require($view_class) ) {
+        Template::Declare->init( roots => [$view_class] );
+
+    }
+    else {
+        Template::Declare->init( roots => ['Prophet::Server::View'] );
+    }
+}
 
 override handle_request => sub {
     my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server'} ,  { isa => 'CGI' } );
@@ -52,6 +61,40 @@ sub handle_request_get {
     my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
     my $p = $cgi->path_info;
 
+    if ($p =~ qr|^/+replica|) {
+
+		$self->_handle_request_get_replica($cgi);
+	}
+    if ($p =~ m|^/+records|) {
+	$self->_handle_request_get_rest($cgi);			
+    }
+
+    $self->_handle_request_get_template($cgi);
+}
+
+sub _handle_request_get_template {
+   my $self = shift;
+    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
+    my $p = $cgi->path_info;
+
+
+    if (Template::Declare->has_template($p)) {
+        my $content = Template::Declare->show($p);
+
+        return $self->_send_content(
+            content_type => 'text/html',
+            content      => $content,
+        );
+
+    }
+
+}
+
+sub _handle_request_get_replica {
+	my $self = shift;
+    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
+    my $p = $cgi->path_info;
+
 
     if ($p =~ qr{^/+replica/+(.*)$}) {
         my $repo_file = $1;
@@ -63,18 +106,13 @@ sub handle_request_get {
             content_type => 'application/x-prophet',
             content      => $content
         );
-
-
     }
+}
 
-    if (Template::Declare->has_template($p)) {
-        my $content = Template::Declare->show($p);
-
-        return $self->_send_content(
-            content_type => 'text/html',
-            content      => $content,
-        );
-    }
+sub _handle_request_get_rest {
+	my $self = shift;
+    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
+    my $p = $cgi->path_info;
 
     if ( $p =~ m|^/records\.json$| ) {
         $self->_send_content(
@@ -113,7 +151,6 @@ sub handle_request_get {
             content_type => 'text/x-json',
             content      => to_json( { map { $_->uuid => "/records/$type/" . $_->uuid . ".json" } @$col } )
             )
-
     }
 }
 
