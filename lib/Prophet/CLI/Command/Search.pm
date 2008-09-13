@@ -14,7 +14,7 @@ has 'sort_routine' => (
     required => 0,
     # default subs are executed immediately, hence the weird syntax for coderefs
     default => sub { sub {
-            my @records = @_;
+            my @records = @{ $_[0] };
             return (sort { $a->luid <=> $b->luid } @records);
         } },
     documentation => 'A subroutine which takes a list of records and returns them sorted in some way.',
