@@ -117,7 +117,7 @@ sub display_terminal {
 
     my $sort_routine = $self->sort_routine;
 
-    for ( &$sort_routine($records->items) ) {
+    for ( &$sort_routine( scalar $records->items ) ) {
             print $_->format_summary . "\n";
     }
 }
