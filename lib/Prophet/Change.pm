@@ -58,19 +58,31 @@ The record type for the record.
 
 =head2 record_uuid
 
-The UUID of the record being changed
+The UUID of the record being changed.
 
 =head2 change_type
 
-One of add_file, add_dir, update_file, delete
+One of C<add_file>, C<add_dir>, C<update_file>, C<delete>.
+
+=head2 is_resolution
+
+A boolean value specifying whether this change represents a conflict
+resolution or not.
 
 =head2 prop_changes [\@PROPCHANGES]
 
-Returns a list of L<Prophet::PropChange/> associated with this Change. Takes an optional arrayref to fully replace the set of propcahnges
+Returns a list of L<Prophet::PropChange/> associated with this Change. Takes an
+optional arrayref to fully replace the set of propchanges.
 
-=cut
+=head2 has_prop_changes
 
-=head2 new_from_conflict( $conflict )
+Returns true if this change contains any L</Prophet::PropChange>s and false
+if it doesn't.
+
+=head2 new_from_conflict $conflict
+
+Takes a L<Prophet::Conflict> object and creates a Prophet::Change object
+representing the conflict resolution.
 
 =cut
 
@@ -106,9 +118,16 @@ sub add_prop_change {
     $self->_add_prop_change($change);
 }
 
+=head2 as_hash
+
+Returns a reference to a representation of this change as a hash.
+
+=cut
+
 sub as_hash {
     my $self  = shift;
     my $props = {};
+
     for my $pc ( $self->prop_changes ) {
         $props->{ $pc->name } = { old_value => $pc->old_value, new_value => $pc->new_value };
     }
@@ -145,6 +164,18 @@ sub as_string {
 
 }
 
+=head2 new_from_hashref HASHREF
+
+Takes a reference to a hash representation of a change (such as is
+returned by L</as_hash> or serialized json) and returns a new
+Prophet::Change representation of it.
+
+This method should be invoked as a class method, not an object method.
+
+For example:
+C<Prophet::Change-E<gt>new_from_hashref($ref_to_change_hash)>
+
+=cut
 
 sub new_from_hashref {
     my $class   = shift;

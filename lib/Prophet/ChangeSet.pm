@@ -70,49 +70,63 @@ Prophet::ChangeSet
 
 =head1 DESCRIPTION
 
-This class represents a single, atomic Prophet database update. It tracks some metadata about the changeset it self and contains a list of L<Prophet::Change> entries which describe the actual records created, updated and deleted.
-
-=cut
+This class represents a single, atomic Prophet database update. It tracks some
+metadata about the changeset itself and contains a list of L<Prophet::Change>
+entries which describe the actual records created, updated and deleted.
 
 =head1 METHODS
-
-=cut
 
 =head2 new
 
 Instantiate a new, empty L<Prophet::ChangeSet> object.
 
-=cut
+=head2 creator
+
+A string representing who created this changeset.
+
+=head2 created
+
+A string representing the ISO 8601 date and time when this changeset
+was created (UTC).
 
 =head2 sequence_no
 
-The changeset's sequence number (In subversion terms, revision #) on the replica sending us the changeset
+The changeset's sequence number (in subversion terms, revision #) on the
+replica sending us the changeset.
 
 =head2 source_uuid
 
-The uuid of the replica sending us the change
+The uuid of the replica sending us the change.
 
 =head2 original_source_uuid
 
-The uuid of the replica where the change was authored
+The uuid of the replica where the change was authored.
 
 =head2 original_sequence_no
 
-The changeset's sequence number (In subversion terms, revision #) on the replica where the change was originally created
+The changeset's sequence number (in subversion terms, revision #) on the
+replica where the change was originally created.
 
 =head2 is_nullification
 
-Currently unused
+A boolean value specifying whether this is a nullification changeset or not.
 
 =head2 is_resolution
 
-Currently unused
+A boolean value specifying whether this is a conflict resolution changeset
+or not.
 
-=cut
+=head2 changes
+
+Returns an array of all the changes in the current changeset.
+
+=head2 has_changes
+
+Returns true if this changeset has any changes.
 
 =head2 add_change { change => L<Prophet::Change> }
 
-Add a new change, L<$args{'change'}> to this changeset.
+Adds a new change, L<$args{'change'}> to this changeset.
 
 =cut
 
@@ -123,31 +137,41 @@ sub add_change {
 
 }
 
-=head2 changes
-
-Return an array of all the changes in the current changeset.
-
-=cut
-
-=head2 has_changes
-
-Returns true if this changeset has any changes
-
-=cut
-
 our @SERIALIZE_PROPS
     = (qw(creator created sequence_no source_uuid original_source_uuid original_sequence_no is_nullification is_resolution));
+
+=head2 as_hash
+
+Returns a reference to a representation of this changeset as a hash, containing
+all the properties in the package variable C<@SERIALIZE_PROPS>, as well as a
+C<changes> key containing hash representations of each change in the changeset,
+keyed on UUID.
+
+=cut
 
 sub as_hash {
     my $self = shift;
     my $as_hash = { map { $_ => $self->$_() } @SERIALIZE_PROPS };
 
     for my $change ( $self->changes ) {
-
         $as_hash->{changes}->{ $change->record_uuid } = $change->as_hash;
     }
+
     return $as_hash;
 }
+
+=head2 new_from_hashref HASHREF
+
+Takes a reference to a hash representation of a changeset (such as is
+returned by L</as_hash> or serialized json) and returns a new
+Prophet::ChangeSet representation of it.
+
+Should be invoked as a class method, not an object method.
+
+For example:
+C<Prophet::ChangeSet-E<gt>new_from_hashref($ref_to_changeset_hash)>
+
+=cut
 
 sub new_from_hashref {
     my $class   = shift;
