@@ -121,12 +121,20 @@ sub as_hash {
     };
 }
 
+=head2 as_string ARGS
+
+Returns a string representing this change. If C<$args{header_callback}>
+is specified, the string returned from passing C<$self> to the callback
+is prepended to the change string before it is returned.
+
+=cut
+
 sub as_string {
     my $self         = shift;
     my %args         = validate( @_, { header_callback => 0, } );
-    my $out          = "";
+    my $out          = '';
     my @prop_changes = $self->prop_changes;
-    return undef if @prop_changes == 0;
+    return '' if @prop_changes == 0;
     $out .= $args{header_callback}->($self) if ( $args{header_callback} );
 
     for my $prop_change (@prop_changes) {

@@ -160,6 +160,26 @@ sub new_from_hashref {
     return $self;
 }
 
+=head2 as_string ARGS
+
+Returns a single string representing the changes in this changeset.
+
+If C<$args{header_callback}> is defined, the string returned from passing
+C<$self> to the callback is prepended to the changeset string before it is
+returned (instead of L</description_as_string>).
+
+If C<$args{skip_empty}> is defined, an empty string is returned if the
+changeset contains no changes.
+
+The argument C<change_filter> can be used to filter certain changes from
+the string representation; the function is passed a change and should return
+false if that change should be skipped.
+
+The C<change_header> argument, if present, is passed to
+C<$change-E<gt>to_string> when individual changes are converted to strings.
+
+=cut
+
 sub as_string {
     my $self = shift;
     my %args = validate(
@@ -171,7 +191,6 @@ sub as_string {
         }
     );
 
-    
     my $body = '';
 
     for my $change ( $self->changes ) {
@@ -186,6 +205,12 @@ sub as_string {
     my $out  = $header ."\n".$body."\n";
     return $out;
 }
+
+=head2 description_as_change
+
+Returns a string representing a description of this string.
+
+=cut
 
 sub description_as_string {
     my $self = shift;
