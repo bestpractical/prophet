@@ -14,8 +14,8 @@ has 'sort_routine' => (
     required => 0,
     # default subs are executed immediately, hence the weird syntax for coderefs
     default => sub { sub {
-            my @records = @{ $_[0] };
-            return (sort { $a->luid <=> $b->luid } @records);
+                my $records = shift;
+            return (sort { $a->luid <=> $b->luid } @$records);
         } },
     documentation => 'A subroutine which takes a hashref to a list of records and returns them sorted in some way.',
 );
@@ -115,9 +115,8 @@ sub display_terminal {
     my $self = shift;
     my $records = shift;
 
-    my $sort_routine = $self->sort_routine;
-
-    for ( &$sort_routine( scalar $records->items ) ) {
+    my $items = $records->items;
+    for ( $self->sort_routine->( $items) ) {
             print $_->format_summary . "\n";
     }
 }
