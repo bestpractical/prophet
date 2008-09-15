@@ -38,7 +38,6 @@ sub run {
 sub print_report {
     my $self = shift;
     my $changesets = shift;
-    print "\n";
     if ($changesets == 0) {
         print "No new changesets.\n";
     }

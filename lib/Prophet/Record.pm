@@ -750,11 +750,7 @@ Returns this record's changesets as a single string.
 
 sub history_as_string {
     my $self = shift;
-    my $out = "History for record "
-            . $self->luid
-            . " (" . $self->uuid . ")"
-            . "\n\n";
-
+    my $out ='';
     for my $changeset ($self->changesets) {
         $out .= $changeset->as_string(change_filter => sub {
             shift->record_uuid eq $self->uuid
