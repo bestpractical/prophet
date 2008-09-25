@@ -30,6 +30,7 @@ override run => sub {
         #if ( $self->has_arg('all') || $self->has_arg('local') );
         $self->set_arg( from => $from );
         super();
+        print "\n";
     }
 
     if ( $self->arg('from') && !exists $previous_sources{$self->arg('from')} ) {

@@ -50,14 +50,10 @@ has luid => (
 );
 
 class_has REFERENCES => (
-    metaclass => 'Collection::Hash',
     is        => 'rw',
     isa       => 'HashRef',
     default   => sub { {} },
-    provides  => {
-        keys => 'reference_methods',
-    },
-    documentation => 'A hash of accessor_name => collection_class references.',
+    documentation => 'A hash of class_name => references.',
 );
 
 class_has PROPERTIES => (
@@ -161,7 +157,7 @@ sub register_collection_reference {
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor} = {
+    $class->REFERENCES->{$class}{$accessor} = {
         %args,
         arity => 'collection',
         type  => $collection_class->record_class,
@@ -196,7 +192,7 @@ sub register_record_reference {
 
     # XXX: add validater for $args{by} in $model->record_class
 
-    $class->REFERENCES->{$accessor} = {
+    $class->REFERENCES->{$class}{$accessor} = {
         %args,
         arity => 'scalar',
         type  => $record_class,
@@ -515,16 +511,24 @@ sub default_props {
 
 =head2 default_prop_creator
 
-Default the creator of every record to the changeset_creator @ replica uuid
+Default the creator of every record to the changeset_creator (usually C<$USER>)
 
 =cut
 
 sub default_prop_creator {
     my $self = shift;
+    return $self->handle->changeset_creator;
+}
 
-    return sprintf '%s@%s',
-        $self->handle->changeset_creator,
-        $self->handle->uuid;
+=head2 default_prop_original_replica
+
+Default the original_replica of every record to the replica's uuid
+
+=cut
+
+sub default_prop_original_replica {
+    my $self = shift;
+    return $self->handle->uuid;
 }
 
 =head2 _default_summary_format
@@ -746,11 +750,7 @@ Returns this record's changesets as a single string.
 
 sub history_as_string {
     my $self = shift;
-    my $out = "History for record "
-            . $self->luid
-            . " (" . $self->uuid . ")"
-            . "\n\n";
-
+    my $out ='';
     for my $changeset ($self->changesets) {
         $out .= $changeset->as_string(change_filter => sub {
             shift->record_uuid eq $self->uuid
@@ -768,9 +768,11 @@ Returns a list of method names that refer to other individual records
 
 sub record_reference_methods {
     my $self = shift;
+    my $class = blessed($self) || $self;
+    my %accessors = %{ $self->REFERENCES->{$class} || {} };
 
-    return grep { $self->REFERENCES->{$_}{arity} eq 'record' }
-           $self->reference_methods;
+    return grep { $accessors{$_}{arity} eq 'record' }
+           keys %accessors;
 }
 
 =head2 collection_reference_methods
@@ -781,9 +783,11 @@ Returns a list of method names that refer to collections
 
 sub collection_reference_methods {
     my $self = shift;
+    my $class = blessed($self) || $self;
+    my %accessors = %{ $self->REFERENCES->{$class} || {} };
 
-    return grep { $self->REFERENCES->{$_}{arity} eq 'collection' }
-           $self->reference_methods;
+    return grep { $accessors{$_}{arity} eq 'collection' }
+           keys %accessors;
 }
 
 __PACKAGE__->meta->make_immutable;

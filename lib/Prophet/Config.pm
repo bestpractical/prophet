@@ -74,6 +74,14 @@ sub load_from_file {
     }
 }
 
+sub display_name_for_uuid {
+    my $self = shift;
+    my $uuid = shift;
+
+    my $friendly = $self->get("display_$uuid");
+    return defined($friendly) ? $friendly : $uuid;
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
@@ -129,6 +137,10 @@ Sets a specific config setting.
 =head2 list
 
 List all configuration options
+
+=head2 display_name_for_uuid UUID
+
+Returns a "friendly" id for the given uuid.
 
 =cut
 

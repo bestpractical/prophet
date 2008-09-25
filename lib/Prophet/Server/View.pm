@@ -1,17 +1,33 @@
-#!/usr/bin/env perl
-package Prophet::Server::View;
 use strict;
 use warnings;
+package Prophet::Server::View;
 use base 'Template::Declare';
 use Template::Declare::Tags;
+use Prophet::Server::ViewHelpers;
 use Params::Validate;
 
-template '/' => sub {
-    html {
-        body {
-            h1 { "Welcome!" }
-        }
+our $APP_HANDLE;
+sub app_handle {
+    my $self = shift;
+    $APP_HANDLE = shift if (@_);
+    return $APP_HANDLE;
+}
+sub default_page_title { 'Prophet' }
+
+template head => sub {
+    my $self = shift;
+    my $args = shift;
+    head {
+        title { shift @$args };
     }
+
+};
+
+template footer => sub {};
+
+
+template '/' => page {
+            h1 { "This is a Prophet replica!" }
 };
 
 sub record_table {
@@ -69,23 +85,18 @@ sub record_table {
     }
 }
 
-template record_table => sub {
+template record_table => 
+
+        page {
     my $self = shift;
     my $records = shift;
-
-    html {
-        body {
             record_table(records => $records);
-        }
-    }
 };
 
-template record => sub {
+template record => page {
     my $self = shift;
     my $record = shift;
 
-    html {
-        body {
             p {
                 a {
                     attr {
@@ -129,11 +140,9 @@ template record => sub {
                 );
             }
 
-        }
-    }
 };
 
-template record_changesets => sub {
+private template record_changesets => sub {
     my $self = shift;
     my $record = shift;
     my $uuid = $record->uuid;
@@ -159,7 +168,7 @@ template record_changesets => sub {
             }
         }
     }
-};
+        };
 
 sub generate_changeset_feed {
     my $self = shift;

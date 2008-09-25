@@ -14,6 +14,7 @@ sub _setup_server {
     my $self = shift;
     my $server = Prophet::Server->new( $self->arg('port') || 8080 );
     $server->app_handle( $self->app_handle );
+    $server->setup_template_roots();
     return $server;
 }
 

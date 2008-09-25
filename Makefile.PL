@@ -15,15 +15,17 @@ requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');
 requires('JSON' => '2.00');
+requires('JSON::XS' => '2.01');
 requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
-requires('Scalar::Defer');
+requires('Scalar::Defer' => '0.18');
 requires('Moose' => '0.54'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
 requires('Path::Dispatcher'); # Path::Dispatcher::Declarative
+requires('Time::Progress');
 
 use Term::ReadLine; # if we don't do this, ::Perl fails
 features(

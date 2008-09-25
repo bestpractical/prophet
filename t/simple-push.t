@@ -45,7 +45,18 @@ as_bob {
 
 };
 
-my $changesets =   [ map { $_->as_hash } grep { $_->has_changes }  @{$bob->new_changesets_for($alice, force => 1)}];
+my $changesets;
+    $bob->traverse_new_changesets( for => $alice, force => 1,
+            callback => sub {
+                my $cs = shift;
+                return unless $cs->has_changes,
+                push @{$changesets}, $cs->as_hash;
+            }
+        
+        
+    );
+
+
 my $seq = delete $changesets->[0]->{'sequence_no'};
 my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
 is($seq, $orig_seq);
@@ -74,9 +85,13 @@ is_deeply(
                             'old_value' => undef
                         },
                         'creator' => {
-                            'new_value' => 'bob@' . replica_uuid_for('bob'),
+                            'new_value' => 'bob',
                             'old_value' => undef
-                        }
+                        },
+                        'original_replica' => {
+                            'new_value' => replica_uuid_for('bob'),
+                            'old_value' => undef
+                        },
                     },
                     'record_type' => 'Bug'
                 }
@@ -107,20 +122,28 @@ as_bob {
     }
 };
 
-$changesets = $bob->new_changesets_for($alice, force => 1);
+my $new_changesets;
+    $bob->traverse_new_changesets( for => $alice, force => 1,
+            callback => sub {
+                my $cs = shift;
+                return unless $cs->has_changes,
+                push @{$new_changesets}, $cs->as_hash;
+            }
+        
+        
+    );
 
-my @changes = map { $_->as_hash } grep { $_->has_changes } @$changesets;
 
-is( delete $changes[0]->{'sequence_no'}, delete $changes[0]->{'original_sequence_no'});
+is( delete $new_changesets->[0]->{'sequence_no'}, delete $new_changesets->[0]->{'original_sequence_no'});
 
 is_deeply(
-    \@changes,
+    $new_changesets,
     [   {  
         
         #     'sequence_no'          => 4,  # the number varies based on replica type
         #    'original_sequence_no' => 4,
             'creator'              => 'bob',
-            'created'              => $changes[0]->{created},
+            'created'              => $new_changesets->[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
@@ -137,7 +160,11 @@ is_deeply(
                             'old_value' => undef
                         },
                         'creator' => {
-                            'new_value' => 'bob@' . replica_uuid_for('bob'),
+                            'new_value' => 'bob',
+                            'old_value' => undef,
+                        },
+                        'original_replica' => {
+                            'new_value' => replica_uuid_for('bob'),
                             'old_value' => undef,
                         },
                     },

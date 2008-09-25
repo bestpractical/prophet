@@ -6,6 +6,10 @@ with 'Prophet::CLI::CollectionCommand';
 
 use Path::Class;
 
+sub view_classes {
+ return ['Prophet::Server::View'];
+}
+
 before run => sub {
     my $self = shift;
     die "Please specify a --to.\n" unless $self->has_arg('to');
@@ -26,24 +30,11 @@ around run => sub {
     $export_replica = 1 if !$export_html;
 
     # if we have the html argument, populate the tempdir with rendered templates
-    if ($export_html) {
-        my $path = dir($self->arg('path'));
-
-        # if they specify both html and replica, then stick rendered templates
-        # into a subdirectory. if they specify only html, assume they really
-        # want to publish directly into the specified directory
-        if ($export_replica) {
-            $path = $path->subdir('html');
-            $path->mkpath;
-        }
-
-        $self->render_templates_into($path);
-    }
+    $self->export_html() if ($export_html);
 
     # otherwise, do the normal prophet export this replica
-    if ($export_replica) {
-        $self->$orig(@_);
-    }
+        $self->$orig(@_) if ($export_replica);
+    
 };
 
 # the tempdir is populated, now publish it
@@ -60,13 +51,28 @@ after run => sub {
     print "Publish complete.\n";
 };
 
+sub export_html {
+	my $self = shift;
+        my $path = dir($self->arg('path'));
+
+        # if they specify both html and replica, then stick rendered templates
+        # into a subdirectory. if they specify only html, assume they really
+        # want to publish directly into the specified directory
+        if ($self->has_arg('replica')){
+            $path = $path->subdir('html');
+            $path->mkpath;
+        }
+
+        $self->render_templates_into($path);
+    }
+
 # helper methods for rendering templates
 sub render_templates_into {
     my $self = shift;
     my $dir  = shift;
 
     require Prophet::Server::View;
-    Template::Declare->init(roots => ['Prophet::Server::View']);
+    Template::Declare->init(roots => __PACKAGE__->view_classes);
 
     # allow user to specify a specific type to render
     my @types = $self->type || $self->types_to_render;

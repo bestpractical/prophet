@@ -89,6 +89,23 @@ sub _remote_id_storage {
         'prophet-uuid' )->(@_);
 }
 
+=head2 has_seen_changeset ChangeSet
+
+This is a simplification of L<Prophet::Replica/has_seen_changeset>. Because
+only a single Prophet replica is talking to this foreign replica, we only need
+to care about whether that replica (not the original replica) has given us the
+changeset.
+
+=cut
+
+sub has_seen_changeset {
+    my $self = shift;
+    my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
+
+    # Has our host replica given this changeset to us yet?
+    return $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

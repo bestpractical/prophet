@@ -92,6 +92,8 @@ sub run_script {
     my ( $stdout, $stderr );
     my @cmd = _get_perl_cmd($script);
 
+    local $ENV{IN_PROPHET_TEST_COMMAND} = 1;
+
     #    diag(join(' ', @cmd, @$args));
     my $ret = run3 [ @cmd, @$args ], undef, \$stdout, \$stderr;
     Carp::croak $stderr          if $?;

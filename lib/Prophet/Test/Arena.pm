@@ -40,7 +40,7 @@ sub setup {
 
         as_user($c->name => sub { 
                     my $p = Prophet::CLI->new();
-                    diag($c => $p->handle->uuid);
+                    diag($c => $p->handle->display_name_for_uuid);
             });
     }
     

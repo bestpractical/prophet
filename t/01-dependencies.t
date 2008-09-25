@@ -14,6 +14,7 @@ use Test::More;
 use File::Find;
 eval 'use Module::CoreList';
 if ($@) { plan skip_all => 'Module::CoreList not installed' }
+if (! -d 'inc/.author') { plan skip_all => 'These tests only run for module auhtors'}
 
 plan 'no_plan';
 
@@ -37,7 +38,7 @@ sub wanted {
     $data =~ s/^=head.+?(^=cut|\Z)//gms;
 
     # look for use and use base statements
-    $used{$1}{$File::Find::name}++ while $data =~ /^\s*use\s+([\w:]+)/gm;
+    $used{$1}{$File::Find::name}++ while $data =~ /^\s*(?:use|require)\s+([\w:]+)/gm;
     while ( $data =~ m|^\s*use base qw.([\w\s:]+)|gm ) {
         $used{$_}{$File::Find::name}++ for split ' ', $1;
     }

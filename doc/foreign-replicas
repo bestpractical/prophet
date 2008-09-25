@@ -1,0 +1,56 @@
+
+=head1 Resplutions
+
+Resolutions are stored in a seperate database because they're supposed to be propagated _like_ regular changesets but always sent before the regular changesets.
+
+=head1 Native Replicas
+
+=head2 Merge tickets
+
+=head1 Foreign Replicas
+
+A foreign replica is a (possibly read-only) data store that is not a Prophet
+replica (such as RT or Twitter). A Prophet replica can act as a gateway to a
+foreign replica.
+
+Because we can't store arbitrary metadata in foreign replicas, we do not yet
+support arbitrary topology sync of foreign replicas. A single Prophet-backed
+replica must act as a gateway to a foreign replica.  It would be great if Prophet could, in a general way, allow arbitrary topology sync of foreign replicas. but it was not ever a goal.
+
+Foreign replicas never talk directly with each other. Their communciations are always intermediated by a Prophet replica.
+The design wasn't such that you could have multiple replicas gatewaying transactions between a pair of foreign replicas.
+
+Foreign replicas aren't really full-fledged replicas, they piggyback on another replica on the proxying host to store metadata about merges, conflicts and local id (luid) to uuid mappings.  When working with Foreign Replicas, the local state handle that tracks data on behalf of a foreign database using merge tickets.  Our merge tickets work like svk's. they're a high-water mark of "the most recent transaction merged from some other replica", keyed by the replica uuid of that other replica.  Prophet always merges all transactions from a replica sequentially.
+
+So when bob is pushing to a foreign replica, we use metadata stored in bob's replica to interact with the foreign replica. _merge_ticket records are an example of this however, when you do a push to a foreign replica, it should be storing that transaction as merged
+(See App::SD::ForeignReplica::record_pushed_transaction)
+
+The test that's failing is Bob pulls a task from HM and then pushes to RT. RT never gets the HM task.
+
+the specific problem I'm seeing is when bob pushes to RT, RT needs
+to know what the high water mark from Hiveminder is. because RT
+doesn't have a full replica, it ends up accidentally using Bob's
+merge tickets exemplified by these two adjacent lines in the logfile:
+    Checking metadata in BOB-UUID: (_merge_tickets, HIVEMINDER-UUID, last-changeset) -> 3
+    RT-UUID's last_changeset_from_source(HIVEMINDER-UUID) -> 3 
+
+
+<Sartak> I think state_handle should be an entirely separate replica, just as resolutions are
+<obra> But it should never be propagated.
+
+<Sartak> can't it be a replica we just don't propagate?
+<obra> so far, your description doesn't give me any reaason to think that ending up with an explicitly seperate state database would improve anything. and it would add more moving parts.
+<Sartak> we're being bitten by reusing the Prophet replica's records
+<Sartak> if the foreign replica had its own replica, then there would be no overlap and this issue would just go away
+<Sartak> the foreign replica is using the real replica's _merge_ticket records
+<obra>  I _believe_ that our state handle stuff should entirely replace the need to even use those
+<obra> merge tickets are "most recent changeset seen from replica ABC". those are generally useful to propagate around.
+<obra> except in the case of the foreign replica where it only ever matters what the most recent local changest we've pushed to the foreign replica
+<obra> (pulling from an FR should, I believe, use regular merge tickets)
+
+
+=head1 Open issues
+
+Prophet::ForeignReplica should probably be subclassing the bits of code that deal with MergeTickets.
+
+also, apparently "merge tickets" is a horrible name that confuses people it may want renaming

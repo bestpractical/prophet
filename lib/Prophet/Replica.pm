@@ -52,9 +52,10 @@ has _alt_urls => (
 );
 
 has app_handle => (
-    is => 'ro',
-    isa => 'Prophet::App',
-    weak_ref => 1
+    is        => 'ro',
+    isa       => 'Prophet::App',
+    weak_ref  => 1,
+    predicate => 'has_app_handle',
 );
 
 our $MERGETICKET_METATYPE = '_merge_tickets';
@@ -229,7 +230,7 @@ sub integrate_changeset {
     my $changeset = $args{'changeset'};
 
     $self->log("Considering changeset ".$changeset->original_sequence_no .
-        " from " . substr($changeset->original_source_uuid,0,6));
+        " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
@@ -249,7 +250,7 @@ sub integrate_changeset {
     return unless $changeset->has_changes;
 
     if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
-        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . substr($changeset->original_source_uuid,0,6));
+        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
@@ -282,7 +283,7 @@ sub integrate_changeset {
 
     } else {
         $self->log("Integrating changeset ".$changeset->original_sequence_no .
-            " from " . substr($changeset->original_source_uuid,0,6));
+            " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
     }
@@ -317,9 +318,10 @@ sub record_changeset_and_integration {
 
     return;
 }
+
 =head3 last_changeset_from_source $SOURCE_UUID
 
-Returns the last changeset id seen from the source identified by $SOURCE_UUID.
+Returns the last changeset id seen from the replica identified by $SOURCE_UUID.
 
 =cut
 
@@ -344,7 +346,7 @@ sub has_seen_changeset {
 
     $self->log("Checking to see if we've ever seen changeset " .
         $changeset->original_sequence_no . " from " .
-        substr($changeset->original_source_uuid,0,6));
+        $self->display_name_for_uuid($changeset->original_source_uuid));
 
     # If the changeset originated locally, we never want it
     if  ($changeset->original_source_uuid eq $self->uuid ) {
@@ -455,54 +457,35 @@ sub traverse_new_changesets {
         }
     );
 
-    if ( $self->db_uuid && $args{for}->db_uuid && $self->db_uuid ne $args{for}->db_uuid ) {
-        unless ($args{'force'}) {
-            die "You are trying to merge two different databases! This is NOT\n".
-            "recommended. If you really want to do this,  add '--force' to\n".
-            "your commandline.\n\n"
-            . "Local database:  " . $self->db_uuid      . "\n"
-            . "Remote database: " . $args{for}->db_uuid . "\n";
-        }
-    }
+    $self->_check_db_uuids_on_merge(for => $args{for}, force => $args{'force'});
 
-
-    $self->log("Evaluating changesets to apply to ".substr($args{'for'}->uuid,0,6). " starting with ".  $args{for}->last_changeset_from_source( $self->uuid ));
-
-
-    my $callback = $args{callback};
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
-        callback => sub {
-            $callback->( $_[0] )
-                if $self->should_send_changeset( changeset => $_[0], to => $args{for} );
+        callback => sub { $args{callback}->( $_[0] ) if $self->should_send_changeset( changeset => $_[0], to        => $args{for});
         }
     );
 }
 
-=head2 new_changesets_for Prophet::Replica
-
-DEPRECATED: use traverse_new_changesets instead
-
-Returns the local changesets that have not yet been seen by the replica we're passing in.
-
-=cut
-
-
-sub new_changesets_for {
+sub _check_db_uuids_on_merge {
     my $self = shift;
-
-    # the first argument is always the replica
-    unshift @_, 'replica';
-    my %args = validate(@_, {
-        replica  => { isa => 'Prophet::Replica' },
-        force    => 0,
-    });
-
-    my @result;
-    $self->traverse_new_changesets( for => $args{replica}, callback => sub { push @result, $_[0] }, force => $args{force} );
-
-    return \@result;
+    my %args = validate( @_,
+        {   for   => { isa => 'Prophet::Replica' },
+            force => 0,
+        });
+    if (   $self->db_uuid && $args{for}->db_uuid
+        && $self->db_uuid ne $args{for}->db_uuid ) {
+        unless ( $args{'force'} ) {
+            die "You are trying to merge two different databases! This is NOT\n"
+                . "recommended. If you really want to do this,  add '--force' to\n"
+                . "your commandline.\n\n"
+                . "Local database:  "
+                . $self->db_uuid . "\n"
+                . "Remote database: "
+                . $args{for}->db_uuid . "\n";
+        }
+    }
 }
+
 
 =head3 should_send_changeset { to => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
 
@@ -516,8 +499,8 @@ sub should_send_changeset {
                                changeset => { isa => 'Prophet::ChangeSet' } });
 
     $self->log("Should I send " .$args{changeset}->original_sequence_no .
-        " from ".substr($args{changeset}->original_source_uuid,0,6) . " to " .
-        substr($args{'to'}->uuid, 0, 6));
+        " from ".$self->display_name_for_uuid($args{changeset}->original_source_uuid) . " to " .
+        $args{'to'}->display_name_for_uuid);
 
     return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
     return undef if $args{'to'}->has_seen_changeset( $args{'changeset'} );
@@ -527,7 +510,7 @@ sub should_send_changeset {
 
 =head3 fetch_changesets { after => SEQUENCE_NO }
 
-Fetch all changesets from the source.
+Fetch all changesets from this replica after the local sequence number SEQUENCE_NO.
 
 Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 
@@ -1105,7 +1088,7 @@ environmental variable is set).
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
-    print STDERR "# ".substr($self->uuid,0,6)." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
+    print STDERR "# ".$self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
 }
 
 =head2 log_fatal $MSG
@@ -1131,6 +1114,24 @@ The string to use as the creator of a changeset.
 =cut
 
 sub changeset_creator { $ENV{PROPHET_USER} || $ENV{USER} }
+
+=head2 display_name_for_uuid [uuid]
+
+If the user has a "friendly" name for this replica, then use it. Otherwise,
+display the replica's uuid.
+
+If you pass in a uuid, it will be used instead of the replica's uuid.
+
+=cut
+
+sub display_name_for_uuid {
+    my $self = shift;
+    my $uuid = shift || $self->uuid;
+
+    return $uuid if !$self->has_app_handle;
+
+    return $self->app_handle->config->display_name_for_uuid($uuid);
+}
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

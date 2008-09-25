@@ -6,7 +6,6 @@ use Test::Exception;
 
 use Prophet::Test tests => 16;
 use Test::Exception;
-
 as_alice {
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
@@ -40,8 +39,9 @@ as_bob {
         ['show', '--type', 'Bug', '--uuid', $record_id, '--batch'],
         [
             qr/id: (\d+) \($record_id\)/,
-              "creator: alice\@" . replica_uuid_for('alice'),
+              'creator: alice',
               'from: alice',
+              'original_replica: ' . replica_uuid_for('alice'),
               'status: stalled',
         ],
         'content is correct'

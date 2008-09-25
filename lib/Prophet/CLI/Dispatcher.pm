@@ -17,7 +17,7 @@ on qr{^(\w+)} => sub {
 
     my @possible_classes = (
         ("Prophet::CLI::Command::" . ucfirst lc $cmd),
-        "Prophet::CLI::Command::Notound",
+        "Prophet::CLI::Command::NotFound",
     );
 
     my $cli = $args{cli};
@@ -51,6 +51,8 @@ sub resolve_builtin_aliases {
     if (my $replacement = $CMD_MAP{ lc $cmds[-1] }) {
         $cmds[-1] = $replacement;
     }
+
+    @cmds = map { ucfirst lc } @cmds;
 
     return wantarray ? @cmds : $cmds[-1];
 }

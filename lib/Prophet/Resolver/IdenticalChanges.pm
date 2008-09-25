@@ -48,7 +48,9 @@ sub run {
         next if ((!defined $prop_change->target_value || $prop_change->target_value  eq '')
                 
                 && ( !defined $prop_change->source_new_value || $prop_change->source_new_value eq ''));
-        next if $prop_change->target_value eq $prop_change->source_new_value;
+        next if (defined  $prop_change->target_value 
+        and defined $prop_change->source_new_value
+            and ( $prop_change->target_value eq $prop_change->source_new_value));
         return 0; 
     }
 

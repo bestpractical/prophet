@@ -1,5 +1,6 @@
 package App::Record;
-use base 'Prophet::Record';
+use Moose;
+extends 'Prophet::Record';
 
 sub validate_prop_point {
     my ( $self, %args ) = @_;

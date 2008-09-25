@@ -94,7 +94,7 @@ sub _require {
     my $error = $@;
     if (my $message = $error) {
         $message =~ s/ at .*?\n$//;
-        if ($args{'quiet'} and $message =~ /^Can't locate $file/) {
+        if ($args{'quiet'} and $message =~ /^Can't locate \Q$file\E/) {
             return 0;
         }
         elsif ( $error !~ /^Can't locate $file/) {
