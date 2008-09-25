@@ -32,7 +32,7 @@ has record => (
     documentation => 'If the command operates on a record, it will be stored here.',
 );
 
-on ['server'] => sub {
+on server => sub {
     my $self = shift;
     my $server = $self->setup_server;
     $server->run;
@@ -44,7 +44,7 @@ on [ ['create', 'update', 'delete'], qr/.*/] => sub {
     run($1, $self);
 };
 
-on ['create'] => sub {
+on create => sub {
     my $self   = shift;
     my $record = $self->context->_get_record_object;
 
@@ -66,7 +66,7 @@ on ['create'] => sub {
         $record->uuid;
 };
 
-on ['delete'] => sub {
+on delete => sub {
     my $self = shift;
 
     $self->context->require_uuid;
@@ -81,7 +81,7 @@ on ['delete'] => sub {
 
 };
 
-on ['update'] => sub {
+on update => sub {
     my $self = shift;
 
     $self->context->require_uuid;
