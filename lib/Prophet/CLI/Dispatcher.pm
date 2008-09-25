@@ -38,6 +38,12 @@ on ['server'] => sub {
     $server->run;
 };
 
+on ['create', qr/.*/] => sub {
+    my $self = shift;
+    $self->context->type($2);
+    run('create', $self);
+};
+
 on ['create'] => sub {
     my $self   = shift;
     my $record = $self->context->_get_record_object;
