@@ -109,6 +109,28 @@ on show => sub {
     );
 };
 
+on config => sub {
+    my $self = shift;
+
+    my $config = $self->cli->config;
+
+    print "Configuration:\n\n";
+    my @files = @{$config->config_files};
+    if (!scalar @files) {
+        print $self->no_config_files;
+        return;
+    }
+
+    print "Config files:\n\n";
+    for my $file (@files) {
+        print "$file\n";
+    }
+
+    print "\nYour configuration:\n\n";
+    for my $item ($config->list) {
+        print $item ." = ".$config->get($item)."\n";
+    }
+};
 
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
@@ -134,6 +156,14 @@ sub setup_server {
     $server->app_handle($self->context->app_handle);
     $server->setup_template_roots;
     return $server;
+}
+
+sub no_config_files {
+    my $self = shift;
+    return "No configuration files found. "
+         . " Either create a file called 'prophetrc' inside of "
+         . $self->handle->fs_root
+         . " or set the PROPHET_APP_CONFIG environment variable.\n\n";
 }
 
 no Moose;
