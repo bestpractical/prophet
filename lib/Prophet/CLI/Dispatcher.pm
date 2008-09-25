@@ -38,12 +38,6 @@ on server => sub {
     $server->run;
 };
 
-on [ ['create', 'update', 'delete'], qr/.*/] => sub {
-    my $self = shift;
-    $self->context->type($2);
-    run($1, $self);
-};
-
 on create => sub {
     my $self   = shift;
     my $record = $self->context->_get_record_object;
