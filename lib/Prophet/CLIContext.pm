@@ -4,14 +4,11 @@ use MooseX::ClassAttribute;
 use Params::Validate;
 
 has app_handle => (
-    is      => 'rw',
-    isa     => 'Prophet::App',
-    lazy    => 1,
-    handles => [qw/handle resdb_handle config/],
+    is       => 'rw',
+    isa      => 'Prophet::App',
+    handles  => [qw/handle resdb_handle config/],
     weak_ref => 1,
-    default => sub {
-        return $_[0]->app_class->new;
-    },
+    required => 1,
 );
 
 has uuid => (
