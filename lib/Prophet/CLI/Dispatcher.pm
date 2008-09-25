@@ -132,6 +132,11 @@ on config => sub {
     }
 };
 
+on export => sub {
+    my $self = shift;
+    $self->cli->handle->export_to( path => $self->context->arg('path') );
+};
+
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
 on qr/()/ => sub {
