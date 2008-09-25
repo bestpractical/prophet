@@ -96,6 +96,22 @@ on update => sub {
     }
 };
 
+on show => sub {
+    my $self = shift;
+
+    $self->context->require_uuid;
+    my $record = $self->context->_load_record;
+
+    print $self->cli->stringify_props(
+        record  => $record,
+        batch   => $self->context->has_arg('batch'),
+        verbose => $self->context->has_arg('verbose'),
+    );
+};
+
+
+# catch-all. () makes sure we don't hit the annoying historical feature of
+# the empty regex meaning the last-used regex
 on qr/()/ => sub {
     my $self = shift;
     $self->fatal_error("The command you ran could not be found. Perhaps running '$0 help' would help?");
