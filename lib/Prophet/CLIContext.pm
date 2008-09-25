@@ -81,6 +81,11 @@ has primary_commands => (
     documentation => "The commands the user executes from the commandline",
 );
 
+has record_class => (
+    is  => 'rw',
+    isa => 'Prophet::Record',
+);
+
 =head2 mutate_attributes ( args => $hashref, props => $hashref, type => 'str' )
 
 A hook for running a second command from within a command without having       
@@ -262,6 +267,78 @@ sub set_type_and_uuid {
     } elsif ( $self->primary_commands->[-2] ) {
         $self->type( $self->primary_commands->[-2] );
     }
+}
+
+=head2 _get_record_object [{ type => 'type' }]
+
+Tries to determine a record class from either the given type argument or
+the current object's C<$type> attribute.
+
+Returns a new instance of the record class on success, or throws a fatal
+error with a stack trace on failure.
+
+=cut
+
+sub _get_record_object {
+    my $self = shift;
+    my %args = validate(@_, {
+        type => { default => $self->type },
+    });
+
+    my $constructor_args = {
+        app_handle => $self->cli->app_handle,
+        handle     => $self->cli->handle,
+        type       => $args{type},
+    };
+
+    if ($args{type}) {
+        my $class = $self->_type_to_record_class($args{type});
+        return $class->new($constructor_args);
+    }
+    elsif (my $class = $self->record_class) {
+        Prophet::App->require($class);
+        return $class->new($constructor_args);
+    }
+    else {
+        Carp::confess("I was asked to get a record object, but I have neither a type nor a record class");
+    }
+}
+
+=head2 _load_record
+
+Attempts to load the record specified by the C<uuid> attribute.
+
+Returns the loaded record on success, or throws a fatal error if no
+record can be found.
+
+=cut
+
+sub _load_record {
+    my $self = shift;
+    my $record = $self->_get_record_object;
+    $record->load( uuid => $self->uuid )
+        || $self->fatal_error("I couldn't find the " . $self->type . ' ' . $self->uuid);
+    return $record;
+}
+
+=head2 _type_to_record_class $type
+
+Takes a type and tries to figure out a record class name from it.
+Returns C<'Prophet::Record'> if no better class name is found.
+
+=cut
+
+sub _type_to_record_class {
+    my $self = shift;
+    my $type = shift;
+    my $try = $self->cli->app_class . "::Model::" . ucfirst( lc($type) );
+    Prophet::App->try_to_require($try);    # don't care about fails
+    return $try if ( $try->isa('Prophet::Record') );
+
+    $try = $self->cli->app_class . "::Record";
+    Prophet::App->try_to_require($try);    # don't care about fails
+    return $try if ( $try->isa('Prophet::Record') );
+    return 'Prophet::Record';
 }
 
 __PACKAGE__->meta->make_immutable;
