@@ -4,7 +4,6 @@ use MooseX::ClassAttribute;
 
 use Prophet;
 use Prophet::Replica;
-use Prophet::CLI::Command;
 use Prophet::CLI::Dispatcher;
 use Prophet::CLIContext;
 
@@ -50,12 +49,6 @@ has interactive_shell => (
     default => sub { 0}
 );
 
-
-=head2 _record_cmd
-
-handles the subcommand for a particular type
-
-=cut
 
 =head2 dispatcher_class -> Class
 
