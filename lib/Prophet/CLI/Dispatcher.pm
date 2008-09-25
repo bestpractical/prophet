@@ -81,6 +81,27 @@ on ['delete'] => sub {
 
 };
 
+on ['update'] => sub {
+    my $self = shift;
+
+    $self->context->require_uuid;
+    my $record = $self->context->_load_record;
+
+    my $new_props = $self->cli->edit_record($record);
+    my $updated = $record->set_props( props => $new_props );
+
+    if ($updated) {
+        print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
+
+    } else {
+        print "SOMETHING BAD HAPPENED "
+            . $record->type . " "
+            . $record->luid . " ("
+            . $record->uuid
+            . ") not updated.\n";
+    }
+};
+
 on qr/()/ => sub {
     my $self = shift;
     $self->fatal_error("The command you ran could not be found. Perhaps running '$0 help' would help?");
