@@ -7,7 +7,7 @@ use Prophet::Replica;
 use Prophet::CLI::Dispatcher;
 use Prophet::CLIContext;
 
-use List::Util 'first';
+use Params::Validate;
 
 has app_class => (
     is      => 'rw',
@@ -155,7 +155,7 @@ sub edit_hash {
     my %args = @_;
     my $hash = $args{'hash'};
     my @ordering = @{ $args{'ordering'} || [] };
-    my $record = $self->_get_record_object;
+    my $record = $self->context->_get_record_object;
     my $do_not_edit = $record->can('props_not_to_edit') ? $record->props_not_to_edit : '';
 
     if (@ordering) {
@@ -232,6 +232,31 @@ sub edit_props {
     return \%props;
 }
 
+sub edit_record {
+    my $self   = shift;
+    my $record = shift;
+
+    my $props = $record->get_props;
+
+    # don't feed in existing values if we're not interactively editing
+    my $defaults = $self->context->has_arg('edit') ? $props : undef;
+
+    my @ordering = ( );
+    # we want props in $record->props_to_show to show up in the editor if --edit
+    # is supplied too
+    if ($record->can('props_to_show') && $self->context->has_arg('edit')) {
+        @ordering = $record->props_to_show;
+        for (@ordering) {
+            $props->{$_} = '' if !exists($props->{$_});
+        }
+    }
+
+    return $self->edit_props(
+        arg      => 'edit',
+        defaults => $defaults,
+        ordering => \@ordering,
+    );
+}
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
