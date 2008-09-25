@@ -87,11 +87,10 @@ sub run_one_command {
 
     my $dispatcher = $self->dispatcher_class->new(
         cli            => $self,
-        context        => $self->context,
         dispatching_on => $args,
     );
 
-    $dispatcher->run($command, %dispatcher_args);
+    $dispatcher->run($command, $dispatcher);
 }
 
 =head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY

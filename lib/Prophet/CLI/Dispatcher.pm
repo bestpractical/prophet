@@ -1,70 +1,48 @@
 package Prophet::CLI::Dispatcher;
-use strict;
-use warnings;
 use Path::Dispatcher::Declarative -base;
+use Moose;
 
-# "ticket display $ID" -> "ticket display --id=$ID"
-on qr{ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
-    my %args = @_;
-    $args{cli}->set_arg(id => $2);
-    run($1, %args);
-};
+use Prophet::CLI;
 
-on qr{^(\w+)} => sub {
-    my %args = @_;
-
-    my $cmd = __PACKAGE__->resolve_builtin_aliases($1);
-
-    my @possible_classes = (
-        ("Prophet::CLI::Command::" . ucfirst lc $cmd),
-        "Prophet::CLI::Command::NotFound",
-    );
-
-    my $cli = $args{cli};
-
-    for my $class (@possible_classes) {
-        if ($cli->_try_to_load_cmd_class($class)) {
-            return $args{got_command}->($class);
-        }
-    }
-};
-
-on qr{^\s*$} => sub {
-    run(__PACKAGE__->default_command, @_);
-
-};
-
-my %CMD_MAP = (
-    ls      => 'search',
-    new     => 'create',
-    edit    => 'update',
-    rm      => 'delete',
-    del     => 'delete',
-    list    => 'search',
-    display => 'show',
+has cli => (
+    is       => 'rw',
+    isa      => 'Prophet::CLI',
+    required => 1,
 );
 
-sub resolve_builtin_aliases {
+has context => (
+    is       => 'rw',
+    isa      => 'Prophet::CLIContext',
+    lazy     => 1,
+    default  => sub {
+        my $self = shift;
+        $self->cli->context;
+    },
+);
+
+has dispatching_on => (
+    is       => 'rw',
+    isa      => 'ArrayRef',
+    required => 1,
+);
+
+on ['server'] => sub {
     my $self = shift;
-    my @cmds = @_;
+    my $server = $self->setup_server;
+    $server->run;
+};
 
-    if (my $replacement = $CMD_MAP{ lc $cmds[-1] }) {
-        $cmds[-1] = $replacement;
-    }
-
-    @cmds = map { ucfirst lc } @cmds;
-
-    return wantarray ? @cmds : $cmds[-1];
+sub setup_server {
+    my $self = shift;
+    require Prophet::Server;
+    my $server = Prophet::Server->new($self->context->arg('port') || 8080);
+    $server->app_handle($self->context->app_handle);
+    $server->setup_template_roots;
+    return $server;
 }
 
-=head2 default_command
-
-Returns the "default" command for use when no arguments were specified on the
-command line. In Prophet, it's "shell" but your subclass can change that.
-
-=cut
-
-sub default_command { "shell" }
+no Moose;
+__PACKAGE__->meta->make_immutable;
 
 1;
 
