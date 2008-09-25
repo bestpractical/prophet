@@ -38,10 +38,10 @@ on ['server'] => sub {
     $server->run;
 };
 
-on ['create', qr/.*/] => sub {
+on [ ['create', 'update', 'delete'], qr/.*/] => sub {
     my $self = shift;
     $self->context->type($2);
-    run('create', $self);
+    run($1, $self);
 };
 
 on ['create'] => sub {
