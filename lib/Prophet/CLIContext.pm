@@ -345,6 +345,23 @@ sub _type_to_record_class {
     return 'Prophet::Record';
 }
 
+=head2 require_uuid
+
+Checks to make sure the uuid attribute is set. Prints an error and dies
+if it is not set.
+
+=cut
+
+sub require_uuid {
+    my $self    = shift;
+
+    if (!$self->has_uuid) {
+        my $type = $self->type;
+        my $name = (split /::/, $self->meta->name)[-1];
+        die "This command requires a luid or uuid (use --id to specify).\n";
+    }
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
