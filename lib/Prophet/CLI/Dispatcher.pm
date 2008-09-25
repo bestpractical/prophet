@@ -114,7 +114,7 @@ on show => sub {
 # the empty regex meaning the last-used regex
 on qr/()/ => sub {
     my $self = shift;
-    $self->fatal_error("The command you ran could not be found. Perhaps running '$0 help' would help?");
+    $self->fatal_error("The command you ran '$_' could not be found. Perhaps running '$0 help' would help?");
 };
 
 sub fatal_error {
