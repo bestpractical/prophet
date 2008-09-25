@@ -32,6 +32,21 @@ on ['server'] => sub {
     $server->run;
 };
 
+on qr/()/ => sub {
+    my $self = shift;
+    $self->fatal_error("The command you ran could not be found. Perhaps running '$0 help' would help?");
+};
+
+sub fatal_error {
+    my $self   = shift;
+    my $reason = shift;
+
+    # always skip this fatal_error function when generating a stack trace
+    local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+
+    die $reason . "\n";
+}
+
 sub setup_server {
     my $self = shift;
     require Prophet::Server;
