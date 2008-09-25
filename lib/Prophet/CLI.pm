@@ -220,12 +220,12 @@ sub edit_props {
 
     my %props;
     if ($defaults) {
-        %props = (%{ $defaults }, %{ $self->props });
+        %props = (%{ $defaults }, %{ $self->context->props });
     } else {
-        %props = %{$self->props};
+        %props = %{$self->context->props};
     }
 
-    if ($self->has_arg($arg)) {
+    if ($self->context->has_arg($arg)) {
         return $self->edit_hash(hash => \%props, ordering => $args{'ordering'});
     }
 
