@@ -57,14 +57,14 @@ handles the subcommand for a particular type
 
 =cut
 
-=head2 dispatcher -> Class
+=head2 dispatcher_class -> Class
 
-Returns the dispatcher used to dispatch command lines. You'll want to override
-this in your subclass.
+Returns the dispatcher class used to dispatch command lines. You'll want to
+override this in your subclass.
 
 =cut
 
-sub dispatcher { "Prophet::CLI::Dispatcher" }
+sub dispatcher_class { "Prophet::CLI::Dispatcher" }
 
 =head2 _get_cmd_obj
 
@@ -94,7 +94,7 @@ sub _get_cmd_obj {
         dispatching_on => $self->context->primary_commands,
     );
 
-    $self->dispatcher->run($command, %dispatcher_args);
+    $self->dispatcher_class->run($command, %dispatcher_args);
     die "I don't know how to parse '$command'. Are you sure that's a valid command?\n" unless $class;
 
     my %constructor_args = (
