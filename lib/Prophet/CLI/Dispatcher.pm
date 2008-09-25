@@ -26,10 +26,38 @@ has dispatching_on => (
     required => 1,
 );
 
+has record => (
+    is            => 'rw',
+    isa           => 'Prophet::Record',
+    documentation => 'If the command operates on a record, it will be stored here.',
+);
+
 on ['server'] => sub {
     my $self = shift;
     my $server = $self->setup_server;
     $server->run;
+};
+
+on ['create'] => sub {
+    my $self   = shift;
+    my $record = $self->context->_get_record_object;
+
+    my ($val, $msg) = $record->create(props => $self->cli->edit_props);
+
+    if (!$val) {
+        warn "Unable to create record: " . $msg . "\n";
+    }
+    if (!$record->uuid) {
+        warn "Failed to create " . $record->record_type . "\n";
+        return;
+    }
+
+    $self->record($record);
+
+    printf "Created %s %s (%s)\n",
+        $record->record_type,
+        $record->luid,
+        $record->uuid;
 };
 
 on qr/()/ => sub {
