@@ -1,6 +1,7 @@
 package Prophet::CLIContext;
 use Moose;
 use MooseX::ClassAttribute;
+use Params::Validate;
 
 has app_handle => (
     is      => 'rw',
@@ -286,8 +287,8 @@ sub _get_record_object {
     });
 
     my $constructor_args = {
-        app_handle => $self->cli->app_handle,
-        handle     => $self->cli->handle,
+        app_handle => $self->app_handle,
+        handle     => $self->handle,
         type       => $args{type},
     };
 
@@ -331,11 +332,11 @@ Returns C<'Prophet::Record'> if no better class name is found.
 sub _type_to_record_class {
     my $self = shift;
     my $type = shift;
-    my $try = $self->cli->app_class . "::Model::" . ucfirst( lc($type) );
+    my $try = $self->app_class . "::Model::" . ucfirst( lc($type) );
     Prophet::App->try_to_require($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
 
-    $try = $self->cli->app_class . "::Record";
+    $try = $self->app_class . "::Record";
     Prophet::App->try_to_require($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
     return 'Prophet::Record';
