@@ -66,6 +66,21 @@ on ['create'] => sub {
         $record->uuid;
 };
 
+on ['delete'] => sub {
+    my $self = shift;
+
+    $self->context->require_uuid;
+    my $record = $self->context->_load_record;
+    my $deleted = $record->delete;
+
+    if ($deleted) {
+        print $record->type . " " . $record->uuid . " deleted.\n";
+    } else {
+        print $record->type . " " . $record->uuid . " could not be deleted.\n";
+    }
+
+};
+
 on qr/()/ => sub {
     my $self = shift;
     $self->fatal_error("The command you ran could not be found. Perhaps running '$0 help' would help?");
