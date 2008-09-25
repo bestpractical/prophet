@@ -329,13 +329,19 @@ Returns C<'Prophet::Record'> if no better class name is found.
 sub _type_to_record_class {
     my $self = shift;
     my $type = shift;
-    my $try = $self->app_class . "::Model::" . ucfirst( lc($type) );
-    Prophet::App->try_to_require($try);    # don't care about fails
+
+    my $app = $self->app_handle;
+    my $app_class = blessed($app);
+
+    my $try = $app_class . "::Model::" . ucfirst( lc($type) );
+    $app->try_to_require($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
 
-    $try = $self->app_class . "::Record";
-    Prophet::App->try_to_require($try);    # don't care about fails
+    $try = $app_class . "::Record";
+    $app->try_to_require($try);    # don't care about fails
     return $try if ( $try->isa('Prophet::Record') );
+
+    require Prophet::Record;
     return 'Prophet::Record';
 }
 
