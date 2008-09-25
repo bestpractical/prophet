@@ -137,6 +137,15 @@ on export => sub {
     $self->cli->handle->export_to( path => $self->context->arg('path') );
 };
 
+on history => sub {
+    my $self = shift;
+
+    $self->context->require_uuid;
+    my $record = $self->context->_load_record;
+    $self->record($record);
+    print $record->history_as_string;
+};
+
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
 on qr/()/ => sub {
