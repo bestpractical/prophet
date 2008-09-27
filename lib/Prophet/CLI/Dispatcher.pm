@@ -238,7 +238,7 @@ on pull => sub {
 
     for my $from ( @from, @bonjour_replicas ) {
         print "Pulling from $from\n";
-        #if ( $self->has_arg('all') || $self->has_arg('local') );
+        #if $self->context->has_arg('all') || $self->context->has_arg('local');
         $self->context->set_arg(from => $from);
         run("merge", $self, @_);
         print "\n";
@@ -258,6 +258,39 @@ on shell => sub {
         cli => $self->cli,
     );
     $shell->run;
+};
+
+on publish => sub {
+    my $self = shift;
+
+    die "Please specify a --to.\n" unless $self->context->has_arg('to');
+    # set the temp directory where we will do all of our work, which will be
+    # published via rsync
+    require File::Temp;
+    $self->context->set_arg(path => File::Temp::tempdir(CLEANUP => 1));
+
+    my $export_html = $self->context->has_arg('html');
+    my $export_replica = $self->context->has_arg('replica');
+
+    # if the user specifies nothing, then publish the replica
+    $export_replica = 1 if !$export_html;
+
+    # if we have the html argument, populate the tempdir with rendered templates
+    $self->export_html() if $export_html;
+
+    # otherwise, do the normal prophet export this replica
+    run("export", $self, @_) if $export_replica;
+
+    # the tempdir is populated, now publish it
+    my $from = $self->context->arg('path');
+    my $to   = $self->context->arg('to');
+
+    $self->publish_dir(
+        from => $from,
+        to   => $to,
+    );
+
+    print "Publish complete.\n";
 };
 
 # catch-all. () makes sure we don't hit the annoying historical feature of
@@ -489,6 +522,93 @@ sub _write_cached_upstream_replicas {
     return $self->handle->_write_cached_upstream_replicas(keys %repos);
 }
 
+sub export_html {
+	my $self = shift;
+    my $path = dir($self->context->arg('path'));
+
+    # if they specify both html and replica, then stick rendered templates
+    # into a subdirectory. if they specify only html, assume they really
+    # want to publish directly into the specified directory
+    if ($self->context->has_arg('replica')){
+        $path = $path->subdir('html');
+        $path->mkpath;
+    }
+
+    $self->render_templates_into($path);
+}
+
+# helper methods for rendering templates
+sub render_templates_into {
+    my $self = shift;
+    my $dir  = shift;
+
+    require Prophet::Server::View;
+    Template::Declare->init(roots => __PACKAGE__->view_classes);
+
+    # allow user to specify a specific type to render
+    my @types = $self->type || $self->types_to_render;
+
+    for my $type (@types) {
+        my $subdir = $dir->subdir($type);
+        $subdir->mkpath;
+
+        my $records = $self->get_collection_object(type => $type);
+        $records->matching(sub { 1 });
+
+        my $fh = $subdir->file('index.html')->openw;
+        print { $fh } Template::Declare->show('record_table' => $records);
+        close $fh;
+
+        for my $record ($records->items) {
+            my $fh = $subdir->file($record->uuid . '.html')->openw;
+            print { $fh } Template::Declare->show('record' => $record);
+        }
+    }
+}
+
+sub should_render_type {
+    my $self = shift;
+    my $type = shift;
+
+    # should we skip all _private types?
+    return 0 if $type eq '_merge_tickets';
+
+    return 1;
+}
+
+sub types_to_render {
+    my $self = shift;
+
+    return grep { $self->should_render_type($_) }
+           @{ $self->handle->list_types };
+}
+
+sub publish_dir {
+    my $self = shift;
+    my %args = @_;
+
+    my @args;
+    push @args, '--recursive';
+    push @args, '--verbose' if $self->context->has_arg('verbose');
+
+    push @args, '--';
+
+    require Path::Class;
+    push @args, Path::Class::dir($args{from})->children;
+
+    push @args, $args{to};
+
+    my $rsync = $ENV{RSYNC} || "rsync";
+    my $ret = system($rsync, @args);
+
+    if ($ret == -1) {
+        die "You must have 'rsync' installed to use this command.
+
+If you have rsync but it's not in your path, set environment variable \$RSYNC to the absolute path of your rsync executable.\n";
+    }
+
+    return $ret;
+}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
