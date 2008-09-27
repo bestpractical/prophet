@@ -489,13 +489,6 @@ sub _write_cached_upstream_replicas {
     return $self->handle->_write_cached_upstream_replicas(keys %repos);
 }
 
-__PACKAGE__->meta->make_immutable;
-no Moose;
-
-
-
-1;
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
