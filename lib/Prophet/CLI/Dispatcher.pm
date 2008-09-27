@@ -199,6 +199,15 @@ on merge => sub {
     $self->print_merge_report($changesets);
 };
 
+on push => sub {
+    my $self = shift;
+
+    die "Please specify a --to.\n" if !$self->context->has_arg('to');
+
+    $self->context->set_arg(from => $self->cli->app_handle->default_replica_type.":file://".$self->cli->handle->fs_root);
+    $self->context->set_arg(db_uuid => $self->cli->handle->db_uuid);
+    run('merge', $self, @_);
+};
 
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
