@@ -146,6 +146,24 @@ on history => sub {
     print $record->history_as_string;
 };
 
+on log => sub {
+    my $self   = shift;
+    my $handle = $self->cli->handle;
+    my $newest = $self->context->arg('last') || $handle->latest_sequence_no;
+    my $start  = $newest - ( $self->context->arg('count') || '20' );
+    $start = 0 if $start < 0;
+
+    $handle->traverse_changesets(
+        after    => $start,
+        callback => sub {
+            my $changeset = shift;
+            $self->changeset_log($changeset);
+        },
+    );
+
+};
+
+
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
 on qr/()/ => sub {
@@ -179,6 +197,30 @@ sub no_config_files {
          . $self->cli->handle->fs_root
          . " or set the PROPHET_APP_CONFIG environment variable.\n\n";
 }
+
+sub changeset_log {
+    my $self      = shift;
+    my $changeset = shift;
+    print $changeset->as_string(
+        change_header => sub {
+            my $change = shift;
+            $self->change_header($change);
+        }
+    );
+}
+
+sub change_header {
+    my $self   = shift;
+    my $change = shift;
+    return
+          " # "
+        . $change->record_type . " "
+        . $self->cli->handle->find_or_create_luid(
+        uuid => $change->record_uuid )
+        . " ("
+        . $change->record_uuid . ")\n";
+}
+
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
