@@ -529,12 +529,14 @@ user specifies --all).
 sub _write_cached_upstream_replicas {
     my $self  = shift;
     my %repos = @_;
-    return $self->handle->_write_cached_upstream_replicas(keys %repos);
+    return $self->cli->handle->_write_cached_upstream_replicas(keys %repos);
 }
 
 sub export_html {
 	my $self = shift;
-    my $path = dir($self->context->arg('path'));
+
+    require Path::Class;
+    my $path = Path::Class::dir($self->context->arg('path'));
 
     # if they specify both html and replica, then stick rendered templates
     # into a subdirectory. if they specify only html, assume they really
@@ -547,22 +549,25 @@ sub export_html {
     $self->render_templates_into($path);
 }
 
+sub view_classes { [ 'Prophet::Server::View' ] }
+
 # helper methods for rendering templates
 sub render_templates_into {
     my $self = shift;
     my $dir  = shift;
 
-    require Prophet::Server::View;
-    Template::Declare->init(roots => __PACKAGE__->view_classes);
+    my $classes = $self->view_classes;
+    Prophet::App->require($_) for @$classes;
+    Template::Declare->init(roots => $classes);
 
     # allow user to specify a specific type to render
-    my @types = $self->type || $self->types_to_render;
+    my @types = $self->types_to_render;
 
     for my $type (@types) {
         my $subdir = $dir->subdir($type);
         $subdir->mkpath;
 
-        my $records = $self->get_collection_object(type => $type);
+        my $records = $self->context->get_collection_object(type => $type);
         $records->matching(sub { 1 });
 
         my $fh = $subdir->file('index.html')->openw;
@@ -590,7 +595,7 @@ sub types_to_render {
     my $self = shift;
 
     return grep { $self->should_render_type($_) }
-           @{ $self->handle->list_types };
+           @{ $self->cli->handle->list_types };
 }
 
 sub publish_dir {
