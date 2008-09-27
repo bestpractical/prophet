@@ -250,6 +250,16 @@ on pull => sub {
     }
 };
 
+on shell => sub {
+    my $self = shift;
+
+    require Prophet::CLI::Shell;
+    my $shell = Prophet::CLI::Shell->new(
+        cli => $self->cli,
+    );
+    $shell->run;
+};
+
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
 on qr/()/ => sub {

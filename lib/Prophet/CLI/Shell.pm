@@ -1,13 +1,14 @@
 #!/usr/bin/env perl
-package Prophet::CLI::Command::Shell;
+package Prophet::CLI::Shell;
 use Moose;
-extends 'Prophet::CLI::Command';
-use Path::Class 'file';
 
 has name => (
     is => 'ro',
     isa => 'Str',
-    default => sub { file($0)->basename },
+    default => sub {
+        require Path::Class;
+        Path::Class::file($0)->basename
+    },
 );
 
 has term => (
@@ -21,12 +22,15 @@ has term => (
     },
 );
 
-    our $HIST = $ENV{PROPHET_HISTFILE}
-            || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
-    our $LEN = $ENV{PROPHET_HISTLEN} || 500;
+has cli => (
+    is       => 'ro',
+    isa      => 'Prophet::CLI',
+    required => 1,
+);
 
-
-
+our $HIST = $ENV{PROPHET_HISTFILE}
+        || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
+our $LEN = $ENV{PROPHET_HISTLEN} || 500;
 
 sub prompt {
     my $self = shift;
@@ -62,6 +66,8 @@ sub run {
 
     print $self->preamble . "\n";
 
+    $self->_read_repl_history();
+
     $self->cli->interactive_shell(1);
     while ( defined(my $cmd = $self->read)) {
         next if $cmd =~ /^\s*$/;
@@ -71,17 +77,9 @@ sub run {
 
         $self->eval($cmd);
     }
-}
 
-# make the REPL history persistent
-around run => sub {
-    my $orig = shift;
-    my $self = shift;
-    $self->_read_repl_history();
-    $self->$orig(@_);
     $self->_write_repl_history();
-};
-
+}
 
 # we use eval here because only some Term::ReadLine subclasses support
 # persistent history. it also seems that ->can doesn't work because of AUTOLOAD
@@ -106,7 +104,6 @@ sub _write_repl_history {
             or warn "Unable to write to shell history file $HIST";
     };
 }
-
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
