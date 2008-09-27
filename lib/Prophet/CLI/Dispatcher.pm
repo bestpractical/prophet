@@ -293,6 +293,16 @@ on publish => sub {
     print "Publish complete.\n";
 };
 
+on search => sub {
+    my $self = shift;
+
+    my $records = $self->context->get_collection_object;
+    my $search_cb = $self->context->get_search_callback;
+    $records->matching($search_cb);
+
+    $self->display_collection($records);
+};
+
 # catch-all. () makes sure we don't hit the annoying historical feature of
 # the empty regex meaning the last-used regex
 on qr/()/ => sub {
@@ -609,6 +619,16 @@ If you have rsync but it's not in your path, set environment variable \$RSYNC to
 
     return $ret;
 }
+
+sub display_collection {
+    my $self = shift;
+    my $items = shift;
+
+    for (sort { $a->luid <=> $b->luid } @$items) {
+        print $_->format_summary . "\n";
+    }
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
