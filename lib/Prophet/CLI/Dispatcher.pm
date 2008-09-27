@@ -38,7 +38,7 @@ on server => sub {
     $server->run;
 };
 
-on create => sub {
+on [ [ 'create', 'new' ] ] => sub {
     my $self   = shift;
     my $record = $self->context->_get_record_object;
 
@@ -60,7 +60,7 @@ on create => sub {
         $record->uuid;
 };
 
-on delete => sub {
+on [ [ 'delete', 'del', 'rm' ] ] => sub {
     my $self = shift;
 
     $self->context->require_uuid;
@@ -75,7 +75,7 @@ on delete => sub {
 
 };
 
-on update => sub {
+on [ [ 'update', 'edit' ] ] => sub {
     my $self = shift;
 
     $self->context->require_uuid;
@@ -96,7 +96,7 @@ on update => sub {
     }
 };
 
-on show => sub {
+on [ [ 'show', 'display' ] ] => sub {
     my $self = shift;
 
     $self->context->require_uuid;
@@ -293,7 +293,7 @@ on publish => sub {
     print "Publish complete.\n";
 };
 
-on search => sub {
+on [ ['search', 'list', 'ls' ] ] => sub {
     my $self = shift;
 
     my $records = $self->context->get_collection_object;
