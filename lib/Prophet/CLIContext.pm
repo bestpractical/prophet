@@ -345,6 +345,25 @@ sub _type_to_record_class {
     return 'Prophet::Record';
 }
 
+sub get_collection_object {
+    my $self = shift;
+    my %args = validate(@_, {
+        type => { default => $self->type },
+    });
+
+    my $record_class = $self->_get_record_object(type => $args{type});
+    my $class = $record_class->collection_class;
+    Prophet::App->require($class);
+
+    my $records = $class->new(
+        app_handle => $self->app_handle,
+        handle     => $self->handle,
+        type       => $args{type} || $self->type,
+    );
+
+    return $records;
+}
+
 =head2 require_uuid
 
 Checks to make sure the uuid attribute is set. Prints an error and dies
