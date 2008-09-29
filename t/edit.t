@@ -82,6 +82,7 @@ editor(sub {
     return << "TEXT";
 name: Clash Man
 weapon: Clash Bomb
+weakness: Air Shooter
 TEXT
 });
 
@@ -99,7 +100,7 @@ my $crash_man2 = load_record('Robot Master', $uuid);
 is($crash_man2->uuid, $uuid, "correct uuid");
 is($crash_man2->prop('name'), 'Clash Man', 'corrected name');
 is($crash_man2->prop('weapon'), 'Clash Bomb', 'corrected weapon');
-is($crash_man2->prop('weakness'), undef, 'weakness deleted');
+is($crash_man2->prop('weakness'), 'Air Shooter', 'weakness');
 cleanup();
 
 # ------------
