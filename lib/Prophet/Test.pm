@@ -24,7 +24,7 @@ diag( "Replicas can be found in" . $REPO_BASE );
 our $EDIT_TEXT = sub { shift };
 do {
     no warnings 'redefine';
-    *Prophet::CLI::Command::edit_text = sub {
+    *Prophet::CLI::edit_text = sub {
         my $self = shift;
         $EDIT_TEXT->(@_);
     };
@@ -383,6 +383,9 @@ Examples:
 
 sub run_command {
     my $output = '';
+
+    local $ENV{IN_PROPHET_TEST_COMMAND} = 1;
+
     open my $handle, '>', \$output;
     Prophet::CLI->new->invoke($handle, @_);
     return $output;
