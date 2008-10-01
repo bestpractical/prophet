@@ -1,6 +1,7 @@
 package Prophet::Resolver::FromResolutionDB;
 use Moose;
 use Prophet::Change;
+use Prophet::Collection;
 use JSON;
 use Digest::SHA1 'sha1_hex';
 extends 'Prophet::Resolver';
