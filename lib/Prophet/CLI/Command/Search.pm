@@ -17,7 +17,7 @@ has 'sort_routine' => (
                 my $records = shift;
             return (sort { $a->luid <=> $b->luid } @$records);
         } },
-    documentation => 'A subroutine which takes a hashref to a list of records and returns them sorted in some way.',
+    documentation => 'A subroutine which takes a arrayref to a list of records and returns them sorted in some way.',
 );
 
 sub default_match { 1 }
