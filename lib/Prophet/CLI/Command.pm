@@ -169,6 +169,26 @@ sub edit_props {
     return \%props;
 }
 
+=head2 prompt_Yn question
+
+Asks user the question and returns true if answer was positive or false otherwise.
+Default answer is 'Yes'.
+
+=cut
+
+sub prompt_Yn {
+    my $self = shift;
+    my $msg = shift;
+    print "$msg [Y/n]: ";
+
+    my $a = <>;
+    chomp $a;
+
+    return 1 if $a =~ /^(|y|yes)$/i;
+    return 0;
+}
+
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
