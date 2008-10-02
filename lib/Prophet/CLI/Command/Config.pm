@@ -15,7 +15,7 @@ sub run {
     }
     for my $file (@files) {
         print "Config files:\n\n";
-            print "$file\n";
+        print "$file\n";
     }
     print "\nYour configuration:\n\n";
     for my $item ($config->list) {
@@ -25,6 +25,7 @@ sub run {
 }
 
 sub no_config_files {
+    my $self = shift;
     return "No configuration files found. "
          . " Either create a file called 'prophetrc' inside of "
          . $self->handle->fs_root
