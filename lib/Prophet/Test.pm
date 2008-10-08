@@ -113,7 +113,7 @@ Runs the script, checking that it didn't error out.
 sub run_ok {
     my $script = shift;
     my $args   = shift if ( ref $_[0] eq 'ARRAY' );
-    my $msg    = shift if (@_);
+    my $msg    = (@_) ? shift : '';
 
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
