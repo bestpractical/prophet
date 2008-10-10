@@ -9,7 +9,7 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-build_requires('Test::Exception');
+build_requires('Test::Exception' => '0.26' );
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
