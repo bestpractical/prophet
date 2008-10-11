@@ -1,0 +1,112 @@
+<Sartak> Prophet has the concept of a database and a replica
+<Sartak> a database is the global state
+<Sartak> so jesse and I both have copies of the sd buglist, that's the same database
+<Sartak> you can pull to and from anyone with the same database uuid. you can pull from someone with a different database uuid if you say --force
+<Sartak> but that may get sketchy
+<Sartak> replicas are an individual instance of the database
+<Sartak> however, there can be multiple copies of the same replica
+<Sartak> I have on my laptop a replica of the sd buglist
+<Sartak> and on my webserver (sartak.org/misc/sd) I have the same replica
+<Sartak> it's the same instance, just different copies. you could have a copy on a thumbdrive or whatever
+<nothingmuch> *nod*
+<Sartak> it's a fatal error if you try to merge two replicas with the same replica uuid
+<Sartak> you can only copy the replica wholesale (we call it "export")
+<Sartak> export keeps the same replica uuid
+<Sartak> if you merge between a replica and the empty replica, that is how you create a replica with the same database uuid and different replica uuid
+<Sartak> so to get a new replica (say you want to start tracking sd's bugs) you must do a merge. "sd pull --from url" when you have an empty database will do exactly this.
+<nothingmuch> so in the abstract
+<nothingmuch> replica is a set of record UUIDs
+<nothingmuch> and record data
+<nothingmuch> and record history?
+<Sartak> I'd say more that a replica is an ordered collection of changesets
+<nothingmuch> or is it more like darcs (the set of changes)
+<Sartak> we store the current state of each record for efficiency :)
+<Sartak> but when we merge we don't look at that region of the replica at all
+<nothingmuch> the changesets are not mutable
+<nothingmuch> (i'm guessing ;-)
+<Sartak> correct
+<nothingmuch> one common technique is to cache the tip of a shadow paging view
+<nothingmuch> but if you completely zap the record set you can always reconstruct it
+<Sartak> right!
+<Sartak> okay, so we're definitely more about changesets than records
+<Sartak> onto conflicts
+<Sartak> there are like four possible conflicts
+<Sartak> two changesets that create the same record uuid (rare, I think this is only when we have that astronomically improbable uuid collision)
+<Sartak> a changeset that deletes a record we don't have
+<Sartak> a changeset that updates a record we don't have
+<Sartak> a changeset that updates a record, but the old value isn't our current value
+<nothingmuch> "value" being the whoe record?
+<nothingmuch> or a cell?
+<Sartak> a property
+<Sartak> a property is a hash key/value :)
+<nothingmuch> *nod* but if the key is different then it's more the "we don't have" case, no?
+<Sartak> "we have too much"
+<Sartak> you create a record, I pull it
+<Sartak> you set its name property to yuval
+<Sartak> I set its name property to shawn
+<Sartak> I pull from you
+<nothingmuch> oh
+<nothingmuch> record == one key value pair?
+<Sartak> a record is a hash
+<nothingmuch> i thought record == one set of key value pairs
+<Sartak> it's a set, right
+<Sartak> when I pull from you, I get a "change uuid BLAH's ircer property from undef to yuval"
+<Sartak> but that's a conflict because my BLAH's ircer is shawn
+<nothingmuch> *nod*
+<Sartak> it's a really simple system
+<nothingmuch> yeah
+<nothingmuch> so how does all the self healing mumbo jumbo work ;-)
+<Sartak> all I know about that is, when I pull from you
+<Sartak> before I pull any changesets
+<Sartak> I pull all of your resolutions
+<nothingmuch> resolution is a type of changeset?
+<Sartak> yes
+<Sartak> a special type of changeset
+<nothingmuch> *nod*
+<Sartak> (its is_resolution attribute is 1! :))
+<nothingmuch> are changesets dependent?
+<Sartak> nope
+<nothingmuch> not even theory of patches dependent?
+<Sartak> nope
+
+clarification: they *are* dependent in that when you pull changeset X from somebody, you will have changesets 1, 2, ..., X-1 already applied. but there are no explicit dependencies.
+
+<Sartak> they have a numeric id
+<nothingmuch> k
+<Sartak> resolutions are so weird that we have to keep a second replica inside your real replica just to keep track of everything
+<nothingmuch> aren't they just a CAS of conflicts -> changesets?
+<Sartak> theoretically? probably
+<Sartak> this is really shaky territory for me :)
+<nothingmuch> ok
+<Sartak> if you ask obra, ask him in email or irc so I can learn too :)
+<nothingmuch> so the self healing magic is that if you are going to have a conflict
+<nothingmuch> and the same identical conflict already has a resolution
+<nothingmuch> then you get the resolution too
+<nothingmuch> ?
+<Sartak> yes
+<Sartak> instead of one resolution
+<Sartak> there can actually be many different resolutions
+<Sartak> we choose whichever one occurred most
+<Sartak> okay
+<nothingmuch> how are conflicts compared for equality?
+<nothingmuch> just on data? or also on metadata?
+<Sartak> now I suddenly know a lot more about conflict resolution ;)
+<Sartak> looks like just data
+<Sartak> http://code.bestpractical.com/bps-public/Prophet/trunk/lib/Prophet/Resolver/FromResolutionDB.pm
+<Sartak> it's a page of code
+<Sartak> the conflict resolution engine is pluggable. when you use the command line, we prompt by default, though that can be changed
+<nothingmuch> so resolutions are retargetable to new data
+<nothingmuch> with the same type of conflict?
+<nothingmuch> e.g. if we have two human objects
+<Sartak> I hope not
+ * nothingmuch too ;-)
+<Sartak> I'm pretty sure the resolution knows which exactly changesets it's resolving
+<nothingmuch> ah, ok
+<nothingmuch> so the self healing buzz is mostly about which resolution to choose?
+<Sartak> yep
+<nothingmuch> k
+ * nothingmuch is much calmer now
+<nothingmuch> ;-)
+<Sartak> I'm also very happy it's not as complex as I feared
+<Sartak> this is all pretty sensible
+
