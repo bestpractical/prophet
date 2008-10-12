@@ -12,6 +12,8 @@ sub run {
     my $conflict           = shift;
     my $resdb              = shift;    # XXX: we want diffrent collection actually now
 
+    require Prophet::Collection;
+
     my $res = Prophet::Collection->new(
         handle => $resdb,
         # XXX TODO PULL THIS TYPE FROM A CONSTANT
