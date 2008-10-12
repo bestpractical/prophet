@@ -218,8 +218,14 @@ sub create {
     $self->default_props($args{'props'});
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) or return undef;
+    $self->_create_record( props => $args{props}, uuid => $uuid);
+}
 
-    $self->uuid($uuid);
+sub _create_record {
+    my $self = shift;
+    my %args = validate( @_, { props => 1, uuid => 1 } );
+
+    $self->uuid($args{uuid});
 
     $self->handle->create_record(
         props => $args{'props'},
@@ -228,7 +234,9 @@ sub create {
     );
 
     return $self->uuid;
+
 }
+
 
 =head2 load { uuid => $UUID } or { luid => $UUID }
 
