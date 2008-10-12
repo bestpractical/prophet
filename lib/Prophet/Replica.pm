@@ -58,6 +58,12 @@ has app_handle => (
     predicate => 'has_app_handle',
 );
 
+has after_initialize => ( 
+    is => 'ro',
+    isa => 'CodeRef',
+    default => sub {1 }
+    );
+
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
 =head1 NAME
