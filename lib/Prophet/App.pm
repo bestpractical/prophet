@@ -11,7 +11,7 @@ has handle => (
         my $self = shift;
         my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self});
+        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self, after_initialize => sub { $self->set_database_defaults} });
     },
 );
 
@@ -119,6 +119,14 @@ sub already_required {
     my $path =  join('/', split(/::/,$class)).".pm";
     return ( $INC{$path} ? 1 : 0);
 }
+
+sub setting {
+    my $self = shift;
+    my $uuid = shift;
+    return Prophet::DatabaseSetting->new( handle => $self->handle, uuid => $uuid);
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

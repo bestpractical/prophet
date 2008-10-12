@@ -210,7 +210,7 @@ The file is sorted in ascending order by revision id.
 
 =head2 BUILD
 
-Open a connection to the SVN source identified by C<$self->url>.
+Open a connection to the prophet replica source identified by C<$self->url>.
 
 =cut
 
@@ -278,7 +278,7 @@ sub _probe_or_create_db {
         die "We can only create file: based prophet replicas. It looks like you're trying to create " . $self->url;
     } else {
         die "Prophet couldn't find a replica at \"".$self->url."\"\n\n".
-            "Please check the number and dial again.\n";
+            "Please check the URL and try again.\n";
         
     }
 
@@ -306,6 +306,7 @@ sub initialize {
         path    => 'replica-version',
         content => '1'
     );
+    $self->after_initialize->($self);
 }
 
 sub latest_sequence_no {
