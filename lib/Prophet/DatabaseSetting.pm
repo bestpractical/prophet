@@ -15,14 +15,15 @@ has label => (
 
 
 sub new { 
-        shift->SUPER::new( type => '__prophet_db_settings', @_);
-}
+        my $self = shift->SUPER::new( type => '__prophet_db_settings', @_);
+
+    $self->initialize unless ($self->handle->record_exists(uuid => $self->uuid, type => $self->type) );
+    return $self;
+    }
 
 
 sub initialize {
     my $self = shift;
-    warn "My default is ".$self->default;
-    warn "My uuid is ". $self->uuid;
     $self->set($self->default);
 }
 
@@ -47,7 +48,11 @@ sub set {
 
 sub get {
     my $self = shift;
-    my $entry = from_json($self->prop('content') , { utf8 => 1 });
+
+
+    $self->initialize() unless $self->load(uuid => $self->uuid);
+    my $content = $self->prop('content');
+    my $entry = from_json($content , { utf8 => 1 });
     return $entry;
     # XXX TODO do we really want to just get the first one?
 

@@ -134,20 +134,21 @@ sub set_database_defaults {
 
 sub setting {
     my $self = shift;
-    my %args = validate( @_, { uuid => 0, default => 1, label => 0 } );
+    my %args = validate( @_, { uuid => 0, default => 0, label => 0 } );
     require Prophet::DatabaseSetting;
 
-    my $uuid;
+    my  ($uuid, $default);
 
     if ( $args{uuid} ) {
         $uuid = $args{'uuid'};
+        $default = $args{'default'};
     } elsif ( $args{'label'} ) {
-        $uuid = $self->database_settings->{ $args{'label'} };
+        ($uuid, $default) = @{ $self->database_settings->{ $args{'label'} }};
     }
     return Prophet::DatabaseSetting->new(
         handle  => $self->handle,
         uuid    => $uuid,
-        default => $args{default},
+        default => $default,
         label   => $args{label}
     );
 

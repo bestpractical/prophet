@@ -530,7 +530,6 @@ sub _record_cas_filename {
 
     my ($seq,$key) = $self->_read_record_index_entry( type => $args{'type'}, uuid => $args{'uuid'});
 
-
     return undef unless ($key and ($key ne '0'x40));
     # XXX: deserialize the changeset content from the cas with $key
     my $casfile = file(
