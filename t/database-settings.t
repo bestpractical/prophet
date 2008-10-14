@@ -53,7 +53,7 @@ as_alice {
     can_ok($status_list, 'get');
 
     # set list of acceptable components
-    $comp_list->set(qw/core ui docs/); 
+    $comp_list->set([qw/core ui docs/]); 
 
 
     # set default values for component
@@ -64,17 +64,17 @@ as_alice {
     $status_list->set('new','open','closed'); 
 
     # enumerate statuses
-    is_deeply([$status_list->get], [qw/new open closed/]);
+    is_deeply($status_list->get, [qw/new open closed/]);
 
     $status_list->set('new', 'closed');
 
-    is_deeply([$status_list->get], [qw/new closed/]);
+    is_deeply($status_list->get, [qw/new closed/]);
 
     # enumerate components
-    is_deeply([$t->component_list->get], [qw/core ui docs/]);
+    is_deeply($t->component_list->get, [qw/core ui docs/]);
     
     # enumerate default component
-    is($t->default_component->get, 'core', "The thing we got was core");
+    is_deeply($t->default_component->get, ['core'], "The thing we got was core");
   
    
     # just for good measure, create a ticket
@@ -99,17 +99,17 @@ as_bob {
     my $t = MyApp::Model::Task->new(handle => $bob_cli->app_handle->handle);
     
     # enumerate statuses
-    is_deeply([$t->status_list->get], [qw/new closed/]);
+    is_deeply($t->status_list->get, [qw/new closed/]);
 
     # enumerate components
-    is_deeply([$t->component_list->get], [qw/core ui docs/]);
+    is_deeply($t->component_list->get, [qw/core ui docs/]);
     
     # enumerate default component
-    is($t->default_component->get, 'core', "The thing we got was core");
+    is_deeply($t->default_component->get, ['core'], "The thing we got was core");
  
     $t->default_component->set('ui');
 
-    is($t->default_component->get, 'ui', "The thing we got was core");
+    is_deeply($t->default_component->get, ['ui'], "The thing we got was core");
 };
 
 as_alice {
@@ -118,9 +118,9 @@ as_alice {
     isa_ok( $cxn, 'Prophet::Replica', "Got the cxn " . $cxn->fs_root );
     
     my $t = MyApp::Model::Task->new(handle => $alice_cli->app_handle->handle);
-    is($t->default_component->get, 'core', "The thing we got was core");
+    is_deeply($t->default_component->get, ['core'], "The thing we got was core");
     run_ok( 'prophet', ['pull', '--from', "file://".$bob_cli->app_handle->handle->fs_root, '--force'] );
-    is($t->default_component->get, 'ui', "The thing we got was core");
+    is_deeply($t->default_component->get, ['ui'], "The thing we got was core");
 
     #   add a status
     $t->status_list->set(qw/new open stalled resolved/);
@@ -142,10 +142,10 @@ as_bob {
     my $t = MyApp::Model::Task->new(handle => $bob_cli->app_handle->handle);
     TODO: { 
     local $TODO = "we don't resolve config conflicts yet";
-    is_deeply([$t->status_list->get], [qw[new open stalled resolved rejected]]);
+    is_deeply($t->status_list->get, [qw[new open stalled resolved rejected]]);
 };
     # current behaviour
-    is_deeply([$t->status_list->get], [qw[new open resolved rejected]]);
+    is_deeply($t->status_list->get, [qw[new open resolved rejected]]);
 };
 
 as_alice {
@@ -156,10 +156,10 @@ as_alice {
     my $t = MyApp::Model::Task->new(handle => $bob_cli->app_handle->handle);
     TODO: { 
     local $TODO = "we don't resolve config conflicts yet";
-    is_deeply([$t->status_list->get], [qw[new open stalled resolved rejected]]);
+    is_deeply($t->status_list->get, [qw[new open stalled resolved rejected]]);
 };
     # current behaviour
-    is_deeply([$t->status_list->get], [qw[new open resolved rejected]]);
+    is_deeply($t->status_list->get, [qw[new open resolved rejected]]);
 };
 
 1;

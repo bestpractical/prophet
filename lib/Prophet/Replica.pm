@@ -61,7 +61,7 @@ has app_handle => (
 has after_initialize => ( 
     is => 'ro',
     isa => 'CodeRef',
-    default => sub {1 }
+    default => sub { sub {1} } # default returns a coderef
     );
 
 our $MERGETICKET_METATYPE = '_merge_tickets';

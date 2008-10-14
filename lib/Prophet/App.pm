@@ -2,6 +2,7 @@ package Prophet::App;
 use Moose;
 use Path::Class;
 use Prophet::Config;
+use Params::Validate qw/validate/;
 
 has handle => (
     is      => 'rw',
@@ -120,10 +121,14 @@ sub already_required {
     return ( $INC{$path} ? 1 : 0);
 }
 
+
+sub set_database_defaults { 1; }
+
 sub setting {
     my $self = shift;
-    my $uuid = shift;
-    return Prophet::DatabaseSetting->new( handle => $self->handle, uuid => $uuid);
+    my %args = validate(@_, { uuid => 1, default => 1, label => 0 });
+    require Prophet::DatabaseSetting;
+    return Prophet::DatabaseSetting->new( handle => $self->handle, uuid => $args{uuid}, default => $args{default}, label => $args{label});
 }
 
 
