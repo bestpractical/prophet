@@ -122,16 +122,38 @@ sub already_required {
 }
 
 
-sub set_database_defaults { 1; }
+sub set_database_defaults {
+    my $self = shift;
+    my $settings = $self->database_settings;
+    for my $name ( keys %$settings ) {
+        my @metadata = @{$settings->{$name}};
+        my $s = $self->setting(  label => $name, uuid => (shift @metadata), default => [@metadata]);
+        $s->initialize;
+    }
+}
 
 sub setting {
     my $self = shift;
-    my %args = validate(@_, { uuid => 1, default => 1, label => 0 });
+    my %args = validate( @_, { uuid => 0, default => 1, label => 0 } );
     require Prophet::DatabaseSetting;
-    return Prophet::DatabaseSetting->new( handle => $self->handle, uuid => $args{uuid}, default => $args{default}, label => $args{label});
+
+    my $uuid;
+
+    if ( $args{uuid} ) {
+        $uuid = $args{'uuid'};
+    } elsif ( $args{'label'} ) {
+        $uuid = $self->database_settings->{ $args{'label'} };
+    }
+    return Prophet::DatabaseSetting->new(
+        handle  => $self->handle,
+        uuid    => $uuid,
+        default => $args{default},
+        label   => $args{label}
+    );
+
 }
 
-
+sub database_settings {} # XXX wants a better name
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
