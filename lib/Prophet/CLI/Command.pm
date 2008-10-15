@@ -115,7 +115,7 @@ sub edit_hash {
 
     # parse the output
     my $filtered = {};
-    foreach my $line (split "\n", $output) {
+    for my $line (split "\n", $output) {
         if ($line =~ m/^([^:]+):\s*(.*)$/) {
             my $prop = $1;
             my $val = $2;
@@ -126,7 +126,7 @@ sub edit_hash {
     no warnings 'uninitialized';
 
     # if a key is deleted intentionally, set its value to ''
-    foreach my $prop (keys %$hash) {
+    for my $prop (keys %$hash) {
         if (!exists $filtered->{$prop} and $prop =~ !/$do_not_edit/) {
             $filtered->{$prop} = '';
         }

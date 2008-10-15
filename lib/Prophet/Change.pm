@@ -183,7 +183,7 @@ sub new_from_hashref {
     my $hashref = shift;
     my $self    = $class->new(
         { record_type => $hashref->{'record_type'}, record_uuid => $uuid, change_type => $hashref->{'change_type'} } );
-    foreach my $prop ( keys %{ $hashref->{'prop_changes'} } ) {
+    for my $prop ( keys %{ $hashref->{'prop_changes'} } ) {
         $self->add_prop_change(
             name => $prop,
             old  => $hashref->{'prop_changes'}->{$prop}->{'old_value'},

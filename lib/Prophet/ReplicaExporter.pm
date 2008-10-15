@@ -99,7 +99,7 @@ sub export_changesets {
     my $self = shift;
 
     my $cs_file = $self->target_replica->_get_changeset_index_handle();
-    foreach my $changeset (
+    for my $changeset (
         @{ $self->source_replica->fetch_changesets( after => 0 ) } )
     {
         $self->target_replica->_write_changeset(

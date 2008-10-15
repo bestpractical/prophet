@@ -424,7 +424,7 @@ sub remove_redundant_data {
     my ( $self, $changeset ) = @_;
 
     my @new_changes;
-    foreach my $change ($changeset->changes) {
+    for my $change ($changeset->changes) {
             # when would we run into resolution records in a nonresdb? XXX
             next if ($change->record_type eq '_prophet_resolution' && !$self->is_resdb);
 

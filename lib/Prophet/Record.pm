@@ -615,7 +615,7 @@ sub _parse_format_summary {
     my $props = $self->get_props;
 
     my @out;
-    foreach my $atom ($self->_atomize_summary_format) {
+    for my $atom ($self->_atomize_summary_format) {
         my %atom_data;
         my ($format, $prop, $value);
 

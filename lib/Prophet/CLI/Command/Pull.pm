@@ -56,7 +56,7 @@ sub find_bonjour_replicas {
             print "Probing for local database replicas with Bonjour\n";
             my $res = Net::Bonjour->new('prophet');
             $res->discover;
-            foreach my $entry ( $res->entries ) {
+            for my $entry ( $res->entries ) {
                 if ( $entry->name eq $self->arg('db_uuid') ) {
                     print "Found a database replica on " . $entry->hostname."\n";
                     my $uri = URI->new();

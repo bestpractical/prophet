@@ -178,7 +178,7 @@ sub new_from_hashref {
     my $hashref = shift;
     my $self    = $class->new( { map { $_ => $hashref->{$_} } @SERIALIZE_PROPS } );
 
-    foreach my $change ( keys %{ $hashref->{changes} } ) {
+    for my $change ( keys %{ $hashref->{changes} } ) {
         $self->add_change( change => Prophet::Change->new_from_hashref( $change => $hashref->{changes}->{$change} ) );
     }
     return $self;

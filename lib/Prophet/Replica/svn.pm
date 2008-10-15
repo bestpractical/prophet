@@ -342,7 +342,7 @@ sub _set_record_props {
     my %args = validate( @_, { uuid => 1, props => 1, type => 1 } );
 
     my $file = $self->_file_for( uuid => $args{uuid}, type => $args{type} );
-    foreach my $prop ( keys %{ $args{'props'} } ) {
+    for my $prop ( keys %{ $args{'props'} } ) {
         eval {
             local $SIG{__DIE__} = 'DEFAULT';
             $self->current_edit->root->change_node_prop( $file, $prop, $args{'props'}->{$prop}, undef )

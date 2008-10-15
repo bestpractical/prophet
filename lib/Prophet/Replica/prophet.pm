@@ -671,7 +671,7 @@ sub changesets_for_record {
     my $changeset_index = $self->_read_changeset_index();
 
     my @changesets;
-    foreach my $item (@record_index) {
+    for my $item (@record_index) {
         my $sequence = $item->[0];
         push @changesets, $self->_get_changeset_index_entry( sequence_no => $sequence, index_file => $changeset_index);
     }
@@ -886,7 +886,7 @@ sub create_record {
         }
     );
 
-    foreach my $name ( keys %{ $args{props} } ) {
+    for my $name ( keys %{ $args{props} } ) {
         $change->add_prop_change(
             name => $name,
             old  => undef,
@@ -933,7 +933,7 @@ sub set_record_props {
         type => $args{'type'}
     );
     my %new_props = %$old_props;
-    foreach my $prop ( keys %{ $args{props} } ) {
+    for my $prop ( keys %{ $args{props} } ) {
         if ( !defined $args{props}->{$prop} ) {
             delete $new_props{$prop};
         } else {
@@ -953,7 +953,7 @@ sub set_record_props {
         }
     );
 
-    foreach my $name ( keys %{ $args{props} } ) {
+    for my $name ( keys %{ $args{props} } ) {
         $change->add_prop_change(
             name => $name,
             old  => $old_props->{$name},
