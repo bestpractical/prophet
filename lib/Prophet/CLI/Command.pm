@@ -79,7 +79,7 @@ No validation is done on the input or output.
 If the optional ordering argument is specified, hash keys will be presented
 in that order (with unspecified elements following) for edit.
 
-If the record class for the current type defines a C<props_not_to_edit>
+If the record class for the current type defines a C<immutable_props>
 routine, those props will not be presented for editing.
 
 False values are not returned unless a prop is removed from the output.
@@ -93,7 +93,7 @@ sub edit_hash {
     my $hash = $args{'hash'};
     my @ordering = @{ $args{'ordering'} || [] };
     my $record = $self->_get_record_object;
-    my $do_not_edit = $record->can('props_not_to_edit') ? $record->props_not_to_edit : '';
+    my @do_not_edit = $record->can('immutable_props') ? $record->immutable_props : ();
 
     if (@ordering) {
         # add any keys not in @ordering to the end of it
@@ -105,7 +105,8 @@ sub edit_hash {
     }
 
     # filter out props we don't want to present for editing
-    @ordering = grep { !/$do_not_edit/ } @ordering;
+    my %do_not_edit = map { $_ => 1 } @do_not_edit;
+    @ordering = grep { !$do_not_edit{$_}  } @ordering;
 
     my $input = join "\n", map { "$_: $hash->{$_}" } @ordering;
 
@@ -127,7 +128,7 @@ sub edit_hash {
 
     # if a key is deleted intentionally, set its value to ''
     for my $prop (keys %$hash) {
-        if (!exists $filtered->{$prop} and $prop =~ !/$do_not_edit/) {
+        if (!exists $filtered->{$prop} and ! exists $do_not_edit{$prop}) {
             $filtered->{$prop} = '';
         }
     }
