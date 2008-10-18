@@ -20,6 +20,22 @@ has 'sort_routine' => (
     documentation => 'A subroutine which takes a arrayref to a list of records and returns them sorted in some way.',
 );
 
+
+has group_routine => (
+    is       => 'rw',
+    isa      => 'CodeRef',
+    required => 0,
+    default  => sub {
+        sub {
+            my $records = shift;
+            return [ { label => '', records => $records } ];
+            }
+    },
+    documentation =>
+        'A subroutine which takes an arrayref to a list of records and returns an array of hashrefs  { label => $label, records => \@array}'
+);
+
+
 sub default_match { 1 }
 
 sub get_search_callback {
@@ -45,7 +61,7 @@ sub get_search_callback {
                 my $ok = 0;
                 for my $check (@{ $prop_checks{$prop} }) {
                     $ok = 1
-                        if $self->cmp_ok($check->{value}, $check->{cmp}, $got);
+                        if $self->_compare($check->{value}, $check->{cmp}, $got);
                 }
                 return 0 if !$ok;
             }
@@ -71,7 +87,7 @@ sub get_search_callback {
     };
 }
 
-sub cmp_ok {
+sub _compare {
     my $self = shift;
     my ($expected, $cmp, $got) = @_;
 
@@ -112,13 +128,68 @@ as the format.
 =cut
 
 sub display_terminal {
-    my $self = shift;
+    my $self    = shift;
     my $records = shift;
 
-    my $items = $records->items;
-    for ( $self->sort_routine->( $items) ) {
+    my $groups = $self->group_routine->( [$records->items] );
+
+    foreach my $group ( @{$groups} ) {
+        if ( $group->{label} ) {
+            print "\n"
+                . $group->{label} 
+                . "\n" 
+                . ("=" x ( length $group->{label} ))
+                . "\n\n";
+        }
+
+        for ( $self->sort_routine->( $group->{records} ) ) {
             print $_->format_summary . "\n";
+        }
     }
+
+}
+
+=head2 sort_by_prop $prop, $records
+
+Given a property name and an arrayref to a list of records, returns a list of the records
+sorted by their C<created> property, in ascending order.
+
+=cut
+
+sub sort_by_prop {
+    my ($self, $prop, $records) = @_;
+
+    return (sort { $a->prop($prop) cmp $b->prop($prop) } @{$records});
+}
+
+
+
+=head2 group_by_prop $prop => $records
+
+Given a property name and an arrayref to a list of records, returns a reference to a list of hashes of the form:
+
+    { label => $label,
+      records => \@records }
+      
+=cut
+
+sub group_by_prop {
+    my $self    = shift;
+    my $prop    = shift;
+    my $records = shift;
+
+    my $results = {};
+
+    for my $record (@$records) {
+        push @{ $results->{ $record->prop($prop) } }, $record;
+    }
+
+    return [
+
+        map { { label => $_, records => $results->{$_} } } keys %$results
+
+    ];
+
 }
 
 __PACKAGE__->meta->make_immutable;
