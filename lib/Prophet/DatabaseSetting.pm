@@ -46,12 +46,19 @@ sub set {
 }
 
 
+
+sub get_raw {
+    my $self = shift;
+    my $content = $self->prop('content');
+    return $content;
+}
+
 sub get {
     my $self = shift;
 
-
     $self->initialize() unless $self->load(uuid => $self->uuid);
-    my $content = $self->prop('content');
+    my $content = $self->get_raw;
+
     my $entry = from_json($content , { utf8 => 1 });
     return $entry;
     # XXX TODO do we really want to just get the first one?
