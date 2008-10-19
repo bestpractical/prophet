@@ -134,7 +134,8 @@ sub display_terminal {
     my $groups = $self->group_routine->( [$records->items] );
 
     foreach my $group ( @{$groups} ) {
-        if ( $group->{label} ) {
+        $group->{label}  ||= 'none';
+        if ( $#{$groups} &&  $group->{label} ) {
             print "\n"
                 . $group->{label} 
                 . "\n" 
@@ -181,7 +182,7 @@ sub group_by_prop {
     my $results = {};
 
     for my $record (@$records) {
-        push @{ $results->{ $record->prop($prop) } }, $record;
+        push @{ $results->{ ( $record->prop($prop) || '') } }, $record;
     }
 
     return [
