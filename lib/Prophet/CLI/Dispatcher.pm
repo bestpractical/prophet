@@ -47,11 +47,13 @@ sub command {
     return sub {
         my $self = shift;
         my $class = $self->class_name($name);
+        Prophet::App->require($class);
         $class->new(cli => $self->cli)->run;
     };
 }
 
 sub class_name {
+    my $self = shift;
     my $command = shift;
     return "Prophet::CLI::Command::$command";
 }

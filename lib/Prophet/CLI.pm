@@ -96,7 +96,7 @@ sub run_one_command {
 
     die "The command you ran, '$command', could not be found. Perhaps running '$0 help' would help?\n" unless $dispatch->has_matches;
 
-    $dispatch->run;
+    $dispatch->run($dispatcher);
 }
 
 =head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY
