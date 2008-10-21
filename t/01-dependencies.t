@@ -14,7 +14,7 @@ use Test::More;
 use File::Find;
 eval 'use Module::CoreList';
 if ($@) { plan skip_all => 'Module::CoreList not installed' }
-if (! -d 'inc/.author') { plan skip_all => 'These tests only run for module auhtors'}
+if (! -d 'inc/.author') { plan skip_all => 'These tests only run for module authors'}
 
 plan 'no_plan';
 

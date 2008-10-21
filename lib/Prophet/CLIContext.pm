@@ -102,7 +102,7 @@ sub mutate_attributes {
     $self->clear_props();
 
     if ( my $cmd_args = $args{args} ) {
-        foreach my $arg ( keys %$cmd_args ) {
+        for my $arg ( keys %$cmd_args ) {
             if ( $arg eq 'uuid' ) {
                 $self->uuid( $cmd_args->{$arg} );
             }
@@ -110,7 +110,7 @@ sub mutate_attributes {
         }
     }
     if ( my $props = $args{props} ) {
-        foreach my $prop (@$props) {
+        for my $prop (@$props) {
             my $key   = $prop->{prop};
             my $value = $prop->{value};
             $self->set_prop( $key => $value );

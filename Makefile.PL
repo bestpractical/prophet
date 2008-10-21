@@ -9,13 +9,13 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-build_requires('Test::Exception');
+build_requires('Test::Exception' => '0.26' );
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');
 requires('JSON' => '2.00');
-requires('JSON::XS' => '2.01');
+requires('JSON::XS' => '2.2222');
 requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');

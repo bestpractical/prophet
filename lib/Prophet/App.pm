@@ -2,6 +2,7 @@ package Prophet::App;
 use Moose;
 use Path::Class;
 use Prophet::Config;
+use Params::Validate qw/validate/;
 
 has handle => (
     is      => 'rw',
@@ -11,7 +12,7 @@ has handle => (
         my $self = shift;
         my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self});
+        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self, after_initialize => sub { $self->set_database_defaults} });
     },
 );
 
@@ -119,6 +120,41 @@ sub already_required {
     my $path =  join('/', split(/::/,$class)).".pm";
     return ( $INC{$path} ? 1 : 0);
 }
+
+
+sub set_database_defaults {
+    my $self = shift;
+    my $settings = $self->database_settings;
+    for my $name ( keys %$settings ) {
+        my @metadata = @{$settings->{$name}};
+        my $s = $self->setting(  label => $name, uuid => (shift @metadata), default => [@metadata]);
+        $s->initialize;
+    }
+}
+
+sub setting {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 0, default => 0, label => 0 } );
+    require Prophet::DatabaseSetting;
+
+    my  ($uuid, $default);
+
+    if ( $args{uuid} ) {
+        $uuid = $args{'uuid'};
+        $default = $args{'default'};
+    } elsif ( $args{'label'} ) {
+        ($uuid, $default) = @{ $self->database_settings->{ $args{'label'} }};
+    }
+    return Prophet::DatabaseSetting->new(
+        handle  => $self->handle,
+        uuid    => $uuid,
+        default => $default,
+        label   => $args{label}
+    );
+
+}
+
+sub database_settings {} # XXX wants a better name
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

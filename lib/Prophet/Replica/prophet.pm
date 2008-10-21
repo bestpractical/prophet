@@ -210,7 +210,7 @@ The file is sorted in ascending order by revision id.
 
 =head2 BUILD
 
-Open a connection to the SVN source identified by C<$self->url>.
+Open a connection to the prophet replica source identified by C<$self->url>.
 
 =cut
 
@@ -278,7 +278,7 @@ sub _probe_or_create_db {
         die "We can only create file: based prophet replicas. It looks like you're trying to create " . $self->url;
     } else {
         die "Prophet couldn't find a replica at \"".$self->url."\"\n\n".
-            "Please check the number and dial again.\n";
+            "Please check the URL and try again.\n";
         
     }
 
@@ -306,6 +306,7 @@ sub initialize {
         path    => 'replica-version',
         content => '1'
     );
+    $self->after_initialize->($self);
 }
 
 sub latest_sequence_no {
@@ -529,7 +530,6 @@ sub _record_cas_filename {
 
     my ($seq,$key) = $self->_read_record_index_entry( type => $args{'type'}, uuid => $args{'uuid'});
 
-
     return undef unless ($key and ($key ne '0'x40));
     # XXX: deserialize the changeset content from the cas with $key
     my $casfile = file(
@@ -671,7 +671,7 @@ sub changesets_for_record {
     my $changeset_index = $self->_read_changeset_index();
 
     my @changesets;
-    foreach my $item (@record_index) {
+    for my $item (@record_index) {
         my $sequence = $item->[0];
         push @changesets, $self->_get_changeset_index_entry( sequence_no => $sequence, index_file => $changeset_index);
     }
@@ -886,7 +886,7 @@ sub create_record {
         }
     );
 
-    foreach my $name ( keys %{ $args{props} } ) {
+    for my $name ( keys %{ $args{props} } ) {
         $change->add_prop_change(
             name => $name,
             old  => undef,
@@ -933,7 +933,7 @@ sub set_record_props {
         type => $args{'type'}
     );
     my %new_props = %$old_props;
-    foreach my $prop ( keys %{ $args{props} } ) {
+    for my $prop ( keys %{ $args{props} } ) {
         if ( !defined $args{props}->{$prop} ) {
             delete $new_props{$prop};
         } else {
@@ -953,7 +953,7 @@ sub set_record_props {
         }
     );
 
-    foreach my $name ( keys %{ $args{props} } ) {
+    for my $name ( keys %{ $args{props} } ) {
         $change->add_prop_change(
             name => $name,
             old  => $old_props->{$name},

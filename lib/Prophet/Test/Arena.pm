@@ -146,8 +146,8 @@ sub sync_all_pairs {
     my @chickens_a = shuffle $self->chickens;
     my @chickens_b = shuffle $self->chickens;
 
-    foreach my $a (@chickens_a) {
-        foreach my $b (@chickens_b) {
+    for my $a (@chickens_a) {
+        for my $b (@chickens_b) {
             next if $a->name eq $b->name;
             diag( $a->name, $b->name );
             as_user( $a->name, sub { $a->sync_from_peer( { from => $b->name } ) } );

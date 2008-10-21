@@ -1,6 +1,7 @@
 package Prophet::Resolver::FromResolutionDB;
 use Moose;
 use Prophet::Change;
+use Prophet::Collection;
 use JSON;
 use Digest::SHA1 'sha1_hex';
 extends 'Prophet::Resolver';
@@ -10,6 +11,8 @@ sub run {
     my $conflicting_change = shift;
     my $conflict           = shift;
     my $resdb              = shift;    # XXX: we want diffrent collection actually now
+
+    require Prophet::Collection;
 
     my $res = Prophet::Collection->new(
         handle => $resdb,

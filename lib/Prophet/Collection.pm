@@ -80,7 +80,7 @@ sub matching {
 
     # run coderef against each item;
     # if it matches, add it to items
-    foreach my $key (@$records) {
+    for my $key (@$records) {
         my $record = $self->record_class->new( { app_handle => $self->app_handle,  handle => $self->handle, type => $self->type } );
         $record->load( uuid => $key );
         if ( $coderef->($record) ) {
