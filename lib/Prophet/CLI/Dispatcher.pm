@@ -55,7 +55,21 @@ sub run {
         my $self = shift;
         my $class = $self->class_name($name);
         Prophet::App->require($class);
-        $class->new(cli => $self->cli)->run;
+
+        my %constructor_args = (
+            cli      => $self->cli,
+            context  => $self->context,
+            commands => $self->context->primary_commands,
+            type     => $self->context->type,
+            uuid     => $self->context->uuid,
+        );
+
+    # undef causes type constraint violations
+    for my $key (keys %constructor_args) {
+        delete $constructor_args{$key}
+            if !defined($constructor_args{$key});
+    }
+        $class->new(%constructor_args)->run;
     };
 }
 
