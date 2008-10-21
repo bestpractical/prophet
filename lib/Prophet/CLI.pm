@@ -57,78 +57,14 @@ handles the subcommand for a particular type
 
 =cut
 
-=head2 dispatcher -> Class
+=head2 dispatcher_class -> Class
 
 Returns the dispatcher used to dispatch command lines. You'll want to override
 this in your subclass.
 
 =cut
 
-sub dispatcher { "Prophet::CLI::Dispatcher" }
-
-=head2 _get_cmd_obj
-
-Attempts to determine a command object based on aliases and the currently
-set commands, arguments, and properties. Returns the class on success;
-dies on failure.
-
-This routine will use a C<CLI::Command::Shell> class if no arguments are
-specified.
-
-This routine will use a C<CLI::Command::NotFound> class as a last resort, so
-failure should occur rarely if ever.
-
-=cut
-
-sub _get_cmd_obj {
-    my $self = shift;
-
-    my $command = join ' ', @{ $self->context->primary_commands };
-
-    # yeah this kind of sucks but there's no sane way to tell 
-    my $class;
-    my %dispatcher_args = (
-        cli            => $self,
-        context        => $self->context,
-        got_command    => sub { $class = shift },
-        dispatching_on => $self->context->primary_commands,
-    );
-
-    $self->dispatcher->run($command, %dispatcher_args);
-    die "I don't know how to parse '$command'. Are you sure that's a valid command?\n" unless $class;
-
-    my %constructor_args = (
-        cli      => $self,
-        context  => $self->context,
-        commands => $self->context->primary_commands,
-        type     => $self->context->type,
-    );
-
-    # undef causes type constraint violations
-    for my $key (keys %constructor_args) {
-        delete $constructor_args{$key}
-            if !defined($constructor_args{$key});
-    }
-
-    $constructor_args{uuid} = $self->context->uuid
-        if $self->context->has_uuid;
-
-    return $class->new(%constructor_args);
-}
-
-sub _try_to_load_cmd_class {
-    my $self = shift;
-    my $class = shift;
-    Prophet::App->try_to_require($class);
-    return $class if $class->isa('Prophet::CLI::Command');
-
-    warn "Invalid class $class - not a subclass of Prophet::CLI::Command."
-        if $class !~ /::$/ # don't warn about "Prophet::CLI::Command::" (which happens on "./bin/sd")
-        && Prophet::App->already_required($class);
-
-    return undef;
-}
-
+sub dispatcher_class { "Prophet::CLI::Dispatcher" }
 
 =head2 run_one_command
 
@@ -150,11 +86,17 @@ sub run_one_command {
 
      #  really, we shouldn't be doing this stuff from the command dispatcher
 
-   $self->context(Prophet::CLIContext->new( app_handle => $self->app_handle)); 
-   $self->context->setup_from_args(@args);
-    if ( my $cmd_obj = $self->_get_cmd_obj() ) {
-        $cmd_obj->run();
-    }
+    $self->context(Prophet::CLIContext->new(app_handle => $self->app_handle));
+    $self->context->setup_from_args(@args);
+
+    my $dispatcher = $self->dispatcher_class->new(cli => $self);
+
+    my $command = join ' ', @{ $self->context->primary_commands };
+    my $dispatch = $dispatcher->dispatch($command);
+
+    die "The command you ran, '$command', could not be found. Perhaps running '$0 help' would help?\n" unless $dispatch->has_matches;
+
+    $dispatch->run;
 }
 
 =head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY
