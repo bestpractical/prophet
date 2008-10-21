@@ -24,7 +24,7 @@ requires('Moose' => '0.54'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
-requires('Path::Dispatcher'); # Path::Dispatcher::Declarative
+requires('Path::Dispatcher' => '0.03'); # Path::Dispatcher::Declarative
 requires('Time::Progress');
 
 use Term::ReadLine; # if we don't do this, ::Perl fails
