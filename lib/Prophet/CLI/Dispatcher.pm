@@ -303,13 +303,6 @@ on [ ['search', 'list', 'ls' ] ] => sub {
     $self->display_collection($records);
 };
 
-# catch-all. () makes sure we don't hit the annoying historical feature of
-# the empty regex meaning the last-used regex
-on qr/()/ => sub {
-    my $self = shift;
-    $self->fatal_error("The command you ran '$_' could not be found. Perhaps running '$0 help' would help?");
-};
-
 sub fatal_error {
     my $self   = shift;
     my $reason = shift;

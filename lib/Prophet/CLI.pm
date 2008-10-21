@@ -90,7 +90,13 @@ sub run_one_command {
         dispatching_on => $args,
     );
 
-    $dispatcher->run($command, $dispatcher);
+    my $dispatch = $dispatcher->dispatch($command);
+
+    if (!$dispatch->has_matches) {
+        die "The command you ran '$command' could not be found. Perhaps running '$0 help' would help?\n";
+    }
+
+    $dispatch->run($dispatcher);
 }
 
 =head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY
