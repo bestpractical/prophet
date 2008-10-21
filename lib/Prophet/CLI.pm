@@ -1,6 +1,5 @@
 package Prophet::CLI;
 use Moose;
-use MooseX::ClassAttribute;
 
 use Prophet;
 use Prophet::Replica;
