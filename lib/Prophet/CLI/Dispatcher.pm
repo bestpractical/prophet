@@ -263,9 +263,6 @@ sub fatal_error {
     my $self   = shift;
     my $reason = shift;
 
-    # always skip this fatal_error function when generating a stack trace
-    local $Carp::CarpLevel = $Carp::CarpLevel + 1;
-
     die $reason . "\n";
 }
 
