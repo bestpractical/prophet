@@ -1,24 +1,9 @@
 package Prophet::CLI::Dispatcher;
 use Path::Dispatcher::Declarative -base;
 use Moose;
+with 'Prophet::CLI::Parameters';
 
 use Prophet::CLI;
-
-has cli => (
-    is       => 'rw',
-    isa      => 'Prophet::CLI',
-    required => 1,
-);
-
-has context => (
-    is       => 'rw',
-    isa      => 'Prophet::CLIContext',
-    lazy     => 1,
-    default  => sub {
-        my $self = shift;
-        $self->cli->context;
-    },
-);
 
 has dispatching_on => (
     is       => 'rw',
