@@ -270,6 +270,7 @@ sub setup_server {
     my $self = shift;
     require Prophet::Server;
     my $server = Prophet::Server->new($self->context->arg('port') || 8080);
+    $server->read_only(1) unless $self->context->has_arg('writable');
     $server->app_handle($self->context->app_handle);
     $server->setup_template_roots;
     return $server;
