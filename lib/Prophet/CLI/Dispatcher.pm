@@ -3,19 +3,26 @@ use Path::Dispatcher::Declarative -base;
 use Moose;
 with 'Prophet::CLI::Parameters';
 
-on [ ['create', 'new'] ]         => command("Create");
-on [ ['show', 'display'] ]       => command("Show");
-on [ ['update', 'edit'] ]        => command("Update");
-on [ ['delete', 'del', 'rm'] ]   => command("Delete");
-on [ ['search', 'list', 'ls' ] ] => command("Search");
+# "ticket display $ID" -> "ticket display --id=$ID"
+on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
+    my $self = shift;
+    $self->context->set_arg(id => $2);
+    redispatch($1, $self, @_);
+};
 
-on merge   => command("Merge");
-on pull    => command("Pull");
-on publish => command("Publish");
-on server  => command("Server");
-on config  => command("Config");
-on log     => command("Log");
-on shell   => command("Shell");
+on [ ['create', 'new'] ]         => run("Create");
+on [ ['show', 'display'] ]       => run("Show");
+on [ ['update', 'edit'] ]        => run("Update");
+on [ ['delete', 'del', 'rm'] ]   => run("Delete");
+on [ ['search', 'list', 'ls' ] ] => run("Search");
+
+on merge   => run("Merge");
+on pull    => run("Pull");
+on publish => run("Publish");
+on server  => run("Server");
+on config  => run("Config");
+on log     => run("Log");
+on shell   => run("Shell");
 
 on export => sub {
     my $self = shift;
@@ -29,7 +36,7 @@ on push => sub {
 
     $self->context->set_arg(from => $self->cli->app_handle->default_replica_type.":file://".$self->cli->handle->fs_root);
     $self->context->set_arg(db_uuid => $self->cli->handle->db_uuid);
-    run('merge', $self, @_);
+    redispatch('merge', $self, @_);
 };
 
 on history => sub {
@@ -41,7 +48,7 @@ on history => sub {
     print $record->history_as_string;
 };
 
-sub command {
+sub run {
     my $name = shift;
 
     return sub {
