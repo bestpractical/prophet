@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 package Prophet::CLI::Shell;
 use Moose;
+with 'Prophet::CLI::Parameters';
 
 has name => (
     is => 'ro',
@@ -20,12 +21,6 @@ has term => (
         require Term::ReadLine;
         return Term::ReadLine->new("Prophet shell");
     },
-);
-
-has cli => (
-    is       => 'ro',
-    isa      => 'Prophet::CLI',
-    required => 1,
 );
 
 our $HIST = $ENV{PROPHET_HISTFILE}
