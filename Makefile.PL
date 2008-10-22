@@ -65,6 +65,7 @@ features(
     ],
 );
 
+tests('t/*.t t/*/t/*.t');
 all_from('lib/Prophet.pm');
 install_script('bin/prophet');
 auto_install;
