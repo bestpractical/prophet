@@ -11,12 +11,36 @@ with 'Prophet::CLI::TextEditorCommand';
 # allowing the creation of a new comment in the process
 sub run {
     my $self = shift;
-    my $template_to_edit = $self->make_template;
+    my $template = $self->make_template;
+
+    if ($self->context->has_arg('show')) {
+        print $template."\n";
+        return;
+    }
+
+    my $settings = $self->app_handle->database_settings;
+    my %settings_by_name = map { $settings->{$_}->[0] => $_   }  keys %$settings;
+
+    if ($self->context->has_arg('set')) {
+        for my $name ($self->context->prop_names) {
+            my $uuid = $settings->{$name}->[0];
+            warn "UUID IS $uuid - name is $name";
+            my $s = $self->app_handle->setting(   uuid => $uuid);
+            my $old_value = $s->get_raw; 
+            my $new_value = $self->context->props->{$name}; 
+            print "trying Changed ".$name." from $old_value to $new_value\n"; 
+        if ($old_value ne $new_value) {
+            $s->set( from_json($new_value , { utf8 => 1 }));
+            print "Changed ".$name." from $old_value to $new_value\n"; 
+        }
+    }
+    return;    
+}
 
     my $done = 0;
 
     while (!$done) {
-      $done =  $self->try_to_edit( template => \$template_to_edit);
+      $done =  $self->try_to_edit( template => \$template);
     }
 
 };
