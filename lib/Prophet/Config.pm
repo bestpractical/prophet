@@ -37,8 +37,8 @@ sub aliases {
 sub app_config_file {
     my $self = shift;
 
-    return $self->file_if_exists($ENV{'PROPHET_APP_CONFIG'}) ||
-        $self->file_if_exists(
+    return $self->file_if_exists($ENV{'PROPHET_APP_CONFIG'})
+        || $self->file_if_exists(
             File::Spec->catfile(
                 $self->app_handle->handle->fs_root => 'prophetrc' ))
         || $self->file_if_exists(
@@ -97,7 +97,7 @@ empty string otherwise.
 
 sub file_if_exists {
     my $self = shift;
-    my $file = shift;
+    my $file = shift || ''; # quiet warnings
 
     return (-e $file) ? $file : '';
 }
