@@ -127,6 +127,15 @@ sub run_ok {
     };
 }
 
+=head2 _mk_cmp_closure EXPECTED, ERROR
+
+Takes references to an array of expected output lines and an array of
+error messages. Returns a subroutine that takes a list
+of output lines and compares them to its expected output lines,
+storing error messages for lines that don't match in ERROR.
+
+=cut
+
 sub _mk_cmp_closure {
     my ( $exp, $err ) = @_;
     my $line = 0;
@@ -149,14 +158,6 @@ sub _mk_cmp_closure {
         }
 }
 
-=head2 is_script_output SCRIPTNAME \@ARGS, \@STDOUT_MATCH, \@STDERR_MATCH, $MSG
-
-Runs the script, checking to see that its output matches
-
-
-
-=cut
-
 our $RUNCNT;
 
 sub _get_perl_cmd {
@@ -173,6 +174,13 @@ sub _get_perl_cmd {
     return @cmd;
 }
 
+=head2 is_script_output SCRIPTNAME \@ARGS, \@STDOUT_MATCH, \@STDERR_MATCH, $MSG
+
+Runs the script, checking to see that its output matches. Error messages
+for lines that don't match are stored in C<\@STDOUT_MATCH>.
+
+=cut
+
 sub is_script_output {
     my ( $script, $arg, $exp_stdout, $exp_stderr, $msg ) = @_;
 
@@ -183,7 +191,7 @@ sub is_script_output {
     my @cmd = _get_perl_cmd($script);
 
     my $ret = run3 [ @cmd, @$arg ], undef, _mk_cmp_closure( $exp_stdout, $stdout_err ),    # stdout
-        _mk_cmp_closure( $exp_stderr, $stdout_err );                                       # stderr
+    _mk_cmp_closure( $exp_stderr, $stdout_err );                    # stderr
 
     for my $line(@$exp_stdout) {
         next if !defined $line;
