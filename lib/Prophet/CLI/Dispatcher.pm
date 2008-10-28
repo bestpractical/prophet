@@ -53,8 +53,6 @@ sub run_command {
 
     return sub {
         my $self = shift;
-        my $class = $self->class_name($name);
-        Prophet::App->require($class);
 
         my %constructor_args = (
             cli      => $self->cli,
@@ -64,16 +62,22 @@ sub run_command {
             uuid     => $self->context->uuid,
         );
 
-    # undef causes type constraint violations
-    for my $key (keys %constructor_args) {
-        delete $constructor_args{$key}
-            if !defined($constructor_args{$key});
-    }
-        $class->new(%constructor_args)->run;
+        # undef causes type constraint violations
+        for my $key (keys %constructor_args) {
+            delete $constructor_args{$key}
+                if !defined($constructor_args{$key});
+        }
+
+        my @classes = $self->class_names($name);
+        for my $class (@classes) {
+            Prophet::App->try_to_require($class) or next;
+            $class->new(%constructor_args)->run;
+            last;
+        }
     };
 }
 
-sub class_name {
+sub class_names {
     my $self = shift;
     my $command = shift;
     return "Prophet::CLI::Command::$command";
