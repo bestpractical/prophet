@@ -201,7 +201,7 @@ sub is_script_output {
     my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$arg );
     is(scalar(@$stdout_err), 0, $test_name);
     if (@$stdout_err) {
-        diag( "Different in line: " . join( ',', @$stdout_err ) );
+        diag( "Different in line: " . join( "\n", @$stdout_err ) );
     }
 }
 
