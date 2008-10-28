@@ -7,7 +7,7 @@ with 'Prophet::CLI::Parameters';
 on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
     my $self = shift;
     $self->context->set_arg(id => $2);
-    redispatch($1, $self, @_);
+    run($1, $self, @_);
 };
 
 on [ ['create', 'new'] ]         => run_command("Create");
@@ -37,7 +37,7 @@ on push => sub {
 
     $self->context->set_arg(from => $self->cli->app_handle->default_replica_type.":file://".$self->cli->handle->fs_root);
     $self->context->set_arg(db_uuid => $self->cli->handle->db_uuid);
-    redispatch('merge', $self, @_);
+    run('merge', $self, @_);
 };
 
 on history => sub {
