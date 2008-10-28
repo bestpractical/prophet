@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 use inc::Module::Install;
-name('Prophet');
+name('Prophet'); #  App::Settings App::Settings::CLI
 author('clkao and jesse');
 license('Perl');
 
@@ -61,11 +61,12 @@ features(
 #    ],
     'Bonjour support' => [
         -default => 0,
-        'Net::Bonjour',
+        'Net::Bonjour', # Net::Rendezvous::Publish
     ],
 );
 
-all_from('lib/Prophet.pm');
+tests('t/*.t t/*/t/*.t');
+all_from('lib/Prophet.pm'); 
 install_script('bin/prophet');
 auto_install;
 WriteAll();

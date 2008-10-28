@@ -2,6 +2,8 @@ package Prophet::CLI::TextEditorCommand;
 use Moose::Role;
 use Params::Validate qw/validate/;
 
+requires 'process_template';
+
 sub try_to_edit {
     my $self = shift;
     my %args = validate( @_,

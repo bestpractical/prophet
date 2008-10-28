@@ -46,6 +46,18 @@ use constant DEFAULT_REPLICA_TYPE => 'prophet';
 
 Prophet::App
 
+=head1 SYNOPSIS
+
+=head1 METHODS
+
+=head2 BUILD
+
+=cut
+
+=head2 default_replica_type
+
+Returns a string of the the default replica type for this application.
+
 =cut
 
 sub default_replica_type {
@@ -53,11 +65,19 @@ sub default_replica_type {
     return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
 }
 
+=head2 require
+
+=cut
+
 sub require {
     my $self = shift;
     my $class = shift;
     $self->_require(module => $class);
 }
+
+=head2 try_to_require
+
+=cut
 
 sub try_to_require {
     my $self = shift;
@@ -65,6 +85,9 @@ sub try_to_require {
     $self->_require(module => $class, quiet => 1);
 }
 
+=head2 _require
+
+=cut
 
 sub _require {
     my $self = shift;

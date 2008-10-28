@@ -1,9 +1,11 @@
 use warnings;
 use strict;
 
-package TestApp::Bug;
+package App::Settings::Bug;
 use Moose;
 extends 'Prophet::Record';
+
+use base qw/Prophet::Record/;
 
 
 sub new { shift->SUPER::new( @_, type => 'bug' ) }
