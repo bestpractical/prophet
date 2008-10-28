@@ -16,13 +16,14 @@ on [ ['update', 'edit'] ]        => run_command("Update");
 on [ ['delete', 'del', 'rm'] ]   => run_command("Delete");
 on [ ['search', 'list', 'ls' ] ] => run_command("Search");
 
-on merge   => run_command("Merge");
-on pull    => run_command("Pull");
-on publish => run_command("Publish");
-on server  => run_command("Server");
-on config  => run_command("Config");
-on log     => run_command("Log");
-on shell   => run_command("Shell");
+on merge    => run_command("Merge");
+on pull     => run_command("Pull");
+on publish  => run_command("Publish");
+on server   => run_command("Server");
+on config   => run_command("Config");
+on settings => run_command("Settings");
+on log      => run_command("Log");
+on shell    => run_command("Shell");
 
 on export => sub {
     my $self = shift;
