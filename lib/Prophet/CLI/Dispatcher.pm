@@ -10,19 +10,19 @@ on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
     redispatch($1, $self, @_);
 };
 
-on [ ['create', 'new'] ]         => run("Create");
-on [ ['show', 'display'] ]       => run("Show");
-on [ ['update', 'edit'] ]        => run("Update");
-on [ ['delete', 'del', 'rm'] ]   => run("Delete");
-on [ ['search', 'list', 'ls' ] ] => run("Search");
+on [ ['create', 'new'] ]         => run_command("Create");
+on [ ['show', 'display'] ]       => run_command("Show");
+on [ ['update', 'edit'] ]        => run_command("Update");
+on [ ['delete', 'del', 'rm'] ]   => run_command("Delete");
+on [ ['search', 'list', 'ls' ] ] => run_command("Search");
 
-on merge   => run("Merge");
-on pull    => run("Pull");
-on publish => run("Publish");
-on server  => run("Server");
-on config  => run("Config");
-on log     => run("Log");
-on shell   => run("Shell");
+on merge   => run_command("Merge");
+on pull    => run_command("Pull");
+on publish => run_command("Publish");
+on server  => run_command("Server");
+on config  => run_command("Config");
+on log     => run_command("Log");
+on shell   => run_command("Shell");
 
 on export => sub {
     my $self = shift;
@@ -48,7 +48,7 @@ on history => sub {
     print $record->history_as_string;
 };
 
-sub run {
+sub run_command {
     my $name = shift;
 
     return sub {
