@@ -47,7 +47,7 @@ has context => (
 has interactive_shell => ( 
     is => 'rw',
     isa => 'Bool',
-    default => sub { 0}
+    default => 0,
 );
 
 
