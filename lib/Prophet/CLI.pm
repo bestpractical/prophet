@@ -123,6 +123,7 @@ sub invoke {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
+no MooseX::ClassAttribute;
 
 1;
 
