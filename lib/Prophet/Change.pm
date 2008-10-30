@@ -133,10 +133,10 @@ sub as_hash {
     }
 
     return {
-        record_type    => $self->record_type,
+        record_uuid  => $self->record_uuid,
+        record_type  => $self->record_type,
         change_type  => $self->change_type,
-        prop_changes => $props
-
+        prop_changes => $props,
     };
 }
 

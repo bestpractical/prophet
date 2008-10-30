@@ -104,9 +104,10 @@ sub changeset_ok {
 
     my $changeset = $args{changeset}->as_hash;
 
-    my $changes = {
-        $args{record_uuid} => {
+    my $changes = [
+        {
             change_type  => 'add_file',
+            record_uuid  => $args{record_uuid},
             record_type  => $args{record_type},
             prop_changes => {
                 status => {
@@ -127,7 +128,7 @@ sub changeset_ok {
                 },
             },
         },
-    };
+    ];
 
     if ($args{merge}) {
         my $change_type = $args{sequence_no} > 1
@@ -138,15 +139,16 @@ sub changeset_ok {
                                ? $args{sequence_no} - 1
                                : undef;
 
-        $changes->{ replica_uuid_for('alice') } = {
+        push @$changes, {
             change_type  => $change_type,
+            record_uuid  => replica_uuid_for('alice'),
             record_type  => '_merge_tickets',
             prop_changes => {
                 'last-changeset' => {
                     old_value => $prev_changeset_num,
                     new_value => $args{sequence_no},
                 }
-            }
+            },
         };
     }
 
