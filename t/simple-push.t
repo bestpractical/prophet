@@ -6,20 +6,36 @@ use strict;
 use Prophet::Test tests => 16;
 
 as_alice {
-    run_ok( 'prophet', [qw(init)]);
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+    run_ok( 'prophet', [qw(init)] );
+    run_ok(
+        'prophet',
+        [qw(create --type Bug -- --status new --from alice )],
+        "Created a record as alice"
+    );
+    run_output_matches(
+        'prophet', [qw(search --type Bug --regex .)],
+        [qr/new/], " Found our record"
+    );
 
     # update the record
     # show the record history
     # show the record
 };
 
-diag(repo_uri_for('alice'));
+diag( repo_uri_for('alice') );
 as_bob {
-    run_ok( 'prophet', [qw(clone --from), repo_uri_for('alice')]);
-    run_ok( 'prophet', [qw(create --type Bug -- --status open --from bob )], "Created a record as bob" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/, qr/new/], " Found our record" );
+    run_ok( 'prophet', [ qw(clone --from), repo_uri_for('alice') ] );
+    run_ok(
+        'prophet',
+        [qw(create --type Bug -- --status open --from bob )],
+        "Created a record as bob"
+    );
+    run_output_matches(
+        'prophet',
+        [qw(search --type Bug --regex .)],
+        [ qr/open/, qr/new/ ],
+        " Found our record"
+    );
 
     # update the record
     # show the record history
@@ -27,63 +43,59 @@ as_bob {
 
 };
 
-my $alice; 
-my $bob;
+my ($alice, $alice_app);
+my ($bob, $bob_app);
 
-as_alice { $alice = Prophet::CLI->new; };
-as_bob { $bob = Prophet::CLI->new; };
+as_alice { $alice_app = Prophet::CLI->new->app_handle; $alice= $alice_app->handle };
+as_bob { $bob_app = Prophet::CLI->new->app_handle; $bob = $bob_app->handle };
 
-
-is( $bob->app_handle->handle->db_uuid,
-    $alice->app_handle->handle->db_uuid,
+is( $bob->db_uuid, $alice->db_uuid,
     "bob and alice's replicas need to have the same uuid for them to be able to sync without issues"
 );
 
-
 my $openbug = '';
 as_bob {
-    my ( $ret, $stdout, $stderr ) = run_script( 'prophet', [qw(search --type Bug --regex open)] );
+    my ( $ret, $stdout, $stderr )
+        = run_script( 'prophet', [qw(search --type Bug --regex open)] );
     if ( $stdout =~ /^(.*?)\s/ ) {
         $openbug = $1;
     }
-    diag ("As bob, the last changeset I've seen from alice is ".$bob->app_handle->handle->last_changeset_from_source($alice->app_handle->handle->uuid));
-    diag ("As alice, my latest sequence no is ".$alice->app_handle->handle->latest_sequence_no);
-    diag ("As bob, I believe that alice's uuid is " .$alice->app_handle->handle->uuid);
-    die ("We're getting the wrong uuid for alice and the wrong seqno for alice. why?");
-    is($bob->app_handle->handle->last_changeset_from_source($alice->app_handle->handle->uuid) => $alice->app_handle->handle->latest_sequence_no);
+    diag(
+        "As bob, the last changeset I've seen from alice is "
+            . $bob->last_changeset_from_source(
+            $alice->uuid
+            )
+    );
+    is( $bob->last_changeset_from_source( $alice->uuid ) =>
+            $alice->latest_sequence_no );
 
 };
 
 my $changesets;
-    $bob->app_handle->handle->traverse_new_changesets( for => $alice->app_handle->handle, force => 1,
-            callback => sub {
-                my $cs = shift;
-                return unless $cs->has_changes,
-                push @{$changesets}, $cs->as_hash;
-            }
-        
-        
-    );
+$bob->traverse_new_changesets(
+    for      => $alice,
+    force    => 1,
+    callback => sub {
+        my $cs = shift;
+        return unless $cs->has_changes, push @{$changesets}, $cs->as_hash;
+    }
+);
 
-
-my $seq = delete $changesets->[0]->{'sequence_no'};
+my $seq      = delete $changesets->[0]->{'sequence_no'};
 my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
-is($seq, $orig_seq);
-
+is( $seq, $orig_seq );
 
 is_deeply(
-   $changesets,
-    [ 
-        {   #'sequence_no'          => 3,
-            #'original_sequence_no' => 3, # the number is different on different replica types
+    $changesets,
+    [   {    #'sequence_no'          => 3,
+             #'original_sequence_no' => 3, # the number is different on different replica types
             'creator'              => 'bob',
             'created'              => $changesets->[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
             'changes'              => [
-                {
-                    'change_type'  => 'add_file',
+                {   'change_type'  => 'add_file',
                     'prop_changes' => {
                         'from' => {
                             'new_value' => 'bob',
@@ -117,49 +129,56 @@ as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
-    is($alice->app_handle->handle->last_changeset_from_source($bob->app_handle->handle->uuid) => 0);
-    run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob'), '--to' ], "Sync ran ok!" );
-    is($alice->app_handle->handle->last_changeset_from_source($bob->app_handle->handle->uuid) => $bob->app_handle->handle->latest_sequence_no);
+    is( $alice->last_changeset_from_source( $bob->uuid ) => 0 );
+    run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob'), '--to' ],
+        "Sync ran ok!" );
+    is( $alice->last_changeset_from_source( $bob->uuid ) =>
+            $bob->latest_sequence_no );
 };
 
 my $last_id;
 
 as_bob {
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from bob )], "Created a record as bob" );
-    my ( $ret, $stdout, $stderr ) = run_script( 'prophet', [qw(search --type Bug --regex new)] );
+    run_ok(
+        'prophet',
+        [qw(create --type Bug -- --status new --from bob )],
+        "Created a record as bob"
+    );
+    my ( $ret, $stdout, $stderr )
+        = run_script( 'prophet', [qw(search --type Bug --regex new)] );
     if ( $stdout =~ /^(.*?)\s/ ) {
         $last_id = $1;
     }
 };
 
 my $new_changesets;
-    $bob->handle->traverse_new_changesets( for => $alice->app_handle->handle, force => 1,
-            callback => sub {
-                my $cs = shift;
-                return unless $cs->has_changes,
-                push @{$new_changesets}, $cs->as_hash;
-            }
-        
-        
-    );
+$bob->traverse_new_changesets(
+    for      => $alice_app->handle,
+    force    => 1,
+    callback => sub {
+        my $cs = shift;
+        return unless $cs->has_changes, push @{$new_changesets}, $cs->as_hash;
+        }
 
+);
 
-is( delete $new_changesets->[0]->{'sequence_no'}, delete $new_changesets->[0]->{'original_sequence_no'});
+is( delete $new_changesets->[0]->{'sequence_no'},
+    delete $new_changesets->[0]->{'original_sequence_no'}
+);
 
 is_deeply(
     $new_changesets,
-    [   {  
-        
-        #     'sequence_no'          => 4,  # the number varies based on replica type
-        #    'original_sequence_no' => 4,
+    [   {
+
+   #     'sequence_no'          => 4,  # the number varies based on replica type
+   #    'original_sequence_no' => 4,
             'creator'              => 'bob',
             'created'              => $new_changesets->[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
             'changes'              => [
-                {
-                    'change_type'  => 'add_file',
+                {   'change_type'  => 'add_file',
                     'prop_changes' => {
                         'from' => {
                             'new_value' => 'bob',

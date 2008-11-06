@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use Test::Exception;
 
-use Prophet::Test tests => 21;
+use Prophet::Test tests => 18;
 
 as_alice {
     run_command(qw(init));
@@ -15,12 +15,11 @@ as_alice {
 diag('Bob syncs from alice');
 
 my $record_id;
-
+diag(repo_uri_for('alice'));
 as_bob {
 
-    run_command(qw(init));
+    run_command(qw(clone --from), repo_uri_for('alice')  );
     like(run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/);
-    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force'), qr/Merged one changeset/, "Sync ran ok!");
 
     # check our local replicas
     my $out = run_command(qw(search --type Bug --regex .));
@@ -63,12 +62,16 @@ as_alice {
 
 };
 
+my ($alice, $bob, $alice_app, $bob_app);
 # This conflict, we can autoresolve
+as_bob { $bob_app = Prophet::CLI->new()->app_handle; $bob = $bob_app->handle;};
+as_alice { $alice_app = Prophet::CLI->new()->app_handle; $alice = $alice_app->handle};
+
 
 as_bob {
     use_ok('Prophet::Replica');
-    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
+    my $source = $alice;
+    my $target = $bob;
 
     my $conflict_obj;
 
@@ -99,19 +102,18 @@ as_bob {
         '3 revisions since the merge'
     );
 
-    my @changesets = fetch_newest_changesets(3);
+    my @changesets = @{ $target->fetch_changesets( after => ( $target->latest_sequence_no - 3) ) } ;
 
     my $resolution = $changesets[2];
     ok( $resolution->is_resolution, 'marked as resolution' );
-    my $repo = repo_uri_for('bob');
-
-    #    diag `svn log -v $repo`;
-
     check_bob_final_state_ok(@changesets);
 };
+
+
+
 as_alice {
-    my $source = Prophet::Replica->new( { url => repo_uri_for('bob') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('alice') } );
+    my $source = $bob;
+    my $target = $alice;
     throws_ok {
         $target->import_changesets( from => $source, force => 1 );
     }
@@ -138,8 +140,8 @@ as_alice {
 };
 
 as_bob {
-    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
+    my $source = $alice;
+    my $target = $bob;
 
     lives_and {
         ok_added_revisions(
@@ -152,7 +154,7 @@ as_bob {
 
     };
 
-    check_bob_final_state_ok( fetch_newest_changesets(3) );
+    check_bob_final_state_ok( @{ $target->fetch_changesets( after => ( $target->latest_sequence_no - 3) ) });
 
 };
 

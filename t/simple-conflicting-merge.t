@@ -43,7 +43,13 @@ as_bob {
     );
 };
 
-my ($alice);
+
+my ($alice, $bob, $alice_app, $bob_app);
+# This conflict, we can autoresolve
+as_bob { $bob_app = Prophet::CLI->new()->app_handle; $bob = $bob_app->handle;};
+as_alice { $alice_app = Prophet::CLI->new()->app_handle; $alice = $alice_app->handle};
+
+
 as_alice {
     run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
@@ -60,11 +66,11 @@ as_alice {
     );
 
 
-    $alice = Prophet::CLI->new();
 };
 
 # This conflict, we can autoresolve
 
+diag("prebob");
 as_bob {
 
     # XXX TODO: this should actually fail right now.
@@ -72,10 +78,9 @@ as_bob {
 
 
     my $conflict_obj;
-    my $bob =  Prophet::CLI->new;
     lives_ok {
-        $bob->handle->import_changesets(
-            from              => $alice->handle,
+        $bob->import_changesets(
+            from              => $alice,
             force             => 1,
             conflict_callback => sub {
                 $conflict_obj = shift;
@@ -85,7 +90,7 @@ as_bob {
 
     isa_ok( $conflict_obj, 'Prophet::Conflict' );
 
-    my $conflicts = serialize_conflict($conflict_obj);
+    my $conflicts = eval { serialize_conflict($conflict_obj)} ;
 
     is_deeply(
         $conflicts,
@@ -134,7 +139,7 @@ as_bob {
     );
 
     # replay the last two changesets for bob's replica
-    my @changesets = fetch_newest_changesets(2);
+    my @changesets =  @{ $bob->fetch_changesets( after => ( $bob->latest_sequence_no - 2) ) };
 
     # is the second most recent change:
     my $applied_null    = shift @changesets;
@@ -160,7 +165,7 @@ as_bob {
             is_resolution        => undef,
             source_uuid          => undef,
             sequence_no          => undef,
-            original_sequence_no => as_alice { replica_last_rev() },
+            original_sequence_no => $alice->latest_sequence_no,
             original_source_uuid => replica_uuid_for('alice'),
             changes              => [
                 {
@@ -175,8 +180,8 @@ as_bob {
                     record_type  => '_merge_tickets',
                     prop_changes => {
                         'last-changeset' => {
-                            old_value => as_alice { replica_last_rev() - 1 },
-                            new_value => as_alice { replica_last_rev() }
+                            old_value => ($alice->latest_sequence_no-1),
+                            new_value => $alice->latest_sequence_no
                         }
                     }
 
@@ -190,3 +195,4 @@ as_bob {
 
 };
 
+diag("postbob");

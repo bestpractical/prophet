@@ -1103,6 +1103,7 @@ environmental variable is set).
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
+    Carp::confess unless ($self->app_handle);
     $self->app_handle->log($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
 }
 
@@ -1142,8 +1143,7 @@ sub display_name_for_uuid {
     my $self = shift;
     my $uuid = shift || $self->uuid;
 
-    return $uuid if !$self->has_app_handle;
-    Carp::confess unless $self->app_handle;
+    return $uuid if !$self->app_handle;
 
     return $self->app_handle->config->display_name_for_uuid($uuid);
 }
