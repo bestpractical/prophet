@@ -9,7 +9,7 @@ as_alice {
     run_ok( 'prophet', [qw(init)] );
     run_ok(
         'prophet',
-        [qw(create --type Bug -- --status new --from alice )],
+        [qw(create --type Bug -- --status new-alice --from alice )],
         "Created a record as alice"
     );
     run_output_matches(
@@ -27,13 +27,13 @@ as_bob {
     run_ok( 'prophet', [ qw(clone --from), repo_uri_for('alice') ] );
     run_ok(
         'prophet',
-        [qw(create --type Bug -- --status open --from bob )],
+        [qw(create --type Bug -- --status open-bob --from bob )],
         "Created a record as bob"
     );
     run_output_matches(
         'prophet',
         [qw(search --type Bug --regex .)],
-        [ qr/open/, qr/new/ ],
+        [ qr/open-bob/, qr/new-alice/ ],
         " Found our record"
     );
 
@@ -56,7 +56,7 @@ is( $bob->db_uuid, $alice->db_uuid,
 my $openbug = '';
 as_bob {
     my ( $ret, $stdout, $stderr )
-        = run_script( 'prophet', [qw(search --type Bug --regex open)] );
+        = run_script( 'prophet', [qw(search --type Bug --regex open-bob)] );
     if ( $stdout =~ /^(.*?)\s/ ) {
         $openbug = $1;
     }
@@ -102,7 +102,7 @@ is_deeply(
                             'old_value' => undef
                         },
                         'status' => {
-                            'new_value' => 'open',
+                            'new_value' => 'open-bob',
                             'old_value' => undef
                         },
                         'creator' => {
@@ -130,7 +130,7 @@ as_alice {
     # sync from bob
     diag('Alice syncs from bob');
     is( $alice->last_changeset_from_source( $bob->uuid ) => 0 );
-    run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob'), '--to' ],
+    run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob') ],
         "Sync ran ok!" );
     is( $alice->last_changeset_from_source( $bob->uuid ) =>
             $bob->latest_sequence_no );
@@ -141,11 +141,11 @@ my $last_id;
 as_bob {
     run_ok(
         'prophet',
-        [qw(create --type Bug -- --status new --from bob )],
+        [qw(create --type Bug -- --status new2-bob --from bob )],
         "Created a record as bob"
     );
     my ( $ret, $stdout, $stderr )
-        = run_script( 'prophet', [qw(search --type Bug --regex new)] );
+        = run_script( 'prophet', [qw(search --type Bug --regex new2)] );
     if ( $stdout =~ /^(.*?)\s/ ) {
         $last_id = $1;
     }
@@ -153,7 +153,7 @@ as_bob {
 
 my $new_changesets;
 $bob->traverse_new_changesets(
-    for      => $alice_app->handle,
+    for      => $alice,
     force    => 1,
     callback => sub {
         my $cs = shift;
@@ -166,9 +166,9 @@ is( delete $new_changesets->[0]->{'sequence_no'},
     delete $new_changesets->[0]->{'original_sequence_no'}
 );
 
-is_deeply(
-    $new_changesets,
-    [   {
+
+
+ our $expected =   [   {
 
    #     'sequence_no'          => 4,  # the number varies based on replica type
    #    'original_sequence_no' => 4,
@@ -185,7 +185,7 @@ is_deeply(
                             'old_value' => undef
                         },
                         'status' => {
-                            'new_value' => 'new',
+                            'new_value' => 'new2-bob',
                             'old_value' => undef
                         },
                         'creator' => {
@@ -203,6 +203,12 @@ is_deeply(
             ],
             'is_nullification' => undef,
         }
-    ]
-);
+    ];
 
+
+
+
+is_deeply(
+    $new_changesets,
+    $expected
+);
