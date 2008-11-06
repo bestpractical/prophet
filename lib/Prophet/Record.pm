@@ -504,13 +504,12 @@ sub default_props {
     my $self   = shift;
     my $props  = shift;
 
-    my @methods = grep { $_->{name} =~ /^default_prop_/ } $self->meta->compute_all_applicable_methods;
+    my @methods = grep { $_->name =~ /^default_prop_/ } $self->meta->get_all_methods;
 
-    for my $method_data (@methods) {
-        my ($key) = $method_data->{name} =~ /^default_prop_(.+)$/;
-        my $sub   = $method_data->{code};
+    for my $method (@methods) {
+        my ($key) = $method->name =~ /^default_prop_(.+)$/;
 
-        $props->{$key} = $sub->( $self, props => $props)
+        $props->{$key} = $method->( $self, props => $props)
             if !defined($props->{$key});
     }
 
