@@ -154,8 +154,14 @@ sub set_db_defaults {
     my $self = shift;
     my $settings = $self->database_settings;
     for my $name ( keys %$settings ) {
-        my @metadata = @{$settings->{$name}};
-        my $s = $self->setting(  label => $name, uuid => (shift @metadata), default => [@metadata]);
+        my ($uuid, @metadata) = @{$settings->{$name}};
+
+        my $s = $self->setting(
+            label   => $name,
+            uuid    => $uuid,
+            default => \@metadata,
+        );
+
         $s->initialize;
     }
 }
