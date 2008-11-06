@@ -215,10 +215,13 @@ sub create {
     my %args = validate( @_, { props => 1 } );
     my $uuid = $self->uuid_generator->create_str;
 
-    $self->default_props($args{'props'});
-    $self->canonicalize_props( $args{'props'} );
-    $self->validate_props( $args{'props'} ) or return undef;
-    $self->_create_record( props => $args{props}, uuid => $uuid);
+    my $props = $args{props});
+
+    $self->default_props($props);
+    $self->canonicalize_props($props);
+    $self->validate_props($props) or return undef;
+
+    $self->_create_record(props => $props, uuid => $uuid);
 }
 
 sub _create_record {
