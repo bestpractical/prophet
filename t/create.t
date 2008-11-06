@@ -8,8 +8,8 @@ use_ok('Prophet::CLI');
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
+
 isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
-$cxn->initialize;
 use_ok('Prophet::Record');
 my $record = Prophet::Record->new( handle => $cxn, type => 'Person' );
 isa_ok( $record, 'Prophet::Record' );

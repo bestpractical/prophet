@@ -46,6 +46,10 @@ as_bob {
     if ( $stdout =~ /^(.*?)\s/ ) {
         $openbug = $1;
     }
+    diag ("As bob, the last changeset I've seen from alice is ".$bob->app_handle->handle->last_changeset_from_source($alice->app_handle->handle->uuid));
+    diag ("As alice, my latest sequence no is ".$alice->app_handle->handle->latest_sequence_no);
+    diag ("As bob, I believe that alice's uuid is " .$alice->app_handle->handle->uuid);
+    die ("We're getting the wrong uuid for alice and the wrong seqno for alice. why?");
     is($bob->app_handle->handle->last_changeset_from_source($alice->app_handle->handle->uuid) => $alice->app_handle->handle->latest_sequence_no);
 
 };

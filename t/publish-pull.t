@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 28;
+use Prophet::Test tests => 24;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -59,7 +59,8 @@ sub check_replica {
 
     my $user = shift;
 
-    my $replica = Prophet::Replica->new({ url => repo_uri_for($user), app_handle => Prophet::CLI->new->app_handle() });
+    my $cli = Prophet::CLI->new();
+    my $replica = $cli->handle;
     my $changesets = $replica->fetch_changesets(after => 0);
 
     is(@$changesets, 2, "two changesets for $user");
