@@ -1,16 +1,17 @@
 package Prophet::DatabaseSetting;
 use Moose;
 extends 'Prophet::Record';
+
 use Params::Validate;
 use JSON;
 
 has default => (
-    is => 'ro'
+    is => 'ro',
 );
 
 has label => (
-    isa => 'Maybe[Str]',
-    is => 'rw' 
+    isa => 'Str',
+    is  => 'rw',
 );
 
 sub BUILDARGS {
@@ -36,22 +37,35 @@ sub initialize {
 sub set {
     my $self = shift;
     my $entry;
-    if (exists $_[1]  || !ref($_[0]))  {
+
+    if (exists $_[1] || !ref($_[0]))  {
         $entry = [@_];
-    } else { 
+    } else {
         $entry = shift @_;
     }
-       my  $content = to_json($entry, { canonical => 1, pretty=> 0, utf8=>1, allow_nonref => 0}  );
-    
-    
+
+    my $content = to_json($entry, {
+        canonical    => 1,
+        pretty       => 0,
+        utf8         => 1,
+        allow_nonref => 0,
+    });
+
+    my %props = (
+        content => $content,
+        label   => $self->label,
+    );
+
     if ($self->handle->record_exists( uuid => $self->uuid, type => $self->type)) {
-        $self->set_props( props => { content => $content, label => $self->label});
-    } else {
-        $self->_create_record( props => { content => $content, label => $self->label }, uuid => $self->uuid );
+        $self->set_props(props => \%props);
+    }
+    else {
+        $self->_create_record(
+            uuid  => $self->uuid,
+            props => \%props,
+        );
     }
 }
-
-
 
 sub get_raw {
     my $self = shift;
@@ -65,11 +79,13 @@ sub get {
     $self->initialize() unless $self->load(uuid => $self->uuid);
     my $content = $self->get_raw;
 
-    my $entry = from_json($content , { utf8 => 1 });
+    my $entry = from_json($content, { utf8 => 1 });
     return $entry;
     # XXX TODO do we really want to just get the first one?
-
 }
-1;
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+
+1;
 
