@@ -303,6 +303,7 @@ sub as_user {
     my $coderef  = shift;
     local $ENV{'PROPHET_USER'} = $username;
     local $ENV{'PROPHET_REPO'} = repo_path_for($username);
+    local $ENV{'EMAIL'}        = $username . '@example.com';
 
     my $ret = $coderef->();
 
