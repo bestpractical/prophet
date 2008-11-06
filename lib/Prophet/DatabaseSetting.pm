@@ -13,18 +13,18 @@ has label => (
     is => 'rw' 
 );
 
-
-sub new { 
-        my $self = shift->SUPER::new( type => '__prophet_db_settings', @_);
-
-    $self->initialize unless ($self->handle->record_exists(uuid => $self->uuid, type => $self->type) );
-    return $self;
-    }
-
-
-sub initialize {
+sub BUILDARGS {
     my $self = shift;
-    $self->set($self->default);
+    my $args = $self->SUPER::BUILDARGS(@_);
+    $args->{type} ||= '__prophet_db_settings';
+    return $args;
+}
+
+sub BUILD {
+    my $self = shift;
+
+    $self->set($self->default)
+        unless ($self->handle->record_exists(uuid => $self->uuid, type => $self->type) );
 }
 
 sub set {
