@@ -76,8 +76,7 @@ new replica object.
 
 =cut
 
-around new => sub {
-    my $orig  = shift;
+sub new {
     my $class = shift;
     my %args  = @_ == 1 ? %{ $_[0] } : @_;
 
@@ -88,7 +87,7 @@ around new => sub {
     }
 
     if ( $class eq $new_class) { 
-        return $orig->($class, %args) 
+        return $class->SUPER::new(%args) 
     } else {
         Prophet::App->require($new_class);
         return $new_class->new(%args);

@@ -2,7 +2,7 @@ package Prophet::CLI::Command::Clone;
 use Moose;
 extends 'Prophet::CLI::Command::Merge';
 
-before 'run' => sub {
+sub run {
     my $self = shift;
 
     $self->set_arg( 'to' => $self->app_handle->handle->url() );
@@ -25,10 +25,12 @@ before 'run' => sub {
     }
 
     $target->initialize();
-    $target->set_db_uuid($source->db_uuid);
-    $target->resolution_db_handle->set_db_uuid($source->resolution_db_handle->db_uuid);
-    return $target->_write_cached_upstream_replicas($self->arg('from'));
-
+    $target->set_db_uuid($source->db_uuid) 
+        unless ($source->isa('Prophet::ForeignReplica'));
+    $target->resolution_db_handle->set_db_uuid($source->resolution_db_handle->db_uuid)
+        unless ($source->isa('Prophet::ForeignReplica'));
+    $target->_write_cached_upstream_replicas($self->arg('from'));
+    $self->SUPER::run();
 };
 
 __PACKAGE__->meta->make_immutable;

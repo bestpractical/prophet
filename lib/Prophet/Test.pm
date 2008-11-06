@@ -261,7 +261,7 @@ sub replica_uuid {
 sub database_uuid {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
-    return $cli->handle->db_uuid;
+    return eval { $cli->handle->db_uuid};
 }
 
 =head2 replica_merge_tickets
