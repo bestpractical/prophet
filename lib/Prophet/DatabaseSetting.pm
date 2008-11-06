@@ -23,8 +23,14 @@ sub BUILDARGS {
 sub BUILD {
     my $self = shift;
 
-    $self->set($self->default)
+    $self->initialize
         unless ($self->handle->record_exists(uuid => $self->uuid, type => $self->type) );
+}
+
+sub initialize {
+    my $self = shift;
+
+    $self->set($self->default);
 }
 
 sub set {
