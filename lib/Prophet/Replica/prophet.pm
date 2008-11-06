@@ -612,8 +612,8 @@ sub traverse_changesets {
     $self->log("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {
         my $changeset = $self->_get_changeset_index_entry(
-            sequence_no    => $rev,
-            index_file => $chgidx
+            sequence_no => $rev,
+            index_file  => $chgidx
         );
 
         $args{callback}->($changeset);

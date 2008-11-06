@@ -153,9 +153,7 @@ sub as_hash {
     my $self = shift;
     my $as_hash = { map { $_ => $self->$_() } @SERIALIZE_PROPS };
 
-    for my $change ( $self->changes ) {
-        $as_hash->{changes}->{ $change->record_uuid } = $change->as_hash;
-    }
+    $as_hash->{'changes'} = [ map $_->as_hash, $self->changes ];
 
     return $as_hash;
 }
@@ -178,8 +176,8 @@ sub new_from_hashref {
     my $hashref = shift;
     my $self    = $class->new( { map { $_ => $hashref->{$_} } @SERIALIZE_PROPS } );
 
-    for my $change ( keys %{ $hashref->{changes} } ) {
-        $self->add_change( change => Prophet::Change->new_from_hashref( $change => $hashref->{changes}->{$change} ) );
+    for my $change ( @{ $hashref->{changes} } ) {
+        $self->add_change( change => Prophet::Change->new_from_hashref( $change->{'record_uuid'} => $change ) );
     }
     return $self;
 }

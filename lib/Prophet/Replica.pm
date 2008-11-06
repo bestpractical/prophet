@@ -466,7 +466,10 @@ sub traverse_new_changesets {
 
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
-        callback => sub { $args{callback}->( $_[0] ) if $self->should_send_changeset( changeset => $_[0], to        => $args{for});
+        callback => sub {
+            $args{callback}->( $_[0] ) if $self->should_send_changeset(
+                changeset => $_[0], to => $args{for}
+            );
         }
     );
 }

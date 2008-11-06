@@ -193,5 +193,6 @@ sub _read_password {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
+no MooseX::ClassAttribute;
 
 1;
