@@ -4,9 +4,10 @@ use warnings;
 use strict;
 use Test::Exception;
 
-use Prophet::Test tests => 19;
+use Prophet::Test tests => 21;
 
 as_alice {
+    run_command(qw(init));
     like(run_command(qw(create --type Bug -- --status new --from alice)), qr/Created Bug/, "Created a record as alice");
     like(run_command(qw(search --type Bug --regex .)), qr/new/, "Found our record");
 };
@@ -17,6 +18,7 @@ my $record_id;
 
 as_bob {
 
+    run_command(qw(init));
     like(run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/);
     like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force'), qr/Merged one changeset/, "Sync ran ok!");
 
