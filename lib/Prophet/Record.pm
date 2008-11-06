@@ -215,7 +215,7 @@ sub create {
     my %args = validate( @_, { props => 1 } );
     my $uuid = $self->uuid_generator->create_str;
 
-    my $props = $args{props});
+    my $props = $args{props};
 
     $self->default_props($props);
     $self->canonicalize_props($props);
