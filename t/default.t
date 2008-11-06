@@ -9,7 +9,7 @@ $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
 isa_ok($cxn, 'Prophet::Replica');
-
+$cxn->initialize;
 use_ok('TestApp::Bug');
 
 my $record = TestApp::Bug->new( handle => $cxn );

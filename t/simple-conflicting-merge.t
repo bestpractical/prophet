@@ -6,7 +6,10 @@ use strict;
 use Prophet::Test tests => 17;
 use Test::Exception;
 
+use_ok('Prophet::Replica');
+
 as_alice {
+    run_ok( 'prophet' , ['init']);
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
@@ -16,10 +19,7 @@ diag('Bob syncs from alice');
 my $record_id;
 
 as_bob {
-
-    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
-
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'clone', '--from', repo_uri_for('alice')], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
@@ -43,6 +43,7 @@ as_bob {
     );
 };
 
+my ($alice);
 as_alice {
     run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
@@ -58,6 +59,8 @@ as_alice {
         'content is correct'
     );
 
+
+    $alice = Prophet::CLI->new();
 };
 
 # This conflict, we can autoresolve
@@ -67,18 +70,12 @@ as_bob {
     # XXX TODO: this should actually fail right now.
     # in perl code, we're going to run the merge (just as prophet-merge does)
 
-    use_ok('Prophet::Replica');
-
-    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
     my $conflict_obj;
-
-    my $repo = repo_uri_for('bob');
-
+    my $bob =  Prophet::CLI->new;
     lives_ok {
-        $target->import_changesets(
-            from              => $source,
+        $bob->handle->import_changesets(
+            from              => $alice->handle,
             force             => 1,
             conflict_callback => sub {
                 $conflict_obj = shift;

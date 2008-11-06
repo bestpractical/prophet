@@ -1,9 +1,10 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Prophet::Test tests => 15;
+use Prophet::Test tests => 16;
 
 as_alice {
+    run_ok('prophet', [qw(init)], "created a db as alice");
     run_ok('prophet', [qw(create --type=Bug --), 'summary=first ticket summary', 'status=new'], "created a record as alice");
     run_ok('prophet', [qw(create --type=Bug --), 'summary=other ticket summary', 'status=open'], "created a record as alice");
     run_ok('prophet', [qw(create --type=Bug --), 'summary=bad ticket summary', 'status=stalled', 'cmp=ne'], "created a record as alice");

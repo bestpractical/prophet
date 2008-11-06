@@ -38,7 +38,7 @@ as_alice {
     $alice_cli = Prophet::CLI->new();
     my $cxn = $alice_cli->handle;
     isa_ok( $cxn, 'Prophet::Replica', "Got the cxn " . $cxn->fs_root );
-
+    $cxn->initialize;
     # set up an app model class, "ticket"
     my $t = MyApp::Model::Task->new(handle => $alice_cli->app_handle->handle);
     # set default values for status 
@@ -88,6 +88,7 @@ as_bob {
     $bob_cli = Prophet::CLI->new();
     my $cxn = $bob_cli->handle;
     isa_ok( $cxn, 'Prophet::Replica', "Got the cxn " . $cxn->fs_root );
+    $cxn->initialize;
 
     run_ok( 'prophet', [qw(create --type Bug -- --status open --from bob )], "Created a record as bob" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/], " Found our record" );

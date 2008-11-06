@@ -3,9 +3,10 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 14;
+use Prophet::Test tests => 16;
 
 as_alice {
+    run_ok( 'prophet', [qw(init)]);
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 
@@ -14,9 +15,11 @@ as_alice {
     # show the record
 };
 
+diag(repo_uri_for('alice'));
 as_bob {
+    run_ok( 'prophet', [qw(clone --from), repo_uri_for('alice')]);
     run_ok( 'prophet', [qw(create --type Bug -- --status open --from bob )], "Created a record as bob" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/], " Found our record" );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/, qr/new/], " Found our record" );
 
     # update the record
     # show the record history
@@ -24,15 +27,17 @@ as_bob {
 
 };
 
-my $alice = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-my $bob   = Prophet::Replica->new( { url => repo_uri_for('bob') } );
-TODO: {
-    local $TODO = "Eventually, we'll want to ensure that you can't merge databases which aren't already replicas";
-is( $bob->db_uuid,
-    $alice->db_uuid,
+my $alice; 
+my $bob;
+
+as_alice { $alice = Prophet::CLI->new; };
+as_bob { $bob = Prophet::CLI->new; };
+
+
+is( $bob->app_handle->handle->db_uuid,
+    $alice->app_handle->handle->db_uuid,
     "bob and alice's replicas need to have the same uuid for them to be able to sync without issues"
 );
-};
 
 
 my $openbug = '';
@@ -41,12 +46,12 @@ as_bob {
     if ( $stdout =~ /^(.*?)\s/ ) {
         $openbug = $1;
     }
-    is($bob->last_changeset_from_source($alice->uuid) => 0);
+    is($bob->app_handle->handle->last_changeset_from_source($alice->app_handle->handle->uuid) => $alice->app_handle->handle->latest_sequence_no);
 
 };
 
 my $changesets;
-    $bob->traverse_new_changesets( for => $alice, force => 1,
+    $bob->app_handle->handle->traverse_new_changesets( for => $alice->app_handle->handle, force => 1,
             callback => sub {
                 my $cs = shift;
                 return unless $cs->has_changes,
@@ -107,9 +112,9 @@ as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
-    is($alice->last_changeset_from_source($bob->uuid) => 0);
-    run_ok( 'prophet', [ 'merge', '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
-    is($alice->last_changeset_from_source($bob->uuid) => $bob->latest_sequence_no);
+    is($alice->app_handle->handle->last_changeset_from_source($bob->app_handle->handle->uuid) => 0);
+    run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob'), '--to' ], "Sync ran ok!" );
+    is($alice->app_handle->handle->last_changeset_from_source($bob->app_handle->handle->uuid) => $bob->app_handle->handle->latest_sequence_no);
 };
 
 my $last_id;
@@ -123,7 +128,7 @@ as_bob {
 };
 
 my $new_changesets;
-    $bob->traverse_new_changesets( for => $alice, force => 1,
+    $bob->handle->traverse_new_changesets( for => $alice->app_handle->handle, force => 1,
             callback => sub {
                 my $cs = shift;
                 return unless $cs->has_changes,

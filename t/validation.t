@@ -20,6 +20,7 @@ use Test::Exception;
 
 as_alice {
     my $cli = Prophet::CLI->new();
+    $cli->handle->initialize;
     my $rec = App::Record->new( handle => $cli->handle, type => 'foo' );
 
     ok( $rec->create( props => { foo => 'bar', point => '123' } ) );

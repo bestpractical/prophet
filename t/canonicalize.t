@@ -10,6 +10,7 @@ use_ok('Prophet::CLI');
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
+$cxn->initialize();
 isa_ok($cxn, 'Prophet::Replica');
 
 use_ok('TestApp::Bug');

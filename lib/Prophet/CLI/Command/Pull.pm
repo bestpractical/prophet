@@ -6,9 +6,9 @@ override run => sub {
     my $self = shift;
     my @from;
 
-    $self->set_arg( db_uuid => $self->handle->db_uuid ) 
-        unless ($self->arg('db_uuid'));
-
+    if ($self->app_handle->handle->replica_exists) {
+        $self->set_arg( db_uuid => $self->app_handle->handle->db_uuid ) unless ($self->arg('db_uuid'));
+    }
     my %previous_sources = $self->_read_cached_upstream_replicas;
     push @from, $self->arg('from')
         if ($self->arg('from') && ( !$self->has_arg('all') || !$previous_sources{$self->arg('from')}));

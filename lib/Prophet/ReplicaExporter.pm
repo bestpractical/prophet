@@ -23,10 +23,17 @@ has target_replica => (
     default => sub {
         my $self = shift;
         confess "No target_path specified" unless $self->has_target_path;
-        my $replica = Prophet::Replica->new({url => "prophet:file://" . $self->target_path});
+        my $replica = Prophet::Replica->new(url => "prophet:file://" . $self->target_path, app_handle => $self->app_handle);
         $replica->initialize(db_uuid => $self->source_replica->db_uuid);
         return $replica;
     },
+);
+
+has app_handle => (
+    is        => 'ro',
+    isa       => 'Prophet::App',
+    weak_ref  => 1,
+    predicate => 'has_app_handle',
 );
 
 =head1 NAME
@@ -66,9 +73,10 @@ sub export {
 
     unless ($self->source_replica->is_resdb) {
     my $resolutions = Prophet::ReplicaExporter->new(
-        {   target_path => dir($self->target_path, 'resolutions' ),
-            source_replica => $self->source_replica->resolution_db_handle
-        }
+           target_path => dir($self->target_path, 'resolutions' ),
+            source_replica => $self->source_replica->resolution_db_handle,
+            app_handle => $self->app_handle
+        
     );
     $resolutions->export();
     }
@@ -87,6 +95,7 @@ sub export_records {
     my %args = validate( @_, { type => 1 } );
 
     my $collection = Prophet::Collection->new(
+        app_handle => $self->app_handle,
         handle => $self->source_replica,
         type   => $args{type}
     );

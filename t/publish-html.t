@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 12;
+use Prophet::Test tests => 13;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -12,6 +12,7 @@ my ($bug_uuid, $pullall_uuid);
 my $alice_published = tempdir(CLEANUP => 1);
 
 as_alice {
+    run_ok('prophet', [qw(init)]);
     run_output_matches( 'prophet',
         [qw(create --type Bug -- --status new --from alice --summary), 'this is a template test'],
         [qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/],

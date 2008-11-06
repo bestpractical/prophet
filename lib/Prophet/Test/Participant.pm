@@ -15,6 +15,7 @@ has arena => (
 
 sub BUILD {
     my $self = shift;
+    as_user( $self->name, sub { call_func( [qw(init)] ) } );
     as_user( $self->name, sub { call_func_ok( [qw(search --type Bug --regex .)] ) } );
 
 }

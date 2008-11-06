@@ -19,7 +19,7 @@ use Prophet::CLI;
 
 our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
-diag( "Replicas can be found in" . $REPO_BASE );
+diag( "Replicas can be found in " . $REPO_BASE );
 
 our $EDIT_TEXT = sub { shift };
 do {

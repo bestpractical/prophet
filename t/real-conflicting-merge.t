@@ -4,11 +4,17 @@ use warnings;
 use strict;
 use Test::Exception;
 
-use Prophet::Test tests => 19;
+use Prophet::Test tests => 18;
 
 as_alice {
-    like(run_command(qw(create --type Bug -- --status new --from alice)), qr/Created Bug/, "Created a record as alice");
-    like(run_command(qw(search --type Bug --regex .)), qr/new/, "Found our record");
+    run_command('init');
+    like(
+        run_command(qw(create --type Bug -- --status new --from alice)),
+        qr/Created Bug/,
+        "Created a record as alice"
+    );
+    like( run_command(qw(search --type Bug --regex .)),
+        qr/new/, "Found our record" );
 };
 
 diag('Bob syncs from alice');
@@ -17,44 +23,64 @@ my $record_id;
 
 as_bob {
 
-    like(run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/);
-    like(run_command('merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force'), qr/Merged one changeset/, "Sync ran ok!");
+    like(
+        run_command(
+            'clone',               
+            '--from',
+            repo_uri_for('alice'), 
+            
+        ),
+        qr/Merged one changeset/,
+        "Sync ran ok!"
+    );
+    like( run_command(qw(create --type Dummy -- --ignore yes)), qr/Created Dummy/ );
 
     # check our local replicas
     my $out = run_command(qw(search --type Bug --regex .));
-    like($out, qr/new/, "We have the one record from alice" );
+    like( $out, qr/new/, "We have the one record from alice" );
     if ( $out =~ /^(.*?)\s./ ) {
         $record_id = $1;
     }
 
-    like(run_command( 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled'), qr/Bug .* updated/);
+    like(
+        run_command(
+            'update',   '--type',
+            'Bug',      '--uuid',
+            $record_id, '--',
+            '--status' => 'stalled'
+        ),
+        qr/Bug .* updated/
+    );
 
     run_output_matches(
         'prophet',
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
-        [
-        qr/id: (\d+) \($record_id\)/,
-          'creator: alice',
-          'from: alice',
-          'original_replica: ' . replica_uuid_for('alice'),
-          'status: stalled',
+        [   qr/id: (\d+) \($record_id\)/,
+            'creator: alice',
+            'from: alice',
+            'original_replica: ' . replica_uuid_for('alice'),
+            'status: stalled',
         ],
         'content is correct'
     );
 };
 
 as_alice {
-    like(run_command('update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'open' ), qr/Bug .* updated/);
+    like(
+        run_command(
+            'update', '--type', 'Bug', '--uuid',
+            $record_id, '--', '--status' => 'open'
+        ),
+        qr/Bug .* updated/
+    );
 
     run_output_matches(
         'prophet',
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
-        [
-            qr/id: (\d+) \($record_id\)/,
-              'creator: alice',
-              'from: alice',
-              'original_replica: ' . replica_uuid_for('alice'),
-              'status: open',
+        [   qr/id: (\d+) \($record_id\)/,
+            'creator: alice',
+            'from: alice', 'original_replica: ' . replica_uuid_for('alice'),
+            'status: open',
         ],
         'content is correct'
     );
@@ -63,21 +89,25 @@ as_alice {
 
 # This conflict, we can autoresolve
 
+my $alice_repo;
+my $bob_repo;
+
+as_alice { $alice_repo = Prophet::CLI->new->handle() };
+as_bob { $bob_repo = Prophet::CLI->new->handle() };
+
 as_bob {
     use_ok('Prophet::Replica');
-    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
     my $conflict_obj;
 
     throws_ok {
-        $target->import_changesets( from => $source, force => 1);
+        $bob_repo->import_changesets( from => $alice_repo, force => 1 );
     }
     qr/not resolved/;
 
     throws_ok {
-        $target->import_changesets(
-            from     => $source,
+        $bob_repo->import_changesets(
+            from     => $alice_repo,
             resolver => sub { die "my way of death\n" },
             force    => 1,
         );
@@ -87,8 +117,8 @@ as_bob {
     ok_added_revisions(
         sub {
 
-            $target->import_changesets(
-                from           => $source,
+            $bob_repo->import_changesets(
+                from           => $alice_repo,
                 resolver_class => 'Prophet::Resolver::AlwaysTarget',
                 force          => 1,
             );
@@ -107,26 +137,28 @@ as_bob {
 
     check_bob_final_state_ok(@changesets);
 };
+
 as_alice {
-    my $source = Prophet::Replica->new( { url => repo_uri_for('bob') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('alice') } );
     throws_ok {
-        $target->import_changesets( from => $source, force => 1 );
+        $alice_repo->import_changesets( from => $bob_repo, force => 1 );
     }
     qr/not resolved/;
 
-    $target->import_resolutions_from_remote_replica( from => $source, force => 1 );
+    $alice_repo->import_resolutions_from_remote_replica(
+        from  => $bob_repo,
+        force => 1
+    );
 
-    $target->import_changesets(
-        from  => $source,
-        resdb => $target->resolution_db_handle,
+    $alice_repo->import_changesets(
+        from  => $bob_repo,
+        resdb => $alice_repo->resolution_db_handle,
         force => 1,
     );
 
     lives_and {
         ok_added_revisions(
             sub {
-                $target->import_changesets( from => $source, force => 1 );
+                $alice_repo->import_changesets( from => $bob_repo, force => 1 );
             },
             0,
             'no more changes to sync'
@@ -136,13 +168,11 @@ as_alice {
 };
 
 as_bob {
-    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
     lives_and {
         ok_added_revisions(
             sub {
-                $target->import_changesets( from => $source, force => 1 );
+                $bob_repo->import_changesets( from => $alice_repo, force => 1 );
             },
             0,
             'no more changes to sync'
@@ -167,7 +197,7 @@ sub check_bob_final_state_ok {
         [   {   changes => {
                     $record_id => {
                         change_type  => 'update_file',
-                        record_type    => 'Bug',
+                        record_type  => 'Bug',
                         prop_changes => {
                             status => {
                                 old_value => 'stalled',
@@ -185,8 +215,7 @@ sub check_bob_final_state_ok {
                 source_uuid          => replica_uuid(),
                 original_source_uuid => replica_uuid(),
             },
-            {
-                creator              => 'alice',
+            {   creator              => 'alice',
                 created              => $changesets[1]->created,
                 is_nullification     => undef,
                 is_resolution        => undef,
@@ -196,10 +225,11 @@ sub check_bob_final_state_ok {
                 original_source_uuid => as_alice { replica_uuid() },
                 changes              => {
                     $record_id => {
-                        record_type    => 'Bug',
+                        record_type  => 'Bug',
                         change_type  => 'update_file',
                         prop_changes => {
-                            status => { old_value => 'new', new_value => 'open' }
+                            status =>
+                                { old_value => 'new', new_value => 'open' }
 
                             }
 
@@ -207,7 +237,7 @@ sub check_bob_final_state_ok {
                     as_alice {
                         replica_uuid();
                     } => {
-                        record_type    => '_merge_tickets',
+                        record_type  => '_merge_tickets',
                         change_type  => 'update_file',
                         prop_changes => {
                             'last-changeset' => {
@@ -220,8 +250,7 @@ sub check_bob_final_state_ok {
                 }
             },
 
-            {
-                creator              => 'bob',
+            {   creator              => 'bob',
                 created              => $changesets[2]->created,
                 is_nullification     => undef,
                 is_resolution        => 1,
@@ -231,10 +260,11 @@ sub check_bob_final_state_ok {
                 original_source_uuid => replica_uuid(),
                 changes              => {
                     $record_id => {
-                        record_type    => 'Bug',
+                        record_type  => 'Bug',
                         change_type  => 'update_file',
                         prop_changes => {
-                            status => { old_value => 'open', new_value => 'stalled' }
+                            status =>
+                                { old_value => 'open', new_value => 'stalled' }
 
                             }
 
