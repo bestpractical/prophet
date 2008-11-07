@@ -24,7 +24,6 @@ sub run {
     if ($self->context->has_arg('set')) {
         for my $name ($self->context->prop_names) {
             my $uuid = $settings->{$name}->[0];
-            warn "UUID IS $uuid - name is $name";
             my $s = $self->app_handle->setting(   uuid => $uuid);
             my $old_value = $s->get_raw; 
             my $new_value = $self->context->props->{$name}; 
