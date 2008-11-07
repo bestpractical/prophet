@@ -46,7 +46,9 @@ sub import_extra {
         no warnings 'redefine';
         *Test::Builder::plan = sub { };
     }
-$ENV{'PROPHET_APP_CONFIG'} = 't/testing.conf';
+
+    $ENV{'PROPHET_APP_CONFIG'} = 't/testing.conf';
+    $ENV{'EMAIL'} = 'nobody@example.com';
 }
 
 {
