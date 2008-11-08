@@ -10,7 +10,7 @@ has default => (
 );
 
 has label => (
-    isa => 'Str',
+    isa => 'Maybe[Str]',
     is  => 'rw',
 );
 
