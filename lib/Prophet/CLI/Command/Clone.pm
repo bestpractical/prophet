@@ -25,7 +25,10 @@ sub run {
     }
 
     my %init_args;
-    unless ($source->isa('Prophet::ForeignReplica')) {
+    if ($source->isa('Prophet::ForeignReplica')) {
+        $target->after_initialize( sub { shift->app_handle->set_db_defaults } );
+    }
+    else {
         %init_args = (
             db_uuid    => $source->db_uuid,
             resdb_uuid => $source->resolution_db_handle->db_uuid,
