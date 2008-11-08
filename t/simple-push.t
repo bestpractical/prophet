@@ -72,8 +72,8 @@ is_deeply(
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
-            'changes'              => [
-                {
+            'changes'              => {
+                $openbug => {
                     'change_type'  => 'add_file',
                     'prop_changes' => {
                         'from' => {
@@ -93,10 +93,9 @@ is_deeply(
                             'old_value' => undef
                         },
                     },
-                    'record_uuid' => $openbug,
                     'record_type' => 'Bug'
                 }
-            ],
+            },
             'is_nullification' => undef,
         }
     ]
@@ -148,8 +147,8 @@ is_deeply(
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
-            'changes'              => [
-                {
+            'changes'              => {
+                $last_id => {
                     'change_type'  => 'add_file',
                     'prop_changes' => {
                         'from' => {
@@ -169,10 +168,9 @@ is_deeply(
                             'old_value' => undef,
                         },
                     },
-                    'record_uuid' => $last_id,
-                    'record_type' => 'Bug',
+                    'record_type' => 'Bug'
                 }
-            ],
+            },
             'is_nullification' => undef,
         }
     ]

@@ -133,10 +133,10 @@ sub as_hash {
     }
 
     return {
-        record_uuid  => $self->record_uuid,
-        record_type  => $self->record_type,
+        record_type    => $self->record_type,
         change_type  => $self->change_type,
-        prop_changes => $props,
+        prop_changes => $props
+
     };
 }
 
@@ -181,11 +181,8 @@ sub new_from_hashref {
     my $class   = shift;
     my $uuid    = shift;
     my $hashref = shift;
-    my $self    = $class->new( {
-        record_type => $hashref->{'record_type'},
-        record_uuid => $uuid,
-        change_type => $hashref->{'change_type'},
-    } );
+    my $self    = $class->new(
+        { record_type => $hashref->{'record_type'}, record_uuid => $uuid, change_type => $hashref->{'change_type'} } );
     for my $prop ( keys %{ $hashref->{'prop_changes'} } ) {
         $self->add_prop_change(
             name => $prop,

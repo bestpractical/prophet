@@ -1,8 +1,8 @@
 package Prophet::Config;
 use Moose;
 use MooseX::AttributeHelpers;
-use File::Spec;
 use Path::Class;
+
 
 has app_handle => (
     is => 'ro',
@@ -10,7 +10,6 @@ has app_handle => (
     isa => 'Prophet::App',
     required => 0
 );
-
 has config_files => ( 
     is => 'rw',
     isa => 'ArrayRef' ,
@@ -34,15 +33,10 @@ sub aliases {
     return $_[0]->config->{_aliases};
 }
 
-sub app_config_file {
+sub app_config_file { 
     my $self = shift;
 
-    return $self->file_if_exists($ENV{'PROPHET_APP_CONFIG'})
-        || $self->file_if_exists(
-            File::Spec->catfile(
-                $self->app_handle->handle->fs_root => 'prophetrc' ))
-        || $self->file_if_exists(
-            File::Spec->catfile( $ENV{'HOME'} => '.prophetrc' ));
+    $ENV{'PROPHET_APP_CONFIG'} || file( $self->app_handle->handle->fs_root => "prophetrc" ) ;
 }
 
 #my $singleton;
@@ -88,20 +82,6 @@ sub display_name_for_uuid {
     return defined($friendly) ? $friendly : $uuid;
 }
 
-=head2 file_if_exists FILENAME
-
-Returns the given filename if it exists on the filesystem, and an
-empty string otherwise.
-
-=cut
-
-sub file_if_exists {
-    my $self = shift;
-    my $file = shift || ''; # quiet warnings
-
-    return (-e $file) ? $file : '';
-}
-
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
@@ -115,15 +95,14 @@ Prophet::Config
 
 =head1 SYNOPSIS
 
-    In the Prophet config file (see L</app_config_file>):
+    In ~/.prophetrc:
 
-      prefer_luids: 1
-      summary_format_ticket = %4s },$luid | %-11.11s,status | %-70.70s,summary
+        prefer_luids: 1
 
 =head1 DESCRIPTION
 
-This class represents the configuration of Prophet and the application built on
-top of it.
+This class represents configuration of Prophet and the application built on top
+of it.
 
 =head1 METHODS
 
@@ -135,9 +114,8 @@ Takes no arguments. Automatically loads the config for you.
 
 =head2 app_config_file
 
-The file which controls configuration for this application
-(the $PROPHET_APP_CONFIG environmental variable, C<$PROPHET_REPO/prophetrc>,
-or C<$HOME/.prophetrc>, in that order).
+The file which controls configuration for this application.
+C<$PROPHET_REPO/prophetrc>.
 
 =head2 load_from_files [files]
 
@@ -158,7 +136,7 @@ Sets a specific config setting.
 
 =head2 list
 
-Lists all configuration options.
+List all configuration options
 
 =head2 display_name_for_uuid UUID
 
