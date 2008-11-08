@@ -20,7 +20,7 @@ as_alice {
 
 };
 as_bob {
-    run_ok( 'settings', [ 'merge', '--from', repo_uri_for('alice'), '--to', repo_uri_for('bob') ], "Sync ran ok!" );
+    run_ok( 'settings', [ 'pull', '--from', repo_uri_for('alice') ]);
     my ($return, $stdout, $stderr) = run_script('settings', [qw(settings --show)]);
     like($stdout, qr/default_status: \["open"\]/, "the original milestone list is there");
     run_ok('settings', [qw(settings --set -- default_status ["stalled"])]);
