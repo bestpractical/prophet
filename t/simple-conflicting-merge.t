@@ -127,14 +127,14 @@ as_bob {
             original_source_uuid => undef,
             sequence_no          => undef,
             source_uuid          => undef,
-            changes              => [
-                {
+            changes              => {
+                $record_id => {
                     change_type  => 'update_file',
-                    record_uuid  => $record_id,
-                    record_type  => 'Bug',
+                    record_type    => 'Bug',
                     prop_changes => { status => { old_value => 'stalled', new_value => 'new' } }
-                }
-            ]
+                    }
+
+            }
         }
     );
 
@@ -167,27 +167,26 @@ as_bob {
             sequence_no          => undef,
             original_sequence_no => $alice->latest_sequence_no,
             original_source_uuid => replica_uuid_for('alice'),
-            changes              => [
-                {
-                    record_uuid  => $record_id,
-                    record_type  => 'Bug',
+            changes              => {
+                $record_id => {
+                    record_type    => 'Bug',
                     change_type  => 'update_file',
                     prop_changes => { status => { old_value => 'new', new_value => 'stalled' } }
                 },
-                {
+
+                replica_uuid_for('alice') => {
                     change_type  => 'update_file',
-                    record_uuid  => replica_uuid_for('alice'),
-                    record_type  => '_merge_tickets',
+                    record_type    => '_merge_tickets',
                     prop_changes => {
                         'last-changeset' => {
                             old_value => ($alice->latest_sequence_no-1),
                             new_value => $alice->latest_sequence_no
                         }
+                        }
+
                     }
 
                 }
-
-            ],
 
         },
         "yay. the last rev from alice synced right"

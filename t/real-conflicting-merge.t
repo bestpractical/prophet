@@ -168,11 +168,10 @@ sub check_bob_final_state_ok {
     my @hashes = map { $_->as_hash } @changesets;
     is_deeply(
         \@hashes,
-        [   {   changes => [
-                    {
+        [   {   changes => {
+                    $record_id => {
                         change_type  => 'update_file',
-                        record_uuid  => $record_id,
-                        record_type  => 'Bug',
+                        record_type    => 'Bug',
                         prop_changes => {
                             status => {
                                 old_value => 'stalled',
@@ -180,7 +179,7 @@ sub check_bob_final_state_ok {
                             }
                         }
                     }
-                ],
+                },
                 creator              => undef,
                 created              => $changesets[0]->created,
                 is_nullification     => 1,
@@ -199,27 +198,30 @@ sub check_bob_final_state_ok {
                 original_sequence_no => $ALICE_LAST_REV_CACHE,
                 source_uuid          => replica_uuid(),
                 original_source_uuid => as_alice { replica_uuid() },
-                changes              => [
-                    {
-                        record_uuid  => $record_id,
-                        record_type  => 'Bug',
+                changes              => {
+                    $record_id => {
+                        record_type    => 'Bug',
                         change_type  => 'update_file',
                         prop_changes => {
                             status => { old_value => 'new', new_value => 'open' }
-                        },
+
+                            }
+
                     },
-                    {
-                        record_uuid  => as_alice{ replica_uuid() },
-                        record_type  => '_merge_tickets',
+                    as_alice {
+                        replica_uuid();
+                    } => {
+                        record_type    => '_merge_tickets',
                         change_type  => 'update_file',
                         prop_changes => {
                             'last-changeset' => {
                                 old_value => $ALICE_LAST_REV_CACHE - 1,
                                 new_value => $ALICE_LAST_REV_CACHE
                             }
-                        }
+                            }
+
                     }
-                ],
+                }
             },
 
             {
@@ -231,16 +233,18 @@ sub check_bob_final_state_ok {
                 original_sequence_no => replica_last_rev(),
                 source_uuid          => replica_uuid(),
                 original_source_uuid => replica_uuid(),
-                changes              => [
-                    {
-                        record_uuid  => $record_id,
-                        record_type  => 'Bug',
+                changes              => {
+                    $record_id => {
+                        record_type    => 'Bug',
                         change_type  => 'update_file',
                         prop_changes => {
                             status => { old_value => 'open', new_value => 'stalled' }
-                        },
+
+                            }
+
                     }
-                ]
+                    }
+
             }
         ],
         "Bob's final state is as we expect"

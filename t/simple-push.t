@@ -94,8 +94,9 @@ is_deeply(
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
-            'changes'              => [
-                {   'change_type'  => 'add_file',
+            'changes'              => {
+                $openbug => {
+                    'change_type'  => 'add_file',
                     'prop_changes' => {
                         'from' => {
                             'new_value' => 'bob',
@@ -114,10 +115,9 @@ is_deeply(
                             'old_value' => undef
                         },
                     },
-                    'record_uuid' => $openbug,
                     'record_type' => 'Bug'
                 }
-            ],
+            },
             'is_nullification' => undef,
         }
     ]
@@ -177,8 +177,9 @@ is( delete $new_changesets->[0]->{'sequence_no'},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
             'source_uuid'          => replica_uuid_for('bob'),
-            'changes'              => [
-                {   'change_type'  => 'add_file',
+            'changes'              => {
+                $last_id => {
+                    'change_type'  => 'add_file',
                     'prop_changes' => {
                         'from' => {
                             'new_value' => 'bob',
@@ -197,10 +198,9 @@ is( delete $new_changesets->[0]->{'sequence_no'},
                             'old_value' => undef,
                         },
                     },
-                    'record_uuid' => $last_id,
-                    'record_type' => 'Bug',
+                    'record_type' => 'Bug'
                 }
-            ],
+            },
             'is_nullification' => undef,
         }
     ];
