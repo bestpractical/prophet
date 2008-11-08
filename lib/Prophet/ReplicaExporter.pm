@@ -24,7 +24,17 @@ has target_replica => (
         my $self = shift;
         confess "No target_path specified" unless $self->has_target_path;
         my $replica = Prophet::Replica->new(url => "prophet:file://" . $self->target_path, app_handle => $self->app_handle);
-        $replica->initialize(db_uuid => $self->source_replica->db_uuid);
+
+        my $src = $self->source_replica;
+        my %init_args = (
+            db_uuid => $src->db_uuid,
+        );
+
+        $init_args{resdb_uuid} = $src->resolution_db_handle->db_uuid
+            if !$src->is_resdb;
+
+        $replica->initialize(%init_args);
+
         return $replica;
     },
 );

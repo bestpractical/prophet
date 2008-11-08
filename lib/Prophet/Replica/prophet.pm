@@ -267,8 +267,10 @@ sub can_write_records    { return ( shift->fs_root ? 1 : 0 ) }
 
 sub initialize {
     my $self = shift;
-    my %args = validate( @_, { db_uuid => 0, 
-        } );
+    my %args = validate(@_, {
+        db_uuid    => 0,
+        resdb_uuid => 0,
+    });
 
     if ( !$self->fs_root_parent ) {
 
@@ -300,7 +302,9 @@ sub initialize {
 
     $self->set_replica_version(1);
 
-    $self->resolution_db_handle->initialize if (!$self->is_resdb);
+    $self->resolution_db_handle->initialize(db_uuid => $args{resdb_uuid})
+        if !$self->is_resdb;
+
     $self->after_initialize->($self);
 }
 
