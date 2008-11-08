@@ -285,8 +285,7 @@ sub initialize {
         }
     }
 
-    die "The replica is already initialized.\n"
-        if $self->replica_exists;
+    return if $self->replica_exists;
 
     dir( $self->fs_root, $_ )->mkpath
         for (
