@@ -13,7 +13,7 @@ my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
 isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 use_ok('TestApp::Bug');
-
+$cxn->initialize;
 my $record = TestApp::Bug->new( handle => $cxn );
 
 isa_ok( $record, 'TestApp::Bug' );

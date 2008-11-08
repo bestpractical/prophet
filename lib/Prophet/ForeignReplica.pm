@@ -13,18 +13,15 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 sub BUILD {
     my $self = shift;
-    my $cli  = Prophet::CLI->new();
-
-    # XXX TODO this $cli object should be a Prophet::App object
-    my $state_handle_url =      $cli->app_handle->default_replica_type . ":" . $cli->handle->url;
+    my $state_handle_url =      $self->app_handle->default_replica_type . ":" . $self->app_handle->handle->url;
     $self->log( "Connecting to state database ".$state_handle_url);
     $self->state_handle(
         Prophet::Replica->new(
-            {   url => $state_handle_url,
-                db_uuid => $self->state_db_uuid
-            }
-        )
-    );
+               url => $state_handle_url,
+                db_uuid => $self->state_db_uuid,
+                app_handle => $self->app_handle
+        
+    ));
 }
 
 sub conflicts_from_changeset { return; }
@@ -105,6 +102,16 @@ sub has_seen_changeset {
     # Has our host replica given this changeset to us yet?
     return $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no;
 }
+
+
+
+sub log {
+    my $self = shift;
+    my ($msg) = validate_pos(@_, 1);
+    Carp::confess unless ($self->app_handle);
+    $self->app_handle->log($self->url." (".$self->scheme.":".$self->url." )".": " .$msg);
+}
+
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

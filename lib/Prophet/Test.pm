@@ -3,7 +3,7 @@ use warnings;
 
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_merge_tickets replica_uuid_for fetch_newest_changesets ok_added_revisions replica_uuid database_uuid database_uuid_for
+our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_merge_tickets replica_uuid_for ok_added_revisions replica_uuid database_uuid database_uuid_for
     serialize_conflict serialize_changeset in_gladiator diag is_script_output run_command set_editor load_record
     /;
 
@@ -19,7 +19,7 @@ use Prophet::CLI;
 
 our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
-diag( "Replicas can be found in" . $REPO_BASE );
+diag( "Replicas can be found in " . $REPO_BASE );
 
 our $EDIT_TEXT = sub { shift };
 do {
@@ -46,7 +46,9 @@ sub import_extra {
         no warnings 'redefine';
         *Test::Builder::plan = sub { };
     }
-$ENV{'PROPHET_APP_CONFIG'} = 't/testing.conf';
+
+    $ENV{'PROPHET_APP_CONFIG'} = 't/testing.conf';
+    $ENV{'EMAIL'} = 'nobody@example.com';
 }
 
 {
@@ -261,7 +263,7 @@ sub replica_uuid {
 sub database_uuid {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
-    return $cli->handle->db_uuid;
+    return eval { $cli->handle->db_uuid};
 }
 
 =head2 replica_merge_tickets
@@ -303,6 +305,7 @@ sub as_user {
     my $coderef  = shift;
     local $ENV{'PROPHET_USER'} = $username;
     local $ENV{'PROPHET_REPO'} = repo_path_for($username);
+    local $ENV{'EMAIL'}        = $username . '@example.com';
 
     my $ret = $coderef->();
 
@@ -320,19 +323,6 @@ sub replica_uuid_for {
 sub database_uuid_for {
     my $user = shift;
     return $DATABASE_UUIDS{$user};
-}
-
-=head2 fetch_newest_changesets COUNT
-
-Returns C<COUNT> newest L<Prophet::ChangeSet> objects in the current user's replica.
-
-=cut
-
-sub fetch_newest_changesets {
-    my $count = shift;
-    my $source = Prophet::Replica->new( { url => repo_uri_for( $ENV{'PROPHET_USER'} ) } );
-    return @{ $source->fetch_changesets( after => ( replica_last_rev() - $count ) ) };
-
 }
 
 =head2 ensure_new_revisions { CODE }, $numbers_of_new_revisions, $msg

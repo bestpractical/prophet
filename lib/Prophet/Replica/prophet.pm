@@ -22,8 +22,10 @@ has _uuid => (
 
 has replica_version => (
     is      => 'ro',
+    writer  => '_set_replica_version',
+    isa     => 'Int',
     lazy    => 1,
-    default => sub { shift->_read_file('replica-version') }
+    default => sub { shift->_read_file('replica-version') || 0 }
 );
 
 has fs_root_parent => (
@@ -64,22 +66,11 @@ has '+resolution_db_handle' => (
         return if $self->is_resdb || $self->is_state_handle;
         return Prophet::Replica->new({
             url      => "prophet:" . $self->url . '/resolutions',
+            app_handle => $self->app_handle,
             is_resdb => 1,
         })
     },
 );
-
-#has '+state_handle' => (
-#    isa     => 'Prophet::Replica | Undef',
-#    lazy    => 1,
-#    default => sub {
-#        return if $self->is_state_handle;
-#        return Prophet::Replica->new({
-#            url             => "prophet:" . $self->url,
-#            is_state_handle => 1
-#        });
-#    },
-#);
 
 use constant scheme            => 'prophet';
 use constant cas_root          => 'cas';
@@ -217,72 +208,57 @@ Open a connection to the prophet replica source identified by C<$self->url>.
 sub BUILD {
     my $self = shift;
     my $args = shift;
-
-    for ($self->{url}, @{ $self->{_alt_urls} }) {
+    Carp::cluck() unless ($args->{app_handle});
+    for ($self->{url} ) {
         s/^prophet://;  # url-based constructor in ::replica should do better
         s{/$}{};
     }
 
-    $self->_try_alt_urls($args);
-    $self->_probe_or_create_db;
 }
 
 sub state_handle { return shift; }
 
-sub _try_alt_urls {
+=head2 replica_exists
+
+Returns true if the replica already exists / has been initialized.
+Returns false otherwise.
+
+=cut
+
+sub replica_exists {
     my $self = shift;
-    my $args = shift;
-
-    return unless @{ $self->{_alt_urls} };
-
-    # try each URL in turn. since the "url" attribute is usually specified
-    # directly by the user (and the others are calculated from that), we
-    # save the error caused by the "url" attribute to throw if all
-    # alternates fail
-
-    my $error;
-    for my $url ($self->{url}, @{ $self->{_alt_urls} }) {
-        my $new_self = eval {
-            local $SIG{__DIE__} = 'DEFAULT';
-            my $obj = $self->new(%$args, url => $url, _alt_urls => []);
-            $obj->_probe_or_create_db;
-            $obj;
-        };
-
-        if ($new_self) {
-            # XXX: yes this is a little offensive. but we can't outright replace
-            # $self this late in the game, and we cannot foresee which
-            # attributes will need clearing, so this is the simplest way to
-            # make sure everything is consistent
-            %$self = %$new_self;
-            return 1;
-        }
-
-        $error ||= $@;
-    }
-
-    die $error if $error;
+    return $self->replica_version ? 1 :0;
 }
 
-sub _probe_or_create_db {
-    my $self = shift;
+=head2 set_replica_version
 
-    return if $self->replica_version;
+Sets the replica's version to the given integer.
 
-    if ( $self->fs_root_parent ) {
+=cut
 
-        # We have a filesystem based replica. we can perform a create
-        $self->initialize();
+sub set_replica_version {
+    my $self    = shift;
+    my $version = shift;
 
-    } elsif ($self->can_write_changesets) {
-        die "We can only create file: based prophet replicas. It looks like you're trying to create " . $self->url;
-    } else {
-        die "Prophet couldn't find a replica at \"".$self->url."\"\n\n".
-            "Please check the URL and try again.\n";
-        
-    }
+    $self->_set_replica_version($version);
 
+    $self->_write_file(
+        path    => 'replica-version',
+        content => $version,
+    );
+
+    return $version;
 }
+
+sub can_initialize {
+    my $self = shift; 
+    if ( $self->fs_root_parent  && -w $self->fs_root_parent ) {
+        return 1;
+
+    }
+    return 0;
+}
+
 
 use constant can_read_records    => 1;
 use constant can_read_changesets => 1;
@@ -291,7 +267,28 @@ sub can_write_records    { return ( shift->fs_root ? 1 : 0 ) }
 
 sub initialize {
     my $self = shift;
-    my %args = validate( @_, { db_uuid => 0 } );
+    my %args = validate(@_, {
+        db_uuid    => 0,
+        resdb_uuid => 0,
+    });
+
+    if ( !$self->fs_root_parent ) {
+
+        if ( $self->can_write_changesets ) {
+            die
+                "We can only create local prophet replicas. It looks like you're trying to create "
+                . $self->url;
+        } else {
+            die "Prophet couldn't find a replica at \""
+                . $self->url
+                . "\"\n\n"
+                . "Please check the URL and try again.\n";
+
+        }
+    }
+
+    return if $self->replica_exists;
+
     dir( $self->fs_root, $_ )->mkpath
         for (
         $self->record_dir,     $self->cas_root,
@@ -302,10 +299,12 @@ sub initialize {
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_latest_sequence_no("0");
     $self->set_replica_uuid( Data::UUID->new->create_str );
-    $self->_write_file(
-        path    => 'replica-version',
-        content => '1'
-    );
+
+    $self->set_replica_version(1);
+
+    $self->resolution_db_handle->initialize(db_uuid => $args{resdb_uuid})
+        if !$self->is_resdb;
+
     $self->after_initialize->($self);
 }
 

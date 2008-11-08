@@ -9,8 +9,8 @@ sub try_to_edit {
     my %args = validate( @_,
         {   template => 1,
             record   => 0,
-        });
-
+        }
+    );
 
     my $template = ${ $args{template} };
 

@@ -6,7 +6,10 @@ use strict;
 use Prophet::Test tests => 17;
 use Test::Exception;
 
+use_ok('Prophet::Replica');
+
 as_alice {
+    run_ok( 'prophet' , ['init']);
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
@@ -16,10 +19,7 @@ diag('Bob syncs from alice');
 my $record_id;
 
 as_bob {
-
-    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
-
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'clone', '--from', repo_uri_for('alice')], "Sync ran ok!" );
 
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
@@ -43,6 +43,13 @@ as_bob {
     );
 };
 
+
+my ($alice, $bob, $alice_app, $bob_app);
+# This conflict, we can autoresolve
+as_bob { $bob_app = Prophet::CLI->new()->app_handle; $bob = $bob_app->handle;};
+as_alice { $alice_app = Prophet::CLI->new()->app_handle; $alice = $alice_app->handle};
+
+
 as_alice {
     run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
     run_output_matches(
@@ -58,27 +65,22 @@ as_alice {
         'content is correct'
     );
 
+
 };
 
 # This conflict, we can autoresolve
 
+diag("prebob");
 as_bob {
 
     # XXX TODO: this should actually fail right now.
     # in perl code, we're going to run the merge (just as prophet-merge does)
 
-    use_ok('Prophet::Replica');
-
-    my $source = Prophet::Replica->new( { url => repo_uri_for('alice') } );
-    my $target = Prophet::Replica->new( { url => repo_uri_for('bob') } );
 
     my $conflict_obj;
-
-    my $repo = repo_uri_for('bob');
-
     lives_ok {
-        $target->import_changesets(
-            from              => $source,
+        $bob->import_changesets(
+            from              => $alice,
             force             => 1,
             conflict_callback => sub {
                 $conflict_obj = shift;
@@ -88,7 +90,7 @@ as_bob {
 
     isa_ok( $conflict_obj, 'Prophet::Conflict' );
 
-    my $conflicts = serialize_conflict($conflict_obj);
+    my $conflicts = eval { serialize_conflict($conflict_obj)} ;
 
     is_deeply(
         $conflicts,
@@ -137,7 +139,7 @@ as_bob {
     );
 
     # replay the last two changesets for bob's replica
-    my @changesets = fetch_newest_changesets(2);
+    my @changesets =  @{ $bob->fetch_changesets( after => ( $bob->latest_sequence_no - 2) ) };
 
     # is the second most recent change:
     my $applied_null    = shift @changesets;
@@ -163,7 +165,7 @@ as_bob {
             is_resolution        => undef,
             source_uuid          => undef,
             sequence_no          => undef,
-            original_sequence_no => as_alice { replica_last_rev() },
+            original_sequence_no => $alice->latest_sequence_no,
             original_source_uuid => replica_uuid_for('alice'),
             changes              => {
                 $record_id => {
@@ -177,8 +179,8 @@ as_bob {
                     record_type    => '_merge_tickets',
                     prop_changes => {
                         'last-changeset' => {
-                            old_value => as_alice { replica_last_rev() - 1 },
-                            new_value => as_alice { replica_last_rev() }
+                            old_value => ($alice->latest_sequence_no-1),
+                            new_value => $alice->latest_sequence_no
                         }
                         }
 
@@ -192,3 +194,4 @@ as_bob {
 
 };
 
+diag("postbob");

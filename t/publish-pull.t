@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 28;
+use Prophet::Test tests => 24;
 use Test::Exception;
 use File::Temp 'tempdir';
 use Path::Class;
@@ -12,21 +12,20 @@ my ($bug_uuid, $pullall_uuid);
 my $alice_published = tempdir(CLEANUP => 1);
 
 as_alice {
+    run_ok('prophet', [qw(init)]);
     run_output_matches( 'prophet',
         [qw(create --type Bug -- --status new --from alice )],
         [qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/],
         "Created a Bug record as alice");
     ok($bug_uuid, "got a uuid for the Bug record");
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
-
     run_ok( 'prophet', [qw(publish --to), $alice_published] );
 };
 
-my $alice_uuid = database_uuid_for('alice');
-my $path = dir($alice_published);
+my $path =$alice_published;
 
 as_bob {
-    run_ok( 'prophet', ['pull', '--from', "file:$path", '--force'] );
+    run_ok( 'prophet', ['clone', '--from', "file:$path"] );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
 
@@ -41,30 +40,27 @@ as_alice {
 };
 
 as_bob {
-    run_ok( 'prophet', ['pull', '--all', '--force'] );
+    run_ok( 'prophet', ['pull', '--all'] );
     run_output_matches( 'prophet', [qw(search --type Pullall --regex .)], [qr/new/], " Found our record" );
 };
 
-# see if uuid intuition works
-# e.g. I hand you a url, http://sartak.org/misc/sd, and Prophet figures out
-# that you really want http://sartak.org/misc/sd/DATABASE-UUID
 as_charlie {
-    my $cli  = Prophet::CLI->new();
-    $cli->handle->set_db_uuid($alice_uuid);
-
-    run_ok( 'prophet', ['pull', '--from', "file:$alice_published", '--force'] );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], "publish database uuid intuition works" );
+    run_ok( 'prophet', ['clone', '--from', "file:$path"] );
 };
 
-as_david {
-    run_ok( 'prophet', ['pull', '--from', "file:$path"] );
-};
+is(database_uuid_for('alice'), database_uuid_for('charlie'), "pull propagated the database uuid properly");
+isnt(replica_uuid_for('alice'), replica_uuid_for('charlie'), "pull created a new replica uuid");
 
-is(database_uuid_for('alice'), database_uuid_for('david'), "pull propagated the database uuid properly");
-isnt(replica_uuid_for('alice'), replica_uuid_for('david'), "pull created a new replica uuid");
+as_alice { check_replica('alice') };
+as_bob { check_replica('bob') };
+as_charlie { check_replica('charlie') };
 
-for my $user ('alice', 'bob', 'charlie', 'david') {
-    my $replica = Prophet::Replica->new({ url => repo_uri_for($user) });
+sub check_replica {
+
+    my $user = shift;
+
+    my $cli = Prophet::CLI->new();
+    my $replica = $cli->handle;
     my $changesets = $replica->fetch_changesets(after => 0);
 
     is(@$changesets, 2, "two changesets for $user");

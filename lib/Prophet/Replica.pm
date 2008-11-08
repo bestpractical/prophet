@@ -44,13 +44,6 @@ has url => (
     documentation => 'Where this replica comes from.',
 );
 
-has _alt_urls => (
-    is      => 'rw',
-    isa     => 'ArrayRef',
-    default => sub { [] },
-    documentation => 'Alternate places to try looking for this replica.',
-);
-
 has app_handle => (
     is        => 'ro',
     isa       => 'Prophet::App',
@@ -59,7 +52,7 @@ has app_handle => (
 );
 
 has after_initialize => ( 
-    is => 'ro',
+    is => 'rw',
     isa => 'CodeRef',
     default => sub { sub {1} } # default returns a coderef
     );
@@ -83,8 +76,7 @@ new replica object.
 
 =cut
 
-around new => sub {
-    my $orig  = shift;
+sub new {
     my $class = shift;
     my %args  = @_ == 1 ? %{ $_[0] } : @_;
 
@@ -95,12 +87,21 @@ around new => sub {
     }
 
     if ( $class eq $new_class) { 
-        return $orig->($class, %args) 
+        return $class->SUPER::new(%args) 
     } else {
         Prophet::App->require($new_class);
         return $new_class->new(%args);
         }
 };
+
+
+sub replica_exists {
+    return 1; # XXX TODO HACK
+}
+
+sub can_initialize {
+    return undef;
+}
 
 =head3 _url_to_replica_class
 
@@ -148,10 +149,7 @@ sub import_changesets {
 
     # they have no changes, that means they're probably creating a new replica
     # of a database, so copy the db_uuid
-    if (($self->latest_sequence_no||0) == 0) {
-        my $uuid = $source->db_uuid;
-        $self->set_db_uuid($uuid) if $uuid;
-    }
+    warn "The source does not exist" unless ($source->replica_exists);
 
     $source->traverse_new_changesets(
         for      => $self,
@@ -553,7 +551,12 @@ sub export_to {
     my %args = validate( @_, { path => 1, } );
     require Prophet::ReplicaExporter;
 
-    my $exporter = Prophet::ReplicaExporter->new({target_path => dir($args{'path'}), source_replica => $self});
+    my $exporter = Prophet::ReplicaExporter->new(
+        {   target_path    => dir( $args{'path'} ),
+            source_replica => $self,
+            app_handle     => $self->app_handle
+        }
+    );
     $exporter->export();
 }
 
@@ -1087,6 +1090,8 @@ sub _set_original_source_metadata_for_current_edit  {}
 
 =head2 helper routines
 
+=cut
+
 =head3 log $MSG
 
 Logs the given message to C<STDERR> (but only if the C<PROPHET_DEBUG>
@@ -1097,7 +1102,8 @@ environmental variable is set).
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
-    print STDERR "# ".$self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
+    Carp::confess unless ($self->app_handle);
+    $self->app_handle->log($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
 }
 
 =head2 log_fatal $MSG
@@ -1112,8 +1118,7 @@ sub log_fatal {
     # always skip this fatal_error function when generating a stack trace
     local $Carp::CarpLevel = $Carp::CarpLevel + 1;
 
-    $self->log(@_);
-    Carp::confess(@_);
+    $self->app_handle->log_fatal(@_);
 }
 
 =head2 changeset_creator
@@ -1137,7 +1142,7 @@ sub display_name_for_uuid {
     my $self = shift;
     my $uuid = shift || $self->uuid;
 
-    return $uuid if !$self->has_app_handle;
+    return $uuid if !$self->app_handle;
 
     return $self->app_handle->config->display_name_for_uuid($uuid);
 }

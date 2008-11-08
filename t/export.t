@@ -4,9 +4,10 @@ use warnings;
 use strict;
 use Test::Exception;
 
-use Prophet::Test tests => 16;
+use Prophet::Test tests => 17;
 use Test::Exception;
 as_alice {
+    run_ok('prophet', [qw(init)]);
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
@@ -19,12 +20,13 @@ use File::Temp 'tempdir';
 
 as_bob {
 
-    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
 
     diag repo_uri_for('bob');
     diag repo_uri_for('alice');
 
-    run_ok( 'prophet', [ 'merge', '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    run_ok( 'prophet', [ 'clone', '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
+
     # check our local replicas
     my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
     like( $out, qr/new/, "We have the one record from alice" );
@@ -62,7 +64,7 @@ as_bob {
     is( $latest, $cli->handle->latest_sequence_no );
     use_ok('Prophet::Replica::prophet');
     diag("Checking changesets in $path");
-    my $changesets =  Prophet::Replica->new( { url => 'prophet:file://' . $path } )->fetch_changesets( after => 0 );
+    my $changesets =  Prophet::Replica->new( { url => 'prophet:file://' . $path, app_handle => Prophet::CLI->new->app_handle } )->fetch_changesets( after => 0 );
     my @changesets = grep {$_->has_changes} @$changesets;
     is( $#changesets, 2, "We found a total of 3 changesets" );
     # XXX: compare the changeset structure

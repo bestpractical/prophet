@@ -2,7 +2,7 @@ package Prophet::App;
 use Moose;
 use Path::Class;
 use Prophet::Config;
-use Params::Validate qw/validate/;
+use Params::Validate qw/validate validate_pos/;
 
 has handle => (
     is      => 'rw',
@@ -12,7 +12,9 @@ has handle => (
         my $self = shift;
         my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new({ url => $type.':file://' . $root, app_handle => $self, after_initialize => sub { $self->set_database_defaults} });
+        return Prophet::Replica->new( url => $type.':file://' . $root, app_handle => $self, 
+                
+                );
     },
 );
 
@@ -26,7 +28,10 @@ has resdb_handle => (
             if $self->handle->resolution_db_handle;
         my $root = ($ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet')) . "_res";
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new({ url => $type.':file://' . $root });
+        my $r = Prophet::Replica->new( url => $type.':file://' . $root );
+        if (!$r->replica_exists && $r->can_initialize) { $r->initialize}
+
+        return $r;
     },
 );
 
@@ -145,12 +150,18 @@ sub already_required {
 }
 
 
-sub set_database_defaults {
+sub set_db_defaults {
     my $self = shift;
     my $settings = $self->database_settings;
     for my $name ( keys %$settings ) {
-        my @metadata = @{$settings->{$name}};
-        my $s = $self->setting(  label => $name, uuid => (shift @metadata), default => [@metadata]);
+        my ($uuid, @metadata) = @{$settings->{$name}};
+
+        my $s = $self->setting(
+            label   => $name,
+            uuid    => $uuid,
+            default => \@metadata,
+        );
+
         $s->initialize;
     }
 }
@@ -183,3 +194,33 @@ __PACKAGE__->meta->make_immutable;
 no Moose;
 
 1;
+
+=head3 log $MSG
+
+Logs the given message to C<STDERR> (but only if the C<PROPHET_DEBUG>
+environmental variable is set).
+
+=cut
+
+sub log {
+    my $self = shift;
+    my ($msg) = validate_pos(@_, 1);
+    print STDERR "# " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
+}
+
+=head2 log_fatal $MSG
+
+Logs the given message and dies with a stack trace.
+
+=cut
+
+sub log_fatal {
+    my $self = shift;
+
+    # always skip this fatal_error function when generating a stack trace
+    local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+
+    $self->log(@_);
+    Carp::confess(@_);
+}
+

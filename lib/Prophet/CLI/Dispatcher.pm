@@ -16,6 +16,8 @@ on [ ['update', 'edit'] ]        => run_command("Update");
 on [ ['delete', 'del', 'rm'] ]   => run_command("Delete");
 on [ ['search', 'list', 'ls' ] ] => run_command("Search");
 
+on init     => run_command("Init");
+on clone    => run_command("Clone");
 on merge    => run_command("Merge");
 on pull     => run_command("Pull");
 on publish  => run_command("Publish");

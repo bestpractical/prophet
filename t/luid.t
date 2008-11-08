@@ -11,6 +11,7 @@ $ENV{'PROPHET_METADATA_DIRECTORY'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
+$cxn->initialize;
 
 my $record = Prophet::Record->new(handle => $cxn, type => 'Empty');
 my $uuid = $record->create(props => {});

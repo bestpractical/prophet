@@ -5,6 +5,7 @@ use File::Temp qw'tempdir';
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
 my $prophet = Prophet::CLI->new;
+$prophet->handle->initialize;
 
 my ($luid,  $uuid);
 my $created_re = qr/Created Robot Master (\d+)(?{ $luid = $1}) \((\S+)(?{ $uuid = $2 })\)/;

@@ -5,24 +5,20 @@ extends 'Prophet::CLI::Command';
 sub run {
     my $self = shift;
 
-    my (@alt_from, @alt_to);
-
-    if ($self->has_arg('db_uuid')) {
-        push @alt_from, join '/', $self->arg('from'), $self->arg('db_uuid');
-        push @alt_to,   join '/', $self->arg('to'),   $self->arg('db_uuid');
-    }
-
     my $source = Prophet::Replica->new(
         url       => $self->arg('from'),
         app_handle => $self->app_handle,
-        _alt_urls => \@alt_from,
     );
 
     my $target = Prophet::Replica->new(
         url       => $self->arg('to'),
         app_handle => $self->app_handle,
-        _alt_urls => \@alt_to,
     );
+
+
+    if ( ! $target->replica_exists ) {
+        die "The target (".$self->arg('to').") replica doesn't exist"; 
+    }
 
     $target->import_resolutions_from_remote_replica(
         from  => $source,
@@ -33,7 +29,6 @@ sub run {
 
     $self->print_report($changesets);
 }
-
 
 sub print_report {
     my $self = shift;
