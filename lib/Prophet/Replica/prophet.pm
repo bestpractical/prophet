@@ -234,7 +234,7 @@ sub can_initialize {
         return 1;
 
     }
-
+    return 0;
 }
 
 
