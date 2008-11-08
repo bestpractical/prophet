@@ -22,8 +22,10 @@ has _uuid => (
 
 has replica_version => (
     is      => 'ro',
+    writer  => '_set_replica_version',
+    isa     => 'Int',
     lazy    => 1,
-    default => sub { shift->_read_file('replica-version') }
+    default => sub { shift->_read_file('replica-version') || 0 }
 );
 
 has fs_root_parent => (
@@ -228,6 +230,26 @@ sub replica_exists {
     return $self->replica_version ? 1 :0;
 }
 
+=head2 set_replica_version
+
+Sets the replica's version to the given integer.
+
+=cut
+
+sub set_replica_version {
+    my $self    = shift;
+    my $version = shift;
+
+    $self->_set_replica_version($version);
+
+    $self->_write_file(
+        path    => 'replica-version',
+        content => $version,
+    );
+
+    return $version;
+}
+
 sub can_initialize {
     my $self = shift; 
     if ( $self->fs_root_parent  && -w $self->fs_root_parent ) {
@@ -273,10 +295,8 @@ sub initialize {
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_latest_sequence_no("0");
     $self->set_replica_uuid( Data::UUID->new->create_str );
-    $self->_write_file(
-        path    => 'replica-version',
-        content => '1'
-    );
+
+    $self->set_replica_version(1);
 
     $self->resolution_db_handle->initialize if (!$self->is_resdb);
     $self->after_initialize->($self);
