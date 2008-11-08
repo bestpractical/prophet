@@ -24,11 +24,15 @@ sub run {
         die "The replica path you specified isn't writable";
     }
 
-    $target->initialize();
-    $target->set_db_uuid($source->db_uuid) 
-        unless ($source->isa('Prophet::ForeignReplica'));
-    $target->resolution_db_handle->set_db_uuid($source->resolution_db_handle->db_uuid)
-        unless ($source->isa('Prophet::ForeignReplica'));
+    my %init_args;
+    unless ($source->isa('Prophet::ForeignReplica')) {
+        %init_args = (
+            db_uuid    => $source->db_uuid,
+            resdb_uuid => $source->resolution_db_handle->db_uuid,
+        );
+    }
+    $target->initialize(%init_args);
+
     $target->_write_cached_upstream_replicas($self->arg('from'));
     $self->SUPER::run();
 };
