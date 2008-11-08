@@ -9,7 +9,6 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-build_requires('Test::Exception' => '0.26' );
 requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
@@ -26,6 +25,8 @@ requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
 requires('Path::Dispatcher' => '0.02'); # Path::Dispatcher::Declarative
 requires('Time::Progress');
+
+build_requires('Test::Exception' => '0.26');
 
 use Term::ReadLine; # if we don't do this, ::Perl fails
 features(
