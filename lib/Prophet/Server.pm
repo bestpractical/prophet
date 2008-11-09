@@ -101,7 +101,7 @@ sub _handle_request_get_replica {
         return undef unless $self->handle->can('read_file');
 
        my $content = $self->handle->read_file($repo_file);
-       return unless length($content);
+       return unless defined $content && length($content);
        return $self->_send_content(
             content_type => 'application/x-prophet',
             content      => $content
