@@ -34,8 +34,8 @@ sub take_one_step {
 }
 
 sub _random_props {
-    my @prop_values = Acme::MetaSyntactic->new->name( batman => 5 );
-    my @prop_keys   = Acme::MetaSyntactic->new->name( lotr   => 5 );
+    my @prop_values = qw(A B C D E);
+    my @prop_keys   = qw(1 2 3 4 5);
 
     return ( map { "--" . $prop_keys[$_] => $prop_values[$_] } ( 0 .. 4 ) );
 
@@ -52,7 +52,7 @@ sub _permute_props {
     }
 
     if ( int( rand(10) < 3 ) ) {
-        $props{ Acme::MetaSyntactic->new->name('lotr') } = Acme::MetaSyntactic->new->name('batman');
+        $props{int(rand(5))+1 } = chr(rand(5)+65);
     }
 
     return %props;

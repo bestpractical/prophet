@@ -57,7 +57,6 @@ features(
     'Maintainer testing tools' => [
         -default   => 1,
         'Test::HTTP::Server::Simple',
-        'Acme::MetaSyntactic',
         'YAML::Syck' => 0,
         'Test::WWW::Mechanize' => '1.16',
         'Test::Pod::Coverage'

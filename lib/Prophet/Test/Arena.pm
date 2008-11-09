@@ -25,14 +25,13 @@ has history => (
 );
 
 use Prophet::Test::Participant;
-use Acme::MetaSyntactic;
 use Prophet::Test;
 use YAML::Syck ();
 
 sub setup {
     my $self  = shift;
     my $count = shift;
-    my @names = ref $count ? @$count : Acme::MetaSyntactic->new->name( pause_id => $count );
+    my @names = ref $count ? @$count : ( map { "person" . $_ } (1..$count));
 
     my @chickens = map { Prophet::Test::Participant->new( { name => $_, arena => $self } ) } @names;
     
