@@ -53,93 +53,11 @@ override handle_request => sub {
     
    
     my $d = Prophet::Server::Dispatcher->new(server => $self);
-   my $http_status = $d->run($cgi->request_method."/". $cgi->path_info, $self);
-
-   unless ($http_status) {
-    if ( my $sub = $self->can( 'handle_request_' . lc( $cgi->request_method ) ) ) {
-        $http_status = $sub->( $self);
-    }
-    }
-    unless ($http_status) {
-        $self->_send_404;
-    }
+   $d->run($cgi->request_method."/". $cgi->path_info, $self) || $self->_send_404;
 
 };
 
-sub handle_request_get_template {
-   my $self = shift;
-    my $p = $self->cgi->path_info;
 
-
-    if (Template::Declare->has_template($p)) {
-        Prophet::Server::View->app_handle($self->app_handle);
-        my $content = Template::Declare->show($p);
-
-        return $self->send_content(
-            content_type => 'text/html',
-            content      => $content,
-        );
-
-    }
-
-};
-
-sub handle_request_get_replica {
-	my $self = shift;
-    my $p = $self->cgi->path_info;
-
-
-    if ($p =~ qr{^/+replica/+(.*)$}) {
-        my $repo_file = $1;
-        return undef unless $self->handle->can('read_file');
-
-       my $content = $self->handle->read_file($repo_file);
-       return unless defined $content && length($content);
-       return $self->send_content(
-            content_type => 'application/x-prophet',
-            content      => $content
-        );
-    }
-}
-
-sub handle_request_get_rest {
-	my $self = shift;
-    my $p = $self->cgi->path_info;
-
-    $p =~ s/^GET//i;
-}
-
-sub handle_request_post {
-    my $self = shift;
-
-    return $self->_send_401 if ($self->read_only);
-
-    my $p = $self->cgi->path_info;
-    if ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {
-        my $type = $1;
-        my $uuid = $2;
-        my $prop = $3;
-
-        my $record = $self->load_record( type => $type, uuid => $uuid );
-        return $self->_send_404 unless ($record);
-        $record->set_props( props => { $prop => ( $self->cgi->param('value') || undef ) } );
-        return $self->_send_redirect( to => "/records/$type/$uuid/$prop" );
-    } elsif ( $p =~ m|^/records/(.*)/(.*).json| ) {
-        my $type   = $1;
-        my $uuid   = $2;
-        my $record = $self->load_record( type => $type, uuid => $uuid );
-
-        return $self->_send_404 unless ($record);
-
-        my $ret = $record->set_props( props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
-        $self->_send_redirect( to => "/records/$type/$uuid.json" );
-    } elsif ( $p =~ m|^/records/(.*).json| ) {
-        my $type   = $1;
-        my $record = $self->load_record( type => $type );
-        my $uuid   = $record->create( props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
-        return $self->_send_redirect( to => "/records/$type/$uuid.json" );
-    }
-}
 
 sub load_record {
     my $self = shift;
