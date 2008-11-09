@@ -9,12 +9,10 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Path::Class');
-requires('Term::ReadKey');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');
 requires('JSON' => '2.00');
-requires('JSON::XS' => '2.2222');
 requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
@@ -34,6 +32,10 @@ features(
         -default => 1,
         'Term::ReadLine::Perl'
         ],
+    'Faster JSON Parsing' => [
+        -default => 1,
+        'JSON::XS', => '2.2222'
+    ],
     'Web server' => [
         -default => 1,
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
@@ -43,10 +45,14 @@ features(
         -default => 1,
         'Template::Declare', # Template::Declare::Tags
     ],
-
+    'Foreign replica support' => [
+        -default => 1,
+        'Term::ReadKey'
+    ],
     'Subversion replica support' => [
         -default => 0,
-         'SVN::Core' # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
+         'SVN::Core',  # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
+         'Term::ReadKey',
     ],
     'Maintainer testing tools' => [
         -default   => 1,
