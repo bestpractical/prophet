@@ -59,6 +59,7 @@ sub find_bonjour_replicas {
             for my $entry ( $res->entries ) {
                 if ( $entry->name eq $self->arg('db_uuid') ) {
                     print "Found a database replica on " . $entry->hostname."\n";
+                    require URI;
                     my $uri = URI->new();
                     $uri->scheme( 'http' );
                     $uri->host($entry->hostname);
