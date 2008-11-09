@@ -19,6 +19,8 @@ sub run {
     if ( ! $target->replica_exists ) {
         die "The target (".$self->arg('to').") replica doesn't exist"; 
     }
+    
+    return  unless $self->validate_merge_replicas($source => $target);
 
     $target->import_resolutions_from_remote_replica(
         from  => $source,
@@ -72,7 +74,6 @@ sub _do_merge {
 
     local $| = 1;
 
-    $self->validate_merge_replicas($source => $target);
 
     $import_args{resolver_class} = $self->merge_resolver();
 
@@ -117,17 +118,15 @@ sub validate_merge_replicas {
     my $target = shift;
 
     if ( $target->uuid eq $source->uuid ) {
-        $self->fatal_error(
-                  "You appear to be trying to merge two identical replicas. "
-                . "Either you're trying to merge a replica to itself or "
-                . "someone did a bad job cloning your database." );
+        $self->handle->log( "You appear to be trying to merge two identical replicas. Skipping.");
+        return 0;
     }
 
     if ( !$target->can_write_changesets ) {
-        $self->fatal_error( $target->url
-                . " does not accept changesets. Perhaps it's unwritable."
-        );
+        $self->handle->log( $target->url . " does not accept changesets. Perhaps it's unwritable.");
+        return 0;
     }
+    return 1;
 }
 
 sub merge_resolver {
