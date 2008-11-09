@@ -7,12 +7,14 @@ use Prophet::Server::Dispatcher;
 use Params::Validate qw/:all/;
 use JSON;
 
-has app_handle => ( isa => 'Prophet::App', is => 'rw',
-    handles => [ qw/handle/]
+has app_handle => (
+    isa     => 'Prophet::App',
+    is      => 'rw',
+    handles => [qw/handle/]
 );
 
-has cgi => (isa => 'Maybe[CGI]', is => 'rw');
-has read_only => ( is => 'rw', isa => 'Bool');
+has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
+has read_only => ( is  => 'rw',         isa => 'Bool' );
 
 before run => sub {
     my $self      = shift;
@@ -28,44 +30,165 @@ before run => sub {
             domain => 'local',
         );
     } else {
-        warn 
-            "Publisher backend is not available. Install one of the ".
-            "Net::Rendezvous::Publish::Backend modules from CPAN.";
+        warn "Publisher backend is not available. Install one of the "
+            . "Net::Rendezvous::Publish::Backend modules from CPAN.";
     }
 };
 
 sub setup_template_roots {
-    my $self = shift;
+    my $self       = shift;
     my $view_class = ref( $self->app_handle ) . "::Server::View";
 
     if ( Prophet::App->try_to_require($view_class) ) {
         Template::Declare->init( roots => [$view_class] );
 
-    }
-    else {
+    } else {
         Template::Declare->init( roots => ['Prophet::Server::View'] );
     }
 }
 
 override handle_request => sub {
-    my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server'} ,  { isa => 'CGI' } );
+    my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
-    
-   
-    my $d = Prophet::Server::Dispatcher->new(server => $self);
-   $d->run($cgi->request_method."/". $cgi->path_info, $self) || $self->_send_404;
+
+    my $d = Prophet::Server::Dispatcher->new( server => $self );
+    $d->run( $cgi->request_method . "/" . $cgi->path_info, $self )
+        || $self->_send_404;
 
 };
 
+sub update_record_prop {
+    my $self = shift;
+    my $type = $1;
+    my $uuid = $2;
+    my $prop = $3;
 
+    my $record = $self->load_record( type => $type, uuid => $uuid );
+    return $self->_send_404 unless ($record);
+    $record->set_props(
+        props => { $prop => ( $self->cgi->param('value') || undef ) } );
+    return $self->_send_redirect( to => "/records/$type/$uuid/$prop" );
+}
+
+sub update_record {
+    my $self   = shift;
+    my $type   = $1;
+    my $uuid   = $2;
+    my $record = $self->load_record( type => $type, uuid => $uuid );
+
+    return $self->_send_404 unless ($record);
+
+    my $ret = $record->set_props(
+        props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
+    $self->_send_redirect( to => "/records/$type/$uuid.json" );
+}
+
+sub create_record {
+    my $self   = shift;
+    my $type   = $1;
+    my $record = $self->load_record( type => $type );
+    my $uuid   = $record->create(
+        props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
+    return $self->_send_redirect( to => "/records/$type/$uuid.json" );
+}
+
+sub get_record_prop {
+    my $self   = shift;
+    my $type   = $1;
+    my $uuid   = $2;
+    my $prop   = $3;
+    my $record = $self->load_record( type => $type, uuid => $uuid );
+    return $self->_send_404 unless ($record);
+    if ( my $val = $record->prop($prop) ) {
+        return $self->send_content(
+            content_type => 'text/plain',
+            content      => $val
+        );
+    } else {
+        return $self->_send_404();
+    }
+}
+
+sub get_record {
+    my $self   = shift;
+    my $type   = $1;
+    my $uuid   = $2;
+    my $record = $self->load_record( type => $type, uuid => $uuid );
+    return $self->_send_404 unless ($record);
+    return $self->send_content(
+        encode_as => 'json',
+        content   => $record->get_props
+    );
+}
+
+sub get_record_list {
+    my $self = shift;
+    my $type = $1;
+    require Prophet::Collection;
+    my $col = Prophet::Collection->new(
+        handle => $self->handle,
+        type   => $type
+    );
+    $col->matching( sub {1} );
+    warn "Query language not implemented yet.";
+    return $self->send_content(
+        encode_as => 'json',
+        content   => {
+            map { $_->uuid => "/records/$type/" . $_->uuid . ".json" } @$col
+            }
+
+    );
+}
+
+sub get_record_types {
+    my $self = shift;
+        $self->send_content(
+            encode_as => 'json',
+            content   => $self->handle->list_types
+        );
+    }
+
+
+sub serve_replica {
+    my $self = shift;
+
+        my $repo_file = $1;
+        return undef unless $self->handle->can('read_file');
+        my $content = $self->handle->read_file($repo_file);
+        return unless defined $content && length($content);
+        return $self->send_content(
+            content_type => 'application/x-prophet',
+            content      => $content
+        );
+    }
+
+sub show_template {
+    my $self = shift;
+    my $p    = $1;
+    if ( Template::Declare->has_template($p) ) {
+        Prophet::Server::View->app_handle( $self->app_handle );
+        my $content = Template::Declare->show($p);
+        return $self->send_content(
+            content_type => 'text/html',
+            content      => $content,
+        );
+    }
+}
 
 sub load_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 0 } );
     require Prophet::Record;
-    my $record = Prophet::Record->new( handle => $self->handle, type => $args{type} );
+    my $record
+        = Prophet::Record->new( handle => $self->handle, type => $args{type} );
     if ( $args{'uuid'} ) {
-        return undef unless ( $self->handle->record_exists( type => $args{'type'}, uuid => $args{'uuid'} ) );
+        return undef
+            unless (
+            $self->handle->record_exists(
+                type => $args{'type'},
+                uuid => $args{'uuid'}
+            )
+            );
         $record->load( uuid => $args{uuid} );
     }
     return $record;
@@ -73,11 +196,12 @@ sub load_record {
 
 sub send_content {
     my $self = shift;
-    my %args = validate( @_, { content => 1, content_type => 0, encode_as => 0 } );
+    my %args
+        = validate( @_, { content => 1, content_type => 0, encode_as => 0 } );
 
-    if ($args{'encode_as'} && $args{'encode_as'} eq 'json') {
-        $args{'content_type'} = 'text/x-json'; 
-        $args{'content'} = to_json($args{'content'});
+    if ( $args{'encode_as'} && $args{'encode_as'} eq 'json' ) {
+        $args{'content_type'} = 'text/x-json';
+        $args{'content'}      = to_json( $args{'content'} );
     }
 
     print "HTTP/1.0 200 OK\r\n";
