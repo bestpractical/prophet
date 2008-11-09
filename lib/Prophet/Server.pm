@@ -52,7 +52,7 @@ override handle_request => sub {
     $self->cgi($cgi);
 
     my $d = Prophet::Server::Dispatcher->new( server => $self );
-    $d->run( $cgi->request_method . "/" . $cgi->path_info, $self )
+    $d->run( $cgi->request_method . "/" . $cgi->path_info, $d )
         || $self->_send_404;
 
 };
