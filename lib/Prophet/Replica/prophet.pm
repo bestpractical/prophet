@@ -601,6 +601,7 @@ sub _get_changeset_index_entry {
         my ( $seq, $orig_uuid, $orig_seq, $key )
             = unpack( 'Na16NH40', $index_record );
 
+        $self->log(join(",", ( $seq, $orig_uuid, $orig_seq, $key )));
         $orig_uuid = Data::UUID->new->to_string($orig_uuid);
         $self->log( "REV: $rev - seq $seq - originally $orig_seq from "
                 . substr( $orig_uuid, 0, 6 )
@@ -637,6 +638,7 @@ sub traverse_changesets {
     my $chgidx = $self->_read_changeset_index;
     $self->log("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {
+        $self->log("Fetching changeset $rev");
         my $changeset = $self->_get_changeset_index_entry(
             sequence_no => $rev,
             index_file  => $chgidx
@@ -648,6 +650,7 @@ sub traverse_changesets {
 
 sub _read_changeset_index {
     my $self =shift;
+    $self->log("Reading changeset index file");
     my $chgidx    = $self->_read_file( $self->changeset_index );
     return \$chgidx;
 }

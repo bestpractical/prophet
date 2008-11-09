@@ -3,6 +3,7 @@ use Moose;
 extends qw'HTTP::Server::Simple::CGI';
 
 use Prophet::Server::View;
+use Prophet::Server::Dispatcher;
 use Params::Validate qw/:all/;
 use JSON;
 
@@ -10,6 +11,7 @@ has app_handle => ( isa => 'Prophet::App', is => 'rw',
     handles => [ qw/handle/]
 );
 
+has cgi => (isa => 'Maybe[CGI]', is => 'rw');
 has read_only => ( is => 'rw', isa => 'Bool');
 
 before run => sub {
@@ -47,41 +49,33 @@ sub setup_template_roots {
 
 override handle_request => sub {
     my ($self, $cgi) = validate_pos( @_, { isa => 'Prophet::Server'} ,  { isa => 'CGI' } );
-    my $http_status;
+    $self->cgi($cgi);
+    
+   
+    my $d = Prophet::Server::Dispatcher->new(server => $self);
+   my $http_status = $d->run($cgi->request_method."/". $cgi->path_info, $self);
+
+   unless ($http_status) {
     if ( my $sub = $self->can( 'handle_request_' . lc( $cgi->request_method ) ) ) {
-        $http_status = $sub->( $self, $cgi );
+        $http_status = $sub->( $self);
+    }
     }
     unless ($http_status) {
         $self->_send_404;
     }
+
 };
 
-sub handle_request_get {
-    my $self = shift;
-    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
-    my $p = $cgi->path_info;
-
-    if ( $p =~ qr|^/+replica| ) {
-        $self->_handle_request_get_replica($cgi);
-    }
-    elsif ( $p =~ m|^/+records| ) {
-        $self->_handle_request_get_rest($cgi);
-    } else {
-        $self->_handle_request_get_template($cgi);
-    }
-}
-
-sub _handle_request_get_template {
+sub handle_request_get_template {
    my $self = shift;
-    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
-    my $p = $cgi->path_info;
+    my $p = $self->cgi->path_info;
 
 
     if (Template::Declare->has_template($p)) {
         Prophet::Server::View->app_handle($self->app_handle);
         my $content = Template::Declare->show($p);
 
-        return $self->_send_content(
+        return $self->send_content(
             content_type => 'text/html',
             content      => $content,
         );
@@ -90,10 +84,9 @@ sub _handle_request_get_template {
 
 };
 
-sub _handle_request_get_replica {
+sub handle_request_get_replica {
 	my $self = shift;
-    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
-    my $p = $cgi->path_info;
+    my $p = $self->cgi->path_info;
 
 
     if ($p =~ qr{^/+replica/+(.*)$}) {
@@ -102,56 +95,18 @@ sub _handle_request_get_replica {
 
        my $content = $self->handle->read_file($repo_file);
        return unless defined $content && length($content);
-       return $self->_send_content(
+       return $self->send_content(
             content_type => 'application/x-prophet',
             content      => $content
         );
     }
 }
 
-sub _handle_request_get_rest {
+sub handle_request_get_rest {
 	my $self = shift;
-    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
-    my $p = $cgi->path_info;
+    my $p = $self->cgi->path_info;
 
-    if ( $p =~ m|^/records\.json$| ) {
-        $self->_send_content(
-            content_type => 'text/x-json',
-            content      => to_json( $self->handle->list_types )
-        );
-
-    } elsif ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {
-        my $type   = $1;
-        my $uuid   = $2;
-        my $prop   = $3;
-        my $record = $self->load_record( type => $type, uuid => $uuid );
-        return $self->_send_404 unless ($record);
-        if ( my $val = $record->prop($prop) ) {
-            return $self->_send_content( content_type => 'text/plain', content => $val );
-        } else {
-            return $self->_send_404();
-        }
-    }
-
-    elsif ( $p =~ m|^/records/(.*)/(.*).json| ) {
-        my $type   = $1;
-        my $uuid   = $2;
-        my $record = $self->load_record( type => $type, uuid => $uuid );
-        return $self->_send_404 unless ($record);
-        return $self->_send_content( content_type => 'text/x-json', content => to_json( $record->get_props ) );
-    }
-
-    elsif ( $p =~ m|^/records/(.*).json| ) {
-        my $type = $1;
-        require Prophet::Collection;
-        my $col = Prophet::Collection->new( handle => $self->handle, type => $type );
-        $col->matching( sub {1} );
-        warn "Query language not implemented yet.";
-        return $self->_send_content(
-            content_type => 'text/x-json',
-            content      => to_json( { map { $_->uuid => "/records/$type/" . $_->uuid . ".json" } @$col } )
-            )
-    }
+    $p =~ s/^GET//i;
 }
 
 sub handle_request_post {
@@ -159,8 +114,7 @@ sub handle_request_post {
 
     return $self->_send_401 if ($self->read_only);
 
-    my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
-    my $p = $cgi->path_info;
+    my $p = $self->cgi->path_info;
     if ( $p =~ m|^/records/(.*)/(.*)/(.*)| ) {
         my $type = $1;
         my $uuid = $2;
@@ -168,7 +122,7 @@ sub handle_request_post {
 
         my $record = $self->load_record( type => $type, uuid => $uuid );
         return $self->_send_404 unless ($record);
-        $record->set_props( props => { $prop => ( $cgi->param('value') || undef ) } );
+        $record->set_props( props => { $prop => ( $self->cgi->param('value') || undef ) } );
         return $self->_send_redirect( to => "/records/$type/$uuid/$prop" );
     } elsif ( $p =~ m|^/records/(.*)/(.*).json| ) {
         my $type   = $1;
@@ -177,12 +131,12 @@ sub handle_request_post {
 
         return $self->_send_404 unless ($record);
 
-        my $ret = $record->set_props( props => { map { $_ => $cgi->param($_) } $cgi->param() } );
+        my $ret = $record->set_props( props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
         $self->_send_redirect( to => "/records/$type/$uuid.json" );
     } elsif ( $p =~ m|^/records/(.*).json| ) {
         my $type   = $1;
         my $record = $self->load_record( type => $type );
-        my $uuid   = $record->create( props => { map { $_ => $cgi->param($_) } $cgi->param() } );
+        my $uuid   = $record->create( props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
         return $self->_send_redirect( to => "/records/$type/$uuid.json" );
     }
 }
@@ -199,9 +153,15 @@ sub load_record {
     return $record;
 }
 
-sub _send_content {
+sub send_content {
     my $self = shift;
-    my %args = validate( @_, { content => 1, content_type => 1 } );
+    my %args = validate( @_, { content => 1, content_type => 0, encode_as => 0 } );
+
+    if ($args{'encode_as'} && $args{'encode_as'} eq 'json') {
+        $args{'content_type'} = 'text/x-json'; 
+        $args{'content'} = to_json($args{'content'});
+    }
+
     print "HTTP/1.0 200 OK\r\n";
     print "Content-Type: " . $args{'content_type'} . "\r\n";
     print "Content-Length: " . length( $args{'content'} ) . "\r\n\r\n";
