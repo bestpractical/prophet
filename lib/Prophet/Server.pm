@@ -61,15 +61,14 @@ sub handle_request_get {
     my ($cgi) = validate_pos( @_, { isa => 'CGI' } );
     my $p = $cgi->path_info;
 
-    if ($p =~ qr|^/+replica|) {
-
-		$self->_handle_request_get_replica($cgi);
-	}
-    if ($p =~ m|^/+records|) {
-	$self->_handle_request_get_rest($cgi);			
+    if ( $p =~ qr|^/+replica| ) {
+        $self->_handle_request_get_replica($cgi);
     }
-
-    $self->_handle_request_get_template($cgi);
+    elsif ( $p =~ m|^/+records| ) {
+        $self->_handle_request_get_rest($cgi);
+    } else {
+        $self->_handle_request_get_template($cgi);
+    }
 }
 
 sub _handle_request_get_template {
