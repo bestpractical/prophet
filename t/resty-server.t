@@ -27,7 +27,7 @@ my $url_root = $s->started_ok("start up my web server");
 sub url {
     return join( "/", $url_root, @_ );
 }
-
+diag(url());
 $ua->get_ok( url('records.json') );
 is( $ua->content, '[]' );
 
@@ -99,4 +99,6 @@ is( $ua->status, '404', "No that page doesn't exist" );
 package Prophet::TestServer;
 use base qw/Test::HTTP::Server::Simple Prophet::Server/;
 
+
+sub port { my $self = shift; $self->{_port} ||= int(rand(1024))+10000; return $self->{_port} }
 1;
