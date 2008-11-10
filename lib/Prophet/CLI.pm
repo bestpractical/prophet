@@ -92,7 +92,7 @@ sub run_one_command {
     my $cmd = $ori_cmd;
     my $aliases = $self->app_handle->config->aliases;
     for my $key ( keys %$aliases ) {
-        if ( $cmd =~ /$key/ ) {
+        if ( $cmd =~ /^$key/ ) {
             my $value    = $aliases->{$key};
             no strict 'refs';
 
