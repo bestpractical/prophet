@@ -28,11 +28,11 @@ under 'GET' => sub {
         on qr|(.*)/(.*)/(.*)| => sub { shift->server->get_record_prop() };
         on qr|(.*)/(.*).json| => sub { shift->server->get_record() };
         on qr|(.*).json|      => sub { shift->server->get_record_list() };
-        on '^(.*)$'           => sub { shift->server->show_template() };
     };
+
+    on '^(.*)$' => sub { shift->server->show_template() || next_rule; };
 };
 
-on '*' => sub { return undef };
 
 no Moose;
 

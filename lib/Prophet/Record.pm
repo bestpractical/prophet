@@ -25,6 +25,7 @@ has app_handle => (
 has handle => (
     is       => 'rw',
     required => 1,
+    default => sub { shift->app_handle->handle }
 );
 
 has type => (

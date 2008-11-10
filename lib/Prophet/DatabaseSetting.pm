@@ -81,7 +81,6 @@ sub get {
 
     my $entry = from_json($content, { utf8 => 1 });
     return $entry;
-    # XXX TODO do we really want to just get the first one?
 }
 
 __PACKAGE__->meta->make_immutable;

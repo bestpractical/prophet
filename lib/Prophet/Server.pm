@@ -40,7 +40,7 @@ sub setup_template_roots {
     my $view_class = ref( $self->app_handle ) . "::Server::View";
 
     if ( Prophet::App->try_to_require($view_class) ) {
-        Template::Declare->init( roots => [$view_class] );
+        Template::Declare->init( roots => [$view_class, 'Prophet::Server::View'] );
 
     } else {
         Template::Declare->init( roots => ['Prophet::Server::View'] );
@@ -51,7 +51,15 @@ override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
 
-    my $d = Prophet::Server::Dispatcher->new( server => $self );
+     my $dispatcher_class = ref($self->app_handle) . "::Server::Dispatcher";
+     if (!$self->app_handle->try_to_require($dispatcher_class)) {
+         $dispatcher_class = "Prophet::Server::Dispatcher";
+     }
+ 
+ 
+     my $d =$dispatcher_class->new( server => $self );
+
+
     $d->run( $cgi->request_method . "/" . $cgi->path_info, $d )
         || $self->_send_404;
 
@@ -173,6 +181,7 @@ sub show_template {
             content      => $content,
         );
     }
+    return undef;
 }
 
 sub load_record {
