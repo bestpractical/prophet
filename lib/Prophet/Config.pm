@@ -78,6 +78,7 @@ sub load_from_file {
             $config->{$key} = $val;
         }
     }
+    $config->{_aliases} ||= {}; # default aliases is null.
 }
 
 sub display_name_for_uuid {
@@ -100,6 +101,44 @@ sub file_if_exists {
     my $file = shift || ''; # quiet warnings
 
     return (-e $file) ? $file : '';
+}
+
+=head2 save FILENAME
+
+save the current config to file, if the file is not supplied,
+save to $self->app_config_file
+
+=cut
+
+#XXX TODO this won't save comments, which I think we should do.
+#in case of overwriting your file( you will hate me for that ), 
+#I chose to update alias only for now.
+
+sub save {
+    my $self = shift;
+    my $file = shift || $self->app_config_file;
+
+    my @lines;
+    if ( $self->file_if_exists($file) ) {
+        my $file = file($file);
+        @lines = $file->slurp;
+    }
+
+    open my $fh, '>', $file or die "can't save config to $file: $!";
+    for my $line (@lines) {
+
+        # skip old aliases
+        next if $line =~ /^ \s* alias \s+ .+ \s* = \s* .+/x;
+        print $fh $line;
+    }
+
+    if ( $self->aliases ) {
+        for my $alias ( keys %{ $self->aliases } ) {
+            print $fh "alias $alias = " . $self->aliases->{$alias} . "\n";
+        }
+    }
+    close $fh;
+    return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
