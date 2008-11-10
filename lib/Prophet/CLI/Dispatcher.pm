@@ -26,6 +26,7 @@ on config   => run_command("Config");
 on settings => run_command("Settings");
 on log      => run_command("Log");
 on shell    => run_command("Shell");
+on aliases  => run_command("Aliases");
 
 on export => sub {
     my $self = shift;
