@@ -84,12 +84,38 @@ sub run_one_command {
     my $self = shift;
     my @args = (@_);
 
-     #  really, we shouldn't be doing this stuff from the command dispatcher
+    # find the first alias that matches, rerun the aliased cmd
+    # note: keys of aliases are treated as regex, 
+    # we need to substitute $1, $2 ... in the value if there's any
 
-    $self->context(Prophet::CLIContext->new(app_handle => $self->app_handle));
+    my $ori_cmd = join ' ', @args;
+    my $cmd = $ori_cmd;
+    my $aliases = $self->app_handle->config->aliases;
+    for my $key ( keys %$aliases ) {
+        if ( $cmd =~ /$key/ ) {
+            my $value    = $aliases->{$key};
+            no strict 'refs';
+
+            # we want to start at index 1, as @+
+            my @captures = ( undef, map { ${$_} } 1 .. @+ );
+            $value =~ s/\$$_\b/$captures[$_]/g for 1 .. @+;
+            $cmd =~ s/$key/$value/;
+
+            # we don't want to recursively call if people stupidly write
+            # alias pull --local = pull --local
+            if ( $cmd ne $ori_cmd ) {
+                $self->run_one_command( split /\s+/, $cmd );
+                return;
+            }
+        }
+    }
+
+    #  really, we shouldn't be doing this stuff from the command dispatcher
+    $self->context(
+        Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
 
-    my $dispatcher = $self->dispatcher_class->new(cli => $self);
+    my $dispatcher = $self->dispatcher_class->new( cli => $self );
 
     my $command = join ' ', @{ $self->context->primary_commands };
     my $dispatch = $dispatcher->dispatch($command);
