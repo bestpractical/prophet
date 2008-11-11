@@ -18,10 +18,18 @@ sub run {
         print "$file\n";
     }
     print "\nYour configuration:\n\n";
-    for my $item ($config->list) {
-        print $item ." = ".$config->get($item)."\n";
+    for my $item ( $config->list ) {
+        if ( $item eq '_aliases' ) {
+            if ( my $aliases = $config->aliases ) {
+                for my $key ( keys %$aliases ) {
+                    print "alias $key = $aliases->{$key}\n";
+                }
+            }
+        }
+        else {
+            print $item . " = " . $config->get($item) . "\n";
+        }
     }
-
 }
 
 sub no_config_files {
