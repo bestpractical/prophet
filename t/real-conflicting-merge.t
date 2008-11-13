@@ -24,7 +24,8 @@ as_bob {
     # check our local replicas
     my $out = run_command(qw(search --type Bug --regex .));
     like($out, qr/new/, "We have the one record from alice" );
-    if ( $out =~ /^(.*?)\s./ ) {
+    diag($out);
+    if ( $out =~ /'uuid': '(.*?)'/ ) {
         $record_id = $1;
     }
 

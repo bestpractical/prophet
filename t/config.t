@@ -42,7 +42,7 @@ is (scalar @keys,0);
 my $conf = Prophet::Config->new(app_handle => Prophet::CLI->new->app_handle);
 # interrogate its config to see if we have any config options set
 my @keys = $conf->list;
-is (scalar @keys,3);
+is (scalar @keys,4);
 # test the alias
 is($conf->aliases->{tlist}, "ticket list", "Got correct alias");
 }

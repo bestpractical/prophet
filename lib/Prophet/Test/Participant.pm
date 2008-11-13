@@ -128,7 +128,7 @@ sub sync_from_peer {
 
 sub get_random_local_record {
     my ( $ok, $stdout, $stderr ) = call_func( [qw(search --type Scratch --regex .)] );
-    my $update_record = ( shuffle( map { $_ =~ /^(\S*)/ } split( /\n/, $stdout ) ) )[0];
+    my $update_record = ( shuffle( map { $_ =~ /'uuid': '(\S*?)'/ } split( /\n/, $stdout ) ) )[0];
     return $update_record;
 }
 

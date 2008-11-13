@@ -34,15 +34,24 @@ sub aliases {
     return $_[0]->config->{_aliases};
 }
 
+
+sub sources {
+    return $_[0]->config->{_sources};
+}
+
+
 sub app_config_file {
     my $self = shift;
 
     return $self->file_if_exists($ENV{'PROPHET_APP_CONFIG'})
-        || $self->file_if_exists(
-            File::Spec->catfile(
-                $self->app_handle->handle->fs_root => 'prophetrc' ))
-        || $self->file_if_exists(
-            File::Spec->catfile( $ENV{'HOME'} => '.prophetrc' ));
+        || $self->file_if_exists( $self->replica_config_file)
+        || $self->file_if_exists( File::Spec->catfile( $ENV{'HOME'} => '.prophetrc' ))
+        || $self->replica_config_file
+}
+
+sub replica_config_file {
+    my $self = shift;
+    return File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' )
 }
 
 #my $singleton;
@@ -69,16 +78,19 @@ sub load_from_file {
 
     for my $line ($file->slurp) {
         $line =~ s/\#.*$//; # strip comments
-        next unless ($line =~ /^([^:]+?)\s*=\s*(.*)$/);
+        next unless ($line =~ /^(.*?)\s*=\s*(.*)$/);
         my $key = $1;
         my $val = $2;
         if ($key =~ m!alias\s+(.+)!) {
             $config->{_aliases}->{$1} = $val;
+        } elsif ($key =~ m!source\s+(.+)!) {
+            $config->{_sources}->{$1} = $val;
         } else { 
             $config->{$key} = $val;
         }
     }
     $config->{_aliases} ||= {}; # default aliases is null.
+    $config->{_sources} ||= {}; # default to no sources.
 }
 
 sub display_name_for_uuid {
@@ -112,7 +124,7 @@ save to $self->app_config_file
 
 #XXX TODO this won't save comments, which I think we should do.
 #in case of overwriting your file( you will hate me for that ), 
-#I chose to update alias only for now.
+#I chose to update alias and source lines only for now.
 
 sub save {
     my $self = shift;
@@ -127,11 +139,16 @@ sub save {
     open my $fh, '>', $file or die "can't save config to $file: $!";
     for my $line (@lines) {
 
-        # skip old aliases
-        next if $line =~ /^ \s* alias \s+ .+ \s* = \s* .+/x;
+        # skip old aliases and sources
+        next if $line =~ /^ \s* (?:alias|source) \s+ .+ \s* = \s* .+/x;
         print $fh $line;
     }
 
+    if ( $self->sources ) {
+        for my $source ( keys %{ $self->sources } ) {
+            print $fh "source $source = " . $self->sources->{$source} . "\n";
+        }
+    }
     if ( $self->aliases ) {
         for my $alias ( keys %{ $self->aliases } ) {
             print $fh "alias $alias = " . $self->aliases->{$alias} . "\n";

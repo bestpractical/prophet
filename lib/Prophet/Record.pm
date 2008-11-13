@@ -559,7 +559,7 @@ C<'%s,$luid | %s,summary | %s,status'>
 
 =cut
 
-sub _default_summary_format { 'No summary format defined for this record type' }
+sub _default_summary_format {  undef }
 
 =head2 _summary_format
 
@@ -588,10 +588,12 @@ calling L<_summary_format>.
 sub _atomize_summary_format {
     my $self = shift;
     my $format = shift || $self->_summary_format;
+
+    return undef unless $format;
     return split /\s*\|\s*/, $format;
 }
 
-=head2 _parse_summary_format
+=head2 _parse_format_summary
 
 Parses the summary format for this record's type (or the default summary
 format if no type-specific format exists).
@@ -637,13 +639,15 @@ sub _parse_format_summary {
             $prop = $value = $atom;
         }
 
-        @atom_data{'format', 'prop'} = ($format, $prop);
-        $atom_data{value} = $self->atom_value($value);
-        $atom_data{formatted} = $self->format_atom($format => $atom_data{value});
+        my $atom_value = $self->atom_value($value);
+        push @out, {
+            format    => $format,
+            prop      => $prop,
+            value     => $atom_value,
+            formatted => $self->format_atom( $format => $atom_value )
 
-        push @out, \%atom_data;
+        };
     }
-
     return @out;
 }
 
@@ -657,10 +661,49 @@ array context, returns a list of
 sub format_summary {
     my $self = shift;
 
-    my @out = $self->_parse_format_summary;
+    my @out = $self->_summary_format ?
+    $self->_parse_format_summary
+    : 
+    $self->_format_all_props_raw 
+    ;
     return @out if wantarray;
     return join ' ', map { $_->{formatted} } @out;
 }
+
+sub _format_all_props_raw {
+    my $self  = shift;
+    my $props = $self->get_props;
+
+    my @out;
+
+    push @out,
+        {
+        prop      => 'uuid',
+        value     => $self->uuid,
+        format    => '%s',
+        formatted => "'uuid': '" . $self->uuid . "'"
+        };
+    push @out, {
+        prop      => 'luid',
+        value     => $self->luid,
+        format    => '%s',
+        formatted => "'luid': '"
+            . $self->luid . "'"
+
+    };
+
+    for my $prop ( keys %$props ) {
+        push @out,
+            {
+            prop      => $prop,
+            value     => $props->{$prop},
+            format    => '%s',
+            formatted => "'$prop': '" . $props->{$prop} . "'"
+            };
+    }
+    return @out;
+}
+
 
 =head2 atom_value $value_in
 

@@ -57,7 +57,7 @@ my $openbug = '';
 as_bob {
     my ( $ret, $stdout, $stderr )
         = run_script( 'prophet', [qw(search --type Bug --regex open-bob)] );
-    if ( $stdout =~ /^(.*?)\s/ ) {
+    if ( $stdout =~ /^'uuid': '(.*?)'\s/ ) {
         $openbug = $1;
     }
     diag(
@@ -146,7 +146,7 @@ as_bob {
     );
     my ( $ret, $stdout, $stderr )
         = run_script( 'prophet', [qw(search --type Bug --regex new2)] );
-    if ( $stdout =~ /^(.*?)\s/ ) {
+    if ( $stdout =~ /^'uuid': '(.*?)'\s/ ) {
         $last_id = $1;
     }
 };

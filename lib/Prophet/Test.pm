@@ -8,7 +8,7 @@ our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for
     /;
 
 use File::Path 'rmtree';
-use File::Temp qw/tempdir/;
+use File::Temp qw/tempdir tempfile/;
 use Path::Class 'dir';
 use Test::Exception;
 use IPC::Run3 'run3';
@@ -47,7 +47,10 @@ sub import_extra {
         *Test::Builder::plan = sub { };
     }
 
-    $ENV{'PROPHET_APP_CONFIG'} = 't/testing.conf';
+
+
+    
+    delete $ENV{'PROPHET_APP_CONFIG'};
     $ENV{'EMAIL'} = 'nobody@example.com';
 }
 
@@ -99,8 +102,8 @@ sub run_script {
     #    diag(join(' ', @cmd, @$args));
     my $ret = run3 [ @cmd, @$args ], undef, \$stdout, \$stderr;
     Carp::croak $stderr          if $?;
-    diag( "STDOUT: " . $stdout ) if ($stdout);
-    diag( "STDERR: " . $stderr ) if ($stderr);
+    #diag( "STDOUT: " . $stdout ) if ($stdout);
+    #diag( "STDERR: " . $stderr ) if ($stderr);
 
     #Test::More::diag $stderr;
     return ( $ret, $stdout, $stderr );
@@ -123,8 +126,8 @@ sub run_ok {
         local $Test::Builder::Level = $Test::Builder::Level + 1;
         my ( $ret, $stdout, $stderr ) = ( run_script( $script, $args ), $msg );
 
-        #diag("STDOUT: " . $stdout) if ($stdout);
-        #diag("STDERR: " . $stderr) if ($stderr);
+        diag("STDOUT: " . $stdout) if ($stdout);
+        diag("STDERR: " . $stderr) if ($stderr);
         ok($ret, $msg);
     };
 }
