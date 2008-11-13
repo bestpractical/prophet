@@ -25,16 +25,15 @@ as_alice {
 my $path =$alice_published;
 
 as_bob {
-    run_ok( 'prophet', ['clone', '--from', "file:$path"] );
+    run_ok( 'prophet', ['clone', '--from', "file://$path"] );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
 };
-
 as_alice {
     run_output_matches( 'prophet',
         [qw(create --type Pullall -- --status new --from alice )],
         [qr/Created Pullall \d+ \((\S+)\)(?{ $pullall_uuid = $1 })/],
         "Created a Pullall record as alice");
-    ok($pullall_uuid, "got a uuid for the Pullall record");
+    ok($pullall_uuid, "got a uuid $pullall_uuid for the Pullall record");
 
     run_ok( 'prophet', [qw(publish --to), $alice_published] );
 };
@@ -44,8 +43,9 @@ as_bob {
     run_output_matches( 'prophet', [qw(search --type Pullall --regex .)], [qr/new/], " Found our record" );
 };
 
+
 as_charlie {
-    run_ok( 'prophet', ['clone', '--from', "file:$path"] );
+    run_ok( 'prophet', ['clone', '--from', "file://$path"] );
 };
 
 is(database_uuid_for('alice'), database_uuid_for('charlie'), "pull propagated the database uuid properly");
