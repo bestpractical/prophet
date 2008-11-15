@@ -16,9 +16,6 @@ sub run {
     );
 
 
-    if ( ! $target->replica_exists ) {
-        die "The target (".$self->arg('to').") replica doesn't exist"; 
-    }
     
     return  unless $self->validate_merge_replicas($source => $target);
 
@@ -116,6 +113,17 @@ sub validate_merge_replicas {
     my $self = shift;
     my $source = shift;
     my $target = shift;
+
+    if ( ! $target->replica_exists ) {
+       $self->handle->log("The target (".$self->arg('to').") replica doesn't exist"); 
+        return 0;
+    }
+
+    if ( ! $source->replica_exists ) {
+       $self->handle->log("The source (".$self->arg('from').") replica doesn't exist"); 
+        return 0;
+    }
+
 
     if ( $target->uuid eq $source->uuid ) {
         $self->handle->log( "You appear to be trying to merge two identical replicas. Skipping.");
