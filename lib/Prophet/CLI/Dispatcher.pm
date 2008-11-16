@@ -1,13 +1,32 @@
 package Prophet::CLI::Dispatcher;
 use Path::Dispatcher::Declarative -base;
 use Moose;
+use MooseX::ClassAttribute;
+use MooseX::AttributeHelpers;
+
 with 'Prophet::CLI::Parameters';
+
+class_has command_prefixes => (
+    isa => 'ArrayRef',
+    metaclass => 'Collection::Array',
+    is => 'rw',
+    default => sub { ['Prophet::CLI::Command'] },
+    provides => {
+        unshift => 'add_command_prefix'
+    }
+);
 
 # "ticket display $ID" -> "ticket display --id=$ID"
 on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
     my $self = shift;
     $self->context->set_arg(id => $2);
     run($1, $self, @_);
+};
+
+on '' => sub {
+    if ($self->context->has_arg('version')) { run_command("Version") }
+    elsif( $self->context->has_arg('help') ){ run_command("Help") }
+    else { run_command('Shell') }
 };
 
 on [ ['create', 'new'] ]         => run_command("Create");
@@ -54,10 +73,8 @@ on history => sub {
 
 sub run_command {
     my $name = shift;
-
     return sub {
         my $self = shift;
-
         my %constructor_args = (
             cli      => $self->cli,
             context  => $self->context,
@@ -84,7 +101,8 @@ sub run_command {
 sub class_names {
     my $self = shift;
     my $command = shift;
-    return "Prophet::CLI::Command::$command";
+    return map { $_."::".$command } @{$self->command_prefixes};
+
 }
 
 __PACKAGE__->meta->make_immutable;
