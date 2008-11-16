@@ -36,6 +36,7 @@ on [ ['update', 'edit'] ]        => run_command("Update");
 on [ ['delete', 'del', 'rm'] ]   => run_command("Delete");
 on [ ['search', 'list', 'ls' ] ] => run_command("Search");
 
+on version  => run_command("Version");
 on init     => run_command("Init");
 on clone    => run_command("Clone");
 on merge    => run_command("Merge");
@@ -47,6 +48,8 @@ on settings => run_command("Settings");
 on log      => run_command("Log");
 on shell    => run_command("Shell");
 on aliases  => run_command("Aliases");
+
+
 
 on export => sub {
     my $self = shift;
