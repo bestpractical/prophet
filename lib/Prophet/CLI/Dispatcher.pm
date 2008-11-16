@@ -24,9 +24,10 @@ on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
 };
 
 on '' => sub {
-    if ($self->context->has_arg('version')) { run_command("Version") }
-    elsif( $self->context->has_arg('help') ){ run_command("Help") }
-    else { run_command('Shell') }
+    my $self = shift;
+    if ($self->context->has_arg('version')) { run_command("Version")->($self) }
+    elsif( $self->context->has_arg('help') ){ run_command("Help")->($self) }
+    else { run_command('Shell')->($self) }
 };
 
 on [ ['create', 'new'] ]         => run_command("Create");
