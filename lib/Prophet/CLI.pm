@@ -120,8 +120,6 @@ sub run_one_command {
     my $command = join ' ', @{ $self->context->primary_commands };
     my $dispatch = $dispatcher->dispatch($command);
 
-    die "The command you ran, '$command', could not be found. Perhaps running '$0 help' would help?\n" unless $dispatch->has_matches;
-
     $dispatch->run($dispatcher);
 }
 
