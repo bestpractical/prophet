@@ -26,6 +26,13 @@ sub run {
                 }
             }
         }
+        elsif ( $item eq '_sources' ) {
+            if ( my $sources = $config->sources ) {
+                for my $key ( keys %$sources ) {
+                    print "source $key = $sources->{$key}\n";
+                }
+            }
+        }
         else {
             print $item . " = " . $config->get($item) . "\n";
         }
