@@ -31,7 +31,7 @@ has config => (
 );
 
 sub aliases {
-    return $_[0]->config->{_aliases};
+    return $_[0]->config->{_aliases} || {};
 }
 
 

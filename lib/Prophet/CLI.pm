@@ -89,38 +89,43 @@ sub run_one_command {
     # we need to substitute $1, $2 ... in the value if there's any
 
     my $ori_cmd = join ' ', @args;
-    my $cmd = $ori_cmd;
-    my $aliases = $self->app_handle->config->aliases;
-    for my $key ( keys %$aliases ) {
-        if ( $cmd =~ /^$key/ ) {
-            my $value    = $aliases->{$key};
+    for my $alias ( keys %{ $self->app_handle->config->aliases } ) {
+   
+            my $command = $self->_command_matches_alias($ori_cmd => $alias) || next; 
+        
+            # we don't want to recursively call if people stupidly write
+            # alias pull --local = pull --local
+            next if ( $command ne $ori_cmd );
+            return $self->run_one_command( split /\s+/, $command );
+    }
+
+    #  really, we shouldn't be doing this stuff from the command dispatcher
+    $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
+    $self->context->setup_from_args(@args);
+    my $dispatcher = $self->dispatcher_class->new( cli => $self );
+
+    my $dispatch = $dispatcher->dispatch( join ' ', @{ $self->context->primary_commands });
+
+    $dispatch->run($dispatcher);
+}
+
+sub _command_matches_alias {
+    my $self = shift;
+    my $cmd = shift;
+    my $alias = shift;
+
+
+        if ( $cmd =~ /^$alias/ ) {
+            my $value    = $self->app_handle->config->aliases->{$alias};
             no strict 'refs';
 
             # we want to start at index 1, as @+
             my @captures = ( undef, map { ${$_} } 1 .. @+ );
             $value =~ s/\$$_\b/$captures[$_]/g for 1 .. @+;
-            $cmd =~ s/$key/$value/;
-
-            # we don't want to recursively call if people stupidly write
-            # alias pull --local = pull --local
-            if ( $cmd ne $ori_cmd ) {
-                $self->run_one_command( split /\s+/, $cmd );
-                return;
-            }
-        }
-    }
-
-    #  really, we shouldn't be doing this stuff from the command dispatcher
-    $self->context(
-        Prophet::CLIContext->new( app_handle => $self->app_handle ) );
-    $self->context->setup_from_args(@args);
-
-    my $dispatcher = $self->dispatcher_class->new( cli => $self );
-
-    my $command = join ' ', @{ $self->context->primary_commands };
-    my $dispatch = $dispatcher->dispatch($command);
-
-    $dispatch->run($dispatcher);
+            $cmd =~ s/$alias/$value/;
+            return $cmd;
+        } 
+        return undef;
 }
 
 =head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY
