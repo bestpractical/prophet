@@ -166,8 +166,13 @@ sub _mk_cmp_closure {
 our $RUNCNT;
 
 sub _get_perl_cmd {
-    my $base_dir = Path::Class::File->new($0)->dir->parent->subdir('bin');
+    my ($tmp, $i) = (Path::Class::File->new($0)->dir, 0);
+    while ( !$tmp->subdir('bin')->stat && $i++ < 10 ) {
+        $tmp = $tmp->parent;
+    }
+    die "couldn't find bin dir" unless $tmp->subdir('bin')->stat;
 
+    my $base_dir = $tmp->subdir('bin');
     my $script = shift;
     my @cmd = ( $^X, ( map {"-I$_"} @INC ) );
     push @cmd, '-MDevel::Cover' if $INC{'Devel/Cover.pm'};
