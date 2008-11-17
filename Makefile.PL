@@ -22,7 +22,7 @@ requires('Moose' => '0.61'); # Moose::Util::TypeConstraints Moose::Role
 requires('MooseX::AttributeHelpers' => '0.12');
 requires('MooseX::ClassAttribute' => '0.04');
 requires('XML::Atom::SimpleFeed');
-requires('Path::Dispatcher' => '0.02'); # Path::Dispatcher::Declarative
+requires('Path::Dispatcher' => '0.06'); # Path::Dispatcher::Declarative
 requires('Time::Progress');
 
 build_requires('Test::Exception' => '0.26');
