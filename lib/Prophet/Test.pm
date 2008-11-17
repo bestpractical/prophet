@@ -193,7 +193,6 @@ for lines that don't match are stored in C<\@STDOUT_MATCH>.
 
 sub is_script_output {
     my ( $script, $arg, $exp_stdout, $exp_stderr, $msg ) = @_;
-
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
     my $stdout_err = [];

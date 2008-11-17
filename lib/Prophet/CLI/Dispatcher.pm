@@ -27,7 +27,7 @@ on '' => sub {
     my $self = shift;
     if ($self->context->has_arg('version')) { run_command("Version")->($self) }
     elsif( $self->context->has_arg('help') ){ run_command("Help")->($self) }
-    else { run_command('Shell')->($self) }
+    else { next_rule }
 };
 
 on [ ['create', 'new'] ]         => run_command("Create");
