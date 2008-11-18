@@ -89,13 +89,14 @@ sub run_one_command {
     # we need to substitute $1, $2 ... in the value if there's any
 
     my $ori_cmd = join ' ', @args;
-    for my $alias ( keys %{ $self->app_handle->config->aliases } ) {
+    my $aliases = $self->app_handle->config->aliases;
+    for my $alias ( keys %$aliases ) {
    
-            my $command = $self->_command_matches_alias($ori_cmd => $alias) || next; 
+            my $command = $self->_command_matches_alias($ori_cmd, $alias, $aliases->{$alias}) || next; 
         
             # we don't want to recursively call if people stupidly write
             # alias pull --local = pull --local
-            next if ( $command ne $ori_cmd );
+            next if ( $command eq $ori_cmd );
             return $self->run_one_command( split /\s+/, $command );
     }
 
@@ -103,30 +104,35 @@ sub run_one_command {
     $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
     my $dispatcher = $self->dispatcher_class->new( cli => $self );
-
     my $dispatch = $dispatcher->dispatch( join ' ', @{ $self->context->primary_commands });
-
     $dispatch->run($dispatcher);
 }
 
 sub _command_matches_alias {
-    my $self = shift;
-    my $cmd = shift;
+    my $self  = shift;
+    my $cmd   = shift;
     my $alias = shift;
+    my $dispatch_to = shift;;
+    if ( $cmd =~ /^$alias\s*(.*)$/ ) {
+        no strict 'refs';
 
-
-        if ( $cmd =~ /^$alias/ ) {
-            my $value    = $self->app_handle->config->aliases->{$alias};
-            no strict 'refs';
-
-            # we want to start at index 1, as @+
-            my @captures = ( undef, map { ${$_} } 1 .. @+ );
-            $value =~ s/\$$_\b/$captures[$_]/g for 1 .. @+;
-            $cmd =~ s/$alias/$value/;
-            return $cmd;
-        } 
-        return undef;
+        my $rest = $1;
+        # we want to start at index 1
+        my @captures = (undef, $self->tokenize($rest));
+        $dispatch_to =~ s/\$$_\b/$captures[$_]/g for 1 .. 20;
+        return $dispatch_to;
+    }
+    return undef;
 }
+
+
+sub tokenize {
+    my $self = shift;
+    my $string = shift;
+    my @tokens = split(/\s+/,$string); # XXX TODO deal with quoted tokens
+    return @tokens;
+}
+
 
 =head2 invoke outhandle, ARGV_COMPATIBLE_ARRAY
 
