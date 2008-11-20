@@ -3,11 +3,13 @@ use Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use LWP::Simple ();
-use Path::Class;
+use File::Spec ();
+use Cwd (); 
 use Digest::SHA1 qw(sha1_hex);
 use File::Find::Rule;
 use Data::UUID;
 use JSON;
+use POSIX qw();
 
 
 has '+db_uuid' => (
@@ -33,7 +35,7 @@ has fs_root_parent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->url =~ m{^file://(.*)/.*?$} ? dir($1) : undef;
+        return $self->url =~ m{^file://(.*)/.*?$} ? $1 : undef;
     },
 );
 
@@ -42,7 +44,7 @@ has fs_root => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->url =~ m{^file://(.*)$} ? dir($1) : undef;
+        return $self->url =~ m{^file://(.*)$} ? $1 : undef;
     },
 );
 
@@ -74,8 +76,8 @@ has '+resolution_db_handle' => (
 
 use constant scheme            => 'prophet';
 use constant cas_root          => 'cas';
-use constant record_cas_dir    => dir( __PACKAGE__->cas_root => 'records' );
-use constant changeset_cas_dir => dir( __PACKAGE__->cas_root => 'changesets' );
+use constant record_cas_dir    => File::Spec->catdir( __PACKAGE__->cas_root => 'records' );
+use constant changeset_cas_dir => File::Spec->catdir( __PACKAGE__->cas_root => 'changesets' );
 use constant record_dir        => 'records';
 use constant userdata_dir      => 'userdata';
 use constant changeset_index   => 'changesets.idx';
@@ -289,12 +291,17 @@ sub initialize {
 
     return if $self->replica_exists;
 
-    dir( $self->fs_root, $_ )->mkpath
         for (
         $self->record_dir,     $self->cas_root,
         $self->record_cas_dir, $self->changeset_cas_dir,
         $self->userdata_dir
-        );
+        ) { 
+            $self->_mkdir(File::Spec->catdir($self->fs_root => $_));
+        }
+
+
+
+;
 
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_latest_sequence_no("0");
@@ -426,8 +433,9 @@ sub _write_record_index_entry {
         type => $args{type}
     );
 
-    my $index_path = file( $self->fs_root, $idx_filename );
-    $index_path->parent->mkpath;
+    my $index_path = File::Spec->catfile( $self->fs_root, $idx_filename );
+    my (undef,$parent, $filename) = File::Spec->splitpath($index_path);
+    $self->_mkdir($parent);
 
     open( my $record_index, ">>" . $index_path);
 
@@ -488,7 +496,7 @@ sub _delete_record_index {
         uuid => $args{uuid},
         type => $args{type}
     );
-    file( $self->fs_root => $idx_filename )->remove
+    unlink File::Spec->catfile( $self->fs_root => $idx_filename )
         || die "Could not delete record $idx_filename: " . $!;
 }
 
@@ -508,7 +516,7 @@ sub _read_serialized_record {
 sub _record_index_filename {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
-    return file(
+    return File::Spec->catfile(
         $self->_record_type_root( $args{'type'} ),
         $self->_hashed_dir_name($args{uuid})
     );
@@ -531,7 +539,7 @@ sub _record_cas_filename {
 
     return undef unless ($key and ($key ne '0'x40));
     # XXX: deserialize the changeset content from the cas with $key
-    my $casfile = file(
+    my $casfile = File::Spec->catfile(
         $self->record_cas_dir,
         $self->_hashed_dir_name($key)
     );
@@ -542,7 +550,7 @@ sub _record_cas_filename {
 sub _record_type_root {
     my $self = shift;
     my $type = shift;
-    return dir( $self->record_dir, $type );
+    return File::Spec->catdir( $self->record_dir, $type );
 }
 
 sub _write_changeset {
@@ -608,7 +616,7 @@ sub _get_changeset_index_entry {
                 . " data key $key" );
 
         # XXX: deserialize the changeset content from the cas with $key
-        my $casfile = file( $self->changeset_cas_dir,
+        my $casfile = File::Spec->catfile( $self->changeset_cas_dir =>
             $self->_hashed_dir_name($key)
         );
 
@@ -708,7 +716,7 @@ sub _deserialize_changeset {
 sub _get_changeset_index_handle {
     my $self = shift;
 
-    open( my $cs_file, ">>" . file( $self->fs_root, $self->changeset_index ) )
+    open( my $cs_file, ">>" . File::Spec->catfile( $self->fs_root => $self->changeset_index ) )
         || die $!;
     return $cs_file;
 }
@@ -724,10 +732,7 @@ sub _write_to_cas {
         $content = to_json($args{'data'}, { canonical => 1, pretty=> 0, utf8=>1}  );
     }
     my $fingerprint = sha1_hex($content);
-    my $content_filename = file(
-        $args{'cas_dir'},
-            $self->_hashed_dir_name($fingerprint)
-    );
+    my $content_filename = File::Spec->catfile( $args{'cas_dir'} => $self->_hashed_dir_name($fingerprint));
 
     $self->_write_file( path => $content_filename, content => $content );
     return $fingerprint;
@@ -737,13 +742,13 @@ sub _write_file {
     my $self = shift;
     my %args = validate( @_, { path => 1, content => 1 } );
 
-    my $file = file( $self->fs_root => $args{'path'} );
-    my $parent = $file->parent;
+    my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
+    my (undef, $parent, $filename)  = File::Spec->splitpath($file);
     unless ( -d $parent ) {
-        $parent->mkpath || die "Failed to create directory " . $file->parent;
+        $self->_mkdir($parent) || die "Failed to create directory " . $parent;
     }
 
-    my $fh = $file->openw;
+    open(my $fh, ">$file") || die $!;
     print $fh scalar( $args{'content'} )
         ; # can't do "||" as we die if we print 0" || die "Could not write to " . $args{'path'} . " " . $!;
     close $fh || die $!;
@@ -764,18 +769,37 @@ sub _file_exists {
         return $self->_read_file($file) ? 1 : 0;
     }
 
-    my $path = file( $self->fs_root, $file );
+    my $path = File::Spec->catfile( $self->fs_root, $file );
    if    ( -f $path ) { return 1 }
    elsif ( -d $path ) { return 2 }
    else               { return 0 }
+}
+
+sub _mkdir {
+    my $self = shift;
+    my $path = shift;
+    my @parts = File::Spec->splitdir($path);
+    my @so_far;
+
+
+    for my $part (@parts) {
+        push @so_far, $part;
+        my $dir = File::Spec->catdir(@so_far);
+        next if (-d $dir);
+        mkdir ($dir) || die "Failed to create a directory: ".$!;
+    }
+
+    return 1;
+
 }
 
 sub read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
     if ($self->fs_root) {
-        my $qualified_file = file( $self->fs_root => $file );
-        return undef if ( not dir($self->fs_root)->subsumes($qualified_file));
+        # make sure we don't try to read files outside the replica
+        my $qualified_file = Cwd::fast_abs_path(File::Spec->catfile( $self->fs_root => $file ));
+        return undef if substr($qualified_file,0,length($self->fs_root)) ne $self->fs_root;
     }
     return $self->_read_file($file);
 }
@@ -786,7 +810,7 @@ sub _read_file {
     if ( $self->fs_root ) {
         return eval {
             local $SIG{__DIE__} = 'DEFAULT';
-            $self->_slurp (file( $self->fs_root => $file ))
+            $self->_slurp (File::Spec->catfile( $self->fs_root => $file ))
         };
     } else {    # http replica
         return LWP::Simple::get( $self->url . "/" . $file );
@@ -799,10 +823,10 @@ sub _slurp {
     my $self = shift;
     my $abspath = shift;
     open (my $fh, "<", "$abspath") || die $!;
+
     my @lines = <$fh>;
     close $fh;
     return join('',@lines);
-
 }
 
 sub begin_edit {
@@ -995,7 +1019,7 @@ sub list_records {
     #return just the filenames, which, File::Find::Rule doesn't seem capable of
         my @record_uuids = map { my @path = split( qr'/', $_ ); pop @path }
             File::Find::Rule->file->maxdepth(3)->in(
-            dir( $self->fs_root, $self->_record_type_root( $args{'type'} ) )
+            File::Spec->catdir( $self->fs_root => $self->_record_type_root( $args{'type'} ) )
             );
 
     
@@ -1009,7 +1033,7 @@ sub list_types {
 
     return [ map { my @path = split( qr'/', $_ ); pop @path }
             File::Find::Rule->mindepth(1)->maxdepth(1)
-            ->in( dir( $self->fs_root, $self->record_dir ) ) ];
+            ->in( File::Spec->catdir( $self->fs_root => $self->record_dir ) ) ];
 
 }
 
@@ -1030,7 +1054,7 @@ sub read_userdata_file {
     my $self = shift;
     my %args = validate( @_, { path => 1 } );
 
-    $self->_read_file(file($self->userdata_dir, $args{path}));
+    $self->_read_file(File::Spec->catfile($self->userdata_dir, $args{path}));
 }
 
 =head2 write_userdata_file
@@ -1044,7 +1068,7 @@ sub write_userdata_file {
     my %args = validate( @_, { path => 1, content => 1 } );
 
     $self->_write_file(
-        path    => file($self->userdata_dir, $args{path}),
+        path    => File::Spec->catfile($self->userdata_dir, $args{path}),
         content => $args{content},
     );
 }

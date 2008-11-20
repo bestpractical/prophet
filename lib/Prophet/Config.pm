@@ -64,7 +64,7 @@ sub load_from_files {
     my $config = {};
 
     for my $file (@config) {
-        $self->load_from_file(file($file), $config);
+        $self->load_from_file(File::Spec->catfile($file), $config);
         push @{$self->config_files}, $file;
     }
 
@@ -76,7 +76,7 @@ sub load_from_file {
     my $file   = shift;
     my $config = shift || {};
 
-    for my $line ($file->slurp) {
+    for my $line ($self->_slurp($file) ) {
         $line =~ s/\#.*$//; # strip comments
         next unless ($line =~ /^(.*?)\s*=\s*(.*)$/);
         my $key = $1;
@@ -132,8 +132,7 @@ sub save {
 
     my @lines;
     if ( $self->file_if_exists($file) ) {
-        my $file = file($file);
-        @lines = $file->slurp;
+        @lines = $self->_slurp($file);
     }
 
     open my $fh, '>', $file or die "can't save config to $file: $!";
@@ -157,6 +156,14 @@ sub save {
     close $fh;
     return 1;
 }
+
+sub _slurp {
+    my $self = shift;
+    my $abspath = shift;
+    open (my $fh, "<", "$abspath") || die $!;
+    return <$fh>;
+}
+
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

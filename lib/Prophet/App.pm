@@ -1,6 +1,6 @@
 package Prophet::App;
 use Moose;
-use Path::Class;
+use File::Spec ();
 use Prophet::Config;
 use Params::Validate qw/validate validate_pos/;
 
@@ -10,7 +10,7 @@ has handle => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        my $root = $ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet');
+        my $root = $ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
         return Prophet::Replica->new( url => $type.':file://' . $root, app_handle => $self, 
                 
@@ -26,7 +26,7 @@ has resdb_handle => (
         my $self = shift;
         return $self->handle->resolution_db_handle
             if $self->handle->resolution_db_handle;
-        my $root = ($ENV{'PROPHET_REPO'} || dir($ENV{'HOME'}, '.prophet')) . "_res";
+        my $root = ($ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet')) . "_res";
         my $type = $self->default_replica_type;
         my $r = Prophet::Replica->new( url => $type.':file://' . $root );
         if (!$r->replica_exists && $r->can_initialize) { $r->initialize}

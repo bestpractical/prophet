@@ -1,7 +1,7 @@
 package Prophet::ReplicaExporter;
 use Moose;
 use Params::Validate qw(:all);
-use Path::Class;
+use File::Spec;
 use Prophet::Record;
 use Prophet::Collection;
 
@@ -12,7 +12,7 @@ has source_replica => (
 
 has target_path => (
     is        => 'rw',
-    isa       => 'Path::Class::Dir',
+    isa       => 'Str',
     predicate => 'has_target_path',
 );
 
@@ -83,7 +83,7 @@ sub export {
 
     unless ($self->source_replica->is_resdb) {
     my $resolutions = Prophet::ReplicaExporter->new(
-           target_path => dir($self->target_path, 'resolutions' ),
+           target_path => File::Spec->catdir($self->target_path, 'resolutions' ),
             source_replica => $self->source_replica->resolution_db_handle,
             app_handle => $self->app_handle
         
