@@ -22,6 +22,7 @@ sub page (&;$) {
             body {
                 h1 { $title };
                 $code->( $self, @args );
+
             };
             show('footer');
         }

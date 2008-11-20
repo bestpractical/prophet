@@ -16,7 +16,7 @@ has app_handle => (
 has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
 has read_only => ( is  => 'rw',         isa => 'Bool' );
 
-before run => sub {
+ sub run{
     my $self      = shift;
     my $publisher = eval {
         require Net::Rendezvous::Publish;
@@ -33,14 +33,15 @@ before run => sub {
         warn "Publisher backend is not available. Install one of the "
             . "Net::Rendezvous::Publish::Backend modules from CPAN.";
     }
-};
+    $self->SUPER::run(@_);
+}
 
 sub setup_template_roots {
     my $self       = shift;
     my $view_class = ref( $self->app_handle ) . "::Server::View";
 
     if ( Prophet::App->try_to_require($view_class) ) {
-        Template::Declare->init( roots => [$view_class, 'Prophet::Server::View'] );
+        Template::Declare->init( roots => [$view_class] );
 
     } else {
         Template::Declare->init( roots => ['Prophet::Server::View'] );
@@ -67,9 +68,9 @@ override handle_request => sub {
 
 sub update_record_prop {
     my $self = shift;
-    my $type = $1;
-    my $uuid = $2;
-    my $prop = $3;
+    my $type = shift;
+    my $uuid = shift;
+    my $prop = shift;
 
     my $record = $self->load_record( type => $type, uuid => $uuid );
     return $self->_send_404 unless ($record);
@@ -80,8 +81,8 @@ sub update_record_prop {
 
 sub update_record {
     my $self   = shift;
-    my $type   = $1;
-    my $uuid   = $2;
+    my $type   = shift;
+    my $uuid   = shift;
     my $record = $self->load_record( type => $type, uuid => $uuid );
 
     return $self->_send_404 unless ($record);
@@ -93,7 +94,7 @@ sub update_record {
 
 sub create_record {
     my $self   = shift;
-    my $type   = $1;
+    my $type   = shift;
     my $record = $self->load_record( type => $type );
     my $uuid   = $record->create(
         props => { map { $_ => $self->cgi->param($_) } $self->cgi->param() } );
@@ -102,9 +103,9 @@ sub create_record {
 
 sub get_record_prop {
     my $self   = shift;
-    my $type   = $1;
-    my $uuid   = $2;
-    my $prop   = $3;
+    my $type   = shift;
+    my $uuid   = shift;
+    my $prop   = shift;
     my $record = $self->load_record( type => $type, uuid => $uuid );
     return $self->_send_404 unless ($record);
     if ( my $val = $record->prop($prop) ) {
@@ -119,8 +120,8 @@ sub get_record_prop {
 
 sub get_record {
     my $self   = shift;
-    my $type   = $1;
-    my $uuid   = $2;
+    my $type   = shift;
+    my $uuid   = shift;
     my $record = $self->load_record( type => $type, uuid => $uuid );
     return $self->_send_404 unless ($record);
     return $self->send_content(
@@ -131,7 +132,7 @@ sub get_record {
 
 sub get_record_list {
     my $self = shift;
-    my $type = $1;
+    my $type = shift;
     require Prophet::Collection;
     my $col = Prophet::Collection->new(
         handle => $self->handle,
@@ -160,7 +161,7 @@ sub get_record_types {
 sub serve_replica {
     my $self = shift;
 
-        my $repo_file = $1;
+        my $repo_file = shift;
         return undef unless $self->handle->can('read_file');
         my $content = $self->handle->read_file($repo_file);
         return unless defined $content && length($content);
@@ -172,14 +173,11 @@ sub serve_replica {
 
 sub show_template {
     my $self = shift;
-    my $p    = $1;
+    my $p    = shift;
     if ( Template::Declare->has_template($p) ) {
         Prophet::Server::View->app_handle( $self->app_handle );
         my $content = Template::Declare->show($p);
-        return $self->send_content(
-            content_type => 'text/html',
-            content      => $content,
-        );
+        return $self->send_content( content_type => 'text/html', content      => $content,);
     }
     return undef;
 }
