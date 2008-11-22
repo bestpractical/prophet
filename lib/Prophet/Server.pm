@@ -16,7 +16,7 @@ has app_handle => (
 has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
 has read_only => ( is  => 'rw',         isa => 'Bool' );
 
- sub run{
+sub run {
     my $self      = shift;
     my $publisher = eval {
         require Net::Rendezvous::Publish;
@@ -61,7 +61,7 @@ override handle_request => sub {
      my $d =$dispatcher_class->new( server => $self );
 
 
-    $d->run( $cgi->request_method . "/" . $cgi->path_info, $d )
+    $d->run( $cgi->request_method .  $cgi->path_info, $d )
         || $self->_send_404;
 
 };
@@ -176,7 +176,7 @@ sub show_template {
     my $p    = shift;
     if ( Template::Declare->has_template($p) ) {
         Prophet::Server::View->app_handle( $self->app_handle );
-        my $content = Template::Declare->show($p);
+        my $content = Template::Declare->show($p,@_);
         return $self->send_content( content_type => 'text/html', content      => $content,);
     }
     return undef;
