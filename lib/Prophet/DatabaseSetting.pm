@@ -14,12 +14,7 @@ has label => (
     is  => 'rw',
 );
 
-sub BUILDARGS {
-    my $self = shift;
-    my $args = $self->SUPER::BUILDARGS(@_);
-    $args->{type} ||= '__prophet_db_settings';
-    return $args;
-}
+has type => (default => '__prophet_db_settings');
 
 sub BUILD {
     my $self = shift;

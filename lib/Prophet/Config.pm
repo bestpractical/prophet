@@ -2,7 +2,7 @@ package Prophet::Config;
 use Moose;
 use MooseX::AttributeHelpers;
 use File::Spec;
-use Path::Class;
+use Prophet::Util;
 
 has app_handle => (
     is => 'ro',
@@ -64,7 +64,7 @@ sub load_from_files {
     my $config = {};
 
     for my $file (@config) {
-        $self->load_from_file(File::Spec->catfile($file), $config);
+        $self->load_from_file($file => $config);
         push @{$self->config_files}, $file;
     }
 
@@ -76,7 +76,7 @@ sub load_from_file {
     my $file   = shift;
     my $config = shift || {};
 
-    for my $line ($self->_slurp($file) ) {
+    for my $line (Prophet::Util->slurp($file) ) {
         $line =~ s/\#.*$//; # strip comments
         next unless ($line =~ /^(.*?)\s*=\s*(.*)$/);
         my $key = $1;
@@ -132,7 +132,7 @@ sub save {
 
     my @lines;
     if ( $self->file_if_exists($file) ) {
-        @lines = $self->_slurp($file);
+        @lines = Prophet::Util->slurp($file);
     }
 
     open my $fh, '>', $file or die "can't save config to $file: $!";
@@ -155,13 +155,6 @@ sub save {
     }
     close $fh;
     return 1;
-}
-
-sub _slurp {
-    my $self = shift;
-    my $abspath = shift;
-    open (my $fh, "<", "$abspath") || die $!;
-    return <$fh>;
 }
 
 

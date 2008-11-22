@@ -3,7 +3,6 @@ use Moose;
 use MooseX::ClassAttribute;
 use Params::Validate;
 use Prophet::App; # for require_module. Kinda hacky
-
 use constant collection_class => 'Prophet::Collection';
 
 =head1 NAME
@@ -31,8 +30,8 @@ has handle => (
 has type => (
     is        => 'rw',
     isa       => 'Str',
-    required  => 1,
     predicate => 'has_type',
+    required => 1,
     default   => sub { undef}
 );
 

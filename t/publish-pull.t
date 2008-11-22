@@ -4,7 +4,6 @@ use strict;
 use Prophet::Test tests => 24;
 use Test::Exception;
 use File::Temp 'tempdir';
-use Path::Class;
 use Params::Validate;
 
 my ($bug_uuid, $pullall_uuid);

@@ -1,24 +1,21 @@
 package Prophet::CLI::PublishCommand;
 use Moose::Role;
 
-use Path::Class;
 use File::Temp ();
 
-sub tempdir { dir(File::Temp::tempdir(CLEANUP => 1)) }
+sub tempdir { my $dir = File::Temp::tempdir(CLEANUP => 0); warn $dir; return $dir; }
 
 sub publish_dir {
     my $self = shift;
     my %args = @_;
 
+
+    $args{from} .= '/';
+
     my @args;
-    push @args, '--recursive';
     push @args, '--verbose' if $self->context->has_arg('verbose');
-
-    push @args, '--';
-
-    push @args, dir($args{from})->children;
-
-    push @args, $args{to};
+    
+    push @args, '--recursive', '--' , $args{from}, $args{to};
 
     my $rsync = $ENV{RSYNC} || "rsync";
     my $ret = system($rsync, @args);

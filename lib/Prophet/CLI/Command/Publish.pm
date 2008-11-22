@@ -4,7 +4,8 @@ extends 'Prophet::CLI::Command::Export';
 with 'Prophet::CLI::PublishCommand';
 with 'Prophet::CLI::CollectionCommand';
 
-use Path::Class;
+use File::Path;
+use File::Spec;
 
 sub view_classes {
  return ['Prophet::Server::View'];
@@ -53,14 +54,14 @@ after run => sub {
 
 sub export_html {
 	my $self = shift;
-        my $path = dir($self->arg('path'));
+        my $path = $self->arg('path');
 
         # if they specify both html and replica, then stick rendered templates
         # into a subdirectory. if they specify only html, assume they really
         # want to publish directly into the specified directory
         if ($self->has_arg('replica')){
-            $path = $path->subdir('html');
-            $path->mkpath;
+            $path = File::Spec->catdir($path => 'html');
+            mkpath([$path]);
         }
 
         $self->render_templates_into($path);
@@ -78,18 +79,18 @@ sub render_templates_into {
     my @types = $self->type || $self->types_to_render;
 
     for my $type (@types) {
-        my $subdir = $dir->subdir($type);
-        $subdir->mkpath;
+        my $subdir = File::Spec->catdir($dir, $type);
+        mkpath([$subdir]);
 
         my $records = $self->get_collection_object(type => $type);
         $records->matching(sub { 1 });
 
-        my $fh = $subdir->file('index.html')->openw;
+        open (my $fh, '>',File::Spec->catdir($subdir => 'index.html'));
         print { $fh } Template::Declare->show('record_table' => $records);
         close $fh;
 
         for my $record ($records->items) {
-            my $fh = $subdir->file($record->uuid . '.html')->openw;
+            open (my $fh, '>',File::Spec->catdir($subdir => $record->uuid.'.html'));
             print { $fh } Template::Declare->show('record' => $record);
         }
     }

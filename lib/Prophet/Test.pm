@@ -8,12 +8,13 @@ our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for
     /;
 
 use File::Path 'rmtree';
+use File::Spec;
 use File::Temp qw/tempdir tempfile/;
-use Path::Class 'dir';
 use Test::Exception;
 use IPC::Run3 'run3';
 use Params::Validate ':all';
 use Scalar::Defer qw/lazy defer force/;
+use Prophet::Util;
 
 use Prophet::CLI;
 
@@ -166,13 +167,14 @@ sub _mk_cmp_closure {
 our $RUNCNT;
 
 sub _get_perl_cmd {
-    my ($tmp, $i) = (Path::Class::File->new($0)->dir, 0);
-    while ( !$tmp->subdir('bin')->stat && $i++ < 10 ) {
-        $tmp = $tmp->parent;
+    my ($tmp, $i) = (Prophet::Util->updir($0), 0);
+    while ( ! -d File::Spec->catdir($tmp, 'bin') && $i++ < 10 ) {
+        $tmp = Prophet::Util->updir($tmp);
     }
-    die "couldn't find bin dir" unless $tmp->subdir('bin')->stat;
+    
+    my $base_dir = File::Spec->catdir($tmp, 'bin');
+    die "couldn't find bin dir" unless -d $base_dir;
 
-    my $base_dir = $tmp->subdir('bin');
     my $script = shift;
     my @cmd = ( $^X, ( map {"-I$_"} @INC ) );
     push @cmd, '-MDevel::Cover' if $INC{'Devel/Cover.pm'};
@@ -180,7 +182,7 @@ sub _get_perl_cmd {
         push @cmd, '-d:DProf';
         $ENV{'PERL_DPROF_OUT_FILE_NAME'} = 'tmon.out.' . $$ . '.' . $RUNCNT++;
     }
-    push @cmd, $base_dir->file($script);
+    push @cmd, File::Spec->catdir($base_dir => $script);
     return @cmd;
 }
 
@@ -241,7 +243,7 @@ Returns a path on disk for where $USERNAME's replica is stored
 
 sub repo_path_for {
     my $username = shift;
-    return dir($REPO_BASE)->subdir($username);
+    return File::Spec->catdir($REPO_BASE => $username);
 }
 
 =head2 repo_uri_for $USERNAME

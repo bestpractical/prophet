@@ -8,7 +8,6 @@ license('Perl');
 requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
-requires('Path::Class');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');

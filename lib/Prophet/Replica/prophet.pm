@@ -4,10 +4,12 @@ extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use LWP::Simple ();
 use File::Spec ();
+use File::Path;
 use Cwd (); 
 use Digest::SHA1 qw(sha1_hex);
 use File::Find::Rule;
 use Data::UUID;
+use Prophet::Util;
 use JSON;
 use POSIX qw();
 
@@ -296,7 +298,7 @@ sub initialize {
         $self->record_cas_dir, $self->changeset_cas_dir,
         $self->userdata_dir
         ) { 
-            $self->_mkdir(File::Spec->catdir($self->fs_root => $_));
+            mkpath([File::Spec->catdir($self->fs_root => $_)]);
         }
 
 
@@ -435,7 +437,7 @@ sub _write_record_index_entry {
 
     my $index_path = File::Spec->catfile( $self->fs_root, $idx_filename );
     my (undef,$parent, $filename) = File::Spec->splitpath($index_path);
-    $self->_mkdir($parent);
+    mkpath([$parent]);
 
     open( my $record_index, ">>" . $index_path);
 
@@ -745,7 +747,8 @@ sub _write_file {
     my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
     my (undef, $parent, $filename)  = File::Spec->splitpath($file);
     unless ( -d $parent ) {
-        $self->_mkdir($parent) || die "Failed to create directory " . $parent;
+       eval { mkpath([$parent])} ;
+       if (my $msg = $@) {  die "Failed to create directory " . $parent." - $msg";}
     }
 
     open(my $fh, ">$file") || die $!;
@@ -775,24 +778,6 @@ sub _file_exists {
    else               { return 0 }
 }
 
-sub _mkdir {
-    my $self = shift;
-    my $path = shift;
-    my @parts = File::Spec->splitdir($path);
-    my @so_far;
-
-
-    for my $part (@parts) {
-        push @so_far, $part;
-        my $dir = File::Spec->catdir(@so_far);
-        next if (-d $dir);
-        mkdir ($dir) || die "Failed to create a directory: ".$!;
-    }
-
-    return 1;
-
-}
-
 sub read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
@@ -810,7 +795,7 @@ sub _read_file {
     if ( $self->fs_root ) {
         return eval {
             local $SIG{__DIE__} = 'DEFAULT';
-            $self->_slurp (File::Spec->catfile( $self->fs_root => $file ))
+            Prophet::Util->slurp (File::Spec->catfile( $self->fs_root => $file ))
         };
     } else {    # http replica
         return LWP::Simple::get( $self->url . "/" . $file );
@@ -819,15 +804,6 @@ sub _read_file {
 
 }
 
-sub _slurp {
-    my $self = shift;
-    my $abspath = shift;
-    open (my $fh, "<", "$abspath") || die $!;
-
-    my @lines = <$fh>;
-    close $fh;
-    return join('',@lines);
-}
 
 sub begin_edit {
     my $self = shift;

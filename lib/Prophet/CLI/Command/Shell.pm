@@ -2,12 +2,13 @@
 package Prophet::CLI::Command::Shell;
 use Moose;
 extends 'Prophet::CLI::Command';
-use Path::Class 'file';
+use File::Spec;
+use Prophet::Util;
 
 has name => (
     is => 'ro',
     isa => 'Str',
-    default => sub { file($0)->basename },
+    default => sub { Prophet::Util->updir($0)}
 );
 
 has term => (
