@@ -52,6 +52,10 @@ override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
 
+   
+    my $controller = Prophet::Server::Controller->new(cgi => $self->cgi); 
+    $controller->handle_actions();
+
      my $dispatcher_class = ref($self->app_handle) . "::Server::Dispatcher";
      if (!$self->app_handle->try_to_require($dispatcher_class)) {
          $dispatcher_class = "Prophet::Server::Dispatcher";

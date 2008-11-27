@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 use inc::Module::Install;
-name('Prophet'); #  App::Settings App::Settings::CLI
+name('Prophet'); #  App::Settings App::Settings::CLI App::WebToy App::WebToy::CLI
 author('clkao and jesse');
 license('Perl');
 

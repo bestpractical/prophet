@@ -1,0 +1,14 @@
+# in the dispatcher:
+
+    # get all form fields that match the spec
+    # bundle them by record
+    # order them by the desired order
+    # canonicalize
+    # validate
+    # execute if we're to execute
+      # on failure
+        # rerender the current page 
+      # on success
+        # go to "next page"
+
+
