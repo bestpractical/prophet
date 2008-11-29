@@ -452,14 +452,22 @@ sub _read_record_index_entry {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 1 } );
 
-    # XXX TODO - we shouldn't compute all entries just to get the last
-    my @entries = $self->_read_record_index(
-        type => $args{type},
-        uuid => $args{uuid}
+    my $idx_filename = File::Spec->catfile(
+        $self->fs_root => $self->_record_index_filename( uuid => $args{uuid}, type => $args{type})
     );
-    return @{ $entries[-1] || [] };
+
+    open( my $index, "<:bytes", $idx_filename) || return undef;
+    seek($index, (0 - RECORD_INDEX_SIZE), 2) || return undef;
+    my $record;
+    read( $index, $record, RECORD_INDEX_SIZE) || return undef;
+    my ( $seq, $key ) = unpack( "NH40", $record ) ;
+    return ( $seq, $key );
 
 }
+
+
+
+
 
 sub _read_record_index {
     my $self = shift;
