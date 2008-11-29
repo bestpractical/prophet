@@ -174,8 +174,8 @@ sub edit_props {
 
 =head2 prompt_Yn question
 
-Asks user the question and returns true if answer was positive or false otherwise.
-Default answer is 'Yes'.
+Asks user the question and returns true if answer was positive or false
+otherwise. Default answer is 'Yes' (returns true).
 
 =cut
 
@@ -184,7 +184,7 @@ sub prompt_Yn {
     my $msg = shift;
     print "$msg [Y/n]: ";
 
-    my $a = <>;
+    my $a = <STDIN>;
     chomp $a;
 
     return 1 if $a =~ /^(|y|yes)$/i;
