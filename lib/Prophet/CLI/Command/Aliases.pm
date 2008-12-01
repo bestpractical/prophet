@@ -14,11 +14,62 @@ sub run {
         return;
     }
 
-    my $done = 0;
-
-    while ( !$done ) {
-        $done = $self->try_to_edit( template => \$template );
+    # --add is the same as --set
+    if ( $self->context->has_arg('add') ) {
+        $self->context->set_arg('set', $self->arg('add') )
     }
+
+    if ( $self->has_arg('set') || $self->has_arg('delete') ) {
+        my $aliases = $self->app_handle->config->aliases;
+        my $need_to_save;
+
+        if ( $self->has_arg('set') ) {
+            my $value = $self->arg('set');
+            if ( $value =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/ ) {
+                if ( exists $aliases->{$1} ) {
+                    if ( $aliases->{$1} ne $2 ) {
+                        my $old = $aliases->{$1};
+                        $aliases->{$1} = $2;
+                        $need_to_save = 1;
+                        print
+                          "alias '$1' changed from '$old' to '$2'\n";
+                    }
+                    else {
+                        print "alias '$1 = $2' isn't changed, won't update\n";
+                    }
+                }
+                else {
+                    $need_to_save = 1;
+                    $aliases->{$1} = $2;
+                    print "added alias '$1 = $2'\n";
+                }
+            }
+        }
+        elsif ( $self->has_arg('delete') ) {
+            my $key = $self->arg('delete');
+            if ( exists $aliases->{$key} ) {
+                $need_to_save = 1;
+                print "deleted alias '$key = $aliases->{$key}'\n";
+                delete $aliases->{$key};
+            }
+            else {
+                print "alias $key not found\n";
+            }
+        }
+
+        if ($need_to_save) {
+            $self->app_handle->config->save;
+        }
+    }
+    else {
+
+        my $done = 0;
+
+        while ( !$done ) {
+            $done = $self->try_to_edit( template => \$template );
+        }
+    }
+
 
 }
 
