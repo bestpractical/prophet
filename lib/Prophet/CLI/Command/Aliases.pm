@@ -32,7 +32,7 @@ sub run {
                         $aliases->{$1} = $2;
                         $need_to_save = 1;
                         print
-                          "alias '$1' changed from '$old' to '$2'\n";
+                          "changed alias '$1' from '$old' to '$2'\n";
                     }
                     else {
                         print "alias '$1 = $2' isn't changed, won't update\n";
