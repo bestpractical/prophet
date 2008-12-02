@@ -5,7 +5,7 @@ use strict;
 use Prophet::Test 'no_plan';
 use File::Temp qw/tempfile/;
 
-$ENV{'PROPHET_APP_CONFIG'} = (tempfile())[1];
+$ENV{'PROPHET_APP_CONFIG'} = (tempfile(UNLINK => 1))[1];
 
 use_ok('Prophet::CLI');
 use_ok('Prophet::Config');
@@ -78,3 +78,4 @@ is( $content, <<EOF, 'content in config' );
 alias pull -l = pull --local
 alias pull -a = pull --all
 EOF
+
