@@ -2,10 +2,11 @@ package Prophet::Server::Controller;
 use Moose;
 
 
-has cgi => (isa => 'CGI');
+has cgi => (is => 'rw', isa => 'CGI');
+has failed => ( is => 'rw', isa => 'Bool');
+has failure_message => ( is => 'rw', isa => 'Str');
 
-has failed => ( isa => 'Bool');
-has failure_message => ( isa => 'Bool');
+
 
 =head1 NAME
 
@@ -25,6 +26,8 @@ sub extract_actions_from_cgi {
     my $cgi = $self->cgi;
     my @params = $cgi->all_parameters;
 
+    my @action_hashes;
+
     my $bundles = $self->_bundle_params_by_action(\@params);   
     for (values %$bundles) {
         push  @action_hashes, $self->_bundle_to_hash($_);
@@ -41,8 +44,7 @@ sub _bundle_params_by_action {
     my @actions = $self->_find_actions_from_cgi_params($params);
     foreach my $param (@$params) {
         my $action = $self->_parse_cgi_param_name($param);
-    
-        $bundles{$action} 
+        $bundles->{$action};
     }
     
 
@@ -57,13 +59,18 @@ sub find_actions_from_cgi {
     my $actions = {};
    foreach my $param (@$params) {
         next unless $param =~ /^prophet-action(.*)$/;
-        my %attr = map {split(/=/) grep {$_} split(/|/,$1)};
+        my $action_data = $1;
+
+       my @bits = grep { defined $_ } split( /|/, $action_data );
+        my %attr ={
+            split(/=/, @bits)
+        };
+
         $attr{value} = $cgi->param($param);
 
-        warn "Duplicate action definition for @{[$attr{name}]}." if ($actions{$attr{name}};
-        $actions{$attr{name}} = \%attr;
-        $actions{$attr{name}}->{params} = 
-            $self->params_for_action_from_cgi($attr{name});
+        warn "Duplicate action definition for @{[$attr{name}]}." if ($actions->{$attr{name}});
+        $actions->{$attr{name}} = \%attr;
+        $actions->{$attr{name}}->{params} = $self->params_for_action_from_cgi($attr{name});
    } 
 
 }
@@ -81,11 +88,11 @@ sub _parse_cgi_param_name {
     my $self = shift;
     my $param = shift;
 
-    my ($uuid, $prop, $value);
-    if ($param =~ /|uuid-(.*?)|) {
+    my ($uuid, $prop);
+    if ($param =~ /|uuid-(.*?)|/) {
         $uuid = $1;
     }
-    if ($param =~ /|prop-(.*?)|) {
+    if ($param =~ /|prop-(.*?)|/) {
         $prop = $1;
     }
     my $value = $self->cgi->param($param); 
@@ -115,10 +122,6 @@ sub handle_actions {
     }
 }
 
-
-sub extract_actions_from_cgi {
-    my $self = shift;
-}
 
 sub canonicalize_actions {
     my $self = shift;
