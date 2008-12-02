@@ -53,7 +53,7 @@ sub run {
                 delete $aliases->{$key};
             }
             else {
-                print "alias $key not found\n";
+                print "didn't find alias '$key'\n";
             }
         }
 
