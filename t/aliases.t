@@ -40,6 +40,11 @@ my @cmds = (
         comment => q{deleted alias 'pull -a = pull --local'},
     },
     {
+        cmd     => [ '--delete', 'pull -a' ],
+        output  => qr/didn't find alias 'pull -a'/,
+        comment => q{delete an alias that doesn't exist any more},
+    },
+    {
         cmd => [ '--add', 'pull -a=pull --all' ],
         output  => qr/added alias 'pull -a = pull --all/,
         comment => 'readd a new alias',
