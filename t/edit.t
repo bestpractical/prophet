@@ -3,7 +3,7 @@ use strict;
 use Prophet::Test tests => 34;
 use File::Temp qw'tempdir';
 
-$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 my $prophet = Prophet::CLI->new;
 $prophet->handle->initialize;
 

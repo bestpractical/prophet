@@ -3,7 +3,7 @@ use Moose::Role;
 
 use File::Temp ();
 
-sub tempdir { my $dir = File::Temp::tempdir(CLEANUP => 0); warn $dir; return $dir; }
+sub tempdir { my $dir = File::Temp::tempdir(CLEANUP => ! $ENV{PROPHET_DEBUG} ); warn $dir; return $dir; }
 
 sub publish_dir {
     my $self = shift;

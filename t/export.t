@@ -49,7 +49,7 @@ as_bob {
         'content is correct'
     );
 
-    my $path = tempdir( CLEANUP => !  $ENV{TEST_VERBOSE} ) ;
+    my $path = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} ) ;
 
     run_ok( 'prophet', [ 'export', '--path', $path ] );
     my $cli = Prophet::CLI->new;

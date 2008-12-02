@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use Prophet::Test 'no_plan';
 use File::Temp qw'tempdir';
-    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 delete $ENV{'PROPHET_APP_CONFIG'};
 
 use_ok('Prophet::CLI');

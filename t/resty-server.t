@@ -4,7 +4,7 @@ use strict;
 
 BEGIN {
     use File::Temp qw(tempdir);
-    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 
 }
 

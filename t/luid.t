@@ -6,8 +6,8 @@ use File::Temp qw'tempdir';
 
 use_ok('Prophet::CLI');
 use_ok('Prophet::Record');
-$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
-$ENV{'PROPHET_METADATA_DIRECTORY'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
+$ENV{'PROPHET_METADATA_DIRECTORY'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;

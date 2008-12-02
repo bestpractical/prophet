@@ -639,7 +639,7 @@ sub _do_userdata_read {
     my $self    = shift;
     my $path    = shift;
     my $default = shift;
-    my $json = $self->read_userdata_file( path => $path ) || $default;
+    my $json = $self->read_userdata( path => $path ) || $default;
     require JSON;
     return JSON::from_json($json, { utf8 => 1 });
 }
@@ -660,7 +660,7 @@ sub _do_userdata_write {
     require JSON;
     my $content = JSON::to_json($value, { canonical => 1, pretty => 0, utf8 => 1 });
 
-    $self->write_userdata_file(
+    $self->write_userdata(
         path    => $path,
         content => $content,
     );

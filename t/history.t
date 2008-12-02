@@ -13,7 +13,7 @@ package main;
 use warnings;
 use strict;
 use File::Temp qw/tempdir/;
-$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 
 use Prophet::Test tests => 8;
 use Test::Exception;

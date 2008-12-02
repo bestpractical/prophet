@@ -39,7 +39,6 @@ as_alice {
     my $cxn = $alice_cli->handle;
     isa_ok( $cxn, 'Prophet::Replica', "Got the cxn " . $cxn->fs_root );
     $cxn->initialize();
-
     # set up an app model class, "ticket"
     my $t = MyApp::Model::Task->new(handle => $alice_cli->app_handle->handle);
     # set default values for status 
@@ -63,9 +62,9 @@ as_alice {
 
     # set list of acceptable statuses
     $status_list->set('new','open','closed'); 
-
     # enumerate statuses
     is_deeply($status_list->get, [qw/new open closed/]);
+exit;
 
     $status_list->set('new', 'closed');
 

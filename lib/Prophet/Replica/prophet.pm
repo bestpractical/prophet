@@ -12,6 +12,8 @@ use Data::UUID;
 use Prophet::Util;
 use JSON;
 use POSIX qw();
+use Memoize;
+
 
 has '+db_uuid' => (
     lazy    => 1,
@@ -448,9 +450,9 @@ sub _write_record_index_entry {
     close $record_index;
 }
 
-sub _read_record_index_entry {
+sub _last_record_index_entry {
     my $self = shift;
-    my %args = validate( @_, { type => 1, uuid => 1 } );
+    my %args = ( type => undef, uuid => undef, @_);
 
     my $idx_filename = File::Spec->catfile(
         $self->fs_root => $self->_record_index_filename( uuid => $args{uuid}, type => $args{type})
@@ -464,10 +466,6 @@ sub _read_record_index_entry {
     return ( $seq, $key );
 
 }
-
-
-
-
 
 sub _read_record_index {
     my $self = shift;
@@ -517,13 +515,11 @@ sub _read_serialized_record {
     return from_json( $self->_read_file($casfile), { utf8 => 1 } );
 }
 
+memoize '_record_index_filename';
 sub _record_index_filename {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
-    return File::Spec->catfile(
-        $self->_record_type_root( $args{'type'} ),
-        $self->_hashed_dir_name( $args{uuid} )
-    );
+    return File::Spec->catfile( $self->_record_type_dir( $args{'type'} ), $self->_hashed_dir_name( $args{uuid} ));
 }
 
 sub _hashed_dir_name {
@@ -535,23 +531,18 @@ sub _hashed_dir_name {
 
 sub _record_cas_filename {
     my $self = shift;
-    my %args = validate( @_, { type => 1, uuid => 1 } );
+    my %args = ( type => undef, uuid => undef, @_) ;
 
-    my ( $seq, $key ) = $self->_read_record_index_entry(
+    my ( $seq, $key ) = $self->_last_record_index_entry(
         type => $args{'type'},
         uuid => $args{'uuid'}
     );
 
     return undef unless ( $key and ( $key ne '0' x 40 ) );
-
-    # XXX: deserialize the changeset content from the cas with $key
-    my $casfile = File::Spec->catfile( $self->record_cas_dir,
-        $self->_hashed_dir_name($key) );
-
-    return $casfile;
+    return File::Spec->catfile( $self->record_cas_dir, $self->_hashed_dir_name($key) );
 }
 
-sub _record_type_root {
+sub _record_type_dir {
     my $self = shift;
     my $type = shift;
     return File::Spec->catdir( $self->record_dir, $type );
@@ -1017,10 +1008,9 @@ sub list_records {
         = map { my @path = split( qr'/', $_ ); pop @path }
         File::Find::Rule->file->maxdepth(3)->in(
         File::Spec->catdir(
-            $self->fs_root => $self->_record_type_root( $args{'type'} )
+            $self->fs_root => $self->_record_type_dir( $args{'type'} )
         )
         );
-
     return [
         grep {
             $self->_record_cas_filename( type => $args{'type'}, uuid => $_ )
@@ -1040,7 +1030,7 @@ sub list_types {
 sub type_exists {
     my $self = shift;
     my %args = validate( @_, { type => 1 } );
-    return $self->_file_exists( $self->_record_type_root( $args{'type'} ) );
+    return $self->_file_exists( $self->_record_type_dir( $args{'type'} ) );
 }
 
 =head2 read_userdata_file
@@ -1050,7 +1040,7 @@ Returns C<undef> if the file does not exist.
 
 =cut
 
-sub read_userdata_file {
+sub read_userdata {
     my $self = shift;
     my %args = validate( @_, { path => 1 } );
 
@@ -1058,13 +1048,13 @@ sub read_userdata_file {
         File::Spec->catfile( $self->userdata_dir, $args{path} ) );
 }
 
-=head2 write_userdata_file
+=head2 write_userdata
 
 Writes the given string to the given file in this replica's userdata directory.
 
 =cut
 
-sub write_userdata_file {
+sub write_userdata {
     my $self = shift;
     my %args = validate( @_, { path => 1, content => 1 } );
 

@@ -5,7 +5,7 @@ use Test::More tests => 23;
 use File::Temp qw'tempdir';
 
 use_ok('Prophet::CLI');
-$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
 
