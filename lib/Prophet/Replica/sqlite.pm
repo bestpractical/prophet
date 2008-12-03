@@ -619,7 +619,7 @@ sub record_exists {
 
     my $sth = $self->dbh->prepare("SELECT COUNT(uuid) from records WHERE type = ? AND uuid = ?");
     $sth->execute($args{type}, $args{uuid});
-    return $sth->rows;
+    return $sth->fetchrow_array;
 
 }
 
