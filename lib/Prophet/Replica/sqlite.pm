@@ -10,7 +10,6 @@ use DBI;
 
 has dbh => (
     is => 'rw',
-
     isa     => 'DBI::db',
     lazy => 1,
     default => sub {
@@ -97,25 +96,47 @@ sub BUILD {
 
 sub state_handle { return shift; }
 
-sub _fetch_metadata {
+sub __fetch_data {
     my $self = shift;
+    my $table = shift;
     my $key = shift;
 
-    my $sth = $self->dbh->prepare("SELECT value FROM local_metadata WHERE key = ?");
+    my $sth = $self->dbh->prepare("SELECT value FROM $table WHERE key = ?");
     $sth->execute($key);
        
     my $results = $sth->fetchrow_arrayref;
     return $results?$results->[0] : undef;
 }
 
-sub _store_metadata {
+sub __store_data {
     my $self = shift;
-    my %args = ( key => undef, value => undef, @_);
-    $self->dbh->do("DELETE FROM local_metadata WHERE key = ?", {},$args{key});
-    $self->dbh->do("INSERT INTO local_metadata (key,value) VALUES(?,?)", {}, $args{key}, $args{value});
+    my %args = ( key => undef, value => undef, table => undef, @_);
+    $self->dbh->do("DELETE FROM $args{table} WHERE key = ?", {},$args{key});
+    $self->dbh->do("INSERT INTO $args{table} (key,value) VALUES(?,?)", {}, $args{key}, $args{value});
     
 }
 
+sub _fetch_metadata {
+    my $self = shift;
+    my $key = shift;
+    return $self->__fetch_data( 'local_metadata', $key );
+}
+
+sub _store_metadata {
+    my $self = shift;
+    $self->__store_data( table => 'local_metadata', @_ );
+}
+
+sub _fetch_userdata {
+    my $self = shift;
+    my $key = shift;
+    return $self->__fetch_data( 'userdata', $key );
+}
+
+sub _store_userdata {
+    my $self = shift;
+    $self->__store_data( table => 'userdata', @_ );
+}
 
 =head2 replica_exists
 
@@ -233,6 +254,11 @@ CREATE TABLE local_metadata (
     key text,
     value text
 
+)
+}, q{
+CREATE TABLE userdata (
+    key text,
+    value text
 )
 }) {
         $self->dbh->do($_) || warn $self->dbh->errstr;
@@ -634,8 +660,7 @@ Returns C<undef> if the file does not exist.
 sub read_userdata {
     my $self = shift;
     my %args = validate( @_, { path => 1 } );
-    # $self->_read_file( File::Spec->catfile( $self->userdata_dir, $args{path} ) );
-    return undef;
+    return $self->_fetch_userdata( $args{path} );
 }
 
 =head2 write_userdata_file
@@ -647,7 +672,10 @@ Writes the given string to the given file in this replica's userdata directory.
 sub write_userdata {
     my $self = shift;
     my %args = validate( @_, { path => 1, content => 1 } );
-    #$self->_write_file( path    => File::Spec->catfile( $self->userdata_dir, $args{path} ), content => $args{content},);
+    $self->_store_userdata(
+        key   => $args{path},
+        value => $args{content},
+    );
 }
 
 sub DEMOLISH { shift->dbh->disconnect }
