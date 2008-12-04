@@ -8,6 +8,9 @@ use Params::Validate qw/validate/;
 use Template::Declare::Tags;
 use Prophet::Web::Field;
 our @EXPORT = qw(page content widget function);
+use Prophet::Server::ViewHelpers::Widget;
+use Prophet::Server::ViewHelpers::Function;
+
 
 sub page (&;$) {
     unshift @_, undef if $#_ == 0;
@@ -38,57 +41,15 @@ sub content (&) {
 }
 
 sub function {
-    my %args = validate(
-        @_,
-        {   action => { regex => qr/^(?:create|update|delete)$/ },
-            record => 1,
-            order  => 0,
-            name   => {
-                regex    => qr/^(?:|[\w\d]+)$/,
-                optional => 1
-            },
-        }
-    );
-
-    my %bits = {
-        order => $args{order},
-        name  => $args{'name'},
-        uuid  => $args{'record'}->uuid
-    };
-
-    my $string
-        = "|"
-        . join( "|", map { $args{$_} ? $_ . "-" . $args{$_} : '' } keys %bits )
-        . "|";
-
-    input {
-        attr {
-            type => 'hidden',
-            name => "prophet-action|" . $string,
-
-            value => $args{'action'}
-        };
-    };
-
+    my $f = Prophet::Server::ViewHelpers::Function->new(@_);
+    $f->render;
+    return $f;
 }
 
 sub widget {
-    my %args = validate( @_, { prop => 1, record => 1 } );
-
-    my $f = Prophet::Web::Field->new(
-        name   => Prophet::Server::ViewHelpers->_generate_name(%args),
-        record => $args{record},
-        label  => $args{prop},
-        value  => $args{record}->prop( $args{'prop'} )
-    );
-    outs_raw($f->render);
-}
-
-sub _generate_name {
-    my $class = shift;
-    my %args = validate( @_, { prop => 1, record => 1 } );
-    my $r = $args{'record'};
-    return "prophet-field||uuid-".$r->uuid."|prop-".$args{prop}."|";
+    my $w = Prophet::Server::ViewHelpers::Widget->new(@_);
+    $w->render;
+    return $w;
 }
 
 1;

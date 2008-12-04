@@ -44,7 +44,7 @@ sub _bundle_params_by_action {
     my @actions = $self->_find_actions_from_cgi_params($params);
     foreach my $param (@$params) {
         my $action = $self->_parse_cgi_param_name($param);
-        $bundles->{$action};
+        $bundles->{$action} = 'XXX TODO';
     }
     
 

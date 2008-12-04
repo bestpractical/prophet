@@ -5,6 +5,7 @@ extends qw'HTTP::Server::Simple::CGI';
 use Prophet::Server::Controller;
 use Prophet::Server::View;
 use Prophet::Server::Dispatcher;
+use Prophet::Server::Controller;
 use Params::Validate qw/:all/;
 use JSON;
 

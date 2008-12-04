@@ -24,8 +24,8 @@ template 'abc' => sub {
     my $r = $c->items->[0];
     h1 { $r->prop('title')};
     form {
-    function( record => $r, action => 'update');
-        widget( record => $r, prop => 'title');
+        my $f = function( record => $r, action => 'update');
+        widget( function => $f, prop => 'title');
 
         input {attr { label => 'save', type => 'submit'}};
     }
