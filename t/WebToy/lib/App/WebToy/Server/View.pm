@@ -23,12 +23,24 @@ template 'abc' => sub {
     $c->matching(sub { return 1});
     my $r = $c->items->[0];
     h1 { $r->prop('title')};
+    
+    
     form {
         my $f = function( record => $r, action => 'update');
         widget( function => $f, prop => 'title');
-
         input {attr { label => 'save', type => 'submit'}};
-    }
+    };
+
+
+    form {
+        my $f = function( record => App::WebToy::Model::WikiPage->new(app_handle => $self->app_handle ), 
+                          action => 'create');
+        widget( function => $f, prop => 'title');
+        input {attr { label => 'save', type => 'submit'}};
+
+}
+
+
 
 };
 

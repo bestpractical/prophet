@@ -119,6 +119,8 @@ sub execute_actions {
 
         if ($self->actions->{$action}->{action} eq 'update') {
             $self->_exec_action_update($self->actions->{$action});
+        } elsif ($self->actions->{$action}->{action} eq 'create') {
+            $self->_exec_action_create($self->actions->{$action});
         } else {
             die "I don't know how to handle a ".$self->actions->{$action}->{action};
         }
@@ -130,6 +132,23 @@ sub execute_actions {
 }
 
 
+sub _exec_action_create {
+    my $self = shift;
+    my $action = shift;
+
+    die $action->{class} ." is not a valid class " unless (UNIVERSAL::isa($action->{class}, 'Prophet::Record'));
+    my $object = $action->{class}->new(  app_handle => $self->app_handle);
+    my ( $val, $msg ) = $object->create(
+        props => {
+            map {
+                $action->{params}->{$_}->{prop} => $action->{params}->{$_}->{value}
+                } keys %{ $action->{params} }
+            }
+
+    );
+    warn $val, $msg;
+
+}
 sub _exec_action_update {
     my $self = shift;
     my $action = shift;
@@ -137,8 +156,6 @@ sub _exec_action_update {
     die $action->{class} ." is not a valid class " unless (UNIVERSAL::isa($action->{class}, 'Prophet::Record'));
     my $object = $action->{class}->new( uuid => $action->{uuid}, app_handle => $self->app_handle);
     die "Did not find the object " unless $object->uuid;
-
-            warn YAML::Dump({ map { $_ -> $action->{props}->{$_}->{value} } keys %{$action->{props}}});
     warn "YAY we got ".$object->uuid;
     my ( $val, $msg ) = $object->set_props(
         props => {

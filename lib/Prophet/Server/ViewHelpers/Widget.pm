@@ -37,12 +37,14 @@ sub render {
         name   => $self->_generate_name(),
         record => $self->function->record,
         label  => $self->prop,
-        value  => $self->function->record->prop( $self->prop )
+        value  => ($self->function->record->loaded ? $self->function->record->prop( $self->prop ) : ''),
+        
     );
 
     my $orig = Prophet::Web::Field->new(
         name  => "original-value-". $self->_generate_name(),
-        value => $self->function->record->prop( $self->prop ),
+        value =>
+        ($self->function->record->loaded ? $self->function->record->prop( $self->prop ) : ''),
         type  => 'hidden'
     );
     outs_raw( $orig->render_input );

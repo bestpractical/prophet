@@ -280,6 +280,12 @@ sub load {
     );
 }
 
+
+sub loaded {
+    my $self = shift;
+    return $self->uuid ? 1 : 0;
+}
+
 =head2 set_prop { name => $name, value => $value }
 
 Updates the current record to set an individual property called C<$name> to C<$value>

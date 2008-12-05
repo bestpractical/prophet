@@ -48,7 +48,7 @@ has name => (
 
  sub new {
     my $self = shift->SUPER::new(@_);
-    $self->name ( $self->record->uuid . "-" . $self->action ) unless ($self->name);
+    $self->name ( ($self->record->loaded ? $self->record->uuid : 'new') . "-" . $self->action ) unless ($self->name);
     return $self;
 };
 
