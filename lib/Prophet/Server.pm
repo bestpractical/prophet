@@ -55,7 +55,7 @@ override handle_request => sub {
     $self->cgi($cgi);
 
    
-    my $controller = Prophet::Server::Controller->new(cgi => $self->cgi); 
+    my $controller = Prophet::Server::Controller->new(cgi => $self->cgi, app_handle => $self->app_handle); 
     $controller->handle_actions();
 
      my $dispatcher_class = ref($self->app_handle) . "::Server::Dispatcher";

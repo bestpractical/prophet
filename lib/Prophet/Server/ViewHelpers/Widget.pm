@@ -34,11 +34,19 @@ sub render {
     my $self = shift;
 
     my $f = Prophet::Web::Field->new(
-        name       => $self->_generate_name(),
-            record => $self->function->record,
-        label => $self->prop,
-        value => $self->function->record->prop( $self->prop )
+        name   => $self->_generate_name(),
+        record => $self->function->record,
+        label  => $self->prop,
+        value  => $self->function->record->prop( $self->prop )
     );
+
+    my $orig = Prophet::Web::Field->new(
+        name  => "original-value-". $self->_generate_name(),
+        value => $self->function->record->prop( $self->prop ),
+        type  => 'hidden'
+    );
+    outs_raw( $orig->render_input );
+
     outs_raw( $f->render );
 }
 
@@ -48,9 +56,9 @@ sub render {
 sub _generate_name {
     my $self = shift;
     return
-          "prophet-field||function-"
+          "prophet-field|function="
         . $self->function->name
-        . "|prop-"
+        . "|prop="
         . $self->prop . "|";
 }
 

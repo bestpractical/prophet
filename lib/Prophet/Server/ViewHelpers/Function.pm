@@ -57,18 +57,20 @@ sub render {
     my %bits =( 
         order  => $self->order,
         action => $self->action,
+        type => $self->record->type,
+        class => ref($self->record),
         uuid   => $self->record->uuid
     );
 
     my $string
         = "|"
-        . join( "|", map { $bits{$_} ? $_ . "-" . $bits{$_} : '' } keys %bits )
+        . join( "|", map { $bits{$_} ? $_ . "=" . $bits{$_} : '' } keys %bits )
         . "|";
 
     input {
         attr {
             type  => 'hidden',
-            name  => "prophet-action|" . $self->name,
+            name  => "prophet-function|" . $self->name,
             value => $string
         };
     };

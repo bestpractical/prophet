@@ -9,6 +9,7 @@ has label => ( isa => 'Str', is => 'rw', default => sub {''});
 has id    => ( isa => 'Str', is => 'rw' );
 has class => ( isa => 'Str', is => 'rw' );
 has value => ( isa => 'Str', is => 'rw' );
+has type => ( isa => 'Str', is => 'rw', default => 'text');
 
 sub _render_attr {
     my $self = shift;
@@ -43,13 +44,22 @@ sub render {
 
     my $output = <<EOF;
 <label @{[$self->render_name]}>@{[$self->label]}</label>
-<input type="text" @{[$self->render_name]} @{[$self->render_id]} @{[$self->render_class]} @{[$self->render_value]} />
+@{[$self->render_input]}
+
 
 EOF
 
     return $output;
 
 }
+sub render_input {
+    my $self = shift;
+return <<EOF;
+<input type="@{[$self->type]}" @{[$self->render_name]} @{[$self->render_id]} @{[$self->render_class]} @{[$self->render_value]} />
+EOF
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

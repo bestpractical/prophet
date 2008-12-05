@@ -7,7 +7,7 @@ use base 'Exporter::Lite';
 use Params::Validate qw/validate/;
 use Template::Declare::Tags;
 use Prophet::Web::Field;
-our @EXPORT = qw(page content widget function);
+our @EXPORT = ( qw(form page content widget function));
 use Prophet::Server::ViewHelpers::Widget;
 use Prophet::Server::ViewHelpers::Function;
 
@@ -51,5 +51,18 @@ sub widget {
     $w->render;
     return $w;
 }
+
+
+BEGIN {
+   no warnings 'redefine'; 
+    *old_form = \&form;
+*form = sub (&;$){
+    my $code = shift;
+        old_form ( sub { attr { method => 'post'};
+            $code->(@_);
+        }
+    )
+}};
+
 
 1;
