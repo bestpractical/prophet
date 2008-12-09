@@ -22,6 +22,10 @@ under 'POST' => sub {
 };
 
 under 'GET' => sub {
+    my $self = shift;
+    on qr'^=/prophet/autocomplete' => sub {
+        shift->server->show_template('/_prophet_autocompleter') };
+    on qr'^static/prophet/(.*)$' => sub { shift->server->send_static_file($1)};
     on qr'replica/+(.*)$' => sub { shift->server->serve_replica($1) };
     on 'records.json' => sub { shift->server->get_record_types };
     under 'records' => sub {

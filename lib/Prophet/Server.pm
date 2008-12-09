@@ -7,7 +7,23 @@ use Prophet::Server::View;
 use Prophet::Server::Dispatcher;
 use Prophet::Server::Controller;
 use Params::Validate qw/:all/;
+use File::ShareDir qw//;
+use File::Spec ();
+use Cwd ();
 use JSON;
+
+
+my $STATIC_ROOT = Cwd::fast_abs_path(
+    File::Spec->catdir(
+        Prophet::Util->updir($INC{'Prophet.pm'}),"..","share","web","static"
+    )
+);
+
+if (!-d $STATIC_ROOT) {
+ warn "not $STATIC_ROOT";
+    warn Cwd::cwd();
+    $STATIC_ROOT= File::Spec->catfile( File::ShareDir::dist_dir('Prophet'),'web/static');
+    }
 
 has app_handle => (
     isa     => 'Prophet::App',
@@ -66,7 +82,7 @@ override handle_request => sub {
  
      my $d =$dispatcher_class->new( server => $self );
 
-
+    warn "Handling ".$cgi->path_info;
     $d->run( $cgi->request_method .  $cgi->path_info, $d )
         || $self->_send_404;
 
@@ -161,7 +177,7 @@ sub get_record_types {
             encode_as => 'json',
             content   => $self->handle->list_types
         );
-    }
+}
 
 
 sub serve_replica {
@@ -182,6 +198,7 @@ sub show_template {
     my $p    = shift;
     if ( Template::Declare->has_template($p) ) {
         Prophet::Server::View->app_handle( $self->app_handle );
+        Prophet::Server::View->cgi( $self->cgi );
         my $content = Template::Declare->show($p,@_);
         return $self->send_content( content_type => 'text/html', content      => $content,);
     }
@@ -205,6 +222,28 @@ sub load_record {
         $record->load( uuid => $args{uuid} );
     }
     return $record;
+}
+
+
+sub send_static_file {
+    my $self     = shift;
+    my $filename = shift;
+    my $type = 'text/html';
+
+    if ( $filename =~ /.js$/ ) {
+        $type = 'text/javascript';
+    } elsif ( $filename =~ /.css$/ ) {
+        $type = 'text/css';
+
+    }
+
+    my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile($STATIC_ROOT => $filename));
+    return $self->_send_404
+        if substr( $qualified_file, 0, length($STATIC_ROOT) ) ne $STATIC_ROOT;
+    my $content = Prophet::Util->slurp($qualified_file);
+
+    $self->send_content( content => $content, content_type => $type );
+
 }
 
 sub send_content {

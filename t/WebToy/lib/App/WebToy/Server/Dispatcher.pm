@@ -1,8 +1,6 @@
 package App::WebToy::Server::Dispatcher;
 use Prophet::Server::Dispatcher -base;
 
-on qr'^GET/(.*)$' => sub {show_template($1)->(@_)};
-
 redispatch_to 'Prophet::Server::Dispatcher';
 
 

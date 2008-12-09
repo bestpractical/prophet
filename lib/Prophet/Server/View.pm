@@ -12,6 +12,38 @@ sub app_handle {
     $APP_HANDLE = shift if (@_);
     return $APP_HANDLE;
 }
+
+our $CGI;
+sub cgi {
+    my $self = shift;
+    $CGI = shift if (@_);
+    return $CGI;
+}
+
+
+
+
+template '_prophet_autocompleter' => sub {
+        my $self = shift;
+        my %args;
+        for (qw(q function record type class prop)) {
+            $args{$_} = $self->cgi->param($_);
+        }
+        my $obj = Prophet::Util->instantiate_record(
+            class      => $self->cgi->param('class'),
+            uuid       => $self->cgi->param('uuid'),
+            app_handle => $self->app_handle
+        );
+
+        outs_raw(
+        $obj->prop($self->cgi->param('prop')). " | ".
+        $obj->prop($self->cgi->param('prop'))
+        );
+
+};
+
+
+
 sub default_page_title { 'Prophet' }
 
 template head => sub {
@@ -19,11 +51,16 @@ template head => sub {
     my $args = shift;
     head {
         title { shift @$args };
+
+    script {{ src is '/static/prophet/js/jquery.js', type is "text/javascript"}};
+    script {{ src is '/static/prophet/js/jquery-autocomplete.js', type is "text/javascript"}};
+    link {{ rel is 'stylesheet', href is '/static/prophet/css/jquery.autocomplete.css', type is "text/css"}};
     }
 
 };
 
 template footer => sub {};
+
 
 
 template '/' => page {

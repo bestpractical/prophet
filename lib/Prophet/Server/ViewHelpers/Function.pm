@@ -54,7 +54,7 @@ has name => (
 
 sub render {
     my $self = shift;
-    my %bits =( 
+    my %bits = ( 
         order  => $self->order,
         action => $self->action,
         type => $self->record->type,
@@ -70,7 +70,7 @@ sub render {
     input {
         attr {
             type  => 'hidden',
-            name  => "prophet-function|" . $self->name,
+            name  => "prophet-function-" . $self->name,
             value => $string
         };
     };

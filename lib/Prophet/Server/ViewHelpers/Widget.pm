@@ -27,29 +27,65 @@ has function => (
 has name => ( isa => 'Str', is => 'rw' );
 has prop => ( isa => 'Str', is => 'ro' );
 
-
+has field => ( isa => 'Prophet::Web::Field', is => 'rw');
 
 
 sub render {
     my $self = shift;
 
-    my $f = Prophet::Web::Field->new(
-        name   => $self->_generate_name(),
-        record => $self->function->record,
+    my $unique_name = $self->_generate_name();
+   
+    my $record = $self->function->record;
+
+    my $value;
+
+    if ( $self->function->action eq 'create' ) {
+        if ( my $method = $self->function->record->can( 'default_prop_' . $self->prop ) ) {
+            $value = $method->( $self->function->record );
+        } else {
+            $value = '';
+        }
+    } elsif ( $self->function->action eq 'update' && $self->function->record->loaded ) {
+        $value = $self->function->record->prop( $self->prop ) || '';
+    } else {
+        $value = '';
+    }
+
+    $self->field( Prophet::Web::Field->new(
+        name   => $unique_name,
+        id      => $unique_name,
+        record => $record,
         label  => $self->prop,
-        value  => ($self->function->record->loaded ? $self->function->record->prop( $self->prop ) : ''),
+        class  => 'prop-'.$self->prop.' function-'.$self->function->name,
+        value  => $value
         
-    );
+    ));
 
     my $orig = Prophet::Web::Field->new(
-        name  => "original-value-". $self->_generate_name(),
-        value =>
-        ($self->function->record->loaded ? $self->function->record->prop( $self->prop ) : ''),
+        name  => "original-value-". $unique_name,
+        value => $value,
         type  => 'hidden'
     );
-    outs_raw( $orig->render_input );
 
-    outs_raw( $f->render );
+    outs_raw( $orig->render_input );
+    outs_raw( $self->field->render );
+        outs_raw('<script>
+        $("#'.$self->field->id.'").autocomplete("/=/prophet/autocomplete",{ 
+       
+        selectFirst: false, 
+        autoFill: true,
+        minChars: 0,
+        delay: 0,
+        extraParams: {
+                    "function": "'.$self->field->name.'",
+                    "class": "'.ref($record).'",
+                    "uuid": "'.$record->uuid.'",
+                    "type": "'.$record->type.'",
+                    "prop": "'.$self->prop.'",
+                }
+                 }   
+                );
+        </script> ');
 }
 
 
@@ -58,10 +94,10 @@ sub render {
 sub _generate_name {
     my $self = shift;
     return
-          "prophet-field|function="
+          "prophet-field-function-"
         . $self->function->name
-        . "|prop="
-        . $self->prop . "|";
+        . "-prop-"
+        . $self->prop;
 }
 
 =head1 METHODS

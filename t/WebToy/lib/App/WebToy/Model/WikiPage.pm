@@ -20,6 +20,10 @@ sub declared_props {qw(title content tags mood)};
 =cut
 
 
+sub default_prop_content {
+    'This page has no content yet';
+}
+
 
 
 __PACKAGE__->meta->make_immutable;

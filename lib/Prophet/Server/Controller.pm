@@ -1,6 +1,6 @@
 package Prophet::Server::Controller;
 use Moose;
-
+use Prophet::Util;
 
 has cgi => (is => 'rw', isa => 'CGI');
 has failed => ( is => 'rw', isa => 'Bool');
@@ -26,7 +26,7 @@ sub extract_actions_from_cgi {
 
     my $actions = {};
    foreach my $param ($self->cgi->all_parameters){
-        next unless $param =~ /^prophet-function\|(.*)$/;
+        next unless $param =~ /^prophet-function-(.*)$/;
         my $name = $1;
         warn "Duplicate action definition for @{[$name]}." if (exists $actions->{$name});
 
@@ -46,13 +46,12 @@ sub params_for_action_from_cgi {
 
     my $values;
     for my $field ( $self->cgi->all_parameters ) {
-        next unless ( $field =~ /^prophet-field\|function=$action\|(.*)\|$/ );
-        my $metadata = $1;
-        my $meta     = $self->string_to_hash($metadata);
-        my $name     = $meta->{prop};
+        next unless ( $field =~ /^prophet-field-function-$action-prop-(.*)$/ );
+        my $name     = $1;
+        my $meta     = {};
+        $meta->{prop} = $name;
         $meta->{value} = $self->cgi->param($field);
         $meta->{original_value} = $self->cgi->param( "original-value-" . $field );
-
         $values->{$name} = $meta;
 
     }
@@ -61,9 +60,6 @@ sub params_for_action_from_cgi {
 }
 
 
-sub _bundle_to_hash {
-    my $self = shift;
-}
 
 sub handle_actions {
     my $self = shift;
@@ -153,10 +149,9 @@ sub _exec_action_update {
     my $self = shift;
     my $action = shift;
 
-    die $action->{class} ." is not a valid class " unless (UNIVERSAL::isa($action->{class}, 'Prophet::Record'));
-    my $object = $action->{class}->new( uuid => $action->{uuid}, app_handle => $self->app_handle);
-    die "Did not find the object " unless $object->uuid;
-    warn "YAY we got ".$object->uuid;
+    my $object = Prophet::Util->instantiate_record( uuid => $action->{uuid}, class=>$action->{class}, app_handle=> $self->app_handle);
+    warn "My reocrd is $object";
+    warn YAML::Dump($action); use YAML;
     my ( $val, $msg ) = $object->set_props(
         props => {
             map {
@@ -165,7 +160,7 @@ sub _exec_action_update {
             }
 
     );
-    warn $val, $msg;
+    warn "Updated the record" . $val, $msg;
 
 }
 
