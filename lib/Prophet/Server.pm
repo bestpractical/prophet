@@ -9,6 +9,7 @@ use Prophet::Server::Controller;
 use Params::Validate qw/:all/;
 use File::ShareDir qw//;
 use File::Spec ();
+use Module::Refresh;
 use Cwd ();
 use JSON;
 
@@ -70,7 +71,9 @@ override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
 
-   
+    if ($ENV{'PROPHET_DEVEL'}) {    Module::Refresh->refresh(); }
+
+
     my $controller = Prophet::Server::Controller->new(cgi => $self->cgi, app_handle => $self->app_handle); 
     $controller->handle_actions();
 
