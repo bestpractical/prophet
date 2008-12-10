@@ -20,6 +20,13 @@ sub cgi {
     return $CGI;
 }
 
+our $MENU;
+sub nav {
+    my $self = shift;
+    $MENU = shift if (@_);
+    return $MENU;
+}
+
 
 
 
@@ -60,7 +67,13 @@ template head => sub {
 };
 
 template footer => sub {};
-
+template header => sub {
+    my $self = shift;
+    my $args = shift;
+    my $title = shift @$args;
+    outs_raw($self->nav->render_as_yui_menubar);
+    h1 { $title };
+};
 
 
 template '/' => page {

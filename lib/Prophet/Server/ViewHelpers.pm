@@ -25,7 +25,7 @@ sub page (&;$) {
             attr { xmlns => 'http://www.w3.org/1999/xhtml' };
             show( 'head' => $title );
             body {
-                h1 { $title };
+                show('header', $title);
                 $code->( $self, @args );
 
             };

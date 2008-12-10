@@ -20,7 +20,6 @@ has app_handle => (is => 'rw', isa => 'Prophet::App');
 
 =cut
 
-
 sub extract_actions_from_cgi {
     my $self = shift;
 
@@ -58,8 +57,6 @@ sub params_for_action_from_cgi {
 
     return $values;
 }
-
-
 
 sub handle_actions {
     my $self = shift;
@@ -127,7 +124,6 @@ sub execute_actions {
 
 }
 
-
 sub _exec_action_create {
     my $self = shift;
     my $action = shift;
@@ -145,6 +141,7 @@ sub _exec_action_create {
     warn $val, $msg;
 
 }
+
 sub _exec_action_update {
     my $self = shift;
     my $action = shift;
@@ -163,7 +160,6 @@ sub _exec_action_update {
     warn "Updated the record" . $val, $msg;
 
 }
-
 
 sub string_to_hash {
     my $self = shift;

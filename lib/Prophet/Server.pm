@@ -33,6 +33,7 @@ has app_handle => (
 );
 
 has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
+has nav       => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
 has read_only => ( is  => 'rw',         isa => 'Bool' );
 
 sub run {
@@ -70,9 +71,10 @@ sub setup_template_roots {
 override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
-
+    $self->nav(Prophet::Web::Menu->new( cgi => $self->cgi));
     if ($ENV{'PROPHET_DEVEL'}) {    Module::Refresh->refresh(); }
 
+    
 
     my $controller = Prophet::Server::Controller->new(cgi => $self->cgi, app_handle => $self->app_handle); 
     $controller->handle_actions();
@@ -85,7 +87,6 @@ override handle_request => sub {
  
      my $d =$dispatcher_class->new( server => $self );
 
-    warn "Handling ".$cgi->path_info;
     $d->run( $cgi->request_method .  $cgi->path_info, $d )
         || $self->_send_404;
 
@@ -202,6 +203,7 @@ sub show_template {
     if ( Template::Declare->has_template($p) ) {
         Prophet::Server::View->app_handle( $self->app_handle );
         Prophet::Server::View->cgi( $self->cgi );
+        Prophet::Server::View->nav( $self->nav);
         my $content = Template::Declare->show($p,@_);
         return $self->send_content( content_type => 'text/html', content      => $content,);
     }
