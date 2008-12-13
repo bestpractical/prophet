@@ -67,8 +67,10 @@ sub css {
     return '/static/prophet/jquery/css/superfish.css',
             '/static/prophet/jquery/css/superfish-navbar.css',
            '/static/prophet/jquery/css/jquery.autocomplete.css',
+           '/static/prophet/jquery/css/tablesorter/style.css',
 
 }
+
 sub js {
     return
      '/static/prophet/jquery/js/jquery-1.2.6.min.js',
@@ -76,7 +78,7 @@ sub js {
      '/static/prophet/jquery/js/jquery.bgiframe.min.js', 
      '/static/prophet/jquery/js/jquery-autocomplete.js', 
      '/static/prophet/jquery/js/superfish.js', 
-
+     '/static/prophet/jquery/js/jquery.tablesorter.min.js'
 }
 
 
