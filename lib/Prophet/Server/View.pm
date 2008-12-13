@@ -1,10 +1,13 @@
 use strict;
 use warnings;
+
 package Prophet::Server::View;
 use base 'Template::Declare';
+
 use Template::Declare::Tags;
 use Prophet::Server::ViewHelpers;
 use Params::Validate;
+use Prophet::Web::Menu;
 
 our $APP_HANDLE;
 sub app_handle {
@@ -27,6 +30,13 @@ sub nav {
     return $MENU;
 }
 
+our $SERVER;
+sub server {
+    my $self = shift;
+    $SERVER = shift if (@_);
+    return $SERVER;
+
+};
 
 
 
@@ -58,10 +68,12 @@ template head => sub {
     my $args = shift;
     head {
         title { shift @$args };
-
-    script {{ src is '/static/prophet/js/jquery.js', type is "text/javascript"}};
-    script {{ src is '/static/prophet/js/jquery-autocomplete.js', type is "text/javascript"}};
-    link {{ rel is 'stylesheet', href is '/static/prophet/css/jquery.autocomplete.css', type is "text/css"}};
+        for ( $self->server->css ) {
+            link { { rel is 'stylesheet', href is $_, type is "text/css", media is 'screen'} };
+        }
+        for ( $self->server->js ) {
+            script { { src is $_, type is "text/javascript" } };
+        }
     }
 
 };
@@ -71,7 +83,11 @@ template header => sub {
     my $self = shift;
     my $args = shift;
     my $title = shift @$args;
-    outs_raw($self->nav->render_as_yui_menubar);
+if ($self->nav) {
+    div { { class => 'page-nav'};
+        outs_raw($self->nav->render_as_menubar) 
+    };
+    }
     h1 { $title };
 };
 

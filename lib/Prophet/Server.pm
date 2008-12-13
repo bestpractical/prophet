@@ -6,6 +6,7 @@ use Prophet::Server::Controller;
 use Prophet::Server::View;
 use Prophet::Server::Dispatcher;
 use Prophet::Server::Controller;
+use Prophet::Web::Menu;
 use Params::Validate qw/:all/;
 use File::ShareDir qw//;
 use File::Spec ();
@@ -14,17 +15,8 @@ use Cwd ();
 use JSON;
 
 
-my $STATIC_ROOT = Cwd::fast_abs_path(
-    File::Spec->catdir(
-        Prophet::Util->updir($INC{'Prophet.pm'}),"..","share","web","static"
-    )
-);
-
-if (!-d $STATIC_ROOT) {
- warn "not $STATIC_ROOT";
-    warn Cwd::cwd();
-    $STATIC_ROOT= File::Spec->catfile( File::ShareDir::dist_dir('Prophet'),'web/static');
-    }
+my $PROPHET_STATIC_ROOT = Cwd::fast_abs_path( File::Spec->catdir( Prophet::Util->updir($INC{'Prophet.pm'}),"..","share","web","static"));
+   $PROPHET_STATIC_ROOT= File::Spec->catfile( File::ShareDir::dist_dir('Prophet'),'web/static') if (!-d $PROPHET_STATIC_ROOT);
 
 has app_handle => (
     isa     => 'Prophet::App',
@@ -35,6 +27,8 @@ has app_handle => (
 has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
 has nav       => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
 has read_only => ( is  => 'rw',         isa => 'Bool' );
+has view_class => ( isa => 'Str', is=> 'rw');
+
 
 sub run {
     my $self      = shift;
@@ -61,12 +55,33 @@ sub setup_template_roots {
     my $view_class = ref( $self->app_handle ) . "::Server::View";
 
     if ( Prophet::App->try_to_require($view_class) ) {
-        Template::Declare->init( roots => [$view_class] );
-
+        $self->view_class($view_class);
     } else {
-        Template::Declare->init( roots => ['Prophet::Server::View'] );
+       $self->view_class( 'Prophet::Server::View' );
     }
+    
+    Template::Declare->init( roots => [$self->view_class] );
 }
+
+
+sub css {
+    return '/static/prophet/jquery/css/superfish.css',
+            '/static/prophet/jquery/css/superfish-navbar.css',
+           '/static/prophet/jquery/css/jquery.autocomplete.css',
+
+}
+sub js {
+    return
+     '/static/prophet/jquery/js/jquery-1.2.6.min.js',
+     '/static/prophet/jquery/js/hoverIntent.js', 
+     '/static/prophet/jquery/js/jquery.bgiframe.min.js', 
+     '/static/prophet/jquery/js/jquery-autocomplete.js', 
+     '/static/prophet/jquery/js/superfish.js', 
+
+}
+
+
+
 
 override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
@@ -201,9 +216,10 @@ sub show_template {
     my $self = shift;
     my $p    = shift;
     if ( Template::Declare->has_template($p) ) {
-        Prophet::Server::View->app_handle( $self->app_handle );
-        Prophet::Server::View->cgi( $self->cgi );
-        Prophet::Server::View->nav( $self->nav);
+        $self->view_class->app_handle( $self->app_handle );
+        $self->view_class->cgi( $self->cgi );
+        $self->view_class->nav( $self->nav);
+        $self->view_class->server($self);
         my $content = Template::Declare->show($p,@_);
         return $self->send_content( content_type => 'text/html', content      => $content,);
     }
@@ -233,7 +249,7 @@ sub load_record {
 sub send_static_file {
     my $self     = shift;
     my $filename = shift;
-    my $type = 'text/html';
+    my $type     = 'text/html';
 
     if ( $filename =~ /.js$/ ) {
         $type = 'text/javascript';
@@ -242,12 +258,18 @@ sub send_static_file {
 
     }
 
-    my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile($STATIC_ROOT => $filename));
-    return $self->_send_404
-        if substr( $qualified_file, 0, length($STATIC_ROOT) ) ne $STATIC_ROOT;
-    my $content = Prophet::Util->slurp($qualified_file);
+    for ($PROPHET_STATIC_ROOT) {
 
-    $self->send_content( content => $content, content_type => $type );
+        my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $PROPHET_STATIC_ROOT => $filename ) );
+        next if substr( $qualified_file, 0, length($PROPHET_STATIC_ROOT) ) ne $PROPHET_STATIC_ROOT;
+
+            my $content = Prophet::Util->slurp($qualified_file);
+        return $self->send_content( content => $content , content_type => $type );
+
+    }
+    
+    return $self->_send_404;
+    
 
 }
 

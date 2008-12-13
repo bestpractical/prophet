@@ -208,108 +208,58 @@ sub children {
     return wantarray ? @kids : \@kids;
 }
 
-=head2 render_as_yui_menubar [PARAMHASH]
+=head2 render_as_menubar [PARAMHASH]
 
 Render menubar with YUI menu, suitable for an application's menu.
 It can support arbitary levels of submenu.
 
 =cut
 
-sub render_as_yui_menubar {
+sub render_as_menubar {
     my $self = shift;
-    my $id   = scalar $self; # XXX HACK
+    my $id   = 'menubar'; # XXX HACK
     
     my $buffer = ''; 
-    $buffer .= $self->_render_as_yui_menu_item( class => "yuimenubar", id => $id );
-    $buffer .= (qq|<script type="text/javascript">\n|
-        . qq|YAHOO.util.Event.onContentReady("|.$id.qq|", function() {\n|
-        . qq|var menu = new YAHOO.widget.MenuBar("|.$id.qq|", { autosubmenudisplay:true, hidedelay:750, lazyload:true, showdelay:0 });\n|
-        . qq|menu.render();\n|
-        . qq|});</script>|
-        );
+    $buffer .= $self->_render_as_menu_item( class => "page-nav sf-menu", id => $id );
+    
+    $buffer .= q|<script type="text/javascript"> 
+                    $(document).ready(function(){ $("ul.page-nav").superfish(); });
+                </script>|;
     return $buffer;
 }
 
-sub _render_as_yui_menu_item {
+sub _render_as_menu_item {
     my $self = shift;
-    my %args = ( class => 'yuimenu', first => 0, id => undef, @_ );
-    my @kids = $self->children or return;
+    my %args = ( class => '', first => 0, id => undef, @_ );
+    my @kids = $self->children or return '';
    
-    my $buffer;
+    my $buffer = '';
 
-    # Add the appropriate YUI class to each kid
-    for my $kid ( @kids ) {
-        # Skip it if it's a group heading
-        next if $kid->render_children_inline and $kid->children;
-
-        # Figure out the correct object to be setting the class on
-        my $object =  $kid;
-
-        my $class = defined $object->class ? $object->class . ' ' : '';
-        $class .= "$args{class}itemlabel";
-        $object->class( $class );
-    }
-
-    # We're rendering this inline, so just render a UL (and any submenus as normal)
-    if ( $self->render_children_inline ) {
-        $buffer .= ( $args{'first'} ? '<ul class="first-of-type">' : '<ul>' );
-        for my $kid ( @kids ) {
-            $buffer .= ( qq(<li class="$args{class}item ) . ($kid->active? 'active' : '') . '">');
-            $buffer .= $kid->as_link ;
-            $buffer .= $kid->_render_as_yui_menu_item( class => 'yuimenu' );
-            $buffer .= qq{</li>};
-        }
-        $buffer .= '</ul>';
-    }
-    # Render as normal submenus
-    else {
-       $buffer .= 
-            qq{<div}
-            . ($args{'id'} ? qq( id="$args{'id'}") : "")
-            . qq( class="$args{class}"><div class="bd">);
 
         my $count    = 1;
-        my $count_h6 = 1;
-        my $openlist = 0;
 
+    $buffer .= '<ul class="'.$args{class}.'">' ."\n";
         for my $kid ( @kids ) {
             # We want to render the children of this child inline, so close
-            # any open <ul>s, render it as an <h6>, and then render it's
             # children.
             if ( $kid->render_children_inline and $kid->children ) {
-                $buffer .= '</ul>' if $openlist;
                 
                 my @classes = ();
                 push @classes, 'active' if $kid->active;
-                push @classes, 'first-of-type'
-                    if $count_h6 == 1 and $count == 1;
 
-                $buffer .=        qq(<h6 class="@{[ join ' ', @classes ]}">)
-                    .$kid->as_link .
-                    '</h6>';
-                $buffer .= $kid->_render_as_yui_menu_item(
-                    class => 'yuimenu',
-                    first => ($count == 1 ? 1 : 0)
-                );
-                $openlist = 0;
-                $count_h6++;
+                $buffer .=  $kid->as_link;
+                $buffer .= $kid->_render_as_menu_item( first => ($count == 1 ? 1 : 0));
             }
             # It's a normal child
             else {
-                if ( not $openlist ) {
-                   $buffer .=  ( $count == 1 ? '<ul class="first-of-type">' : '<ul>' );
-                    $openlist = 1;
-                }
-                $buffer .= ( qq(<li class="$args{class}item ) . ($kid->active? 'active' : '') . '">');
+                $buffer .= ( qq(<li>));
                 $buffer .= ( $kid->as_link );
-                $buffer .= $kid->_render_as_yui_menu_item( class => 'yuimenu' );
-                $buffer .= qq{</li>};
+                $buffer .= $kid->_render_as_menu_item( );
+                $buffer .= qq{</li>\n};
             }
             $count++;
         }
-        $buffer .= '</ul>' if $openlist;
-        $buffer .=qq{</div></div>};
-    }
+        $buffer .= '</ul>'."\n" ;
     return $buffer;
 }
 
