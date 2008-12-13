@@ -74,7 +74,6 @@ sub handle_actions {
     if (my $err = $@) {
         $self->failed(1);
         $self->failure_message($err);   
-        warn "AIEEE: $err";
     }
 }
 
@@ -118,8 +117,6 @@ sub execute_actions {
             die "I don't know how to handle a ".$self->actions->{$action}->{action};
         }
 
-        warn "My action is $action";
-        warn YAML::Dump($self->actions->{$action}); use YAML;
     }
 
 }
@@ -148,7 +145,6 @@ sub _exec_action_update {
 
     my $object = Prophet::Util->instantiate_record( uuid => $action->{uuid}, class=>$action->{class}, app_handle=> $self->app_handle);
     warn "My reocrd is $object";
-    warn YAML::Dump($action); use YAML;
     my ( $val, $msg ) = $object->set_props(
         props => {
             map {
