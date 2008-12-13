@@ -74,5 +74,6 @@ features(
 tests('t/*.t t/*/t/*.t');
 all_from('lib/Prophet.pm'); 
 install_script('bin/prophet');
+install_share 'share';
 auto_install;
 WriteAll();
