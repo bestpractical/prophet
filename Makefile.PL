@@ -38,6 +38,7 @@ features(
     ],
     'Web server' => [
         -default => 1,
+        'File::ShareDir',
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
     ],
 
@@ -58,6 +59,7 @@ features(
         -default   => 1,
         'Test::HTTP::Server::Simple',
         'YAML::Syck' => 0,
+        'Module::Refresh' => 0,
         'Test::WWW::Mechanize' => '1.16',
         'Test::Pod::Coverage'
     ],

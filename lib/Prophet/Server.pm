@@ -10,7 +10,6 @@ use Prophet::Web::Menu;
 use Params::Validate qw/:all/;
 use File::ShareDir qw//;
 use File::Spec ();
-use Module::Refresh;
 use Cwd ();
 use JSON;
 
@@ -87,7 +86,7 @@ override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
     $self->nav(Prophet::Web::Menu->new( cgi => $self->cgi));
-    if ($ENV{'PROPHET_DEVEL'}) {    Module::Refresh->refresh(); }
+    if ($ENV{'PROPHET_DEVEL'}) {    require 'Module::Refresh'; Module::Refresh->refresh(); }
 
     
 
