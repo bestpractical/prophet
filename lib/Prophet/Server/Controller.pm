@@ -1,12 +1,15 @@
 package Prophet::Server::Controller;
 use Moose;
 use Prophet::Util;
+use Prophet::Web::Result;
 
 has cgi => (is => 'rw', isa => 'CGI');
-has failed => ( is => 'rw', isa => 'Bool');
 has failure_message => ( is => 'rw', isa => 'Str');
 has actions => (is => 'rw', isa => 'HashRef');
 has app_handle => (is => 'rw', isa => 'Prophet::App');
+has result => ( is => 'ro', isa => 'Prophet::Web::Result');
+
+
 
 =head1 NAME
 
@@ -32,6 +35,7 @@ sub extract_actions_from_cgi {
 
         my $action_data = $self->cgi->param($param);
         my $attr = $self->string_to_hash($action_data);
+        $attr->{name} = $name;
 
         $actions->{$name} = $attr;
         $actions->{$name}->{params} = $self->params_for_action_from_cgi($name);
@@ -72,8 +76,8 @@ sub handle_actions {
     }; 
     
     if (my $err = $@) {
-        $self->failed(1);
-        $self->failure_message($err);   
+        $self->result->success(0);
+        $self->result->message($err);   
     }
 }
 
@@ -135,8 +139,14 @@ sub _exec_action_create {
             }
 
     );
-    warn $val, $msg;
 
+    my $res = Prophet::Web::FunctionResult->new( function_name => $action->{name}, 
+                                                 class => $action->{class},
+                                                 success => $object->uuid? 1 :0,
+                                                 record_uuid => $object->uuid,
+                                                 msg => ($msg || 'Record created'));
+                                                
+    $self->result->set($action->{name} => $res);
 }
 
 sub _exec_action_update {
@@ -144,7 +154,6 @@ sub _exec_action_update {
     my $action = shift;
 
     my $object = Prophet::Util->instantiate_record( uuid => $action->{uuid}, class=>$action->{class}, app_handle=> $self->app_handle);
-    warn "My reocrd is $object";
     my ( $val, $msg ) = $object->set_props(
         props => {
             map {
@@ -153,7 +162,13 @@ sub _exec_action_update {
             }
 
     );
-    warn "Updated the record" . $val, $msg;
+    my $res = Prophet::Web::FunctionResult->new( function_name => $action->{name}, 
+                                                 class => $action->{class},
+                                                 success => $val? 1 :0,
+                                                 record_uuid => $object->uuid,
+                                                 msg => ($msg || 'Record updated'));
+                                                
+    $self->result->set($action->{name} => $res);
 
 }
 

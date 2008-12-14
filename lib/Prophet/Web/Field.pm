@@ -6,9 +6,9 @@ has record => ( isa => 'Prophet::Record', is => 'rw' );
 has prop  => ( isa => 'Str',             is => 'rw' );
 has value  => ( isa => 'Str',             is => 'rw' );
 has label => ( isa => 'Str', is => 'rw', default => sub {''});
-has id    => ( isa => 'Str', is => 'rw' );
-has class => ( isa => 'Str', is => 'rw' );
-has value => ( isa => 'Str', is => 'rw' );
+has id    => ( isa => 'Maybe[Str]', is => 'rw' );
+has class => ( isa => 'Maybe[Str]', is => 'rw' );
+has value => ( isa => 'Maybe[Str]', is => 'rw' );
 has type => ( isa => 'Str', is => 'rw', default => 'text');
 
 sub _render_attr {

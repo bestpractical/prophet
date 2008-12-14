@@ -79,7 +79,7 @@ sub render {
         extraParams: {
                     "function": "'.$self->field->name.'",
                     "class": "'.ref($record).'",
-                    "uuid": "'.$record->uuid.'",
+                    "uuid": "'.($record->uuid||'').'",
                     "type": "'.$record->type.'",
                     "prop": "'.$self->prop.'",
                 }

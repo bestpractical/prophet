@@ -7,6 +7,8 @@ use Prophet::Server::View;
 use Prophet::Server::Dispatcher;
 use Prophet::Server::Controller;
 use Prophet::Web::Menu;
+use Prophet::Web::Result;
+
 use Params::Validate qw/:all/;
 use File::ShareDir qw//;
 use File::Spec ();
@@ -14,8 +16,15 @@ use Cwd ();
 use JSON;
 
 
-my $PROPHET_STATIC_ROOT = Cwd::fast_abs_path( File::Spec->catdir( Prophet::Util->updir($INC{'Prophet.pm'}),"..","share","web","static"));
-   $PROPHET_STATIC_ROOT= File::Spec->catfile( File::ShareDir::dist_dir('Prophet'),'web/static') if (!-d $PROPHET_STATIC_ROOT);
+my $PROPHET_STATIC_ROOT = Cwd::fast_abs_path(
+    File::Spec->catdir(
+        Prophet::Util->updir( $INC{'Prophet.pm'} ),
+        "..", "share", "web", "static"
+    )
+);
+$PROPHET_STATIC_ROOT
+    = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
+    if ( !-d $PROPHET_STATIC_ROOT );
 
 has app_handle => (
     isa     => 'Prophet::App',
@@ -23,11 +32,11 @@ has app_handle => (
     handles => [qw/handle/]
 );
 
-has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
-has nav       => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
-has read_only => ( is  => 'rw',         isa => 'Bool' );
-has view_class => ( isa => 'Str', is=> 'rw');
-
+has cgi        => ( isa => 'Maybe[CGI]',                is  => 'rw' );
+has nav        => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
+has read_only  => ( is  => 'rw',                        isa => 'Bool' );
+has view_class => ( isa => 'Str',                       is  => 'rw' );
+has result     => ( isa => 'Prophet::Web::Result',      is  => 'rw' );
 
 sub run {
     my $self      = shift;
@@ -87,23 +96,30 @@ sub js {
 override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
-    $self->nav(Prophet::Web::Menu->new( cgi => $self->cgi));
-    if ($ENV{'PROPHET_DEVEL'}) {    require 'Module::Refresh'; Module::Refresh->refresh(); }
+    $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
+    $self->result( Prophet::Web::Result->new() );
+    if ( $ENV{'PROPHET_DEVEL'} ) {
+        require 'Module::Refresh';
+        Module::Refresh->refresh();
+    }
 
-    
-
-    my $controller = Prophet::Server::Controller->new(cgi => $self->cgi, app_handle => $self->app_handle); 
+    my $controller = Prophet::Server::Controller->new(
+        cgi        => $self->cgi,
+        app_handle => $self->app_handle,
+        result => $self->result
+    );
     $controller->handle_actions();
 
-     my $dispatcher_class = ref($self->app_handle) . "::Server::Dispatcher";
-     if (!$self->app_handle->try_to_require($dispatcher_class)) {
-         $dispatcher_class = "Prophet::Server::Dispatcher";
-     }
- 
- 
-     my $d =$dispatcher_class->new( server => $self );
+    warn YAML::Dump($self->result); use YAML;
 
-    $d->run( $cgi->request_method .  $cgi->path_info, $d )
+    my $dispatcher_class = ref( $self->app_handle ) . "::Server::Dispatcher";
+    if ( !$self->app_handle->try_to_require($dispatcher_class) ) {
+        $dispatcher_class = "Prophet::Server::Dispatcher";
+    }
+
+    my $d = $dispatcher_class->new( server => $self );
+
+    $d->run( $cgi->request_method . $cgi->path_info, $d )
         || $self->_send_404;
 
 };
