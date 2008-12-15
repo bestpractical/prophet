@@ -30,6 +30,13 @@ on '' => sub {
     else { next_rule }
 };
 
+# publish foo@bar.com:www/baz => publish --to foo@bar.com:www/baz
+on qr{^publish (\S+)$} => sub {
+    my $self = shift;
+    $self->context->set_arg(to => $1) if $1;
+    run('publish', $self);
+};
+
 on [ ['create', 'new'] ]         => run_command("Create");
 on [ ['show', 'display'] ]       => run_command("Show");
 on [ ['update', 'edit'] ]        => run_command("Update");
@@ -48,8 +55,6 @@ on settings => run_command("Settings");
 on log      => run_command("Log");
 on shell    => run_command("Shell");
 on aliases  => run_command("Aliases");
-
-
 
 on export => sub {
     my $self = shift;
