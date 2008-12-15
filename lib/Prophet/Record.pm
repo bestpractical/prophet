@@ -148,7 +148,6 @@ sub register_collection_reference {
         my $self       = shift;
         my $collection = $collection_class->new(
             app_handle => $self->app_handle,
-            type       => $collection_class->record_class->type,
         );
         $collection->matching( sub { ($_[0]->prop( $args{by} )||'') eq $self->uuid }
         );
@@ -546,6 +545,39 @@ sub default_prop_original_replica {
     my $self = shift;
     return $self->handle->uuid;
 }
+
+
+sub validate_prop_from_recommended_values {
+    my $self = shift;
+    my $prop = shift;
+    my $args = shift;
+
+    if ( my @options = $self->recommended_values_for_prop($prop) ) {
+        return 1 if scalar grep { $args->{props}{$prop} eq $_ } @options;
+
+        $args->{errors}{$prop}
+            = "'" . $args->{props}->{$prop} . "' is not a valid $prop";
+        return 0;
+    }
+    return 1;
+
+}
+
+
+sub recommended_values_for_prop {
+    my $self = shift;
+    my $prop = shift;
+
+    if (my $code = $self->can("_recommended_values_for_prop_".$prop)) {
+        $code->($self, @_);
+    } else {
+        return undef;
+    }
+    
+}
+
+
+
 
 =head2 _default_summary_format
 
