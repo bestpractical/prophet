@@ -25,9 +25,10 @@ has handle => (
 has type => (
     is      => 'rw',
     isa     => 'Str',
+    lazy    => 1,
     default => sub {
         my $self = shift;
-        $self->record_class->record_type;
+        $self->record_class->new(app_handle => $self->app_handle)->record_type;
     },
 );
 
@@ -70,14 +71,13 @@ returns true.
 sub matching {
     my $self    = shift;
     my $coderef = shift;
-
     return undef unless $self->handle->type_exists( type => $self->type );
-
     # find all items,
     Carp::cluck unless defined $self->type;
 
     my $records = $self->handle->list_records( type => $self->type );
 
+    
     # run coderef against each item;
     # if it matches, add it to items
     for my $key (@$records) {
@@ -92,6 +92,16 @@ sub matching {
     #return a count of items found
 
 }
+
+=head2 items
+
+Returns a reference to an array of all the items found
+
+=head2 add_item
+
+=head2 count
+
+=cut
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

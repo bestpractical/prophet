@@ -1,0 +1,13 @@
+#!/usr/bin/env perl 
+use warnings;
+use strict;
+use lib 'lib';
+use lib '../../lib';
+use App::WebToy::CLI;
+# Moose likes generating very noisy backtraces. Most users don't need to see
+# anything more than the root cause of the failure. Developers and the curious
+# can set environment variable SD_VERBOSE_ERROR to retain the backtraces.
+# When Moose's error throwing is more malleable we should switch to using that.
+my $cli = App::WebToy::CLI->new;
+$cli->run_one_command(@ARGV);
+

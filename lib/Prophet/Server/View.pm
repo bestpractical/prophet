@@ -1,10 +1,13 @@
 use strict;
 use warnings;
+
 package Prophet::Server::View;
 use base 'Template::Declare';
+
 use Template::Declare::Tags;
 use Prophet::Server::ViewHelpers;
 use Params::Validate;
+use Prophet::Web::Menu;
 
 our $APP_HANDLE;
 sub app_handle {
@@ -12,6 +15,65 @@ sub app_handle {
     $APP_HANDLE = shift if (@_);
     return $APP_HANDLE;
 }
+
+our $CGI;
+sub cgi {
+    my $self = shift;
+    $CGI = shift if (@_);
+    return $CGI;
+}
+
+our $MENU;
+sub nav {
+    my $self = shift;
+    $MENU = shift if (@_);
+    return $MENU;
+}
+
+our $SERVER;
+sub server {
+    my $self = shift;
+    $SERVER = shift if (@_);
+    return $SERVER;
+
+}
+
+
+
+template '_prophet_autocompleter' => sub {
+        my $self = shift;
+        my %args;
+        for (qw(q function record type class prop)) {
+            $args{$_} = $self->cgi->param($_);
+        }
+        my $obj = Prophet::Util->instantiate_record(
+            class      => $self->cgi->param('class'),
+            uuid       => $self->cgi->param('uuid'),
+            app_handle => $self->app_handle
+        );
+        
+        my @possible;
+        if ($obj->loaded) {
+            push @possible,$obj->prop($self->cgi->param('prop'));
+        }  else {
+            my $params = { $self->cgi->param('prop') => undef };
+            $obj->default_props($params);
+            push @possible, $params->{ $self->cgi->param('prop') };
+            # XXX fill in defaults;
+        }
+        
+        push @possible, $obj->recommended_values_for_prop($self->cgi->param('prop'));
+       
+       my %seen; 
+        for (grep {defined && !$seen{$_}++ } @possible) {
+                outs($_ ."\n");#." | ".$_."\n");
+
+        }
+        
+};
+
+
+
 sub default_page_title { 'Prophet' }
 
 template head => sub {
@@ -19,11 +81,28 @@ template head => sub {
     my $args = shift;
     head {
         title { shift @$args };
+        for ( $self->server->css ) {
+            link { { rel is 'stylesheet', href is $_, type is "text/css", media is 'screen'} };
+        }
+        for ( $self->server->js ) {
+            script { { src is $_, type is "text/javascript" } };
+        }
     }
 
 };
 
 template footer => sub {};
+template header => sub {
+    my $self = shift;
+    my $args = shift;
+    my $title = shift @$args;
+if ($self->nav) {
+    div { { class is 'page-nav'};
+        outs_raw($self->nav->render_as_menubar) 
+    };
+    }
+    h1 { $title };
+};
 
 
 template '/' => page {

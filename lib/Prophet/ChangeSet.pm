@@ -230,9 +230,9 @@ sub as_string {
     return $out;
 }
 
-=head2 description_as_change
+=head2 description_as_string
 
-Returns a string representing a description of this string.
+Returns a string representing a description of this changeset.
 
 =cut
 

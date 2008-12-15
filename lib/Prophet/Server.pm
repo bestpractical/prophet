@@ -2,10 +2,29 @@ package Prophet::Server;
 use Moose;
 extends qw'HTTP::Server::Simple::CGI';
 
+use Prophet::Server::Controller;
 use Prophet::Server::View;
 use Prophet::Server::Dispatcher;
+use Prophet::Server::Controller;
+use Prophet::Web::Menu;
+use Prophet::Web::Result;
+
 use Params::Validate qw/:all/;
+use File::ShareDir qw//;
+use File::Spec ();
+use Cwd ();
 use JSON;
+
+
+my $PROPHET_STATIC_ROOT = Cwd::fast_abs_path(
+    File::Spec->catdir(
+        Prophet::Util->updir( $INC{'Prophet.pm'} ),
+        "..", "share", "web", "static"
+    )
+);
+$PROPHET_STATIC_ROOT
+    = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
+    if ( !-d $PROPHET_STATIC_ROOT );
 
 has app_handle => (
     isa     => 'Prophet::App',
@@ -13,8 +32,11 @@ has app_handle => (
     handles => [qw/handle/]
 );
 
-has cgi       => ( isa => 'Maybe[CGI]', is  => 'rw' );
-has read_only => ( is  => 'rw',         isa => 'Bool' );
+has cgi        => ( isa => 'Maybe[CGI]',                is  => 'rw' );
+has nav        => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
+has read_only  => ( is  => 'rw',                        isa => 'Bool' );
+has view_class => ( isa => 'Str',                       is  => 'rw' );
+has result     => ( isa => 'Prophet::Web::Result',      is  => 'rw' );
 
 sub run {
     my $self      = shift;
@@ -41,27 +63,62 @@ sub setup_template_roots {
     my $view_class = ref( $self->app_handle ) . "::Server::View";
 
     if ( Prophet::App->try_to_require($view_class) ) {
-        Template::Declare->init( roots => [$view_class] );
-
+        $self->view_class($view_class);
     } else {
-        Template::Declare->init( roots => ['Prophet::Server::View'] );
+       $self->view_class( 'Prophet::Server::View' );
     }
+    
+    Template::Declare->init( roots => [$self->view_class] );
 }
+
+
+sub css {
+    return '/static/prophet/jquery/css/superfish.css',
+            '/static/prophet/jquery/css/superfish-navbar.css',
+           '/static/prophet/jquery/css/jquery.autocomplete.css',
+           '/static/prophet/jquery/css/tablesorter/style.css',
+
+}
+
+sub js {
+    return
+     '/static/prophet/jquery/js/jquery-1.2.6.min.js',
+     '/static/prophet/jquery/js/hoverIntent.js', 
+     '/static/prophet/jquery/js/jquery.bgiframe.min.js', 
+     '/static/prophet/jquery/js/jquery-autocomplete.js', 
+     '/static/prophet/jquery/js/superfish.js', 
+     '/static/prophet/jquery/js/jquery.tablesorter.min.js'
+}
+
+
+
 
 override handle_request => sub {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
+    $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
+    $self->result( Prophet::Web::Result->new() );
+    if ( $ENV{'PROPHET_DEVEL'} ) {
+        require 'Module::Refresh';
+        Module::Refresh->refresh();
+    }
 
-     my $dispatcher_class = ref($self->app_handle) . "::Server::Dispatcher";
-     if (!$self->app_handle->try_to_require($dispatcher_class)) {
-         $dispatcher_class = "Prophet::Server::Dispatcher";
-     }
- 
- 
-     my $d =$dispatcher_class->new( server => $self );
+    my $controller = Prophet::Server::Controller->new(
+        cgi        => $self->cgi,
+        app_handle => $self->app_handle,
+        result => $self->result
+    );
+    $controller->handle_functions();
 
 
-    $d->run( $cgi->request_method .  $cgi->path_info, $d )
+    my $dispatcher_class = ref( $self->app_handle ) . "::Server::Dispatcher";
+    if ( !$self->app_handle->try_to_require($dispatcher_class) ) {
+        $dispatcher_class = "Prophet::Server::Dispatcher";
+    }
+
+    my $d = $dispatcher_class->new( server => $self );
+
+    $d->run( $cgi->request_method . $cgi->path_info, $d )
         || $self->_send_404;
 
 };
@@ -155,7 +212,7 @@ sub get_record_types {
             encode_as => 'json',
             content   => $self->handle->list_types
         );
-    }
+}
 
 
 sub serve_replica {
@@ -175,7 +232,10 @@ sub show_template {
     my $self = shift;
     my $p    = shift;
     if ( Template::Declare->has_template($p) ) {
-        Prophet::Server::View->app_handle( $self->app_handle );
+        $self->view_class->app_handle( $self->app_handle );
+        $self->view_class->cgi( $self->cgi );
+        $self->view_class->nav( $self->nav);
+        $self->view_class->server($self);
         my $content = Template::Declare->show($p,@_);
         return $self->send_content( content_type => 'text/html', content      => $content,);
     }
@@ -201,6 +261,34 @@ sub load_record {
     return $record;
 }
 
+
+sub send_static_file {
+    my $self     = shift;
+    my $filename = shift;
+    my $type     = 'text/html';
+
+    if ( $filename =~ /.js$/ ) {
+        $type = 'text/javascript';
+    } elsif ( $filename =~ /.css$/ ) {
+        $type = 'text/css';
+
+    }
+
+    for ($PROPHET_STATIC_ROOT) {
+
+        my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $PROPHET_STATIC_ROOT => $filename ) );
+        next if substr( $qualified_file, 0, length($PROPHET_STATIC_ROOT) ) ne $PROPHET_STATIC_ROOT;
+
+            my $content = Prophet::Util->slurp($qualified_file);
+        return $self->send_content( content => $content , content_type => $type );
+
+    }
+    
+    return $self->_send_404;
+    
+
+}
+
 sub send_content {
     my $self = shift;
     my %args
@@ -213,8 +301,8 @@ sub send_content {
 
     print "HTTP/1.0 200 OK\r\n";
     print "Content-Type: " . $args{'content_type'} . "\r\n";
-    print "Content-Length: " . length( $args{'content'} ) . "\r\n\r\n";
-    print $args{'content'};
+    print "Content-Length: " . length( $args{'content'} ||'' ) . "\r\n\r\n";
+    print $args{'content'} || '';
     return '200';
 }
 

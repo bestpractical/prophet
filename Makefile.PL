@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 use inc::Module::Install;
-name('Prophet'); #  App::Settings App::Settings::CLI
+name('Prophet'); #  App::Settings App::Settings::CLI App::WebToy App::WebToy::CLI
 author('clkao and jesse');
 license('Perl');
 
@@ -38,6 +38,7 @@ features(
     ],
     'Web server' => [
         -default => 1,
+        'File::ShareDir',
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
     ],
 
@@ -58,6 +59,7 @@ features(
         -default   => 1,
         'Test::HTTP::Server::Simple',
         'YAML::Syck' => 0,
+        'Module::Refresh' => 0,
         'Test::WWW::Mechanize' => '1.16',
         'Test::Pod::Coverage'
     ],
@@ -74,5 +76,6 @@ features(
 tests('t/*.t t/*/t/*.t');
 all_from('lib/Prophet.pm'); 
 install_script('bin/prophet');
+install_share 'share';
 auto_install;
 WriteAll();
