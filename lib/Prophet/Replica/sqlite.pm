@@ -441,12 +441,18 @@ sub _instantiate_changeset_from_db {
     $sth->execute($changeset->sequence_no);
     while (my $row = $sth->fetchrow_hashref) {
         my $change_id = delete $row->{id};
-        my $change = Prophet::Change->new( record_uuid => $row->{record}, change_type => $row->{change_type}, record_type => "XXX TODO?!");
+        my $record_sth = $self->dbh->prepare("SELECT type FROM records WHERE uuid = ?");
+        $record_sth->execute( $row->{record} );
+        my $type = $record_sth->fetchrow_array();
+
+        my $change = Prophet::Change->new( record_uuid => $row->{record},
+                change_type => $row->{change_type}, record_type => $type );
         my $propchange_sth = $self->dbh->prepare("SELECT name, old_value, new_value FROM prop_changes WHERE change = ?");
         $propchange_sth->execute($change_id);
         while (my $pc = $propchange_sth->fetchrow_hashref) {
             $change->add_prop_change( name => $pc->{name}, old => $pc->{old_value}, new => $pc->{new_value});
         }
+        push @{$changeset->changes}, $change;
     }
 
     return $changeset;
