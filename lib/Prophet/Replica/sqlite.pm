@@ -434,7 +434,7 @@ sub _instantiate_changeset_from_db {
     my $self = shift;
     my $data = shift;
     require Prophet::ChangeSet;
-    my $changeset = Prophet::ChangeSet->new(%$data);
+    my $changeset = Prophet::ChangeSet->new(%$data, source_uuid => $self->uuid );
 
     
     my $sth = $self->dbh->prepare("SELECT id, record, change_type from changes WHERE changeset = ?");
