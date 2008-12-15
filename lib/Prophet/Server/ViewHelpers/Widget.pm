@@ -10,7 +10,6 @@ use Moose;
 
 use Moose::Util::TypeConstraints;
 
-
 =head1 NAME
 
 =head1 METHODS
@@ -19,16 +18,16 @@ use Moose::Util::TypeConstraints;
 
 =cut
 
-
 has function => (
     isa => 'Prophet::Server::ViewHelpers::Function',
     is  => 'ro'
 );
+
 has name => ( isa => 'Str', is => 'rw' );
+
 has prop => ( isa => 'Str', is => 'ro' );
 
 has field => ( isa => 'Prophet::Web::Field', is => 'rw');
-
 
 sub render {
     my $self = shift;
@@ -69,27 +68,15 @@ sub render {
 
     outs_raw( $orig->render_input );
     outs_raw( $self->field->render );
-        outs_raw('<script>
-        $("#'.$self->field->id.'").autocomplete("/=/prophet/autocomplete",{ 
-       
-        selectFirst: false, 
-        autoFill: true,
-        minChars: 0,
-        delay: 0,
+        outs_raw('<script>$("#'.$self->field->id.'").autocomplete("/=/prophet/autocomplete",{ 
+        selectFirst: true, autoFill: false, minChars: 0, delay: 0,
         extraParams: {
                     "function": "'.$self->field->name.'",
                     "class": "'.ref($record).'",
                     "uuid": "'.($record->uuid||'').'",
                     "type": "'.$record->type.'",
-                    "prop": "'.$self->prop.'",
-                }
-                 }   
-                );
-        </script> ');
+                    "prop": "'.$self->prop.'" } }   ); </script> ');
 }
-
-
-
 
 sub _generate_name {
     my $self = shift;
@@ -103,9 +90,6 @@ sub _generate_name {
 =head1 METHODS
 
 =cut
-
-
-
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

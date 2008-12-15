@@ -7,9 +7,10 @@ use base 'Exporter::Lite';
 use Params::Validate qw/validate/;
 use Template::Declare::Tags;
 use Prophet::Web::Field;
-our @EXPORT = ( qw(form page content widget function));
+our @EXPORT = ( qw(form page content widget function param_from_function));
 use Prophet::Server::ViewHelpers::Widget;
 use Prophet::Server::ViewHelpers::Function;
+use Prophet::Server::ViewHelpers::ParamFromFunction;
 
 
 sub page (&;$) {
@@ -44,6 +45,14 @@ sub function {
     my $f = Prophet::Server::ViewHelpers::Function->new(@_);
     $f->render;
     return $f;
+}
+
+sub param_from_function {
+    my $w = Prophet::Server::ViewHelpers::ParamFromFunction->new(@_);
+    $w->render;
+    return $w;
+
+
 }
 
 sub widget {

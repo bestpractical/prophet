@@ -36,7 +36,7 @@ sub server {
     $SERVER = shift if (@_);
     return $SERVER;
 
-};
+}
 
 
 
@@ -51,12 +51,25 @@ template '_prophet_autocompleter' => sub {
             uuid       => $self->cgi->param('uuid'),
             app_handle => $self->app_handle
         );
+        
+        my @possible;
+        if ($obj->loaded) {
+            push @possible,$obj->prop($self->cgi->param('prop'));
+        }  else {
+            my $params = { $self->cgi->param('prop') => undef };
+            $obj->default_props($params);
+            push @possible, $params->{ $self->cgi->param('prop') };
+            # XXX fill in defaults;
+        }
+        
+        push @possible, $obj->recommended_values_for_prop($self->cgi->param('prop'));
+       
+       my %seen; 
+        for (grep {defined && !$seen{$_}++ } @possible) {
+                outs($_ ."\n");#." | ".$_."\n");
 
-        outs_raw(
-        $obj->prop($self->cgi->param('prop')). " | ".
-        $obj->prop($self->cgi->param('prop'))
-        );
-
+        }
+        
 };
 
 

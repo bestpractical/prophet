@@ -31,7 +31,6 @@ sub instantiate_record {
         });
     die $args{class} ." is not a valid class " unless (UNIVERSAL::isa($args{class}, 'Prophet::Record'));
     my $object = $args{class}->new( uuid => $args{uuid}, app_handle => $args{app_handle});
-    die "Did not find the object " unless $object->uuid;
     return $object;
 }
 

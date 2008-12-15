@@ -108,9 +108,8 @@ override handle_request => sub {
         app_handle => $self->app_handle,
         result => $self->result
     );
-    $controller->handle_actions();
+    $controller->handle_functions();
 
-    warn YAML::Dump($self->result); use YAML;
 
     my $dispatcher_class = ref( $self->app_handle ) . "::Server::Dispatcher";
     if ( !$self->app_handle->try_to_require($dispatcher_class) ) {
@@ -302,8 +301,8 @@ sub send_content {
 
     print "HTTP/1.0 200 OK\r\n";
     print "Content-Type: " . $args{'content_type'} . "\r\n";
-    print "Content-Length: " . length( $args{'content'} ) . "\r\n\r\n";
-    print $args{'content'};
+    print "Content-Length: " . length( $args{'content'} ||'' ) . "\r\n\r\n";
+    print $args{'content'} || '';
     return '200';
 }
 

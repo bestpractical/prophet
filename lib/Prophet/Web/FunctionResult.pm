@@ -19,6 +19,20 @@ has record_uuid => (isa => 'Str', is => 'rw');
 has success => (isa => 'Bool', is => 'rw');
 has message => (isa => 'Str', is => 'rw');
 
+has result => (
+             metaclass => 'Collection::Hash',
+             is        => 'rw',
+             isa       => 'HashRef[Str]',
+             default   => sub { {} },
+             provides  => {
+                 exists    => 'exists',
+                 keys      => 'items',
+                 get       => 'get',
+                 set       => 'set',
+             },
+
+);
+
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
