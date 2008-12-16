@@ -443,10 +443,10 @@ sub _instantiate_changeset_from_db {
         my $change_id = delete $row->{id};
         my $record_sth = $self->dbh->prepare("SELECT type FROM records WHERE uuid = ?");
         $record_sth->execute( $row->{record} );
-        my $type = $record_sth->fetchrow_array();
+        my $record_type = $record_sth->fetchrow_array() || '';
 
         my $change = Prophet::Change->new( record_uuid => $row->{record},
-                change_type => $row->{change_type}, record_type => $type );
+                change_type => $row->{change_type}, record_type => $record_type );
         my $propchange_sth = $self->dbh->prepare("SELECT name, old_value, new_value FROM prop_changes WHERE change = ?");
         $propchange_sth->execute($change_id);
         while (my $pc = $propchange_sth->fetchrow_hashref) {
