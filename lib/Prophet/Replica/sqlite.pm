@@ -337,7 +337,8 @@ sub _write_record_to_db {
     }
 
     # We're in a transaction here, right?
-    $self->_delete_record_from_db( uuid => $args{uuid} );
+    $self->_delete_record_from_db( uuid => $args{uuid} ) if
+        $self->record_exists( uuid => $args{uuid}, type => $args{type} );
     $self->dbh->do( "INSERT INTO records (type, uuid) VALUES (?,?)", {},
         $args{type}, $args{uuid} );
     $self->dbh->do(
