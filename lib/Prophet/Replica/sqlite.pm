@@ -240,7 +240,8 @@ CREATE TABLE changes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     record text,
     changeset integer, 
-    change_type text
+    change_type text,
+    record_type text
 )
 }, q{
 CREATE TABLE prop_changes (
@@ -276,7 +277,7 @@ sub latest_sequence_no {
 
     my $sth = $self->dbh->prepare("SELECT MAX(sequence_no) FROM changesets");
     $sth->execute();
-    return $sth->fetchrow_array;
+    return $sth->fetchrow_array || 0;
 }
 
 =head2 uuid
@@ -437,13 +438,11 @@ sub _instantiate_changeset_from_db {
     my $changeset = Prophet::ChangeSet->new(%$data, source_uuid => $self->uuid );
 
     
-    my $sth = $self->dbh->prepare("SELECT id, record, change_type from changes WHERE changeset = ?");
+    my $sth = $self->dbh->prepare("SELECT id, record, change_type, record_type from changes WHERE changeset = ?");
     $sth->execute($changeset->sequence_no);
     while (my $row = $sth->fetchrow_hashref) {
         my $change_id = delete $row->{id};
-        my $record_sth = $self->dbh->prepare("SELECT type FROM records WHERE uuid = ?");
-        $record_sth->execute( $row->{record} );
-        my $record_type = $record_sth->fetchrow_array() || '';
+        my $record_type = delete $row->{record_type};
 
         my $change = Prophet::Change->new( record_uuid => $row->{record},
                 change_type => $row->{change_type}, record_type => $record_type );
@@ -530,7 +529,11 @@ sub _write_change_to_db {
     my $change = shift;
     my $changeset_id = shift;
 
-    $self->dbh->do("INSERT INTO changes (record, changeset, change_type) VALUES (?,?,?)", {}, $change->record_uuid, $changeset_id, $change->change_type);
+    $self->dbh->do(
+        "INSERT INTO changes (record, changeset, change_type,
+        record_type) VALUES (?,?,?,?)", {}, $change->record_uuid, $changeset_id,
+        $change->change_type, $change->record_type
+    );
     my $change_id = $self->dbh->last_insert_id(undef, undef, 'changes', 'id');
     for my $pc (@{$change->prop_changes}) {
         $self->_write_prop_change_to_db($change_id, $pc);
