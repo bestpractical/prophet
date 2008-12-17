@@ -4,7 +4,7 @@ use strict;
 
 BEGIN {
     use File::Temp qw(tempdir);
-    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 
 }
 
@@ -39,7 +39,16 @@ $ua->get_ok( url('records.json') );
 is( $ua->content, '["Cars"]' );
 
 $ua->get_ok( url( 'records', 'Cars', $uuid . ".json" ) );
-is( $ua->content, '{"original_replica":"'.$car->handle->uuid.'","creator":"'.$car->default_prop_creator.'","wheels":"4","windshields":"1"}' );
+is_deeply(
+    from_json( $ua->content ),
+    from_json(
+            '{"original_replica":"'
+          . $car->handle->uuid
+          . '","creator":"'
+          . $car->default_prop_creator
+          . '","wheels":"4","windshields":"1"}'
+    )
+);
 
 $ua->get( url( 'records', 'Cars', "1234.json" ) );
 is( $ua->status, '404' );
@@ -47,7 +56,17 @@ is( $ua->status, '404' );
 $ua->post_ok( url( 'records', 'Cars', $uuid . ".json" ), { wheels => 6 } );
 
 $ua->get_ok( url( 'records', 'Cars', $uuid . ".json" ) );
-is( $ua->content, '{"original_replica":"'.$car->handle->uuid.'","creator":"'.$car->default_prop_creator.'","wheels":"6","windshields":"1"}' );
+
+is_deeply(
+    from_json( $ua->content ),
+    from_json(
+            '{"original_replica":"'
+          . $car->handle->uuid
+          . '","creator":"'
+          . $car->default_prop_creator
+          . '","wheels":"6","windshields":"1"}'
+    )
+);
 
 $ua->post( url( 'records', 'Cars', "doesnotexist.json" ), { wheels => 6 } );
 is( $ua->status, '404', "Can't update a nonexistant car" );

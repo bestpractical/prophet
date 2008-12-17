@@ -8,7 +8,7 @@ use Params::Validate;
 
 my ($bug_uuid, $pullall_uuid);
 
-my $alice_published = tempdir(CLEANUP => 1);
+my $alice_published = tempdir(CLEANUP => ! $ENV{PROPHET_DEBUG});
 
 as_alice {
     run_ok('prophet', [qw(init)]);

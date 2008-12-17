@@ -7,7 +7,7 @@ use lib 't/lib';
 
 
 use_ok('Prophet::CLI');
-$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => 0 ) . '/repo-' . $$;
+$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 my $cli = Prophet::CLI->new();
 my $cxn = $cli->handle;
 isa_ok($cxn, 'Prophet::Replica');
