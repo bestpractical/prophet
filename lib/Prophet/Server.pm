@@ -16,15 +16,16 @@ use Cwd ();
 use JSON;
 
 
-my $PROPHET_STATIC_ROOT = Cwd::fast_abs_path(
-    File::Spec->catdir(
-        Prophet::Util->updir( $INC{'Prophet.pm'} ),
-        "..", "share", "web", "static"
-    )
-);
+my $PROPHET_STATIC_ROOT =
+  File::Spec->catdir( Prophet::Util->updir( $INC{'Prophet.pm'} ),
+    "..", "share", "web", "static" );
+
 $PROPHET_STATIC_ROOT
     = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
     if ( !-d $PROPHET_STATIC_ROOT );
+
+$PROPHET_STATIC_ROOT = Cwd::fast_abs_path($PROPHET_STATIC_ROOT)
+  unless File::Spec->file_name_is_absolute($PROPHET_STATIC_ROOT);
 
 has app_handle => (
     isa     => 'Prophet::App',
