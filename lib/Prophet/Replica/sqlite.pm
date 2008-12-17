@@ -14,7 +14,7 @@ has dbh => (
     lazy => 1,
     default => sub {
         my $self = shift;
-        DBI->connect( "dbi:SQLite:" . $self->db_file , undef, undef, {RaiseError =>1, AutoCommit => 0});
+        DBI->connect( "dbi:SQLite:" . $self->db_file , undef, undef, {RaiseError =>1, AutoCommit => 1 });
      }
     );
 
@@ -269,7 +269,6 @@ CREATE TABLE userdata (
     $self->set_replica_version(1);
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} ) if !$self->is_resdb;
     $self->after_initialize->($self);
-    $self->dbh->commit;
 }
 
 sub latest_sequence_no {
@@ -474,6 +473,7 @@ sub begin_edit {
     
     $self->current_edit($changeset);
     $self->current_edit_records( [] );
+    $self->dbh->begin_work;
 
 }
 
