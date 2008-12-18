@@ -100,7 +100,7 @@ override handle_request => sub {
     $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
     $self->result( Prophet::Web::Result->new() );
     if ( $ENV{'PROPHET_DEVEL'} ) {
-        require 'Module::Refresh';
+        require Module::Refresh;
         Module::Refresh->refresh();
     }
 
