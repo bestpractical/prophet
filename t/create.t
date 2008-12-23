@@ -50,6 +50,9 @@ my $cat2 = Prophet::Record->new( handle => $cxn, type => 'Person' );
 $cat2->load( uuid => $mei );
 $cat2->set_prop( name => 'age', value => '0.8' );
 
+# Redo our search for cats
+$cats = Prophet::Collection->new( handle => $cxn, type => 'Person' );
+$cats->matching( sub { ( shift->prop('species') || '' ) eq 'cat' } );
 is( $cats->count, 2 );
 for (@$cats) {
     is( $_->prop('age'), "0.8" );

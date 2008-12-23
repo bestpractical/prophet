@@ -273,6 +273,7 @@ sub load {
         $self->uuid( $args{uuid} );
     }
 
+    delete $self->{props};
     return $self->handle->record_exists(
         uuid => $self->uuid,
         type => $self->type
@@ -320,6 +321,7 @@ sub set_props {
 
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) || return undef;
+    delete $self->{props};
     $self->handle->set_record_props(
         type  => $self->type,
         uuid  => $self->uuid,
@@ -339,10 +341,12 @@ sub get_props {
 
     confess "get_props called on a record that hasn't been loaded or created yet." if !$self->uuid;
 
-    return $self->handle->get_record_props(
+   return  $self->handle->get_record_props(
         uuid => $self->uuid,
         type => $self->type
-    ) || {};
+    ) || {};;
+    return $self->{props} || {};
+    #$self->{props} ||=
 }
 
 =head2 prop $name
@@ -387,6 +391,7 @@ Deletes this record from the database. (Note that it does _not_ purge historical
 
 sub delete {
     my $self = shift;
+    delete $self->{props};
     $self->handle->delete_record( type => $self->type, uuid => $self->uuid );
 
 }
