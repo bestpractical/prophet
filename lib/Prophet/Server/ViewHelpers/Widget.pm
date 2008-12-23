@@ -29,6 +29,10 @@ has prop => ( isa => 'Str', is => 'ro' );
 
 has field => ( isa => 'Prophet::Web::Field', is => 'rw');
 
+has type => ( isa => 'Maybe[Str]', is => 'rw');
+
+has autocomplete => (isa => 'Bool', is => 'rw', default => 1);
+
 sub render {
     my $self = shift;
 
@@ -56,7 +60,8 @@ sub render {
         record => $record,
         label  => $self->prop,
         class  => 'prop-'.$self->prop.' function-'.$self->function->name,
-        value  => $value
+        value  => $value,
+        type => $self->type
         
     ));
 
@@ -68,6 +73,15 @@ sub render {
 
     outs_raw( $orig->render_input );
     outs_raw( $self->field->render );
+    if ($self->autocomplete) {
+        $self->_render_autocompleter();
+    }
+
+}
+
+sub _render_autocompleter {
+    my $self = shift;
+    my $record = $self->function->record();
         outs_raw('<script>$("#'.$self->field->id.'").autocomplete("/=/prophet/autocomplete",{ 
         selectFirst: true, autoFill: false, minChars: 0, delay: 0,
         extraParams: {
