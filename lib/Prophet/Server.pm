@@ -24,8 +24,7 @@ $PROPHET_STATIC_ROOT
     = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
     if ( !-d $PROPHET_STATIC_ROOT );
 
-$PROPHET_STATIC_ROOT = Cwd::fast_abs_path($PROPHET_STATIC_ROOT)
-  unless File::Spec->file_name_is_absolute($PROPHET_STATIC_ROOT);
+$PROPHET_STATIC_ROOT = Cwd::abs_path($PROPHET_STATIC_ROOT);
 
 has app_handle => (
     isa     => 'Prophet::App',
@@ -272,17 +271,13 @@ sub send_static_file {
         $type = 'text/javascript';
     } elsif ( $filename =~ /.css$/ ) {
         $type = 'text/css';
-
     }
 
     for ($PROPHET_STATIC_ROOT) {
-
         my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $PROPHET_STATIC_ROOT => $filename ) );
         next if substr( $qualified_file, 0, length($PROPHET_STATIC_ROOT) ) ne $PROPHET_STATIC_ROOT;
-
-            my $content = Prophet::Util->slurp($qualified_file);
+        my $content = Prophet::Util->slurp($qualified_file);
         return $self->send_content( content => $content , content_type => $type );
-
     }
     
     return $self->_send_404;
