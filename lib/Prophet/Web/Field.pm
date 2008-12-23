@@ -9,7 +9,9 @@ has label => ( isa => 'Str', is => 'rw', default => sub {''});
 has id    => ( isa => 'Maybe[Str]', is => 'rw' );
 has class => ( isa => 'Maybe[Str]', is => 'rw' );
 has value => ( isa => 'Maybe[Str]', is => 'rw' );
-has type => ( isa => 'Str', is => 'rw', default => 'text');
+has type => ( isa => 'Maybe[Str]', is => 'rw', default => 'text');
+
+
 
 sub _render_attr {
     my $self = shift;
@@ -43,7 +45,7 @@ sub render {
     my $self = shift;
 
     my $output = <<EOF;
-<label @{[$self->render_name]}>@{[$self->label]}</label>
+<label @{[$self->render_name]} @{[$self->render_class]}>@{[$self->label]}</label>
 @{[$self->render_input]}
 
 
@@ -52,11 +54,23 @@ EOF
     return $output;
 
 }
+
 sub render_input {
     my $self = shift;
+    
+    if ($self->type eq 'textarea') {
+
+return <<EOF;
+<textarea @{[$self->render_name]} @{[$self->render_id]} @{[$self->render_class]} >@{[$self->render_value]}</textarea>
+EOF
+    } else {
+
 return <<EOF;
 <input type="@{[$self->type]}" @{[$self->render_name]} @{[$self->render_id]} @{[$self->render_class]} @{[$self->render_value]} />
 EOF
+
+    }
+
 }
 
 
