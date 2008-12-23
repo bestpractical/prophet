@@ -78,9 +78,9 @@ sub default_page_title { 'Prophet' }
 
 template head => sub {
     my $self = shift;
-    my $args = shift;
+    my @args = shift;
     head {
-        title { shift @$args };
+        title { shift @args };
         for ( $self->server->css ) {
             link { { rel is 'stylesheet', href is $_, type is "text/css", media is 'screen'} };
         }
@@ -91,7 +91,7 @@ template head => sub {
 
 };
 
-template footer => sub {};
+template footer => sub { };
 template header => sub {
     my $self = shift;
     my $args = shift;
