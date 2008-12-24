@@ -72,8 +72,16 @@ sub render_templates_into {
     my $self = shift;
     my $dir  = shift;
 
-    require Prophet::Server::View;
-    Template::Declare->init(roots => __PACKAGE__->view_classes);
+    require Prophet::Server;
+     my $server_class = ref($self->app_handle) . "::Server";
+     if (!$self->app_handle->try_to_require($server_class)) {
+         $server_class = "Prophet::Server";
+     }
+    my $server = $server_class->new();
+    $server->app_handle( $self->app_handle );
+    $server->setup_template_roots();
+
+
 
     # allow user to specify a specific type to render
     my @types = $self->type || $self->types_to_render;
@@ -86,12 +94,12 @@ sub render_templates_into {
         $records->matching(sub { 1 });
 
         open (my $fh, '>',File::Spec->catdir($subdir => 'index.html'));
-        print { $fh } Template::Declare->show('record_table' => $records);
+        print { $fh } $server->render_template('record_table' => $records);
         close $fh;
 
         for my $record ($records->items) {
             open (my $fh, '>',File::Spec->catdir($subdir => $record->uuid.'.html'));
-            print { $fh } Template::Declare->show('record' => $record);
+            print { $fh } $server->render_template('record' => $record);
         }
     }
 }

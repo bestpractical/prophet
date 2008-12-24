@@ -94,8 +94,7 @@ template head => sub {
 template footer => sub { };
 template header => sub {
     my $self = shift;
-    my $args = shift;
-    my $title = shift @$args;
+    my $title = shift;
 if ($self->nav) {
     div { { class is 'page-nav'};
         outs_raw($self->nav->render_as_menubar) 

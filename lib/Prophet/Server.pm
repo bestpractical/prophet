@@ -231,13 +231,21 @@ sub serve_replica {
 sub show_template {
     my $self = shift;
     my $p    = shift;
+    my $content = $self->render_template($p);
+    if ($content) { return $self->send_content( content_type => 'text/html', content      => $content,);}
+    return undef;
+}
+
+sub render_template {
+    my $self = shift;
+    my $p = shift;
     if ( Template::Declare->has_template($p) ) {
         $self->view_class->app_handle( $self->app_handle );
         $self->view_class->cgi( $self->cgi );
         $self->view_class->nav( $self->nav);
         $self->view_class->server($self);
         my $content = Template::Declare->show($p,@_);
-        return $self->send_content( content_type => 'text/html', content      => $content,);
+        return $content;
     }
     return undef;
 }

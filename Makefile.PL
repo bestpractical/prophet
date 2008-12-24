@@ -50,6 +50,11 @@ features(
         -default => 1,
         'Term::ReadKey'
     ],
+    'SQLite replica support' => [
+        -default => 1,
+        'DBI' => 1,
+        'DBD::SQLite' => 1
+    ],
     'Subversion replica support' => [
         -default => 0,
          'SVN::Core',  # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
