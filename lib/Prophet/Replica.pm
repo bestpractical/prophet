@@ -875,18 +875,18 @@ single record, this is what you'd override.
 sub integrate_changes {
     my ($self, $changeset) = validate_pos( @_, {isa => 'Prophet::Replica'},
                                           { isa => 'Prophet::ChangeSet' } );
-    $self->_integrate_change($_, $changeset) for ( $changeset->changes );
+    $self->integrate_change($_, $changeset) for ( $changeset->changes );
 
 }
 
-=head2 _integrate_change L<Prophet::Change> <Prophet::ChangeSet>
+=head2 integrate_change L<Prophet::Change> <Prophet::ChangeSet>
 
 Integrates the given change into the current replica. Used in
 L</integrate_changes>.
 
 =cut
 
-sub _integrate_change {
+sub integrate_change {
     my ($self, $change) = validate_pos(@_, { isa => 'Prophet::Replica' },
                                            { isa => 'Prophet::Change' }, 
                                            { isa => 'Prophet::ChangeSet' } 
