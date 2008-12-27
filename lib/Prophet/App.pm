@@ -149,7 +149,6 @@ sub already_required {
     return ( $INC{$path} ? 1 : 0);
 }
 
-
 sub set_db_defaults {
     my $self = shift;
     my $settings = $self->database_settings;
@@ -190,10 +189,6 @@ sub setting {
 
 sub database_settings {} # XXX wants a better name
 
-__PACKAGE__->meta->make_immutable;
-no Moose;
-
-1;
 
 =head3 log $MSG
 
@@ -224,3 +219,6 @@ sub log_fatal {
     Carp::confess(@_);
 }
 
+__PACKAGE__->meta->make_immutable;
+no Moose;
+1;
