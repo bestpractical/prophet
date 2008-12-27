@@ -71,14 +71,7 @@ on push => sub {
     run('merge', $self, @_);
 };
 
-on history => sub {
-    my $self = shift;
-
-    $self->context->require_uuid;
-    my $record = $self->context->_load_record;
-    $self->record($record);
-    print $record->history_as_string;
-};
+on history => run_command('History');
 
 sub run_command {
     my $name = shift;
