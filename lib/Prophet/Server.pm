@@ -231,7 +231,7 @@ sub serve_replica {
 sub show_template {
     my $self = shift;
     my $p    = shift;
-    my $content = $self->render_template($p);
+    my $content = $self->render_template($p,@_);
     if ($content) { return $self->send_content( content_type => 'text/html', content      => $content,);}
     return undef;
 }
