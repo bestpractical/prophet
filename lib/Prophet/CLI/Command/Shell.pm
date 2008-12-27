@@ -56,7 +56,7 @@ sub eval {
     warn $@ if $@;
 }
 
-sub run {
+sub _run {
     my $self = shift;
 
     local $| = 1;
@@ -75,11 +75,10 @@ sub run {
 }
 
 # make the REPL history persistent
-around run => sub {
-    my $orig = shift;
+sub run{
     my $self = shift;
     $self->_read_repl_history();
-    $self->$orig(@_);
+    $self->_run(@_);
     $self->_write_repl_history();
 };
 
