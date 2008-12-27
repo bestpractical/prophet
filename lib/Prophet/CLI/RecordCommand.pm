@@ -54,7 +54,7 @@ sub _get_record_object {
         return $class->new($constructor_args);
     }
     else {
-        Carp::confess("I was asked to get a record object, but I have neither a type nor a record class");
+       $self->fatal_error("I couldn't find that record. (You didn't specify a record type.)");
     }
 }
 

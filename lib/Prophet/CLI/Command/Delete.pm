@@ -6,7 +6,7 @@ with 'Prophet::CLI::RecordCommand';
 sub run {
     my $self = shift;
 
-    $self->require_uuid;
+    $self->context->require_uuid;
     my $record = $self->_load_record;
 
     if ( $record->delete ) {

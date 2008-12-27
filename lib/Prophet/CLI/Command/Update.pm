@@ -26,7 +26,7 @@ sub edit_record {
 sub run {
     my $self = shift;
 
-    $self->require_uuid;
+    $self->context->require_uuid;
     my $record = $self->_load_record;
 
     my $new_props = $self->edit_record($record);

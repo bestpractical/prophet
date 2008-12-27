@@ -8,7 +8,6 @@ sub run {
     my $newest = $self->arg('last') || $handle->latest_sequence_no;
     my $start  = $newest - ( $self->arg('count') || '20' );
     $start = 0 if $start < 0;
-
     $handle->traverse_changesets(
         after    => $start,
         callback => sub {
@@ -38,10 +37,8 @@ sub change_header {
     return
           " # "
         . $change->record_type . " "
-        . $self->app_handle->handle->find_or_create_luid(
-        uuid => $change->record_uuid )
-        . " ("
-        . $change->record_uuid . ")\n";
+            . $self->app_handle->handle->find_or_create_luid( uuid => $change->record_uuid )
+        . " (" . $change->record_uuid . ")\n";
 
 }
 
