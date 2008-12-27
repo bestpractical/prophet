@@ -2,29 +2,33 @@ package Prophet::CLI::Command::Merge;
 use Moose;
 extends 'Prophet::CLI::Command';
 
+has source => ( isa => 'Prophet::Replica', is => 'rw');
+has target => ( isa => 'Prophet::Replica', is => 'rw');
+
+
 sub run {
     my $self = shift;
 
-    my $source = Prophet::Replica->new(
+    $self->source( Prophet::Replica->new(
         url       => $self->arg('from'),
         app_handle => $self->app_handle,
-    );
+    ));
 
-    my $target = Prophet::Replica->new(
+    $self->target( Prophet::Replica->new(
         url       => $self->arg('to'),
         app_handle => $self->app_handle,
-    );
+    ));
 
 
     
-    return  unless $self->validate_merge_replicas($source => $target);
+    return  unless $self->validate_merge_replicas($self->source => $self->target);
 
-    $target->import_resolutions_from_remote_replica(
-        from  => $source,
+    $self->target->import_resolutions_from_remote_replica(
+        from  => $self->source,
         force => $self->has_arg('force'),
     );
 
-    my $changesets = $self->_do_merge( $source, $target );
+    my $changesets = $self->_do_merge();
 
     $self->print_report($changesets);
 }
@@ -43,7 +47,7 @@ sub print_report {
     }
 }
 
-=head2 _do_merge $source $target
+=head2 _do_merge
 
 Merges changesets from the source replica into the target replica.
 
@@ -61,10 +65,10 @@ Returns the number of changesets merged.
 =cut
 
 sub _do_merge {
-    my ( $self, $source, $target ) = @_;
+    my ( $self) = @_;
 
     my %import_args = (
-        from  => $source,
+        from  => $self->source,
         resdb => $self->resdb_handle,
         force => $self->has_arg('force'),
     );
@@ -76,8 +80,8 @@ sub _do_merge {
 
     my $changesets = 0;
 
-    my $source_latest = $source->latest_sequence_no() || 0;
-    my $source_last_seen = $target->last_changeset_from_source($source->uuid) || 0;
+    my $source_latest = $self->source->latest_sequence_no() || 0;
+    my $source_last_seen = $self->target->last_changeset_from_source($self->source->uuid) || 0;
 
     if( $self->has_arg('verbose') ) {
         print "Integrating changes from ".$source_last_seen . " to ". $source_latest."\n";
@@ -104,10 +108,9 @@ sub _do_merge {
 
     }
 
-    $target->import_changesets( %import_args);
+    $self->target->import_changesets( %import_args);
     return $changesets;
 }
-
 
 sub validate_merge_replicas {
     my $self = shift;

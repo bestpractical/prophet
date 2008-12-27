@@ -2,7 +2,7 @@ package Prophet::CLI::Command::Pull;
 use Moose;
 extends 'Prophet::CLI::Command::Merge';
 
-override run => sub {
+sub run {
     my $self = shift;
     my @from;
 
@@ -29,26 +29,34 @@ override run => sub {
         print "Pulling from $from\n";
         #if ( $self->has_arg('all') || $self->has_arg('local') );
         $self->set_arg( from => $from );
-        super();
+        $self->SUPER::run();
+        if ($from eq $explicit_from) {
+            $self->record_pull_from_source($explicit_from, $self->source->uuid);
+        }
         print "\n";
     }
 
-    $self->record_pull_from_source($explicit_from) if ($explicit_from);
-};
+}
 
 sub record_pull_from_source {
     my $self = shift;
     my $source = shift;
+    my $from_uuid = shift;
     my $previous_sources = $self->app_handle->config->sources;
-    my %sources_by_url = map { $previous_sources->{$_} => $_ }
-        %$previous_sources;
+    my %sources_by_url = map {
+            my $meta = $_;
+            my ($url,$uuid);
+            ($url, $uuid ) = split(qr/ \| /,$meta,2);
+         ($previous_sources->{$meta} => $url
+         
+         )
+     } keys %$previous_sources;
     if ( !exists $sources_by_url{$source}) {
-        $previous_sources->{$source} = $source;
+        $previous_sources->{$source} = $source ." | ".$from_uuid;
         $self->app_handle->config->set(_sources => $previous_sources );
         $self->app_handle->config->save;
     }
 }
-
 
 sub validate_args {
     my $self = shift;
