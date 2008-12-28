@@ -30,7 +30,7 @@ sub run {
         #if ( $self->has_arg('all') || $self->has_arg('local') );
         $self->set_arg( from => $from );
         $self->SUPER::run();
-        if ($from eq $explicit_from) {
+        if ($self->source->uuid and ($from eq $explicit_from)) {
             $self->record_pull_from_source($explicit_from, $self->source->uuid);
         }
         print "\n";
@@ -47,9 +47,7 @@ sub record_pull_from_source {
             my $meta = $_;
             my ($url,$uuid);
             ($url, $uuid ) = split(qr/ \| /,$meta,2);
-         ($previous_sources->{$meta} => $url
-         
-         )
+         ($previous_sources->{$meta} => $url )
      } keys %$previous_sources;
     if ( !exists $sources_by_url{$source}) {
         $previous_sources->{$source} = $source ." | ".$from_uuid;
