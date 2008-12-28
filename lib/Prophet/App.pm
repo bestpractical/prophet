@@ -200,7 +200,7 @@ environmental variable is set).
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
-    print STDERR "# " .$msg."\n" if ($ENV{'PROPHET_DEBUG'});
+    print STDERR $msg."\n";# if ($ENV{'PROPHET_DEBUG'});
 }
 
 =head2 log_fatal $MSG
