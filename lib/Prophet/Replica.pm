@@ -311,16 +311,22 @@ sub record_changeset_and_integration {
     $self->begin_edit(source => $changeset);
     $self->record_changes($changeset);
 
-    my $state_handle = $self->state_handle;
-    my $inside_edit = $state_handle->current_edit ? 1 : 0;
+    $self->record_changeset_integration($changeset);
 
-    $state_handle->begin_edit(source => $changeset) unless ($inside_edit);
-    $state_handle->record_integration_of_changeset($changeset);
-    $state_handle->commit_edit() unless ($inside_edit);
     $self->_set_original_source_metadata_for_current_edit($changeset);
     $self->commit_edit;
 
     return;
+}
+
+sub record_changeset_integration {
+    my $self = shift;
+    my $changeset = shift;
+    my $state_handle = $self->state_handle;
+    my $inside_edit = $state_handle->current_edit ? 1 : 0;
+    $state_handle->begin_edit(source => $changeset) unless ($inside_edit);
+    $state_handle->record_integration_of_changeset($changeset);
+    $state_handle->commit_edit() unless ($inside_edit);
 }
 
 =head3 last_changeset_from_source $SOURCE_UUID
