@@ -376,9 +376,9 @@ sub traverse_changesets {
     my $first_rev = ( $args{'after'} + 1 ) || 1;
     my $latest = $self->latest_sequence_no();
 
-    $self->log("Traversing changesets between $first_rev and $latest");
+    $self->log_debug("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {
-        $self->log("Fetching changeset $rev");
+        $self->log_debug("Fetching changeset $rev");
         my $changeset = $self->_load_changeset_from_db( sequence_no => $rev,);
         $args{callback}->($changeset);
     }
