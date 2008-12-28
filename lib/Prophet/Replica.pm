@@ -233,7 +233,7 @@ sub integrate_changeset {
 
     my $changeset = $args{'changeset'};
 
-    $self->log("Considering changeset ".$changeset->original_sequence_no .
+    $self->log_debug("Considering changeset ".$changeset->original_sequence_no .
         " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
@@ -254,7 +254,7 @@ sub integrate_changeset {
     return unless $changeset->has_changes;
 
     if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
-        $self->log("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
+        $self->log_debug("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
@@ -286,7 +286,7 @@ sub integrate_changeset {
             conflict => $conflict ) if ( $args{'reporting_callback'} );
 
     } else {
-        $self->log("Integrating changeset ".$changeset->original_sequence_no .
+        $self->log_debug("Integrating changeset ".$changeset->original_sequence_no .
             " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
@@ -354,23 +354,23 @@ sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
-    $self->log("Checking to see if we've ever seen changeset " .
+    $self->log_debug("Checking to see if we've ever seen changeset " .
         $changeset->original_sequence_no . " from " .
         $self->display_name_for_uuid($changeset->original_source_uuid));
 
     # If the changeset originated locally, we never want it
     if  ($changeset->original_source_uuid eq $self->uuid ) {
-        $self->log("\t  - We have. (It originated locally.)");
+        $self->log_debug("\t  - We have. (It originated locally.)");
         return 1 
     }
     # Otherwise, if the we have a merge ticket from the source, we don't want
     # the changeset if the source's sequence # is >= the changeset's sequence
     # #, we can safely skip it
     elsif ( $self->last_changeset_from_source( $changeset->original_source_uuid ) >= $changeset->original_sequence_no ) {
-        $self->log("\t  - We have seen this or a more recent changeset from remote.");
+        $self->log_debug("\t  - We have seen this or a more recent changeset from remote.");
         return 1;
     } else {
-        $self->log("\t  - We have not.");
+        $self->log_debug("\t  - We have not.");
         return undef;
     }
 }
@@ -411,7 +411,7 @@ sub conflicts_from_changeset {
 
     return undef unless $conflict->has_conflicting_changes;
 
-    $self->log("Conflicting changeset: ".JSON::to_json($conflict, {allow_blessed => 1}));
+    $self->log_debug("Conflicting changeset: ".JSON::to_json($conflict, {allow_blessed => 1}));
 
     return $conflict;
 }
@@ -511,7 +511,7 @@ sub should_send_changeset {
     my %args = validate( @_, { to => { isa => 'Prophet::Replica' },
                                changeset => { isa => 'Prophet::ChangeSet' } });
 
-    $self->log("Should I send " .$args{changeset}->original_sequence_no .
+    $self->log_debug("Should I send " .$args{changeset}->original_sequence_no .
         " from ".$self->display_name_for_uuid($args{changeset}->original_source_uuid) . " to " .
         $args{'to'}->display_name_for_uuid);
 
@@ -900,15 +900,15 @@ sub integrate_change {
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {
-        $self->log("add_file: " .$change->record_type. " " .$change->record_uuid);
+        $self->log_debug("add_file: " .$change->record_type. " " .$change->record_uuid);
         $self->create_record( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'add_dir' ) {
-        $self->log("(IGNORED) add_dir: " .$change->record_type. " " .$change->record_uuid);
+        $self->log_debug("(IGNORED) add_dir: " .$change->record_type. " " .$change->record_uuid);
     } elsif ( $change->change_type eq 'update_file' ) {
-        $self->log("update_file: " .$change->record_type. " " .$change->record_uuid);
+        $self->log_debug("update_file: " .$change->record_type. " " .$change->record_uuid);
         $self->set_record_props( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
     } elsif ( $change->change_type eq 'delete' ) {
-        $self->log("delete_file: " .$change->record_type. " " .$change->record_uuid);
+        $self->log_debug("delete_file: " .$change->record_type. " " .$change->record_uuid);
         $self->delete_record( type => $change->record_type, uuid => $change->record_uuid);
     } else {
         Carp::confess( "Unknown change type: " . $change->change_type );
@@ -988,16 +988,16 @@ sub _record_metadata_for {
     my $self = shift;
     my ( $name, $source_uuid, $prop_name, $content )
         = validate_pos( @_, 1, 1, 1, 1 );
-    $self->log( "Storing $content in $prop_name for $name " . substr( $source_uuid, 0, 6 ) );
+    $self->log_debug( "Storing $content in $prop_name for $name " . substr( $source_uuid, 0, 6 ) );
 
     if ( !$self->record_exists( type => $name, uuid => $source_uuid ) ) {
-        $self->log( "I don't have a $name for " . substr( $source_uuid, 0, 6 ) . "Creating it" );
+        $self->log_debug( "I don't have a $name for " . substr( $source_uuid, 0, 6 ) . "Creating it" );
         $self->create_record(
             uuid => $source_uuid,
             type => $name, props => { $prop_name => $content }
         );
     } else {
-        $self->log( "Setting $prop_name to $content for $name for " . substr( $source_uuid, 0, 6 ) );
+        $self->log_debug( "Setting $prop_name to $content for $name for " . substr( $source_uuid, 0, 6 ) );
         $self->set_record_props(
             uuid  => $source_uuid,
             type  => $name,
@@ -1109,7 +1109,14 @@ sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
     Carp::confess unless ($self->app_handle);
-    $self->app_handle->log($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
+    $self->app_handle->log($msg);
+}
+
+sub log_debug { 
+    my $self = shift;
+    my $msg = shift;
+    return unless ($ENV{'PROPHET_DEBUG'});
+    $self->log($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
 }
 
 =head2 log_fatal $MSG
