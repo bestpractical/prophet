@@ -216,7 +216,7 @@ sub as_string {
     );
 
     my $body = '';
-
+    
     for my $change ( $self->changes ) {
         next if $args{change_filter} && !$args{change_filter}->($change);
         $body .= $change->as_string( header_callback => $args{change_header} ) || next;

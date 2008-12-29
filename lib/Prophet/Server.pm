@@ -55,6 +55,7 @@ sub run {
         warn "Publisher backend is not available. Install one of the "
             . "Net::Rendezvous::Publish::Backend modules from CPAN.";
     }
+    $self->setup_template_roots();
     $self->SUPER::run(@_);
 }
 
@@ -87,13 +88,14 @@ sub js {
      '/static/prophet/jquery/js/jquery.bgiframe.min.js', 
      '/static/prophet/jquery/js/jquery-autocomplete.js', 
      '/static/prophet/jquery/js/superfish.js', 
+     '/static/prophet/jquery/js/supersubs.js', 
      '/static/prophet/jquery/js/jquery.tablesorter.min.js'
 }
 
 
 
 
-override handle_request => sub {
+sub handle_request {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
     $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
@@ -113,15 +115,16 @@ override handle_request => sub {
 
     my $dispatcher_class = ref( $self->app_handle ) . "::Server::Dispatcher";
     if ( !$self->app_handle->try_to_require($dispatcher_class) ) {
-        $dispatcher_class = "Prophet::Server::Dispatcher";
+              $dispatcher_class = "Prophet::Server::Dispatcher";
     }
+
 
     my $d = $dispatcher_class->new( server => $self );
 
     $d->run( $cgi->request_method . $cgi->path_info, $d )
         || $self->_send_404;
 
-};
+}
 
 sub update_record_prop {
     my $self = shift;

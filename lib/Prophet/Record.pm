@@ -217,12 +217,19 @@ sub create {
     my $props = $args{props};
 
     $self->default_props($props);
-    $self->canonicalize_props($props);
-    $self->validate_props($props) or return undef;
+    $self->canonicalize_props($props); 
 
+    # XXX TODO - this should be a real exception 
+    return undef unless (keys %$props);
+
+    $self->validate_props($props) or return undef;
     $self->_create_record(props => $props, uuid => $uuid);
 }
 
+
+
+
+# _create_record is a helper routine, used both by create and by databasesetting::create
 sub _create_record {
     my $self = shift;
     my %args = validate( @_, { props => 1, uuid => 1 } );
@@ -238,7 +245,6 @@ sub _create_record {
     return $self->uuid;
 
 }
-
 
 =head2 load { uuid => $UUID } or { luid => $UUID }
 
@@ -279,7 +285,6 @@ sub load {
         type => $self->type
     );
 }
-
 
 sub loaded {
     my $self = shift;
@@ -760,7 +765,7 @@ C<uuid> field.
 
 sub atom_value {
     my $self     = shift;
-    my $value_in = shift;
+    my $value_in = shift || '';
 
     if ($value_in =~ /^\$[gu]uid/) {
         return $self->uuid;

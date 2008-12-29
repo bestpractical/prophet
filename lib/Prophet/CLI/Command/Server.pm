@@ -18,7 +18,6 @@ sub _setup_server {
      }
     my $server = $server_class->new( $self->arg('port') || 8080 );
     $server->app_handle( $self->app_handle );
-    $server->setup_template_roots();
     return $server;
 }
 

@@ -61,7 +61,7 @@ sub render {
         label  => $self->prop,
         class  => 'prop-'.$self->prop.' function-'.$self->function->name,
         value  => $value,
-        type => $self->type
+        ($self->type ? ( type => $self->type) : ())
         
     ));
 

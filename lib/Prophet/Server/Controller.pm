@@ -3,13 +3,11 @@ use Moose;
 use Prophet::Util;
 use Prophet::Web::Result;
 
-has cgi => (is => 'rw', isa => 'CGI');
-has failure_message => ( is => 'rw', isa => 'Str');
-has functions => (is => 'rw', isa => 'HashRef');
-has app_handle => (is => 'rw', isa => 'Prophet::App');
-has result => ( is => 'ro', isa => 'Prophet::Web::Result');
-
-
+has cgi             => ( is => 'rw', isa => 'CGI' );
+has failure_message => ( is => 'rw', isa => 'Str' );
+has functions       => ( is => 'rw', isa => 'HashRef' );
+has app_handle      => ( is => 'rw', isa => 'Prophet::App' );
+has result          => ( is => 'ro', isa => 'Prophet::Web::Result' );
 
 =head1 NAME
 
@@ -27,50 +25,57 @@ sub extract_functions_from_cgi {
     my $self = shift;
 
     my $functions = {};
-   foreach my $param ($self->cgi->all_parameters){
+    foreach my $param ( $self->cgi->all_parameters ) {
         next unless $param =~ /^prophet-function-(.*)$/;
         my $name = $1;
-        warn "Duplicate function definition for @{[$name]}." if (exists $functions->{$name});
-
+        warn "Duplicate function definition for @{[$name]}." if ( exists $functions->{$name} );
 
         my $function_data = $self->cgi->param($param);
-        my $attr = $self->string_to_hash($function_data);
+        my $attr          = $self->string_to_hash($function_data);
         $attr->{name} = $name;
+
+        # For now, always execute
+        $attr->{execute} = 1;
+
+        # We MUST validate any function we're going to canonicalize
+        $attr->{validate} = 1 if $attr->{execute};
+
+        # We MUST canonicalize any function we're going to validate
+        $attr->{canonicalize} = 1 if $attr->{validate};
 
         $functions->{$name} = $attr;
         $functions->{$name}->{params} = $self->params_for_function_from_cgi($name);
-   } 
-   $self->functions($functions);
+    }
+
+    $self->functions($functions);
 }
 
 sub params_for_function_from_cgi {
-    my $self   = shift;
+    my $self     = shift;
     my $function = shift;
 
     my $values;
     for my $field ( $self->cgi->all_parameters ) {
         if ( $field =~ /^prophet-field-function-$function-prop-(.*)$/ ) {
-        my $name     = $1;
-        $values->{$name} = {
-            prop           => $name,
-            value          => $self->cgi->param($field),
-            original_value => $self->cgi->param( "original-value-" . $field )
-        };
-    }
-    elsif ($field =~ /^prophet-fill-function-$function-prop-(.*)$/) {
-        my $name = $1;
-        my $meta = {};
-        my $value = $self->cgi->param($field);
-        next unless ($value =~ /^function-(.*)\|result-(.*)$/);
-        $values->{$name} = {
-            prop           => $name,
-            from_function => $1,
-            from_result => $2
-        };
-    } 
-    else {
+            my $name = $1;
+            $values->{$name} = {
+                prop           => $name,
+                value          => $self->cgi->param($field),
+                original_value => $self->cgi->param( "original-value-" . $field )
+            };
+        } elsif ( $field =~ /^prophet-fill-function-$function-prop-(.*)$/ ) {
+            my $name  = $1;
+            my $meta  = {};
+            my $value = $self->cgi->param($field);
+            next unless ( $value =~ /^function-(.*)\|result-(.*)$/ );
+            $values->{$name} = {
+                prop          => $name,
+                from_function => $1,
+                from_result   => $2
+            };
+        } else {
             next;
-    }
+        }
 
     }
 
@@ -101,7 +106,8 @@ sub handle_functions {
 sub canonicalize_functions {
     my $self    = shift;
     my $functions = $self->functions;
-    foreach my $function ( keys %$functions ) {
+    foreach my $function ( sort { $functions->{$a}->{order} <=> $functions->{$b}->{order}}  keys %{$functions}) {
+        next unless ($functions->{$function}->{canonicalize});
         foreach my $param ( keys %{ $functions->{$function}->{params} } ) {
             if ( 
                 defined $functions->{$function}->{params}->{$param}->{original_value} &&
@@ -118,45 +124,69 @@ sub canonicalize_functions {
 }
 
 sub validate_functions {
-
-}
-
-
-sub fill_params_from_previous_functions {
-    my $self = shift;   
-    my $function = shift;
-
-    my $params = $self->functions->{$function}->{params};
-
-    foreach my $param ( keys %$params) {
-            if ( my $from_function = $params->{$param}->{from_function}) {
-                my $from_result = $params->{$param}->{from_result};  
-                my $func_result = $self->result->get($from_function);
-                # XXX TODO - $from_result should be locked down tighter
-                if ($func_result->can($from_result)) { 
-                    $params->{$param}->{value} = $func_result->$from_result();
-                }
-
+    my $self    = shift;
+    my $functions = $self->functions;
+    foreach my $function ( sort { $functions->{$a}->{order} <=> $functions->{$b}->{order}}  keys %{$functions}) {
+        next unless ($functions->{$function}->{validate});
+        foreach my $param ( keys %{ $functions->{$function}->{params} } ) {
+            if (0) {
             }
-
-    }
+        }
 
 }
 
 sub execute_functions {
     my $self = shift;
-    my $fs = $self->functions;
+    my $functions = $self->functions;
 
-    foreach my $function ( sort { $fs->{$a}->{order} <=> $fs->{$b}->{order}}  keys %{$fs}) {
-        $self->fill_params_from_previous_functions($function); 
-        if ($fs->{$function}->{action} eq 'update') {
-            $self->_exec_function_update($fs->{$function});
-        } elsif ($fs->{$function}->{action} eq 'create') {
-            $self->_exec_function_create($fs->{$function});
+    foreach my $function ( sort { $functions->{$a}->{order} <=> $functions->{$b}->{order}}  keys %{$functions}) {
+        $self->_fill_params_from_previous_functions($function); 
+
+        $self->app_handle->log_debug("About to execute a function - ".$function);
+
+        next unless ($functions->{$function}->{execute});
+
+        if ($functions->{$function}->{action} eq 'update') {
+            $self->_exec_function_update($functions->{$function});
+        } elsif ($functions->{$function}->{action} eq 'create') {
+            $self->_exec_function_create($functions->{$function});
         } else {
-            die "I don't know how to handle a ".$fs->{$function}->{action};
+            die "I don't know how to handle a ".$functions->{$function}->{action};
         }
+    }
+}
 
+sub _fill_params_from_previous_functions {
+    my $self     = shift;
+    my $function = shift;
+    my $params = $self->functions->{$function}->{params};
+    foreach my $param ( keys %$params ) {
+        if ( my $from_function = $params->{$param}->{from_function} ) {
+            my $from_result = $params->{$param}->{from_result};
+            my $function_result = $self->result->get($from_function);
+
+            # XXX TODO - $from_result should be locked down tighter
+            if ( $function_result->can($from_result) ) {
+                $params->{$param}->{value} = $function_result->$from_result();
+            }
+        }
+    }
+}
+
+
+sub _get_record_for_function {
+    my $self = shift;
+    my $function = shift;
+
+    my $functions = $self->functions;
+        if ($functions->{$function}->{action} eq 'update') {
+            return Prophet::Util->instantiate_record( uuid => $function->{uuid}, class=>$function->{class}, app_handle=> $self->app_handle);
+        } elsif ($functions->{$function}->{action} eq 'create') {
+                die $function->{class} ." is not a valid class " unless (UNIVERSAL::isa($function->{class}, 'Prophet::Record'));
+                return  $function->{class}->new(  app_handle => $self->app_handle);
+        } else {
+            die "I don't know how to handle a ".$functions->{$function}->{action};
+        }
     }
 
 }
@@ -165,12 +195,10 @@ sub _exec_function_create {
     my $self = shift;
     my $function = shift;
 
-    die $function->{class} ." is not a valid class " unless (UNIVERSAL::isa($function->{class}, 'Prophet::Record'));
-    my $object = $function->{class}->new(  app_handle => $self->app_handle);
+    my $object = $self->_get_record_for_function($function);
     my ( $val, $msg ) = $object->create(
         props => {
-            map {
-                $function->{params}->{$_}->{prop} => $function->{params}->{$_}->{value}
+            map { $function->{params}->{$_}->{prop} => $function->{params}->{$_}->{value}
                 } keys %{ $function->{params} }
             }
 
@@ -189,7 +217,7 @@ sub _exec_function_update {
     my $self = shift;
     my $function = shift;
 
-    my $object = Prophet::Util->instantiate_record( uuid => $function->{uuid}, class=>$function->{class}, app_handle=> $self->app_handle);
+    my $object = $self->_get_record_for_function($function);
     my ( $val, $msg ) = $object->set_props(
         props => {
             map {
@@ -215,7 +243,6 @@ sub string_to_hash {
     my %attr = map { split( /=/, $_ ) } @bits;
     return \%attr;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 no Moose;

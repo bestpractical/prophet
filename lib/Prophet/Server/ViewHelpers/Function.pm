@@ -12,13 +12,6 @@ package Prophet::Server::ViewHelpers::Function;
 
 =cut
 
-use Template::Declare::Tags;
-
-BEGIN {
- delete ${__PACKAGE__."::"}{meta};
- delete ${__PACKAGE__."::"}{with};
- }
-
 use Moose;
 use Moose::Util::TypeConstraints;
 
@@ -34,6 +27,11 @@ has action => (
 );
 
 has order => ( isa => 'Int', is => 'ro' );
+
+has validate => ( isa => 'Bool', is => 'rw', default => 1);
+has canonicalize => ( isa => 'Bool', is => 'rw', default => 1);
+has execute => ( isa => 'Bool', is => 'rw', default => 1);
+
 
 has name => (
     isa => 'Str',
@@ -59,7 +57,10 @@ sub render {
         action => $self->action,
         type => $self->record->type,
         class => ref($self->record),
-        uuid   => $self->record->uuid
+        uuid   => $self->record->uuid,
+        validate => $self->validate,
+        canonicalize => $self->canonicalize,
+        execute => $self->execute
     );
 
     my $string
@@ -67,13 +68,8 @@ sub render {
         . join( "|", map { $bits{$_} ? $_ . "=" . $bits{$_} : '' } keys %bits )
         . "|";
 
-    input {
-        attr {
-            type  => 'hidden',
-            name  => "prophet-function-" . $self->name,
-            value => $string
-        };
-    };
+   
+       return qq{<input type="hidden" name="prophet-function-@{[$self->name]}" value="$string" />};
 }
 
 
