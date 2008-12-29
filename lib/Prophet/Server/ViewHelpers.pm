@@ -1,8 +1,8 @@
+package Prophet::Server::ViewHelpers;
+
 use warnings;
 use strict;
 
-
-package Prophet::Server::ViewHelpers;
 use base 'Exporter::Lite';
 use Params::Validate qw/validate/;
 use Template::Declare::Tags;
@@ -56,8 +56,6 @@ sub param_from_function {
     my $w = Prophet::Server::ViewHelpers::ParamFromFunction->new(@_);
     $w->render;
     return $w;
-
-
 }
 
 sub widget {
@@ -66,11 +64,10 @@ sub widget {
     return $w;
 }
 
-
 BEGIN {
    no warnings 'redefine'; 
     *old_form = \&form;
-*form = sub (&;$){
+    *form = sub (&;$){
     my $code = shift;
         old_form ( sub { attr { method => 'post'};
             $code->(@_);
