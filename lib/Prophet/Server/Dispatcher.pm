@@ -22,7 +22,6 @@ under ['POST'] => sub {
 };
 
 under ['GET'] => sub {
-    my $self = shift;
     on qr'^=/prophet/autocomplete' => sub {
         shift->server->show_template('/_prophet_autocompleter') };
     on qr'^static/prophet/(.*)$' => sub { shift->server->send_static_file($1)};
