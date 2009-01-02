@@ -245,6 +245,14 @@ sub description_as_string {
         $self->original_sequence_no,
         $self->original_source_uuid;
     }
+
+sub created_as_rfc3339 {
+    my $self = shift;
+    my $c = $self->created;
+    $c =~ s/ /T/;
+    return $c."Z";
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
