@@ -34,4 +34,16 @@ sub instantiate_record {
     return $object;
 }
 
+sub escape_utf8 {
+    my $ref = shift;
+    no warnings 'uninitialized';
+    $$ref =~ s/&/&#38;/g;
+    $$ref =~ s/</&lt;/g;
+    $$ref =~ s/>/&gt;/g;
+    $$ref =~ s/\(/&#40;/g;
+    $$ref =~ s/\)/&#41;/g;
+    $$ref =~ s/"/&#34;/g;
+    $$ref =~ s/'/&#39;/g;
+}
+
 1;

@@ -277,7 +277,7 @@ sub as_link {
 
     if ( $self->url ) {
         my $label = $self->label;
-         _escape_utf8(\$label) if ($self->escape_label);
+        Prophet::Util::escape_utf8(\$label) if ($self->escape_label);
         return
               qq{<a href="@{[$self->url]}"}
             . ( $self->target ? qq{ target="@{[$self->target]}" } : '' )
@@ -291,16 +291,4 @@ sub as_link {
         return $self->label;
     }
 }
-sub _escape_utf8 {
-    my $ref = shift;
-    no warnings 'uninitialized';
-    $$ref =~ s/&/&#38;/g;
-    $$ref =~ s/</&lt;/g;
-    $$ref =~ s/>/&gt;/g;
-    $$ref =~ s/\(/&#40;/g;
-    $$ref =~ s/\)/&#41;/g;
-    $$ref =~ s/"/&#34;/g;
-    $$ref =~ s/'/&#39;/g;
-}
-
 1;
