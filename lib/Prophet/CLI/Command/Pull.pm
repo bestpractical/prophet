@@ -25,7 +25,7 @@ sub run {
             . ":file://"
             . $self->handle->fs_root );
 
-    for my $from ( @from, $self->find_bonjour_sources ) {
+    for my $from (grep { defined } ( @from, $self->find_bonjour_sources )) {
         print "Pulling from $from\n";
         #if ( $self->has_arg('all') || $self->has_arg('local') );
         $self->set_arg( from => $from );
@@ -75,6 +75,9 @@ Returns a list of found replica URIs.
 sub find_bonjour_sources {
     my $self = shift;
     my @bonjour_sources;
+
+    # We can't pull from bonjour sources if we don't have a db yet
+    return undef unless $self->app_handle->handle->replica_exists; 
 
     my $db_uuid = $self->arg('db_uuid') || $self->app_handle->handle->db_uuid; 
 
