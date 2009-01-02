@@ -72,6 +72,7 @@ sub analyze_changeset {
 use Prophet::Resolver::IdenticalChanges;
 use Prophet::Resolver::FromResolutionDB;
 use Prophet::Resolver::Failed;
+use Prophet::Resolver::Prompt;
 
 sub generate_resolution {
     my $self      = shift;
@@ -80,6 +81,7 @@ sub generate_resolution {
         sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
         $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
         $self->resolvers,
+        sub { Prophet::Resolver::Prompt->new->run(@_); },
         sub { Prophet::Resolver::Failed->new->run(@_) },
     );
     my $resolutions = Prophet::ChangeSet->new({
@@ -125,38 +127,53 @@ sub _generate_change_conflicts {
     my ($change) = validate_pos( @_, { isa => "Prophet::Change" } );
     my $file_op_conflict;
 
-    my $file_exists = $self->prophet_handle->record_exists( uuid => $change->record_uuid, type => $change->record_type );
+    my $file_exists = $self->prophet_handle->record_exists(
+        uuid => $change->record_uuid,
+        type => $change->record_type
+    );
 
     # It's ok to delete a record that exists
     if ( $change->change_type eq 'delete' && !$file_exists ) {
         $file_op_conflict = "delete_missing_file";
-    } elsif ( $change->change_type eq 'update_file' && !$file_exists ) {
+    }
+    elsif ( $change->change_type eq 'update_file' && !$file_exists ) {
         $file_op_conflict = "update_missing_file";
-    } elsif ( $change->change_type eq 'add_file' && $file_exists ) {
-        $file_op_conflict = "create_existing_file";
-    } elsif ( $change->change_type eq 'add_dir' && $file_exists ) {
+    }
+    elsif ( $change->change_type eq 'add_file' && $file_exists ) {
+        # we can recover from "Trying to add a file which exists" by converting it to an "update file"
+        # operation. This should ONLY ever happen on settings conflicts
+        $change->change_type('update_file');
+
+    }
+    elsif ( $change->change_type eq 'add_dir' && $file_exists ) {
 
         # XXX TODO: this isn't right
         $file_op_conflict = "create_existing_dir";
     }
 
     my $change_conflict = Prophet::ConflictingChange->new(
-        {   record_type          => $change->record_type,
+        {
+            record_type          => $change->record_type,
             record_uuid          => $change->record_uuid,
             target_record_exists => $file_exists,
-            change_type        => $change->change_type,
-            $file_op_conflict ? (file_op_conflict   => $file_op_conflict) : (),
+            change_type          => $change->change_type,
+            $file_op_conflict ? ( file_op_conflict => $file_op_conflict ) : (),
         }
     );
 
     if ($file_exists) {
-        my $current_state
-            = $self->prophet_handle->get_record_props( uuid => $change->record_uuid, type => $change->record_type );
+        my $current_state = $self->prophet_handle->get_record_props(
+            uuid => $change->record_uuid,
+            type => $change->record_type
+        );
 
-        $change_conflict->add_prop_conflict($self->_generate_prop_change_conflicts( $change, $current_state ));
+        $change_conflict->add_prop_conflict(
+            $self->_generate_prop_change_conflicts( $change, $current_state ) );
     }
 
-    return ( $change_conflict->has_prop_conflicts || $file_op_conflict ) ? $change_conflict : undef;
+    return ( $change_conflict->has_prop_conflicts || $file_op_conflict )
+      ? $change_conflict
+      : undef;
 }
 
 =head2 _generate_prop_change_conflicts Prophet::Change %hash_of_current_properties
