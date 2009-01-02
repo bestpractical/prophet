@@ -81,7 +81,7 @@ sub generate_resolution {
         sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
         $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
         $self->resolvers,
-        sub { Prophet::Resolver::Prompt->new->run(@_); },
+        (-t STDIN && -t STDOUT) ? sub { Prophet::Resolver::Prompt->new->run(@_); } : (),
         sub { Prophet::Resolver::Failed->new->run(@_) },
     );
     my $resolutions = Prophet::ChangeSet->new({
