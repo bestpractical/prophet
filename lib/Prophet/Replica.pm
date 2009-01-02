@@ -542,30 +542,6 @@ sub fetch_changesets {
     return \@results;
 }
 
-=head3 export_to { path => $PATH }
-
-This routine will export a copy of this prophet database replica to a flat file
-on disk suitable for publishing via HTTP or over a local filesystem for other
-Prophet replicas to clone or incorporate changes from.
-
-See also C<Prophet::ReplicaExporter>.
-
-=cut
-
-sub export_to {
-    my $self = shift;
-    my %args = validate( @_, { path => 1, } );
-    require Prophet::ReplicaExporter;
-
-    my $exporter = Prophet::ReplicaExporter->new(
-        {   target_path    =>  $args{'path'},
-            source_replica => $self,
-            app_handle     => $self->app_handle
-        }
-    );
-    $exporter->export();
-}
-
 =head2 methods to be implemented by a replica backend
 
 =head3 uuid
