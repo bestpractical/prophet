@@ -44,6 +44,13 @@ sub run {
     $self->SUPER::run();
 }
 
+# When we clone from another replica, we ALWAYS want to take their way forward,
+# even when there's an insane, impossible conflict
+#
+sub merge_resolver { 'Prophet::Resolver::AlwaysTarget'}
+
+
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
