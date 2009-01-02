@@ -76,9 +76,8 @@ publishing via HTTP or over a local filesystem for other Prophet replicas to clo
 sub export {
     my $self = shift;
 
-    $self->_init_export_metadata();
-    $self->export_records( type => $_ )
-        for ( @{ $self->source_replica->list_types } );
+    $self->init_export_metadata();
+    $self->export_all_records();
     $self->export_changesets();
 
     unless ($self->source_replica->is_resdb) {
@@ -92,12 +91,17 @@ sub export {
     }
 }
 
-sub _init_export_metadata {
+sub init_export_metadata {
     my $self = shift;
     $self->target_replica->set_latest_sequence_no(
         $self->source_replica->latest_sequence_no );
     $self->target_replica->set_replica_uuid( $self->source_replica->uuid );
 
+}
+
+sub export_all_records {
+    my $self = shift;
+    $self->export_records( type => $_ ) for ( @{ $self->source_replica->list_types } );
 }
 
 sub export_records {
