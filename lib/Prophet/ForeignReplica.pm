@@ -106,6 +106,8 @@ sub has_seen_changeset {
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
 
     # Has our host replica given this changeset to us yet?
+    # XXX TODO - should actually be checking the changeset id and the record id in a lookup table
+    # of all the changesets that may have come from the source
     return $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no;
 }
 
