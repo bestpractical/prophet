@@ -82,8 +82,7 @@ our $REMOTE_ID_METATYPE = "_remote_id_map";
 
 sub _remote_id_storage {
     my $self = shift;
-    return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE,
-        'prophet-uuid' )->(@_);
+    return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE, 'prophet-uuid' )->(@_);
 }
 
 =head2 has_seen_changeset ChangeSet
@@ -102,8 +101,6 @@ sub has_seen_changeset {
     # Has our host replica given this changeset to us yet?
     return $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no;
 }
-
-
 
 sub log {
     my $self = shift;
