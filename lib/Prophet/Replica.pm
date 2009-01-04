@@ -821,7 +821,7 @@ sub _record_resolution {
 
 =head3 record_changes L<Prophet::ChangeSet>
 
-Inside an edit (transaction), integrate all changes in this transaction
+Inside an edit (transaction), integrate all changes in this changeset
 and then call the _after_record_changes() hook.
 
 =cut

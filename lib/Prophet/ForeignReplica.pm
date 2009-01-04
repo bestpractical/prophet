@@ -1,6 +1,7 @@
 package Prophet::ForeignReplica;
 use Moose;
 use Params::Validate qw(:all);
+use Data::UUID 'NameSpace_DNS';
 extends 'Prophet::Replica';
 
 =head1 NAME
@@ -34,6 +35,13 @@ sub import_resolutions_from_remote_source {
     return
 }
 
+=head3 record_changes L<Prophet::ChangeSet>
+
+Integrate all changes in this changeset.
+
+=cut
+
+
 sub record_changes {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
@@ -44,7 +52,6 @@ sub record_changes {
 sub begin_edit  { }
 sub commit_edit { }
 
-use Data::UUID 'NameSpace_DNS';
 
 # foreign replicas never have a db uuid
 sub db_uuid { return undef }
@@ -85,7 +92,7 @@ sub _remote_record_id_storage {
     return $self->state_handle->metadata_storage( $REMOTE_ID_METATYPE, 'prophet-uuid' )->(@_);
 }
 
-=head2 has_seen_changeset ChangeSet
+=head2 has_seen_changeset Prophet::ChangeSet
 
 This is a simplification of L<Prophet::Replica/has_seen_changeset>. Because
 only a single Prophet replica is talking to this foreign replica, we only need
