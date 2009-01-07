@@ -1064,7 +1064,7 @@ sub write_userdata {
     );
 }
 
-__PACKAGE__->meta->make_immutable;
+__PACKAGE__->meta->make_immutable(replace_constructor => 1);
 no Moose;
 
 1;
