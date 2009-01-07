@@ -69,30 +69,28 @@ A base class for all Prophet replicas.
 
 =head1 METHODS
 
-=head3 new
+=head3 get_handle
 
 Determines what replica class to use and instantiates it. Returns the
 new replica object.
 
 =cut
 
-sub new {
+sub get_handle {
     my $class = shift;
-    my %args  = @_ == 1 ? %{ $_[0] } : @_;
+    my %args = @_ == 1 ? %{ $_[0] } : @_;
 
-    my ($new_class, $scheme, $url) = $class->_url_to_replica_class(%args);
+    my ( $new_class, $scheme, $url ) = $class->_url_to_replica_class(%args);
 
-    if (!$new_class) {
-        $class->log_fatal("$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url}).");
+    if ( !$new_class ) {
+        $class->log_fatal(
+            "$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url})."
+        );
     }
 
-    if ( $class eq $new_class) { 
-        return $class->SUPER::new(%args) 
-    } else {
-        Prophet::App->require($new_class);
-        return $new_class->new(%args);
-        }
-};
+    Prophet::App->require($new_class);
+    return $new_class->new(%args);
+}
 
 
 sub replica_exists {
@@ -1136,7 +1134,7 @@ sub display_name_for_uuid {
     return $self->app_handle->config->display_name_for_uuid($uuid);
 }
 
-__PACKAGE__->meta->make_immutable;
+__PACKAGE__->meta->make_immutable();
 no Moose;
 
 1;

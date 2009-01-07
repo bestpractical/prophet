@@ -12,7 +12,7 @@ has handle => (
         my $self = shift;
         my $root = $ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
-        return Prophet::Replica->new( url => $type.':file://' . $root, app_handle => $self, 
+        return Prophet::Replica->get_handle( url => $type.':file://' . $root, app_handle => $self, 
                 
                 );
     },
@@ -28,7 +28,7 @@ has resdb_handle => (
             if $self->handle->resolution_db_handle;
         my $root = ($ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet')) . "_res";
         my $type = $self->default_replica_type;
-        my $r = Prophet::Replica->new( url => $type.':file://' . $root );
+        my $r = Prophet::Replica->get_handle( url => $type.':file://' . $root );
         if (!$r->replica_exists && $r->can_initialize) { $r->initialize}
 
         return $r;

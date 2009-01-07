@@ -64,7 +64,7 @@ as_bob {
     is( $latest, $cli->handle->latest_sequence_no );
     use_ok('Prophet::Replica::prophet');
     diag("Checking changesets in $path");
-    my $changesets =  Prophet::Replica->new( { url => 'prophet:file://' . $path, app_handle => Prophet::CLI->new->app_handle } )->fetch_changesets( after => 0 );
+    my $changesets =  Prophet::Replica->get_handle( { url => 'prophet:file://' . $path, app_handle => Prophet::CLI->new->app_handle } )->fetch_changesets( after => 0 );
     my @changesets = grep {$_->has_changes} @$changesets;
     is( $#changesets, 2, "We found a total of 3 changesets" );
     # XXX: compare the changeset structure

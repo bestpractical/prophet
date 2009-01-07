@@ -17,7 +17,7 @@ sub BUILD {
     my $state_handle_url =      $self->app_handle->default_replica_type . ":" . $self->app_handle->handle->url;
     $self->log( "Connecting to state database ".$state_handle_url);
     $self->state_handle(
-        Prophet::Replica->new(
+        Prophet::Replica->get_handle(
                url => $state_handle_url,
                 db_uuid => $self->state_db_uuid,
                 app_handle => $self->app_handle

@@ -9,12 +9,12 @@ has target => ( isa => 'Prophet::Replica', is => 'rw');
 sub run {
     my $self = shift;
 
-    $self->source( Prophet::Replica->new(
+    $self->source( Prophet::Replica->get_handle(
         url       => $self->arg('from'),
         app_handle => $self->app_handle,
     ));
 
-    $self->target( Prophet::Replica->new(
+    $self->target( Prophet::Replica->get_handle(
         url       => $self->arg('to'),
         app_handle => $self->app_handle,
     ));

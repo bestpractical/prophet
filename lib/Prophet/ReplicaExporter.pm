@@ -23,7 +23,7 @@ has target_replica => (
     default => sub {
         my $self = shift;
         confess "No target_path specified" unless $self->has_target_path;
-        my $replica = Prophet::Replica->new(url => "prophet:file://" . $self->target_path, app_handle => $self->app_handle);
+        my $replica = Prophet::Replica->get_handle(url => "prophet:file://" . $self->target_path, app_handle => $self->app_handle);
 
         my $src = $self->source_replica;
         my %init_args = (

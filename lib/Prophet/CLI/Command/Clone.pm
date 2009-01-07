@@ -7,11 +7,11 @@ sub run {
 
     $self->set_arg( 'to' => $self->app_handle->handle->url() );
 
-    my $source = Prophet::Replica->new(
+    my $source = Prophet::Replica->get_handle(
         url        => $self->arg('from'),
         app_handle => $self->app_handle,
     );
-    my $target = Prophet::Replica->new(
+    my $target = Prophet::Replica->get_handle(
         url        => $self->arg('to'),
         app_handle => $self->app_handle,
     );

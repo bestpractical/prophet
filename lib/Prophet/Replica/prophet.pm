@@ -63,7 +63,7 @@ has '+resolution_db_handle' => (
     default => sub {
         my $self = shift;
         return if $self->is_resdb || $self->is_state_handle;
-        return Prophet::Replica->new(
+        return Prophet::Replica->get_handle(
             {   url        => "prophet:" . $self->url . '/resolutions',
                 app_handle => $self->app_handle,
                 is_resdb   => 1,
@@ -1064,7 +1064,7 @@ sub write_userdata {
     );
 }
 
-__PACKAGE__->meta->make_immutable(replace_constructor => 1);
+__PACKAGE__->meta->make_immutable();
 no Moose;
 
 1;
