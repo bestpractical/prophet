@@ -226,7 +226,7 @@ sub as_string {
     return '' if !$body && $args{'skip_empty'};
 
     my $header  = $args{header_callback} ? $args{header_callback}->($self) :  $self->description_as_string;
-    my $out  = $header ."\n".$body."\n";
+    my $out  = $header .$body;
     return $out;
 }
 
@@ -238,8 +238,7 @@ Returns a string representing a description of this changeset.
 
 sub description_as_string {
     my $self = shift;
-     sprintf "Change %d by %s at %s\n\t\t\t\t\(%d@%s)\n\n",
-        $self->sequence_no,
+     sprintf " %s at %s\t\(%d@%s)\n",
         ( $self->creator || '(unknown)' ),
         $self->created,
         $self->original_sequence_no,
