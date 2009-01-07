@@ -1,5 +1,10 @@
 package Prophet::Server::ViewHelpers::Function;
 
+use Template::Declare::Tags;
+BEGIN { delete ${__PACKAGE__."::"}{meta}; 
+ delete ${__PACKAGE__."::"}{with};
+}
+
 =head1 NAME
 
 =head1 METHODS
@@ -69,7 +74,7 @@ sub render {
         . "|";
 
    
-       return qq{<input type="hidden" name="prophet-function-@{[$self->name]}" value="$string" />};
+       outs_raw(qq{<input type="hidden" name="prophet-function-@{[$self->name]}" value="$string" />});
 }
 
 
