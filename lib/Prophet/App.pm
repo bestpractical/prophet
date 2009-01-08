@@ -10,6 +10,11 @@ has handle => (
     lazy    => 1,
     default => sub {
         my $self = shift;
+        if ( $ENV{'PROPHET_REPO'} && !File::Spec->file_name_is_absolute($ENV{'PROPHET_REPO'}) ) {
+            # if PROPHET_REPO env var exists and is relative, make it absolute
+            # to avoid breakage/confusing error messages later
+            $ENV{'PROPHET_REPO'} = File::Spec->rel2abs($ENV{'PROPHET_REPO'});
+        }
         my $root = $ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet');
         my $type = $self->default_replica_type;
         return Prophet::Replica->get_handle( url => $type.':file://' . $root, app_handle => $self, 
