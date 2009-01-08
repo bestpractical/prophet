@@ -57,11 +57,6 @@ on shell    => run_command("Shell");
 on aliases  => run_command("Aliases");
 on export => run_command('Export');
 
-on export => sub {
-    my $self = shift;
-    $self->cli->handle->export_to(path => $self->context->arg('path'));
-};
-
 on push => sub {
     my $self = shift;
 
