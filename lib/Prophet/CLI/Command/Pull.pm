@@ -9,7 +9,7 @@ sub run {
     my $previous_sources = $self->app_handle->config->sources;
 
 
-    my $explicit_from;
+    my $explicit_from = '';
     
     if ($self->has_arg('from')) {
         $explicit_from = $self->arg('from') ;
