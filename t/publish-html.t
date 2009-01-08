@@ -25,7 +25,7 @@ as_alice {
 
 my $dir = $alice_published;
 
-my $merge_tickets = File::Spec->catdir($dir => '_merge_tickets');
+my $merge_tickets = File::Spec->catdir($dir => $Prophet::Replica::MERGETICKET_METATYPE);
 ok(!-e $merge_tickets, "_merge_tickets template directory absent");
 
 my $bug = File::Spec->catdir($dir => 'Bug');

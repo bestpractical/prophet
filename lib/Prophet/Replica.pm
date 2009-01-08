@@ -337,7 +337,7 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    my $last =  $self->state_handle->_retrieve_metadata_for( $MERGETICKET_METATYPE, $source, 'last-changeset' ) || 0;
+    my $last =  $self->state_handle->metadata_storage( $MERGETICKET_METATYPE, 'last-changeset' )->($source) || 0;
     return $last;
 }
 

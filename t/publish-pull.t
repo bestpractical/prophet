@@ -135,7 +135,7 @@ sub changeset_ok {
 
         $changes->{ replica_uuid_for('alice') } = {
             change_type  => $change_type,
-            record_type  => '_merge_tickets',
+            record_type  => $Prophet::Replica::MERGETICKET_METATYPE,
             prop_changes => {
                 'last-changeset' => {
                     old_value => $prev_changeset_num,

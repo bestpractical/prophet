@@ -109,7 +109,7 @@ sub should_skip_type {
     my $type = shift;
 
     # should we skip all _private types?
-    return 1 if $type eq '_merge_tickets';
+    return 1 if $type eq $Prophet::Replica::MERGETICKET_METATYPE;
 
     return 0;
 }

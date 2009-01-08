@@ -176,7 +176,7 @@ as_bob {
 
                 replica_uuid_for('alice') => {
                     change_type  => 'update_file',
-                    record_type    => '_merge_tickets',
+                    record_type    => $Prophet::Replica::MERGETICKET_METATYPE,
                     prop_changes => {
                         'last-changeset' => {
                             old_value => ($alice->latest_sequence_no-1),
