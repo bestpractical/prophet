@@ -28,7 +28,7 @@ sub extract_functions_from_cgi {
     foreach my $param ( $self->cgi->all_parameters ) {
         next unless $param =~ /^prophet-function-(.*)$/;
         my $name = $1;
-        warn "Duplicate function definition for @{[$name]}." if ( exists $functions->{$name} );
+        $self->app_handle->log_fatal( "Duplicate function definition for @{[$name]}." ) if ( exists $functions->{$name} );
 
         my $function_data = $self->cgi->param($param);
         my $attr          = $self->string_to_hash($function_data);
@@ -46,7 +46,6 @@ sub extract_functions_from_cgi {
         $functions->{$name} = $attr;
         $functions->{$name}->{params} = $self->params_for_function_from_cgi($name);
     }
-
     $self->functions($functions);
 }
 
@@ -60,8 +59,8 @@ sub params_for_function_from_cgi {
             my $name = $1;
             $values->{$name} = {
                 prop           => $name,
-                value          => $self->cgi->param($field),
-                original_value => $self->cgi->param( "original-value-" . $field )
+                value          => ($self->cgi->param($field) || undef),
+                original_value => ($self->cgi->param( "original-value-" . $field ) || undef)
             };
         } elsif ( $field =~ /^prophet-fill-function-$function-prop-(.*)$/ ) {
             my $name  = $1;
@@ -92,15 +91,15 @@ sub handle_functions {
        execute_functions    
     );
     eval {
-        $self->$_() for @workflow;
+        for (@workflow) { 
+        $self->$_() ;
+        }
     }; 
     
     if (my $err = $@) {
-        warn "This run failed - $err";
         $self->result->success(0);
         $self->result->message($err);   
     }
-
 }
 
 sub canonicalize_functions {
@@ -140,9 +139,9 @@ sub execute_functions {
     my $functions = $self->functions;
 
     foreach my $function ( sort { $functions->{$a}->{order} <=> $functions->{$b}->{order}}  keys %{$functions}) {
+        $self->app_handle->log_debug("About to execute a function - ".$function);
         $self->_fill_params_from_previous_functions($function); 
 
-        $self->app_handle->log_debug("About to execute a function - ".$function);
 
         next unless ($functions->{$function}->{execute});
 
@@ -180,10 +179,11 @@ sub _get_record_for_function {
 
     my $functions = $self->functions;
         if ($functions->{$function}->{action} eq 'update') {
-            return Prophet::Util->instantiate_record( uuid => $function->{uuid}, class=>$function->{class}, app_handle=> $self->app_handle);
+
+            return Prophet::Util->instantiate_record( uuid => $functions->{$function}->{uuid}, class=>$functions->{$function}->{class}, app_handle=> $self->app_handle);
         } elsif ($functions->{$function}->{action} eq 'create') {
-                die $function->{class} ." is not a valid class " unless (UNIVERSAL::isa($function->{class}, 'Prophet::Record'));
-                return  $function->{class}->new(  app_handle => $self->app_handle);
+                die $functions->{$function}->{class} ." is not a valid class " unless (UNIVERSAL::isa($functions->{$function}->{class}, 'Prophet::Record'));
+                return  $functions->{$function}->{class}->new(  app_handle => $self->app_handle);
         } else {
             die "I don't know how to handle a ".$functions->{$function}->{action};
         }
@@ -195,29 +195,30 @@ sub _exec_function_create {
     my $self = shift;
     my $function = shift;
 
-    my $object = $self->_get_record_for_function($function);
+    my $object = $self->_get_record_for_function($function->{name});
     my ( $val, $msg ) = $object->create(
         props => {
             map { $function->{params}->{$_}->{prop} => $function->{params}->{$_}->{value}
                 } keys %{ $function->{params} }
             }
 
-    );
+    ); 
 
     my $res = Prophet::Web::FunctionResult->new( function_name => $function->{name}, 
                                                  class => $function->{class},
                                                  success => $object->uuid? 1 :0,
                                                  record_uuid => $object->uuid,
                                                  msg => ($msg || 'Record created'));
-                                                
+                     
+
     $self->result->set($function->{name} => $res);
+
 }
 
 sub _exec_function_update {
     my $self = shift;
     my $function = shift;
-
-    my $object = $self->_get_record_for_function($function);
+    my $object = $self->_get_record_for_function($function->{name});
     my ( $val, $msg ) = $object->set_props(
         props => {
             map {

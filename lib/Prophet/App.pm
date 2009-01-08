@@ -202,6 +202,12 @@ environmental variable is set).
 
 =cut
 
+sub log_debug {
+    my $self = shift;
+    return unless ($ENV{'PROPHET_DEBUG'});
+    $self->log(@_);
+}
+
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);

@@ -1089,8 +1089,7 @@ sub log {
 sub log_debug { 
     my $self = shift;
     my $msg = shift;
-    return unless ($ENV{'PROPHET_DEBUG'});
-    $self->log($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
+    $self->app_handle->log_debug($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
 }
 
 =head2 log_fatal $MSG

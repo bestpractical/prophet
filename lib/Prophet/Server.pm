@@ -98,6 +98,7 @@ sub js {
 sub handle_request {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
+    $self->app_handle->log( localtime()." [".$ENV{'REMOTE_ADDR'}."] ".$cgi->request_method . " ".$cgi->path_info);
     $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
     $self->result( Prophet::Web::Result->new() );
     if ( $ENV{'PROPHET_DEVEL'} ) {
