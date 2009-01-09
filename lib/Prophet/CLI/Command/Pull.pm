@@ -17,7 +17,12 @@ sub run {
     }
 
     elsif ($self->has_arg('all')){
-        push @from, values %$previous_sources;
+        for my $source (values %$previous_sources) {
+            my ($url, $uuid ) = split(qr/ \| /,$source,2);
+            push @from, $url;
+
+        }
+
     }
 
     $self->validate_args;
