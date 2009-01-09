@@ -160,6 +160,8 @@ sorted by their C<created> property, in ascending order.
 sub sort_by_prop {
     my ($self, $prop, $records) = @_;
 
+    no warnings 'uninitialized'; # some records might not have this prop
+
     return (sort { $a->prop($prop) cmp $b->prop($prop) } @{$records});
 }
 
