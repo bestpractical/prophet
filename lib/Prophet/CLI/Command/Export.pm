@@ -11,7 +11,6 @@ sub run {
     }
 
     
-    warn $self->context->arg('format');
     if ($self->context->has_arg('format') && ($self->context->arg('format') eq 'feed') ){
         $class = 'Prophet::ReplicaFeedExporter';
     } else {
@@ -19,8 +18,6 @@ sub run {
     }
 
     $self->app_handle->require ($class);
-    warn "Running with class $class";
-
     my $exporter = $class->new(
         {   target_path    =>  $self->context->arg('path'),
             source_replica => $self->app_handle->handle,
