@@ -11,6 +11,7 @@ requires('Data::UUID');
 requires('Digest::SHA1');  # Core in 5.10
 requires('LWP::Simple'); # Part of lib-www-perl
 requires('URI');
+requires('HTTP::Date');
 requires('JSON' => '2.00');
 requires('Module::Pluggable');
 requires('File::Find::Rule');

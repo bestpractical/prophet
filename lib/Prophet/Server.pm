@@ -14,7 +14,7 @@ use File::ShareDir qw//;
 use File::Spec ();
 use Cwd ();
 use JSON;
-
+use HTTP::Date;
 
 my $PROPHET_STATIC_ROOT =
   File::Spec->catdir( Prophet::Util->updir( $INC{'Prophet.pm'} ),
@@ -52,8 +52,8 @@ sub run {
             domain => 'local',
         );
     } else {
-        warn "Publisher backend is not available. Install one of the "
-            . "Net::Rendezvous::Publish::Backend modules from CPAN.";
+        $self->app_handle->log( "Publisher backend is not available. Install one of the "
+            . "Net::Rendezvous::Publish::Backend modules from CPAN.");
     }
     $self->setup_template_roots();
     $self->SUPER::run(@_);
@@ -289,7 +289,7 @@ sub send_static_file {
         my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $PROPHET_STATIC_ROOT => $filename ) );
         next if substr( $qualified_file, 0, length($PROPHET_STATIC_ROOT) ) ne $PROPHET_STATIC_ROOT;
         my $content = Prophet::Util->slurp($qualified_file);
-        return $self->send_content( content => $content , content_type => $type );
+        return $self->send_content( static => 1, content => $content , content_type => $type );
     }
     
     return $self->_send_404;
@@ -300,7 +300,7 @@ sub send_static_file {
 sub send_content {
     my $self = shift;
     my %args
-        = validate( @_, { content => 1, content_type => 0, encode_as => 0 } );
+        = validate( @_, { content => 1, content_type => 0, encode_as => 0, static => 0 } );
 
     if ( $args{'encode_as'} && $args{'encode_as'} eq 'json' ) {
         $args{'content_type'} = 'text/x-json';
@@ -308,6 +308,10 @@ sub send_content {
     }
 
     print "HTTP/1.0 200 OK\r\n";
+    if ($args{static}) {
+        print 'Cache-Control: max-age=31536000, public' ;
+        print 'Expires: '.HTTP::Date::time2str( time() + 31536000 ) ;
+    }
     print "Content-Type: " . $args{'content_type'} . "\r\n";
     print "Content-Length: " . length( $args{'content'} ||'' ) . "\r\n\r\n";
     print $args{'content'} || '';
