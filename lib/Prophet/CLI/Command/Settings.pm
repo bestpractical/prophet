@@ -6,8 +6,6 @@ use JSON;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::TextEditorCommand';
 
-# use an editor to edit if no props are specified on the commandline,
-# allowing the creation of a new comment in the process
 sub run {
     my $self     = shift;
     my $template = $self->make_template;
@@ -26,11 +24,11 @@ sub run {
             my $s         = $self->app_handle->setting( uuid => $uuid );
             my $old_value = $s->get_raw;
             my $new_value = $self->context->props->{$name};
-            print "trying Changed " . $name
-              . " from $old_value to $new_value\n";
+            print "Trying to change " . $name
+              . " from $old_value to $new_value.\n";
             if ( $old_value ne $new_value ) {
                 $s->set( from_json( $new_value, { utf8 => 1 } ) );
-                print "Changed " . $name . " from $old_value to $new_value\n";
+                print "Changed " . $name . " from $old_value to $new_value.\n";
             }
         }
         return;
@@ -133,7 +131,7 @@ sub process_template {
             $s->set( from_json( $new_value, { utf8 => 1 } ) );
             print "Changed "
               . $config->{$uuid}->[0]
-              . " from $old_value to $new_value\n";
+              . " from $old_value to $new_value.\n";
         }
 
     }
