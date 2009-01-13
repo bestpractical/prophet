@@ -547,7 +547,7 @@ sub default_prop_creator {
 
 =head2 default_prop_original_replica
 
-Default the original_replica of every record to the replica's uuid
+Default the original_replica of every record to the replica's uuid.
 
 =cut
 
@@ -556,6 +556,12 @@ sub default_prop_original_replica {
     return $self->handle->uuid;
 }
 
+=head2 validate_prop_from_recommended_values 'prop', $argsref
+
+Checks to see if the given property has a valid value and returns true if so.
+If not, adds an error message to $argsref->{errors}{prop} and returns false.
+
+=cut
 
 sub validate_prop_from_recommended_values {
     my $self = shift;
@@ -573,6 +579,20 @@ sub validate_prop_from_recommended_values {
 
 }
 
+=head2 recommended_values_for_prop 'prop'
+
+Given a record property, return an array of the values that should usually be
+associated with this property.
+
+If a property doesn't have a specific range of values, undef is
+returned.
+
+This is mainly intended for use in prop validation (see
+L<validate_prop_from_recommended_values>). Recommended values for a
+prop are set by defining methods called C<_recommended_values_for_prop_$prop>
+in application modules that inherit from L<Prophet::Record>.
+
+=cut
 
 sub recommended_values_for_prop {
     my $self = shift;
@@ -585,9 +605,6 @@ sub recommended_values_for_prop {
     }
     
 }
-
-
-
 
 =head2 _default_summary_format
 
