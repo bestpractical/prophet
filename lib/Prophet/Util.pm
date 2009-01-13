@@ -3,12 +3,27 @@ use strict;
 use File::Basename;
 use Params::Validate;
 
+=head2 updir PATH
+
+Strips off the filename in the given path and returns the absolute
+path of the remaining directory.
+
+=cut
+
 sub updir {
     my $self = shift;
     my $path = shift;
     my ($file, $dir, undef) = fileparse(File::Spec->rel2abs($path));
     return $dir;
 }
+
+=head2 slurp FILENAME
+
+Reads in the entire file whose absolute path is given by FILENAME and
+returns its contents, either in a scalar or in an array of lines,
+depending on the context.
+
+=cut
 
 sub slurp {
     my $self = shift;
@@ -17,9 +32,17 @@ sub slurp {
 
     my @lines = <$fh>;
     close $fh;
-    
+
     return wantarray ? @lines : join('',@lines);
 }
+
+=head2 instantiate_record class => 'record-class-name', uuid => 'record-uuid', app_handle => $self->app_handle
+
+Takes the name of a record class (must subclass L<Prophet::Record>), a uuid,
+and an application handle and returns a new instantiated record object
+of the given class.
+
+=cut
 
 sub instantiate_record {
     my $self = shift;
@@ -33,6 +56,15 @@ sub instantiate_record {
     my $object = $args{class}->new( uuid => $args{uuid}, app_handle => $args{app_handle});
     return $object;
 }
+
+=head2 escape_utf8 REF
+
+Given a reference to a scalar, escapes special characters (currently just &, <,
+>, (, ), ", and ') for use in HTML and XML.
+
+Not an object routine (call as Prophet::Util::escape_utf8( \$scalar) ).
+
+=cut
 
 sub escape_utf8 {
     my $ref = shift;
