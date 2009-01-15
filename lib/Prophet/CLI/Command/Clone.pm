@@ -17,11 +17,11 @@ sub run {
     );
 
     if ( $target->replica_exists ) {
-        die "The target replica already exists.";
+        die "The target replica already exists.\n";
     }
 
     if ( !$target->can_initialize ) {
-        die "The replica path you specified isn't writable";
+        die "The target replica path you specified can't be created.\n";
     }
 
     my %init_args;
