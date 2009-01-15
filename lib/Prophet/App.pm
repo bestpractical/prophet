@@ -10,16 +10,24 @@ has handle => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        if ( $ENV{'PROPHET_REPO'} && !File::Spec->file_name_is_absolute($ENV{'PROPHET_REPO'}) ) {
+
+        if ( ! $ENV{PROPHET_REPO}) { 
+            my $type = $self->default_replica_type;
+            $ENV{'PROPHET_REPO'} = $type.":file://".File::Spec->catdir($ENV{'HOME'}, '.prophet');
+
+        }
+        elsif   ($ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
+            if ( !File::Spec->file_name_is_absolute($ENV{'PROPHET_REPO'}) ) {
             # if PROPHET_REPO env var exists and is relative, make it absolute
             # to avoid breakage/confusing error messages later
-            $ENV{'PROPHET_REPO'} = File::Spec->rel2abs($ENV{'PROPHET_REPO'});
+            $ENV{'PROPHET_REPO'} = $self->default_replica_type . ":file://".  File::Spec->rel2abs($ENV{'PROPHET_REPO'});
+
+            } else {
+            $ENV{'PROPHET_REPO'} = $self->default_replica_type . ":file://".  $ENV{'PROPHET_REPO'};
+            }
         }
-        my $root = $ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet');
-        my $type = $self->default_replica_type;
-        return Prophet::Replica->get_handle( url => $type.':file://' . $root, app_handle => $self, 
-                
-                );
+
+        return Prophet::Replica->get_handle( url =>  $ENV{'PROPHET_REPO'}, app_handle => $self, );
     },
 );
 
