@@ -56,11 +56,6 @@ features(
         'DBI' => 1,
         'DBD::SQLite' => 1
     ],
-    'Subversion replica support' => [
-        -default => 0,
-         'SVN::Core',  # SVN::Repos SVN::Fs SVN::Ra SVN::Delta::Editor SVN::Client SVN::Delta
-         'Term::ReadKey',
-    ],
     'Maintainer testing tools' => [
         -default   => 1,
         'Test::HTTP::Server::Simple',
