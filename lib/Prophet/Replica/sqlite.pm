@@ -261,7 +261,15 @@ CREATE TABLE userdata (
     key text,
     value text
 )
-}) {
+},
+
+
+q{create index uuid_idx on record_props(uuid)},
+q{create index typeuuuid on records(type, uuid)},
+q{create index keyidx on userdata(key)}
+
+
+) {
         $self->dbh->do($_) || warn $self->dbh->errstr;
     }
 
