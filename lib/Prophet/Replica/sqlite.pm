@@ -225,7 +225,7 @@ for (
 
 q{
 CREATE TABLE records (
-    luid INTEGER PRIMARY KEY,
+    luid INTEGER PRIMARY KEY AUTOINCREMENT,
     uuid text,
     type text
 )
@@ -357,11 +357,13 @@ sub _write_record_to_db {
             if ( !defined $args{'props'}->{$_} || $args{'props'}->{$_} eq '' );
     }
 
-    # We're in a transaction here, right?
-    $self->_delete_record_from_db( uuid => $args{uuid} ) if
-        $self->record_exists( uuid => $args{uuid}, type => $args{type} );
-    $self->dbh->do( "INSERT INTO records (type, uuid) VALUES (?,?)", {},
+    if ($self->record_exists( uuid => $args{uuid}, type => $args{type} ) ) {
+        $self->_delete_record_props_from_db( uuid => $args{uuid} ) 
+    } else {
+        $self->dbh->do( "INSERT INTO records (type, uuid) VALUES (?,?)", {},
         $args{type}, $args{uuid} );
+
+    }
     $self->dbh->do(
         "INSERT INTO record_props (uuid, prop, value) VALUES (?,?,?)", {},
         $args{uuid}, $_, $args{props}->{$_} )
@@ -374,6 +376,13 @@ sub _delete_record_from_db {
     my %args = validate( @_, { uuid => 1 } );
 
     $self->dbh->do("DELETE FROM records where uuid = ?", {},$args{uuid});
+    $self->_delete_record_props_from_db(%args);
+}
+
+sub _delete_record_props_from_db {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1 } );
+
     $self->dbh->do("DELETE FROM record_props where uuid = ?", {}, $args{uuid});
 
 }
