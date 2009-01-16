@@ -14,7 +14,7 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 sub BUILD {
     my $self = shift;
-    my $state_handle_url =      $self->app_handle->default_replica_type . ":" . $self->app_handle->handle->url;
+    my $state_handle_url =       $self->app_handle->handle->url;
     $self->log( "Connecting to state database ".$state_handle_url);
     $self->state_handle(
         Prophet::Replica->get_handle(
