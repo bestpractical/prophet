@@ -16,6 +16,8 @@ has dbh => (
         my $self = shift;
         DBI->connect( "dbi:SQLite:" . $self->db_file , undef, undef, {RaiseError =>1, AutoCommit => 1 });
      }
+
+
     );
 
 sub db_file { shift->fs_root ."/db.sqlite"}
@@ -89,10 +91,20 @@ sub BUILD {
         #s/^sqlite://;    # url-based constructor in ::replica should do better
         s{/$}{};
     }
+   $self->_check_for_upgrades if ($self->replica_exists);
         
-    
 
 }
+
+sub _check_for_upgrades {
+    my $self = shift;
+   if ($self->replica_version && $self->replica_version < 2) {
+        $self->_upgrade_replica_to_v2();
+   } 
+
+}
+
+
 
 sub state_handle { return shift; }
 
@@ -213,6 +225,7 @@ for (
 
 q{
 CREATE TABLE records (
+    luid INTEGER PRIMARY KEY,
     uuid text,
     type text
 )
@@ -275,7 +288,7 @@ q{create index keyidx on userdata(key)}
 
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_replica_uuid( Data::UUID->new->create_str );
-    $self->set_replica_version(1);
+    $self->set_replica_version(2);
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} ) if !$self->is_resdb;
     $self->after_initialize->($self);
 }
@@ -623,7 +636,7 @@ sub set_record_props {
 
 sub get_record_props {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1, type => 1 } );
+    my %args = (uuid => undef, type => undef, @_); # validate is slooow validate( @_, { uuid => 1, type => 1 } );
     my $sth = $self->dbh->prepare( "SELECT prop, value from record_props WHERE uuid = ?");
     $sth->execute($args{uuid});
     my $items = $sth->fetchall_arrayref;
@@ -635,7 +648,7 @@ sub record_exists {
     my %args = validate( @_, { uuid => 1, type => 1 } );
     return undef unless $args{'uuid'};
 
-    my $sth = $self->dbh->prepare("SELECT COUNT(uuid) from records WHERE type = ? AND uuid = ?");
+    my $sth = $self->dbh->prepare("SELECT luid from records WHERE type = ? AND uuid = ?");
     $sth->execute($args{type}, $args{uuid});
     return $sth->fetchrow_array;
 
@@ -695,6 +708,66 @@ sub write_userdata {
         value => $args{content},
     );
 }
+
+
+=head1 Working with luids
+
+=cut
+
+sub find_or_create_luid {
+    my $self = shift;
+    my %args = (uuid => undef, type => undef, @_); # validate is slooow validate( @_, { uuid => 1, type => 1 } );
+    return undef unless $args{'uuid'};
+
+    my $sth = $self->dbh->prepare("SELECT luid from records WHERE uuid = ?");
+    $sth->execute( $args{uuid});
+    return $sth->fetchrow_array;
+}
+
+
+sub find_luid_by_uuid {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1 } );
+
+    my $sth = $self->dbh->prepare("SELECT luid from records WHERE uuid = ?");
+    $sth->execute( $args{uuid});
+    return $sth->fetchrow_array;
+}
+
+
+sub find_uuid_by_luid {
+    my $self = shift;
+    my %args = validate( @_, { luid => 1 } );
+    return undef unless $args{'luid'};
+
+    my $sth = $self->dbh->prepare("SELECT uuid from records WHERE luid = ?");
+    $sth->execute( $args{luid});
+    return $sth->fetchrow_array;
+}
+
+
+
+
+sub _upgrade_replica_to_v2 {
+    my $self = shift;
+    $self->dbh->begin_work;
+
+for (
+    q{CREATE TABLE new_records (luid INTEGER PRIMARY KEY, uuid TEXT, type TEXT)},
+   q{INSERT INTO new_records (uuid, type) SELECT uuid, type FROM records},
+   q{DROP TABLE records},
+   q{ALTER TABLE new_records RENAME TO records}
+
+) {
+        $self->dbh->do($_) || warn $self->dbh->errstr;
+    }
+
+    $self->set_replica_version(2);
+    $self->dbh->commit;
+
+}
+
+
 
 sub DEMOLISH { shift->dbh->disconnect }
 __PACKAGE__->meta->make_immutable;

@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 16;
+use Prophet::Test tests => 17;
 
 as_alice {
     run_ok( 'prophet', [qw(init)] );
@@ -30,12 +30,14 @@ as_bob {
         [qw(create --type Bug -- --status open-bob --from bob )],
         "Created a record as bob"
     );
-    run_output_matches(
-        'prophet',
-        [qw(search --type Bug --regex .)],
-        [ qr/open-bob/, qr/new-alice/ ],
-        " Found our record"
+    run_output_matches( 'prophet', [qw(search --type Bug --regex new-alice)],
+        [ qr/new-alice/ ], " Found our record"
     );
+
+    run_output_matches( 'prophet', [qw(search --type Bug --regex open-bob)],
+        [ qr/open-bob/ ], " Found our record"
+    );
+
 
     # update the record
     # show the record history

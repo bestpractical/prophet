@@ -10,8 +10,14 @@ use Prophet::App;
 has state_handle => (
     is  => 'rw',
     isa => 'Prophet::Replica',
-    documentation => 'Where metadata about foreign replicas is stored.',
 );
+
+has metadata_store => (
+    is => 'rw',
+    isa => 'Prophet::MetadataStore',
+    documentation => 'Where metadata about other replicas is stored.',
+);
+
 
 has resolution_db_handle => (
     is  => 'rw',
@@ -577,6 +583,20 @@ sub find_or_create_luid {
 
     return $mapping->{ $args{'uuid'} };
 }
+
+sub find_luid_by_uuid {
+    my $self = shift;
+    my %args = validate( @_, { uuid => 1 } );
+    my $mapping = $self->_read_guid2luid_mappings;
+
+    if (!exists($mapping->{ $args{'uuid'} })) {
+        return undef;
+    }
+
+    return $mapping->{ $args{'uuid'} };
+
+}
+
 
 =head3 find_uuid_by_luid { luid => LUID }
 

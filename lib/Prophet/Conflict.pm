@@ -155,7 +155,7 @@ sub _generate_change_conflicts {
         {
             record_type          => $change->record_type,
             record_uuid          => $change->record_uuid,
-            target_record_exists => $file_exists,
+            target_record_exists => ($file_exists ? 1 : 0 ),
             change_type          => $change->change_type,
             $file_op_conflict ? ( file_op_conflict => $file_op_conflict ) : (),
         }

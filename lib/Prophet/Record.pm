@@ -38,15 +38,13 @@ has type => (
 has uuid => (
     is      => 'rw',
     isa     => 'Str',
-    trigger => sub {
-        my $self = shift;
-        $self->find_or_create_luid;
-    },
 );
 
 has luid => (
     is  => 'rw',
-    isa => 'Str',
+    isa => 'Maybe[Str]',
+    lazy => 1,
+    default => sub { my $self = shift; $self->find_or_create_luid; },
 );
 
 class_has REFERENCES => (
@@ -275,15 +273,15 @@ sub load {
     if ( $args{luid} ) {
         $self->luid( $args{luid} );
         $self->uuid( $self->handle->find_uuid_by_luid( luid => $args{luid} ) );
+        return($self->uuid) if ($self->uuid);
     } else {
         $self->uuid( $args{uuid} );
+        $self->luid( $self->handle->find_or_create_luid( uuid => $args{uuid}));
+        return($self->luid) if ($self->luid);
     }
 
     delete $self->{props};
-    return $self->handle->record_exists(
-        uuid => $self->uuid,
-        type => $self->type
-    );
+    return undef;
 }
 
 sub loaded {
