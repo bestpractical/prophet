@@ -42,7 +42,7 @@ has fs_root_parent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->url =~ m{^sqlite:file://(.*)/.*?$} ? $1 : undef;
+        return $self->url =~ m{^(?:sqlite\:)?file://(.*)/.*?$} ? $1 : undef;
     }
 );
 
@@ -51,7 +51,7 @@ has fs_root => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->url =~ m{^sqlite:file://(.*)$} ? $1 : undef;
+        return $self->url =~ m{^(?:sqlite\:)?file://(.*)$} ? $1 : undef;
     },
 );
 
@@ -98,7 +98,7 @@ sub BUILD {
 
 sub _check_for_upgrades {
     my $self = shift;
-   if ($self->replica_version && $self->replica_version < 2) {
+   if  ( $self->replica_version && $self->replica_version < 2) {
         $self->_upgrade_replica_to_v2();
    } 
 
@@ -201,7 +201,6 @@ sub initialize {
             resdb_uuid => 0,
         }
     );
-
 
     if ( !$self->fs_root_parent ) {
 
