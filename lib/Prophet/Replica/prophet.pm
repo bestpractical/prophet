@@ -1001,8 +1001,9 @@ sub record_exists {
 
 sub list_records {
     my $self = shift;
-    my %args = validate( @_ => { type => 1 } );
+    my %args = validate( @_ => { type => 1, record_class => 1 } );
 
+    return [] unless $self->type_exists( type => $args{type} );
     #return just the filenames, which, File::Find::Rule doesn't seem capable of
     my @record_uuids
         = map { my @path = split( qr'/', $_ ); pop @path }
@@ -1012,10 +1013,18 @@ sub list_records {
         )
         );
     return [
+        map { 
+            my $record = $args{record_class}->new( { app_handle => $self->app_handle,  handle => $self, type => $args{type} } );
+            $record->_instantiate_from_hash( uuid => $_);
+            $record;
+        }
         grep {
             $self->_record_cas_filename( type => $args{'type'}, uuid => $_ )
             } @record_uuids
     ];
+    
+        
+        
 }
 
 sub list_types {

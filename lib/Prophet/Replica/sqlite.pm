@@ -79,7 +79,7 @@ has '+resolution_db_handle' => (
     },
 );
 
-
+our $PROP_CACHE;
 
 use constant scheme   => 'sqlite';
 use constant userdata_dir    => 'userdata';
@@ -383,6 +383,7 @@ sub _delete_record_props_from_db {
     my %args = validate( @_, { uuid => 1 } );
 
     $self->dbh->do("DELETE FROM record_props where uuid = ?", {}, $args{uuid});
+    delete $PROP_CACHE->{$args{uuid}};
 
 }
 
@@ -620,7 +621,10 @@ sub set_record_props {
 
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
-
+   
+    # clear the cache  before computing the diffs. this is probably paranoid
+    delete $PROP_CACHE->{$args{uuid}};
+    
     my $old_props = $self->get_record_props( uuid => $args{'uuid'}, type => $args{'type'});
     my %new_props = %$old_props;
 
@@ -634,6 +638,9 @@ sub set_record_props {
 
     $self->_write_record_to_db( type  => $args{'type'}, uuid  => $args{'uuid'}, props => \%new_props);
 
+    # Clear the cache now that we've actually written out changed props
+    delete $PROP_CACHE->{$args{uuid}};
+
     my $change = Prophet::Change->new( {   record_type => $args{'type'}, record_uuid => $args{'uuid'}, change_type => 'update_file' });
     $change->add_prop_change( name => $_, old  => $old_props->{$_}, new  => $args{props}->{$_}) for (keys %{$args{props}});
     $self->current_edit->add_change( change => $change );
@@ -644,11 +651,15 @@ sub set_record_props {
 
 sub get_record_props {
     my $self = shift;
-    my %args = (uuid => undef, type => undef, @_); # validate is slooow validate( @_, { uuid => 1, type => 1 } );
-    my $sth = $self->dbh->prepare( "SELECT prop, value from record_props WHERE uuid = ?");
-    $sth->execute($args{uuid});
-    my $items = $sth->fetchall_arrayref;
-    return {map {  @$_ } @$items}; 
+    my %args = ( uuid => undef, type => undef, @_ )
+        ;    # validate is slooow validate( @_, { uuid => 1, type => 1 } );
+    unless ( exists $PROP_CACHE->{ $args{uuid} } ) {
+        my $sth = $self->dbh->prepare("SELECT prop, value from record_props WHERE uuid = ?");
+        $sth->execute( $args{uuid} );
+        my $items = $sth->fetchall_arrayref;
+        $PROP_CACHE->{ $args{uuid} } = {map {@$_} @$items};
+    }
+    return $PROP_CACHE->{ $args{uuid} };
 }
 
 sub record_exists {
@@ -662,13 +673,37 @@ sub record_exists {
 
 }
 
+=head2 list_records { type => $type }
+
+Returns a reference to a list of record objects for all records of type $type.
+
+Order is not guaranteed.
+
+=cut
+
 sub list_records {
     my $self = shift;
-    my %args = validate( @_ => { type => 1 } );
-
-    my $sth = $self->dbh->prepare("SELECT uuid from records WHERE type = ?");
+    my %args = validate( @_ => { type => 1, record_class => 1 } );
+    my @data;
+    my $sth = $self->dbh->prepare("SELECT records.uuid, records.luid, record_props.prop, record_props.value ".
+        "FROM records, record_props ".
+        "WHERE records.uuid = record_props.uuid AND records.type = ?");
     $sth->execute($args{type});
-    my @data = map { $_->[0]} @{ $sth->fetchall_arrayref};
+
+    my %found;
+
+    for (@{$sth->fetchall_arrayref}) { 
+        $found{$_->[0]}->{luid} = $_->[1];
+        $found{$_->[0]}->{props}->{$_->[2]} = $_->[3];
+    } 
+
+
+    for my $uuid (keys %found) {
+        my $record = $args{record_class}->new( { app_handle => $self->app_handle,  handle => $self, type => $args{type} } );
+        $record->_instantiate_from_hash( uuid => $uuid, luid => $found{$uuid}->{luid});
+        #$PROP_CACHE->{$uuid} = $found{$uuid}->{props};
+        push @data, $record;    
+    } 
     return \@data;
 }
 

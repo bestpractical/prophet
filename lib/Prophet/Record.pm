@@ -69,6 +69,8 @@ class_has uuid_generator => (
     default => sub { require Data::UUID; Data::UUID->new()}
 );
 
+
+
 =head1 METHODS
 
 =head2 new  { handle => Prophet::Replica, type => $type }
@@ -280,8 +282,19 @@ sub load {
         return($self->luid) if ($self->luid);
     }
 
-    delete $self->{props};
     return undef;
+}
+
+# a private method to let collection search results instantiate records more quickly
+# (See Prophet::Replica::sqlite)
+sub _instantiate_from_hash {
+    my $self = shift;
+    my %args = ( uuid => undef, luid => undef, @_);
+    # we might not have a luid cheaply (see the prophet filesys backend)
+    $self->luid($args{'luid'}) if (defined $args{'luid'});
+    # We _Always_ have a luid
+    $self->uuid($args{'uuid'});
+    # XXX TODO - expect props as well
 }
 
 sub loaded {
@@ -324,7 +337,6 @@ sub set_props {
 
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) || return undef;
-    delete $self->{props};
     $self->handle->set_record_props(
         type  => $self->type,
         uuid  => $self->uuid,
@@ -344,12 +356,10 @@ sub get_props {
 
     confess "get_props called on a record that hasn't been loaded or created yet." if !$self->uuid;
 
-   return  $self->handle->get_record_props(
+    return $self->handle->get_record_props(
         uuid => $self->uuid,
-        type => $self->type
-    ) || {};;
-    return $self->{props} || {};
-    #$self->{props} ||=
+        type => $self->type) || {};
+
 }
 
 =head2 prop $name
