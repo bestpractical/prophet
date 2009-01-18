@@ -133,16 +133,6 @@ sub changeset_ok {
                                ? $args{sequence_no} - 1
                                : undef;
 
-        $changes->{ replica_uuid_for('alice') } = {
-            change_type  => $change_type,
-            record_type  => $Prophet::Replica::MERGETICKET_METATYPE,
-            prop_changes => {
-                'last-changeset' => {
-                    old_value => $prev_changeset_num,
-                    new_value => $args{sequence_no},
-                }
-            }
-        };
     }
 
     is_deeply($changeset, {

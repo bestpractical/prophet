@@ -24,7 +24,7 @@ sub db_file { shift->fs_root ."/db.sqlite"}
 
 has '+db_uuid' => (
     lazy    => 1,
-    default => sub { shift->_fetch_metadata('database-uuid') },
+    default => sub { shift->fetch_local_metadata('database-uuid') },
 );
 
 has _uuid => ( is => 'rw', );
@@ -34,7 +34,7 @@ has replica_version => (
     writer  => '_set_replica_version',
     isa     => 'Int',
     lazy    => 1,
-    default => sub { shift->_fetch_metadata('replica-version') || 0 }
+    default => sub { shift->fetch_local_metadata('replica-version') || 0 }
 );
 
 has fs_root_parent => (
@@ -128,15 +128,16 @@ sub __store_data {
     
 }
 
-sub _fetch_metadata {
+sub fetch_local_metadata {
     my $self = shift;
     my $key = shift;
     return $self->__fetch_data( 'local_metadata', $key );
 }
 
-sub _store_metadata {
+sub store_local_metadata {
     my $self = shift;
-    $self->__store_data( table => 'local_metadata', @_ );
+    my ($key, $value) = (@_);
+    $self->__store_data( table => 'local_metadata', key => $key, value => $value);
 }
 
 sub _fetch_userdata {
@@ -174,7 +175,7 @@ sub set_replica_version {
 
     $self->_set_replica_version($version);
 
-    $self->_store_metadata( key   => 'replica-version', value => $version,);
+    $self->store_local_metadata( 'replica-version' => $version,);
 
     return $version;
 }
@@ -197,7 +198,8 @@ sub initialize {
     my $self = shift;
     my %args = validate(
         @_,
-        {   db_uuid    => 0,
+        {
+            db_uuid    => 0,
             resdb_uuid => 0,
         }
     );
@@ -205,31 +207,32 @@ sub initialize {
     if ( !$self->fs_root_parent ) {
 
         if ( $self->can_write_changesets ) {
-            die
-                "We can only create local prophet replicas. It looks like you're trying to create "
-                . $self->url;
-        } else {
+            die "We can only create local prophet replicas. It looks like you're trying to create "
+              . $self->url;
+        }
+        else {
             die "Prophet couldn't find a replica at \""
-                . $self->url
-                . "\"\n\n"
-                . "Please check the URL and try again.\n";
+              . $self->url
+              . "\"\n\n"
+              . "Please check the URL and try again.\n";
 
         }
     }
 
     return if $self->replica_exists;
-    mkpath([$self->fs_root]);
-    #$self->dbh->begin_work;
-for (
+    mkpath( [ $self->fs_root ] );
 
-q{
+    #$self->dbh->begin_work;
+    for (
+
+        q{
 CREATE TABLE records (
     luid INTEGER PRIMARY KEY AUTOINCREMENT,
     uuid text,
     type text
 )
 },
-q{
+        q{
 CREATE TABLE record_props (
     uuid text,
     prop text,
@@ -275,20 +278,20 @@ CREATE TABLE userdata (
 )
 },
 
+        q{create index uuid_idx on record_props(uuid)},
+        q{create index typeuuuid on records(type, uuid)},
+        q{create index keyidx on userdata(key)}
 
-q{create index uuid_idx on record_props(uuid)},
-q{create index typeuuuid on records(type, uuid)},
-q{create index keyidx on userdata(key)}
-
-
-) {
+      )
+    {
         $self->dbh->do($_) || warn $self->dbh->errstr;
     }
 
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_replica_uuid( Data::UUID->new->create_str );
     $self->set_replica_version(2);
-    $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} ) if !$self->is_resdb;
+    $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} )
+      if !$self->is_resdb;
     $self->after_initialize->($self);
 }
 
@@ -308,27 +311,21 @@ Return the replica  UUID
 
 sub uuid {
     my $self = shift;
-    $self->_uuid( $self->_fetch_metadata('replica-uuid') ) unless $self->_uuid;
+    $self->_uuid( $self->fetch_local_metadata('replica-uuid') ) unless $self->_uuid;
     return $self->_uuid;
 }
 
 sub set_replica_uuid {
     my $self = shift;
     my $uuid = shift;
-    $self->_store_metadata(
-        key    => 'replica-uuid',
-        value => $uuid
-    );
+    $self->store_local_metadata( 'replica-uuid' => $uuid);
 
 }
 
 before set_db_uuid => sub {
     my $self = shift;
     my $uuid = shift;
-    $self->_store_metadata(
-        key    => 'database-uuid',
-        value => $uuid
-    );
+    $self->store_local_metadata( 'database-uuid', => $uuid);
 };
 
 =head1 Internals of record handling
@@ -767,7 +764,6 @@ sub find_or_create_luid {
     return $sth->fetchrow_array;
 }
 
-
 sub find_luid_by_uuid {
     my $self = shift;
     my %args = validate( @_, { uuid => 1 } );
@@ -776,7 +772,6 @@ sub find_luid_by_uuid {
     $sth->execute( $args{uuid});
     return $sth->fetchrow_array;
 }
-
 
 sub find_uuid_by_luid {
     my $self = shift;
@@ -788,28 +783,38 @@ sub find_uuid_by_luid {
     return $sth->fetchrow_array;
 }
 
-
-
-
 sub _upgrade_replica_to_v2 {
     my $self = shift;
-    $self->dbh->begin_work;
 
-for (
-    q{CREATE TABLE new_records (luid INTEGER PRIMARY KEY, uuid TEXT, type TEXT)},
-   q{INSERT INTO new_records (uuid, type) SELECT uuid, type FROM records},
-   q{DROP TABLE records},
-   q{ALTER TABLE new_records RENAME TO records}
-
-) {
-        $self->dbh->do($_) || warn $self->dbh->errstr;
-    }
-
-    $self->set_replica_version(2);
-    $self->dbh->commit;
+    $self->_do_db_upgrades(
+        statements => [
+            q{CREATE TABLE new_records (luid INTEGER PRIMARY KEY, uuid TEXT, type TEXT)},
+            q{INSERT INTO new_records (uuid, type) SELECT uuid, type FROM records},
+            q{DROP TABLE records},
+            q{ALTER TABLE new_records RENAME TO records}
+        ],
+        version => 2
+    );
 
 }
 
+sub _do_db_upgrades {
+    my $self = shift;
+    my %args = (
+        statements => undef,
+        version    => undef,
+        @_
+    );
+
+    $self->dbh->begin_work;
+    foreach my $s ( @{ $args{statements} } ) {
+        $self->dbh->do($s) || warn $self->dbh->errstr;
+    }
+    $self->set_replica_version( $args{version} );
+
+    $self->dbh->commit;
+
+}
 
 
 sub DEMOLISH { shift->dbh->disconnect }

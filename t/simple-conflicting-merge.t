@@ -174,18 +174,6 @@ as_bob {
                     prop_changes => { status => { old_value => 'new', new_value => 'stalled' } }
                 },
 
-                replica_uuid_for('alice') => {
-                    change_type  => 'update_file',
-                    record_type    => $Prophet::Replica::MERGETICKET_METATYPE,
-                    prop_changes => {
-                        'last-changeset' => {
-                            old_value => ($alice->latest_sequence_no-1),
-                            new_value => $alice->latest_sequence_no
-                        }
-                        }
-
-                    }
-
                 }
 
         },

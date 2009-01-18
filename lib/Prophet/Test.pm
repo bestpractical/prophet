@@ -3,7 +3,7 @@ use warnings;
 
 package Prophet::Test;
 use base qw/Test::More Exporter/;
-our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_merge_tickets replica_uuid_for ok_added_revisions replica_uuid database_uuid database_uuid_for
+our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_uuid_for ok_added_revisions replica_uuid database_uuid database_uuid_for
     serialize_conflict serialize_changeset in_gladiator diag is_script_output run_command set_editor load_record
     /;
 
@@ -273,26 +273,6 @@ sub database_uuid {
     my $self = shift;
     my $cli  = Prophet::CLI->new();
     return eval { $cli->handle->db_uuid};
-}
-
-=head2 replica_merge_tickets
-
-Returns a hash of key-value pairs of the form 
-
- { uuid => revno,
-   uuid => revno,  
-}
-
-=cut
-
-sub replica_merge_tickets {
-    my $self    = shift;
-    my $cli     = Prophet::CLI->new();
-    require Prophet::Collection;
-    my $tickets = Prophet::Collection->new( handle => $cli->handle, type => $Prophet::Replica::MERGETICKET_METATYPE );
-    $tickets->matching( sub {1} );
-    return { map { $_->uuid => $_->prop('last-changeset') } $tickets->items };
-
 }
 
 sub replica_last_rev {

@@ -81,6 +81,8 @@ use constant changeset_cas_dir =>
 use constant record_dir      => 'records';
 use constant userdata_dir    => 'userdata';
 use constant changeset_index => 'changesets.idx';
+use constant local_metadata_dir => 'local_metadata';
+
 
 =head1 Replica Format
 
@@ -250,6 +252,26 @@ sub set_replica_version {
     );
 
     return $version;
+}
+
+
+sub store_local_metadata {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+    $self->_write_file(
+        path    =>File::Spec->catfile( $self->local_metadata_dir,  $key),
+        content => $value,
+    );
+
+
+}
+
+sub fetch_local_metadata {
+    my $self = shift;
+    my $key = shift;
+    $self->_read_file(File::Spec->catfile($self->local_metadata_dir, $key));
+
 }
 
 sub can_initialize {

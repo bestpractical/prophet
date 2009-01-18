@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 27;
+use Prophet::Test tests => 24;
 
 as_alice {
     run_ok( 'prophet', ['init']);
@@ -54,7 +54,6 @@ as_alice {
     is( scalar @out, 2, "We found only two rows of output" );
 
     is( replica_last_rev(), $last_rev, "We have not recorded another transaction" );
-    is_deeply( replica_merge_tickets(), { replica_uuid_for('bob') => as_bob { replica_last_rev() } } );
 
 };
 
@@ -77,13 +76,11 @@ as_bob {
     is( replica_last_rev, $last_rev + 1, "only one rev from alice is sycned" );
 
    # last rev of alice is originated from bob (us), so not synced to bob, hence the merge ticket is at the previous rev.
-    is_deeply( replica_merge_tickets(), { replica_uuid_for('alice') => as_alice { replica_last_rev() - 1 } } );
     $last_rev = replica_last_rev();
 
     diag('Sync from alice to bob again');
     run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
 
-    is_deeply( replica_merge_tickets(), { replica_uuid_for('alice') => as_alice { replica_last_rev() - 1 } } );
     is( replica_last_rev(), $last_rev, "We have not recorded another transaction after a second sync" );
 
 };

@@ -99,6 +99,29 @@ sub get_handle {
 }
 
 
+=head2 store_local_metadata KEY => VALUE
+
+Takes a key and a value.
+
+Store some bit of metadata in a durable local datastore.  Metadata isn't propagated
+when replicas are synced.
+
+Returns true or false.
+
+=cut
+
+=head2 fetch_local_metadata KEY
+
+Takes a scalar key.
+
+Fetches a bit of metadata from the local metadata store.
+
+Returns the value of the key found in the local metadata store. 
+
+Returns undef if there's no value for the key in the local metadata store.
+
+=cut
+
 sub replica_exists {
     return 1; # XXX TODO HACK
 }
@@ -315,22 +338,12 @@ sub record_changeset_and_integration {
     $self->begin_edit(source => $changeset);
     $self->record_changes($changeset);
 
-    $self->record_changeset_integration($changeset);
+    $self->record_integration_of_changeset($changeset);
 
     $self->_set_original_source_metadata_for_current_edit($changeset);
     $self->commit_edit;
 
     return;
-}
-
-sub record_changeset_integration {
-    my $self = shift;
-    my $changeset = shift;
-    my $state_handle = $self->state_handle;
-    my $inside_edit = $state_handle->current_edit ? 1 : 0;
-    $state_handle->begin_edit(source => $changeset) unless ($inside_edit);
-    $state_handle->record_integration_of_changeset($changeset);
-    $state_handle->commit_edit() unless ($inside_edit);
 }
 
 =head3 last_changeset_from_source $SOURCE_UUID
@@ -343,9 +356,12 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    my $last =  $self->state_handle->metadata_storage( $MERGETICKET_METATYPE, 'last-changeset' )->($source) || 0;
-    return $last;
+    return $self->fetch_local_metadata('last-changeset-from-'.$source)||0;
 }
+
+
+
+
 
 =head3 has_seen_changeset L<Prophet::ChangeSet>
 
@@ -922,7 +938,7 @@ sub record_integration_of_changeset {
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     # Record a merge ticket for the changeset's "original" source
-    return $self->_record_metadata_for( $MERGETICKET_METATYPE, $changeset->original_source_uuid, 'last-changeset', $changeset->original_sequence_no );
+    return $self->store_local_metadata('last-changeset-from-'.  $changeset->original_source_uuid => $changeset->original_sequence_no); 
 
 }
 

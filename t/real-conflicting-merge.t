@@ -209,19 +209,6 @@ sub check_bob_final_state_ok {
                             }
 
                     },
-                    as_alice {
-                        replica_uuid();
-                    } => {
-                        record_type    => $Prophet::Replica::MERGETICKET_METATYPE,
-                        change_type  => 'update_file',
-                        prop_changes => {
-                            'last-changeset' => {
-                                old_value => $ALICE_LAST_REV_CACHE - 1,
-                                new_value => $ALICE_LAST_REV_CACHE
-                            }
-                            }
-
-                    }
                 }
             },
 

@@ -25,6 +25,11 @@ sub BUILD {
     ));
 }
 
+sub fetch_local_metadata { shift->state_handle->fetch_local_metadata(@_)}
+sub store_local_metadata { shift->state_handle->store_local_metadata(@_)}
+
+
+
 sub conflicts_from_changeset { return; }
 sub can_write_changesets     {1}
 
