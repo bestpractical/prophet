@@ -703,7 +703,7 @@ sub _parse_format_summary {
 
             unless ($value =~ /^\$/) {
                 $value = $props->{$value}
-                      || "(no $value)"
+                      || "-"
             }
 
         } else {
