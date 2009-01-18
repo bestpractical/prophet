@@ -26,9 +26,7 @@ sub run {
     }
 
     $self->validate_args;
-    $self->set_arg( to => $self->cli->app_handle->default_replica_type
-            . ":file://"
-            . $self->handle->fs_root );
+    $self->set_arg( to =>  $self->handle->url );
 
     for my $from (grep { defined } ( @from, $self->find_bonjour_sources )) {
         print "Pulling from $from\n";
