@@ -519,7 +519,6 @@ sub _check_db_uuids_on_merge {
     }
 }
 
-
 =head3 should_send_changeset { to => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
 
 Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>.
@@ -941,81 +940,6 @@ sub record_integration_of_changeset {
     return $self->store_local_metadata('last-changeset-from-'.  $changeset->original_source_uuid => $changeset->original_sequence_no); 
 
 }
-
-=head2 metadata storage routines
-
-=head3 metadata_storage $RECORD_TYPE, $PROPERTY_NAME
-
-Returns a function which takes a UUID and an optional value to get (or set)
-metadata rows in a metadata table. We use this to record things like merge
-tickets.
-
-=cut
-
-sub metadata_storage {
-    my $self = shift;
-    my ( $type, $prop_name ) = validate_pos( @_, 1, 1 );
-    return sub {
-        my $uuid = shift;
-        if (@_) {
-            return $self->_record_metadata_for( $type, $uuid, $prop_name, @_ );
-        }
-        return $self->_retrieve_metadata_for( $type, $uuid, $prop_name );
-
-    };
-}
-
-=head3 _retrieve_metadata_for $RECORD_TYPE, $UUID, $PROPERTY_NAME
-
-Takes a record type, a UUID, and a metadata property name, and returns the
-value of C<$PROPERTY_NAME> for that record. Intended for use with
-metadata / state replicas.
-
-Returns undef if the record cannot be loaded.
-
-=cut
-
-sub _retrieve_metadata_for {
-    my $self = shift;
-    my ( $name, $source_uuid, $prop_name ) = validate_pos( @_, 1, 1, 1 );
-
-    require Prophet::Record;
-    my $entry = Prophet::Record->new( handle => $self, type => $name );
-    unless ( $entry->load( uuid => $source_uuid )) {
-        return undef;
-    }
-    return $entry->prop($prop_name);
-}
-
-=head3 _record_metadata_for NAME, UUID, PROP, CONTENT
-
-Stores CONTENT in the record UUID's PROP property. Intended for storing
-metadata in metadata / state replicas.
-
-=cut
-
-sub _record_metadata_for {
-    my $self = shift;
-    my ( $name, $source_uuid, $prop_name, $content )
-        = validate_pos( @_, 1, 1, 1, 1 );
-    $self->log_debug( "Storing $content in $prop_name for $name " . substr( $source_uuid, 0, 6 ) );
-
-    if ( !$self->record_exists( type => $name, uuid => $source_uuid ) ) {
-        $self->log_debug( "I don't have a $name for " . substr( $source_uuid, 0, 6 ) . "Creating it" );
-        $self->create_record(
-            uuid => $source_uuid,
-            type => $name, props => { $prop_name => $content }
-        );
-    } else {
-        $self->log_debug( "Setting $prop_name to $content for $name for " . substr( $source_uuid, 0, 6 ) );
-        $self->set_record_props(
-            uuid  => $source_uuid,
-            type  => $name,
-            props => { $prop_name => $content }
-        );
-    }
-}
-
 =head2 routines which need to be implemented by any Prophet backend store
 
 =head3 uuid
