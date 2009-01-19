@@ -102,7 +102,8 @@ sub handle_template_errors {
     ${ $args{'template_ref'} }
         = "=== errors in this $args{rtype} ====\n\n"
         . $args{error} . "\n\n"
-        . $args{bad_template};
+        . 'You can bypass validation for a property by appending a ! to it.'
+        . "\n\n" . $args{bad_template};
     return 0;
 }
 
