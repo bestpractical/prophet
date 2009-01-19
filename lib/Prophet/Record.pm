@@ -590,7 +590,9 @@ sub validate_prop_from_recommended_values {
     my $args = shift;
 
     if ( my @options = $self->recommended_values_for_prop($prop) ) {
-        return 1 if scalar grep { $args->{props}{$prop} eq $_ } @options;
+        return 1 if ((scalar grep { $args->{props}{$prop} eq $_ } @options)
+            # force-set props with ! to bypass validation
+            || $args->{props}{$prop} =~ s/!$//);
 
         $args->{errors}{$prop}
             = "'" . $args->{props}->{$prop} . "' is not a valid $prop";
