@@ -511,12 +511,25 @@ sub canonicalize_props {
     my $props  = shift;
     my $errors = {};
     for my $key ( uniq( keys %$props, $self->declared_props ) ) {
-        if ( my $sub = $self->can( 'canonicalize_prop_' . $key ) ) {
-            $sub->( $self, props => $props, errors => $errors );
-        }
+        $self->canonicalize_prop($key, $props, $errors);
     }
     return 1;
 }
+
+sub canonicalize_prop {
+    my $self = shift;
+    my $prop = shift;
+    my $props = shift;
+    my $errors = shift;
+        if ( my $sub = $self->can( 'canonicalize_prop_' . $prop ) ) {
+            $sub->( $self, props => $props, errors => $errors );
+            return 1;
+        }
+
+
+    return 0;
+}
+
 
 =head2 default_props $props_ref
 

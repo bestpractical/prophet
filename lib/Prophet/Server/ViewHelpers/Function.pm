@@ -49,11 +49,11 @@ has name => (
 
 
 
- sub new {
+sub new {
     my $self = shift->SUPER::new(@_);
     $self->name ( ($self->record->loaded ? $self->record->uuid : 'new') . "-" . $self->action ) unless ($self->name);
     return $self;
-};
+}
 
 sub render {
     my $self = shift;
@@ -78,7 +78,7 @@ sub render {
 }
 
 
-    __PACKAGE__->meta->make_immutable;
-    no Moose;
+__PACKAGE__->meta->make_immutable;
+no Moose;
 1;
 

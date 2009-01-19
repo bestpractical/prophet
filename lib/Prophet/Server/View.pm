@@ -41,35 +41,42 @@ sub server {
 
 
 template '_prophet_autocompleter' => sub {
-        my $self = shift;
-        my %args;
-        for (qw(q function record type class prop)) {
-            $args{$_} = $self->cgi->param($_);
-        }
-        my $obj = Prophet::Util->instantiate_record(
-            class      => $self->cgi->param('class'),
-            uuid       => $self->cgi->param('uuid'),
-            app_handle => $self->app_handle
-        );
-        
-        my @possible;
-        if ($obj->loaded) {
-            push @possible,$obj->prop($self->cgi->param('prop'));
-        }  else {
-            my $params = { $self->cgi->param('prop') => undef };
-            $obj->default_props($params);
-            push @possible, $params->{ $self->cgi->param('prop') };
-            # XXX fill in defaults;
-        }
-        
-        push @possible, $obj->recommended_values_for_prop($self->cgi->param('prop'));
-       
-       my %seen; 
-        for (grep {defined && !$seen{$_}++ } @possible) {
-                outs($_ ."\n");#." | ".$_."\n");
+    my $self = shift;
+    my %args;
+    for (qw(q function record type class prop)) {
+        $args{$_} = $self->cgi->param($_);
+    }
+    my $obj = Prophet::Util->instantiate_record(
+        class      => $self->cgi->param('class'),
+        uuid       => $self->cgi->param('uuid'),
+        app_handle => $self->app_handle
+    );
 
+    my @possible;
+    if ( $obj->loaded ) {
+        my $canon = { $args{prop} => $args{q} };
+        $obj->canonicalize_prop( $args{'prop'}, $canon, {} );
+        if ( $canon->{ $args{prop} } ne $args{q} ) {
+            push @possible, $canon->{ $args{'prop'} };
         }
-        
+
+        push @possible, $obj->prop( $args{'prop'} );
+    } else {
+        my $params = { $args{'prop'} => undef };
+        $obj->default_props($params);
+        push @possible, $params->{ $args{'prop'} };
+
+        # XXX fill in defaults;
+    }
+
+    push @possible, $obj->recommended_values_for_prop( $args{'prop'} );
+
+    my %seen;
+    for ( grep { defined && !$seen{$_}++ } @possible ) {
+        outs( $_ . "\n" );    #." | ".$_."\n");
+
+    }
+
 };
 
 

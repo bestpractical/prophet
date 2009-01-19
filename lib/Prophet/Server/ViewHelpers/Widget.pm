@@ -33,6 +33,8 @@ has type => ( isa => 'Maybe[Str]', is => 'rw');
 
 has autocomplete => (isa => 'Bool', is => 'rw', default => 1);
 
+has default => ( isa => 'Maybe[Str]', is => 'rw');
+
 sub render {
     my $self = shift;
 
@@ -42,7 +44,9 @@ sub render {
 
     my $value;
 
-    if ( $self->function->action eq 'create' ) {
+    if (defined $self->default) {
+        $value = $self->default;
+    } elsif ( $self->function->action eq 'create' ) {
         if ( my $method = $self->function->record->can( 'default_prop_' . $self->prop ) ) {
             $value = $method->( $self->function->record );
         } else {
