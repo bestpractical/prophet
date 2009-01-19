@@ -51,15 +51,15 @@ template '_prophet_autocompleter' => sub {
         uuid       => $self->cgi->param('uuid'),
         app_handle => $self->app_handle
     );
-
     my @possible;
-    if ( $obj->loaded ) {
+    if ( $obj) {
         my $canon = { $args{prop} => $args{q} };
         $obj->canonicalize_prop( $args{'prop'}, $canon, {} );
         if ( $canon->{ $args{prop} } ne $args{q} ) {
             push @possible, $canon->{ $args{'prop'} };
         }
-
+    }
+    if ( $obj->loaded ) {
         push @possible, $obj->prop( $args{'prop'} );
     } else {
         my $params = { $args{'prop'} => undef };
