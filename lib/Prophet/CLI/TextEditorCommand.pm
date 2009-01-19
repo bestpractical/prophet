@@ -4,6 +4,51 @@ use Params::Validate qw/validate/;
 
 requires 'process_template';
 
+=head2 separator_pattern
+
+A pattern that will match on lines that count as section separators
+in record templates. Separator string text is remembered as C<$1>.
+
+=cut
+
+use constant separator_pattern => qr/^=== (.*) ===$/;
+
+=head2 comment_pattern
+
+A pattern that will match on lines that count as comments in
+record templates.
+
+=cut
+
+use constant comment_pattern => qr/^\s*#/;
+
+=head2 build_separator $text
+
+Takes a string and returns it in separator form. A separator is a
+line of text that denotes a section in a template.
+
+=cut
+
+sub build_separator {
+    my $self = shift;
+    my $text = shift;
+
+    return "=== $text ===";
+}
+
+=head2 build_template_section header => '=== foo ===' [, data => 'bar']
+
+Takes a header text string and (optionally) a data string and formats
+them into a template section.
+
+=cut
+
+sub build_template_section {
+    my $self = shift;
+    my %args = validate (@_, { header => 1, data => 0 });
+    return $self->build_separator($args{'header'}) ."\n\n". ( $args{data} || '');
+}
+
 =head2 try_to_edit template => \$tmpl [, record => $record ]
 
 Edits the given template if possible. Passes the updated
@@ -55,7 +100,7 @@ sub handle_template_errors {
     $self->prompt_Yn("Whoops, an error occurred processing your $args{rtype}.\nTry editing again? (Errors will be shown.)") || die "Aborted.\n";
 
     ${ $args{'template_ref'} }
-        = "=== Errors in this $args{rtype} ====\n\n"
+        = "=== errors in this $args{rtype} ====\n\n"
         . $args{error} . "\n"
         . $args{bad_template};
     return 0;
