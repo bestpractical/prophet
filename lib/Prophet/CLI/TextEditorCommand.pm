@@ -101,7 +101,7 @@ sub handle_template_errors {
 
     ${ $args{'template_ref'} }
         = "=== errors in this $args{rtype} ====\n\n"
-        . $args{error} . "\n"
+        . $args{error} . "\n\n"
         . $args{bad_template};
     return 0;
 }
