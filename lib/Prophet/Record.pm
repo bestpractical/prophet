@@ -482,7 +482,7 @@ sub validate_props {
         }
     }
     if (@errors) {
-        die join( '', @errors )."\n";
+        die join( "\n", @errors )."\n";
     }
     return 1;
 }
@@ -593,7 +593,7 @@ sub validate_prop_from_recommended_values {
         return 1 if scalar grep { $args->{props}{$prop} eq $_ } @options;
 
         $args->{errors}{$prop}
-            = "'" . $args->{props}->{$prop} . "' is not a valid $prop\n";
+            = "'" . $args->{props}->{$prop} . "' is not a valid $prop";
         return 0;
     }
     return 1;
