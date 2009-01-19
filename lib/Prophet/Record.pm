@@ -593,7 +593,7 @@ sub validate_prop_from_recommended_values {
         return 1 if scalar grep { $args->{props}{$prop} eq $_ } @options;
 
         $args->{errors}{$prop}
-            = "'" . $args->{props}->{$prop} . "' is not a valid $prop";
+            = "'" . $args->{props}->{$prop} . "' is not a valid $prop\n";
         return 0;
     }
     return 1;
