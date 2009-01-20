@@ -106,9 +106,9 @@ sub handle_template_errors {
 
     ${ $args{'template_ref'} }
         = "$errors_pattern\n\n"
-        . $args{error} . "\n\n\n"
+        . $args{error} . "\n\n"
         . 'You can bypass validation for a property by appending a ! to it.'
-        . "\n\n" . $args{bad_template};
+        . "\n\n\n" . $args{bad_template};
     return 0;
 }
 
