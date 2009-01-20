@@ -41,7 +41,7 @@ sub run {
         my $result = $record->set_props( props => $new_props );
 
         if ($result) {
-            print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
+            print ucfirst($record->type) . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
 
         } else {
             print "SOMETHING BAD HAPPENED "
