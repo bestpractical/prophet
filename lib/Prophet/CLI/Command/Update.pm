@@ -30,17 +30,28 @@ sub run {
     my $record = $self->_load_record;
 
     my $new_props = $self->edit_record($record);
-    my $result = $record->set_props( props => $new_props );
 
-    if ($result) {
-        print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
+    # filter out props that haven't changed
+    for my $prop (keys %$new_props) {
+        delete $new_props->{$prop}
+            if ($record->prop($prop) eq $new_props->{$prop});
+    }
 
+    if (keys %$new_props) {
+        my $result = $record->set_props( props => $new_props );
+
+        if ($result) {
+            print $record->type . " " . $record->luid . " (".$record->uuid.")"." updated.\n";
+
+        } else {
+            print "SOMETHING BAD HAPPENED "
+                . $record->type . " "
+                . $record->luid . " ("
+                . $record->uuid
+                . ") not updated.\n";
+        }
     } else {
-        print "SOMETHING BAD HAPPENED "
-            . $record->type . " "
-            . $record->luid . " ("
-            . $record->uuid
-            . ") not updated.\n";
+        print "No properties changed.\n";
     }
 }
 
