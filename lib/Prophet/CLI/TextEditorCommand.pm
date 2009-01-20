@@ -85,7 +85,8 @@ Should be called in C<process_template> if errors (usually validation ones)
 occur while processing a record template. This method prompts the user to
 re-edit and updates the template given by C<template_ref> to contain the bad
 template (given by the arg C<bad_template> prefixed with the error messages
-given in the C<error> arg.
+given in the C<error> arg. If an errors section already exists in the
+template, it is replaced with an errors section containing the new errors.
 
 Other arguments are: C<rtype>: the type of the record being edited. All
 arguments are required.
@@ -96,12 +97,16 @@ sub handle_template_errors {
     my $self = shift;
     my %args = validate( @_, { error => 1, template_ref => 1,
                                bad_template => 1, rtype => 1 } );
+    my $errors_pattern = "=== errors in this $args{rtype} ===";
 
     $self->prompt_Yn("Whoops, an error occurred processing your $args{rtype}.\nTry editing again? (Errors will be shown.)") || die "Aborted.\n";
 
+    # if the bad template already has an errors section in it, remove it
+    $args{bad_template} =~ s/$errors_pattern.*?\n(?==== .*? ===\n)//s;
+
     ${ $args{'template_ref'} }
-        = "=== errors in this $args{rtype} ====\n\n"
-        . $args{error} . "\n\n"
+        = "$errors_pattern\n\n"
+        . $args{error} . "\n\n\n"
         . 'You can bypass validation for a property by appending a ! to it.'
         . "\n\n" . $args{bad_template};
     return 0;
