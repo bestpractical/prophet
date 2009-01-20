@@ -31,10 +31,17 @@ on '' => sub {
 };
 
 # publish foo@bar.com:www/baz => publish --to foo@bar.com:www/baz
-on qr{^publish (\S+)$} => sub {
+on qr{^(publish|push) (\S+)$} => sub {
     my $self = shift;
-    $self->context->set_arg(to => $1) if $1;
-    run('publish', $self);
+    $self->context->set_arg(to => $2);
+    run($1, $self);
+};
+
+# clone http://fsck.com/~jesse/sd-bugs => clone --to http://fsck.com/~jesse/sd-bugs
+on qr{^(clone|pull) (\S+)$} => sub {
+    my $self = shift;
+    $self->context->set_arg(from => $2);
+    run($1, $self);
 };
 
 on [ ['create', 'new'] ]         => run_command("Create");
