@@ -34,7 +34,7 @@ sub run {
     # filter out props that haven't changed
     for my $prop (keys %$new_props) {
         delete $new_props->{$prop}
-            if ($record->prop($prop) eq $new_props->{$prop});
+            if (($record->prop($prop) || '') eq $new_props->{$prop});
     }
 
     if (keys %$new_props) {
