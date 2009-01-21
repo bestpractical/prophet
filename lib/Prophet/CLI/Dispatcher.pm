@@ -37,7 +37,7 @@ on qr{^(publish|push) (\S+)$} => sub {
     run($1, $self);
 };
 
-# clone http://fsck.com/~jesse/sd-bugs => clone --to http://fsck.com/~jesse/sd-bugs
+# clone http://fsck.com/~jesse/sd-bugs => clone --from http://fsck.com/~jesse/sd-bugs
 on qr{^(clone|pull) (\S+)$} => sub {
     my $self = shift;
     $self->context->set_arg(from => $2);
