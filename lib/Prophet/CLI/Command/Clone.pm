@@ -5,6 +5,8 @@ extends 'Prophet::CLI::Command::Merge';
 sub run {
     my $self = shift;
 
+    $self->validate_args();
+
     $self->set_arg( 'to' => $self->app_handle->handle->url() );
 
     my $source = Prophet::Replica->get_handle(
@@ -42,6 +44,12 @@ sub run {
     $self->app_handle->config->save;
 
     $self->SUPER::run();
+}
+
+sub validate_args {
+    my $self = shift;
+    die "Please specify a --from.\n"
+        unless $self->has_arg('from');
 }
 
 # When we clone from another replica, we ALWAYS want to take their way forward,
