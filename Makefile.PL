@@ -39,7 +39,7 @@ features(
     ],
     'Web server' => [
         -default => 1,
-        'File::ShareDir',
+        'File::ShareDir' => '1.00',
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
     ],
 
