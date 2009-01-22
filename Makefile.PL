@@ -45,7 +45,7 @@ features(
 
     'HTML display' => [
         -default => 1,
-        'Template::Declare', # Template::Declare::Tags
+        'Template::Declare' => '0.35', # Template::Declare::Tags
     ],
     'Foreign replica support' => [
         -default => 1,
