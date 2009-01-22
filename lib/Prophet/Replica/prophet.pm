@@ -602,16 +602,6 @@ sub _write_changeset {
 
 }
 
-=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
-
-Walks through all changesets after $after, calling $callback on each.
-
-
-=cut
-
-# each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-#                  4                    16              4                 20
-
 use constant CHG_RECORD_SIZE => ( 4 + 16 + 4 + 20 );
 
 sub _get_changeset_index_entry {
@@ -644,6 +634,15 @@ sub _get_changeset_index_entry {
 
     return $changeset;
 }
+
+=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
+
+Walks through all changesets after $after, calling $callback on each.
+
+=cut
+
+# each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
+#                  4                    16              4                 20
 
 sub traverse_changesets {
     my $self = shift;
