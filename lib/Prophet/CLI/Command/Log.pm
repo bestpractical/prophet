@@ -4,6 +4,9 @@ extends 'Prophet::CLI::Command';
 
 sub run {
     my $self   = shift;
+
+    $self->validate_args;
+
     my $handle = $self->handle;
     my $newest = $self->arg('last') || $handle->latest_sequence_no;
     my $start  = $newest - ( $self->arg('count') || '20' );
@@ -19,6 +22,15 @@ sub run {
 
 }
 
+sub validate_args {
+    my $self = shift;
+    if ($self->has_arg('last') && $self->arg('last') !~ /\d+/) {
+        die "Value passed to --last must be a number.\n";
+    }
+    if ($self->has_arg('count') && $self->arg('count') !~ /\d+/) {
+        die "Value passed to --count must be a number.\n";
+    }
+}
 
 sub handle_changeset {
     my $self      = shift;
