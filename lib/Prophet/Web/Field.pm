@@ -17,7 +17,8 @@ sub _render_attr {
     my $self = shift;
     my $attr = shift;
     my $value = $self->$attr() || return '';
-    return $attr . '="' . $self->$attr() . '"';
+    Prophet::Util::escape_utf8(\$value);
+    return $attr . '="' . $value . '"';
 }
 
 sub render_name {
