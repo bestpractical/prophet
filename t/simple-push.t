@@ -14,7 +14,7 @@ as_alice {
     );
     run_output_matches(
         'prophet', [qw(search --type Bug --regex .)],
-        [qr/new/], " Found our record"
+        [qr/new/], [], "Found our record"
     );
 
     # update the record
@@ -31,11 +31,11 @@ as_bob {
         "Created a record as bob"
     );
     run_output_matches( 'prophet', [qw(search --type Bug --regex new-alice)],
-        [ qr/new-alice/ ], " Found our record"
+        [ qr/new-alice/ ], [], "Found our record"
     );
 
     run_output_matches( 'prophet', [qw(search --type Bug --regex open-bob)],
-        [ qr/open-bob/ ], " Found our record"
+        [ qr/open-bob/ ], [], "Found our record"
     );
 
 

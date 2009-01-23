@@ -9,7 +9,7 @@ use Test::Exception;
 as_alice {
     run_ok('prophet', [qw(init)]);
     run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
 };
 
 diag('Bob syncs from alice');
@@ -45,7 +45,7 @@ as_bob {
               'from: alice',
               'original_replica: ' . replica_uuid_for('alice'),
               'status: stalled',
-        ],
+        ], [],
         'content is correct'
     );
 

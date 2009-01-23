@@ -40,7 +40,7 @@ as_bob {
           'from: alice',
           'original_replica: ' . replica_uuid_for('alice'),
           'status: stalled',
-        ],
+        ], [],
         'content is correct'
     );
 };
@@ -57,7 +57,7 @@ as_alice {
               'from: alice',
               'original_replica: ' . replica_uuid_for('alice'),
               'status: open',
-        ],
+        ], [],
         'content is correct'
     );
 

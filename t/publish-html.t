@@ -16,9 +16,10 @@ as_alice {
     run_output_matches( 'prophet',
         [qw(create --type Bug -- --status new --from alice --summary), 'this is a template test'],
         [qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/],
+        [],
         "Created a Bug record as alice");
     ok($bug_uuid, "got a uuid for the Bug record");
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], " Found our record" );
+    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
 
     run_ok( 'prophet', [qw(publish --html --to), $alice_published] );
 };
