@@ -16,11 +16,16 @@ sub run {
     }
 
     my $settings = $self->app_handle->database_settings;
-    my %settings_by_name = map { $settings->{$_}->[0] => $_ } keys %$settings;
 
     if ( $self->context->has_arg('set') ) {
         for my $name ( $self->context->prop_names ) {
-            my $uuid      = $settings->{$name}->[0];
+            my $uuid;
+            if ($settings->{$name}) {
+                $uuid      = $settings->{$name}->[0];
+            } else {
+                print "Setting \"$name\" does not exist, skipping.\n";
+                next;
+            }
             my $s         = $self->app_handle->setting( uuid => $uuid );
             my $old_value = $s->get_raw;
             my $new_value = $self->context->props->{$name};
@@ -28,7 +33,9 @@ sub run {
               . " from $old_value to $new_value.\n";
             if ( $old_value ne $new_value ) {
                 $s->set( from_json( $new_value, { utf8 => 1 } ) );
-                print "Changed " . $name . " from $old_value to $new_value.\n";
+                print " -> Changed.\n";
+            } else {
+                print " -> No change needed.\n";
             }
         }
         return;
@@ -121,20 +128,38 @@ sub process_template {
 
     no warnings 'uninitialized';
     my $settings = $self->app_handle->database_settings;
+    my %settings_by_uuid = map { uc($settings->{$_}->[0]) => $_ } keys %$settings;
+
+    my $settings_changed = 0;
 
     for my $uuid ( keys %$config ) {
-        my $s         = $self->app_handle->setting( uuid => $uuid );
+        # the parsed template could conceivably contain nonexistent uuids
+        my $s;
+        if ($settings_by_uuid{uc($uuid)}) {
+            $s = $self->app_handle->setting( uuid => $uuid );
+        } else {
+            print "Setting with uuid \"$uuid\" does not exist.\n";
+            next;
+        }
         my $old_value = $s->get_raw;
         my $new_value = $config->{$uuid}->[1];
         chomp $new_value;
         if ( $old_value ne $new_value ) {
-            $s->set( from_json( $new_value, { utf8 => 1 } ) );
-            print "Changed "
-              . $config->{$uuid}->[0]
-              . " from $old_value to $new_value.\n";
+            eval {
+                $s->set( from_json( $new_value, { utf8 => 1 } ) );
+                print "Changed "
+                . $config->{$uuid}->[0]
+                . " from $old_value to $new_value.\n";
+                $settings_changed++;
+            };
+            if ($@) {
+                # error parsing the JSON
+                print 'An error occured setting '.$settings_by_uuid{$uuid}." to $new_value: $@";
+            }
         }
 
     }
+    print "No settings changed.\n" unless $settings_changed;
     return 1;
 }
 
