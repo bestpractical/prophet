@@ -183,7 +183,6 @@ sub register_record_reference {
         my $record = $record_class->new(
             app_handle => $self->app_handle,
             handle     => $self->handle,
-            type       => $record_class->type,
         );
         $record->load(uuid => $self->prop($args{by}));
         return $record;

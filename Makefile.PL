@@ -39,13 +39,13 @@ features(
     ],
     'Web server' => [
         -default => 1,
-        'File::ShareDir',
+        'File::ShareDir' => '1.00',
         'HTTP::Server::Simple', # HTTP::Server::Simple::CGI
     ],
 
     'HTML display' => [
         -default => 1,
-        'Template::Declare', # Template::Declare::Tags
+        'Template::Declare' => '0.35', # Template::Declare::Tags
     ],
     'Foreign replica support' => [
         -default => 1,

@@ -158,6 +158,9 @@ Helper function to test whether a given class has already been require'd.
 
 sub already_required {
     my ($self, $class) = @_;
+
+    return 0 if $class =~ /::$/;    # malformed class
+
     my $path =  join('/', split(/::/,$class)).".pm";
     return ( $INC{$path} ? 1 : 0);
 }
