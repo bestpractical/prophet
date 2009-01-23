@@ -220,17 +220,7 @@ sub is_script_output {
         _mk_cmp_closure( $exp_stderr, $stdout_err ),    # stderr
     );
 
-    for my $line (@$exp_stdout) {
-        next if !defined $line;
-        push @$stdout_err, "got nothing, expected: $line";
-    }
-
-    my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$args );
-    is(scalar(@$stdout_err), 0, $test_name);
-
-    if (@$stdout_err) {
-        diag( "Different in line: " . join( "\n", @$stdout_err ) );
-    }
+    _check_cmp_closure_output($script, $msg, $args, $exp_stdout, $stdout_err);
 }
 
 =head2 _mk_cmp_closure($expected, $error)
@@ -272,6 +262,30 @@ sub _mk_cmp_closure {
     }
 }
 
+# factored out so it can be shared between is_script_output
+# and run_script_matches_unordered
+
+# XXX note that this sub doesn't check to make sure we got
+# all the errors we were expecting (there can be more lines
+# in the expected stderr than the received stderr as long
+# as they match up until the end of the received stderr --
+# the same isn't true of stdout)
+sub _check_cmp_closure_output {
+    my ($script, $msg, $args, $exp_stdout, $stdout_err) = @_;
+
+    for my $line (@$exp_stdout) {
+        next if !defined $line;
+        push @$stdout_err, "got nothing, expected: $line";
+    }
+
+    my $test_name = join( ' ', $msg ? "$msg:" : '', $script, @$args );
+    is(scalar(@$stdout_err), 0, $test_name);
+
+    if (@$stdout_err) {
+        diag( "Different in line: " . join( "\n", @$stdout_err ) );
+    }
+}
+
 =head2 run_output_matches($script, $args, $exp_stdout, $exp_stderr, $msg)
 
 A wrapper around L<is_script_output> that also checks to make sure
@@ -288,30 +302,35 @@ sub run_output_matches {
     };
 }
 
-=head2 run_output_matches_unordered($scriptname, \@args, \@exp_stdout)
+=head2 run_output_matches_unordered($script, $args, $exp_stdout, $exp_stderr, $msg)
 
-Runs the given script and checks to make sure that the output
-matches, but the output lines don't necessarily have to be in the same order.
-
-$scriptname is the name of the script to be run (e.g. 'prophet'), $args
-is a reference to an array of arguments to pass to the command, and
-$exp_stdout is a reference to an array of expected output lines.
-
-Line matches are determined through string equality.
+This subroutine has exactly the same functionality as run_output_matches, but
+doesn't impose a line ordering when comparing the expected and received
+outputs.
 
 =cut
 
 sub run_output_matches_unordered {
-    my $cmd = shift;
-    my $args = shift;
-    my $output = shift;
+    my ($cmd, $args, $stdout, $stderr, $msg) = @_;
+
     my ($val, $out, $err)  = run_script( $cmd, $args );
 
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
-    my @sorted_out = sort split(/\n/,$$out);
-    my @sorted_exp = sort @$output;
-    is_deeply(\@sorted_out, \@sorted_exp);
+    # in order to not force an ordering on the output, we sort both
+    # the expected and received output before comparing them
+    my $sorted_exp_out = [sort @$stdout];
+    my $sorted_exp_err = [sort @$stderr];
+
+    # compare and put errors into $error
+    my $error = [];
+    my $check_exp_out = _mk_cmp_closure($sorted_exp_out, $error);
+    my $check_exp_err = _mk_cmp_closure($sorted_exp_err, $error);
+
+    map { $check_exp_out->($_) } sort split(/\n/,$$out);
+    map { $check_exp_err->($_) } sort split(/\n/,$$err);
+
+    _check_cmp_closure_output($cmd, $msg, $args, $sorted_exp_out, $error);
 }
 
 =head2 repo_path_for($username)
