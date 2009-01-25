@@ -134,6 +134,7 @@ sub display_terminal {
     my $groups = $self->group_routine->( [$records->items] );
 
     foreach my $group ( @{$groups} ) {
+        next unless (exists $group->{records}->[0]); # skip headings with no records
         $group->{label}  ||= 'none';
         if ( $#{$groups} &&  $group->{label} ) {
             print "\n"
