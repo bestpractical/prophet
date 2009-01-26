@@ -187,7 +187,7 @@ sub parse_args {
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
     $self->set_arg( id => pop @primary )
-        if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-)/i;
+        if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$/i;
 
     my $collecting_props = 0;
 
