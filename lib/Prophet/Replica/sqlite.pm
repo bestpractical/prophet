@@ -383,10 +383,11 @@ sub _delete_record_props_from_db {
 
 }
 
-=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
+=head2 traverse_changesets { after => SEQUENCE_NO, UNTIL => SEQUENCE_NO, callback => sub { } } 
 
-Walks through all changesets after $after, calling $callback on each.
+Walks through all changesets from $after to $until, calling $callback on each.
 
+If no $until is specified, the latest changeset is assumed.
 
 =cut
 
@@ -396,11 +397,14 @@ sub traverse_changesets {
         @_,
         {   after    => 1,
             callback => 1,
+            until    => 0,
         }
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $latest = $self->latest_sequence_no();
+    my $latest = $args{until} ? $args{until} : $self->latest_sequence_no();
+
+    $latest = $self->latest_sequence_no() if $latest > $self->latest_sequence_no();
 
     $self->log_debug("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {

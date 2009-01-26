@@ -724,7 +724,7 @@ sub _read_luid2guid_mappings {
     return \%luid2guid;
 }
 
-=head3 traverse_changesets { after => SEQUENCE_NO, callback => sub {} }
+=head3 traverse_changesets { after => SEQUENCE_NO, until => SEQUENCE_NO, callback => sub {} }
 
 Walk through each changeset in the replica after SEQUENCE_NO, calling the
 C<callback> for each one in turn.
