@@ -84,6 +84,7 @@ sub css {
 sub js {
     return
      '/static/prophet/jquery/js/jquery-1.2.6.min.js',
+     '/static/prophet/jquery/js/pretty.js', 
      '/static/prophet/jquery/js/hoverIntent.js', 
      '/static/prophet/jquery/js/jquery.bgiframe.min.js', 
      '/static/prophet/jquery/js/jquery-autocomplete.js', 
