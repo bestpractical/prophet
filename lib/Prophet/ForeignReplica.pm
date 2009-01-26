@@ -12,21 +12,19 @@ This abstract baseclass implements the helpers you need to be able to easily syn
 
 =cut
 
-sub BUILD {
-    my $self = shift;
-    my $state_handle_url =       $self->app_handle->handle->url;
-    $self->log( "Connecting to state database ".$state_handle_url);
-    $self->state_handle(
-        Prophet::Replica->get_handle(
-               url => $state_handle_url,
-                db_uuid => $self->state_db_uuid,
-                app_handle => $self->app_handle
-        
-    ));
-}
+sub fetch_local_metadata { my $self = shift;
+    my $key = shift;
+    $self->app_handle->handle->fetch_local_metadata( $self->uuid . "-".$key )
+    
+    }
+sub store_local_metadata { my $self = shift;
+    my $key = shift;
+    my $value = shift;
+   $self->app_handle->handle->store_local_metadata( $self->uuid."-".$key => $value);
+    
+    
+    }
 
-sub fetch_local_metadata { shift->state_handle->fetch_local_metadata(@_)}
-sub store_local_metadata { shift->state_handle->store_local_metadata(@_)}
 
 
 
@@ -107,7 +105,15 @@ sub has_seen_changeset {
     # Has our host replica given this changeset to us yet?
     # XXX TODO - should actually be checking the changeset id and the record id in a lookup table
     # of all the changesets that may have come from the source
-    return $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no;
+    #
+    if ($changeset->original_source_uuid eq $self->uuid) { return 1}
+
+    if ($self->last_changeset_from_source($changeset->original_source_uuid) >= $changeset->original_sequence_no) { 
+        # XXX TODO - don't need this, right? || $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no ) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 sub log {

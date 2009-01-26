@@ -7,11 +7,6 @@ use constant state_db_uuid => 'state';
 
 use Prophet::App;
 
-has state_handle => (
-    is  => 'rw',
-    isa => 'Prophet::Replica',
-);
-
 has metadata_store => (
     is => 'rw',
     isa => 'Prophet::MetadataStore',
@@ -29,12 +24,6 @@ has is_resdb => (
     is  => 'rw',
     isa => 'Bool',
     documentation => 'Whether this replica is a resolution db or not.'
-);
-
-has is_state_handle => (
-    is  => 'rw',
-    isa => 'Bool',
-    documentation => 'Whether this replica is a state handle or not.',
 );
 
 has db_uuid => (
@@ -174,8 +163,6 @@ sub import_changesets {
 
     my $source = $args{'from'};
 
-    # they have no changes, that means they're probably creating a new replica
-    # of a database, so copy the db_uuid
     warn "The source does not exist" unless ($source->replica_exists);
 
     $source->traverse_new_changesets(
@@ -260,6 +247,7 @@ sub integrate_changeset {
 
     my $changeset = $args{'changeset'};
 
+
     $self->log_debug("Considering changeset ".$changeset->original_sequence_no .
         " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
 
@@ -274,13 +262,18 @@ sub integrate_changeset {
     #   - merge tickets for the same
     # we'll want to skip or remove those changesets
 
-    return if $changeset->original_source_uuid eq $self->uuid;
-    return if ($changeset->is_nullification);
 
-    $self->remove_redundant_data($changeset);    #Things we have already seen
-    return unless $changeset->has_changes;
+    if (   $changeset->is_nullification || !$changeset->has_changes ) {
+        # if it's a changeset we don't care about, mark it as seen and move on
+        $self->record_integration_of_changeset($changeset);
+        return;
 
-    if ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
+    }  elsif ( $self->has_seen_changeset($changeset) ) {
+               $self->record_integration_of_changeset($changeset);
+        return;
+        }
+
+    elsif ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
         $self->log_debug("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
@@ -311,12 +304,13 @@ sub integrate_changeset {
 
         $args{'reporting_callback'}->( changeset => $changeset,
             conflict => $conflict ) if ( $args{'reporting_callback'} );
-
+        return 1;
     } else {
         $self->log_debug("Integrating changeset ".$changeset->original_sequence_no .
             " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
+        return 1;
     }
 }
 
@@ -436,37 +430,6 @@ sub conflicts_from_changeset {
     return $conflict;
 }
 
-=head3 remove_redundant_data L<Prophet::Changeset>
-
-Prunes unnecessary data from this changeset as a sanity check (merge tickets
-from foreign replicas, resolution records in non-resolution databases, changes
-we've already seen).
-
-=cut
-
-sub remove_redundant_data {
-    my ( $self, $changeset ) = @_;
-
-    my @new_changes;
-    for my $change ($changeset->changes) {
-            # when would we run into resolution records in a nonresdb? XXX
-            next if ($change->record_type eq '_prophet_resolution' && !$self->is_resdb);
-
-            # never integrate a merge ticket that comes from a foreign database.
-            # implict merge tickets are the devil and are lies. Merge tickets are
-            # always generated locally by importing a change that originated on
-            # that replica.
-            # (The actual annoying technical problem is that the
-            # locally created merge ticket is written out in a separate
-            # transaction at ~ at the same time as the original imported one is
-            # being written. This makes svn go boom.)
-            next if ( $change->record_type eq $MERGETICKET_METATYPE); # && $change->record_uuid eq $self->uuid );
-            push (@new_changes, $change);
-    }
-
-    $changeset->changes(\@new_changes);
-}
-
 =head3 traverse_new_changesets ( for => $replica, callback => sub { my $changeset = shift; ... } )
 
 Traverse the new changesets for C<$replica> and call C<callback> for each new
@@ -492,9 +455,7 @@ sub traverse_new_changesets {
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
         callback => sub {
-            $args{callback}->( $_[0] ) if $self->should_send_changeset(
-                changeset => $_[0], to => $args{for}
-            );
+            $args{callback}->( $_[0] )   if $self->should_send_changeset( changeset => $_[0], to => $args{for});
         }
     );
 }
@@ -936,10 +897,17 @@ sub record_integration_of_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    # Record a merge ticket for the changeset's "original" source
-    return $self->store_local_metadata('last-changeset-from-'.  $changeset->original_source_uuid => $changeset->original_sequence_no); 
-
+    if ( $changeset->original_source_uuid ne $self->uuid && 
+        ( $self->last_changeset_from_source( $changeset->original_source_uuid ) < $changeset->original_sequence_no ) )
+    {
+        return $self->store_local_metadata( 'last-changeset-from-' . $changeset->original_source_uuid => $changeset->original_sequence_no );
+    }
+    if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
+        return $self->store_local_metadata( 'last-changeset-from-' . $changeset->source_uuid => $changeset->sequence_no );
+    }
 }
+
+
 =head2 routines which need to be implemented by any Prophet backend store
 
 =head3 uuid

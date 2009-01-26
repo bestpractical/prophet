@@ -62,7 +62,7 @@ has '+resolution_db_handle' => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return if $self->is_resdb || $self->is_state_handle;
+        return if $self->is_resdb ;
         return Prophet::Replica->get_handle(
             {   url        => "prophet:" . $self->url . '/resolutions',
                 app_handle => $self->app_handle,
@@ -219,8 +219,6 @@ sub BUILD {
     }
 
 }
-
-sub state_handle { return shift; }
 
 =head2 replica_exists
 
