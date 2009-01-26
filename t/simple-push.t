@@ -68,6 +68,7 @@ as_bob {
             $alice->uuid
             )
     );
+    diag("As alice, my latest sequence # is " .$alice->latest_sequence_no);
     is( $bob->last_changeset_from_source( $alice->uuid ) =>
             $alice->latest_sequence_no );
 
@@ -79,17 +80,16 @@ $bob->traverse_new_changesets(
     force    => 1,
     callback => sub {
         my $cs = shift;
-        return unless $cs->has_changes, push @{$changesets}, $cs->as_hash;
+        return unless $bob->should_send_changeset( changeset => $cs, to => $alice);
+        return unless $cs->has_changes;
+        push @{$changesets}, $cs->as_hash;
     }
 );
 
 my $seq      = delete $changesets->[0]->{'sequence_no'};
 my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
 is( $seq, $orig_seq );
-
-is_deeply(
-    $changesets,
-    [   {    #'sequence_no'          => 3,
+my $cs_data =    [   {    #'sequence_no'          => 3,
              #'original_sequence_no' => 3, # the number is different on different replica types
             'creator'              => 'bob',
             'created'              => $changesets->[0]->{created},
@@ -122,8 +122,11 @@ is_deeply(
             },
             'is_nullification' => undef,
         }
-    ]
-);
+    ];
+
+
+is_deeply( $changesets,$cs_data);
+
 
 # Alice syncs
 
