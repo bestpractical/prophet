@@ -263,7 +263,7 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
 
 
-    if (   $changeset->is_nullification || !$changeset->has_changes ) {
+    if (   $changeset->is_resolution || $changeset->is_nullification || !$changeset->has_changes ) {
         # if it's a changeset we don't care about, mark it as seen and move on
         $self->record_integration_of_changeset($changeset);
         return;
@@ -455,7 +455,7 @@ sub traverse_new_changesets {
     $self->traverse_changesets(
         after    => $args{for}->last_changeset_from_source( $self->uuid ),
         callback => sub {
-            $args{callback}->( $_[0] )   if $self->should_send_changeset( changeset => $_[0], to => $args{for});
+            $args{callback}->( $_[0] ) ;#  if $self->should_send_changeset( changeset => $_[0], to => $args{for});
         }
     );
 }
