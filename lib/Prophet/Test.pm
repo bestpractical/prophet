@@ -320,15 +320,15 @@ sub run_output_matches_unordered {
     # in order to not force an ordering on the output, we sort both
     # the expected and received output before comparing them
     my $sorted_exp_out = [sort @$stdout];
-    my $sorted_exp_err = [sort @$stderr];
+    my $sorted_exp_err = [sort @{$stderr||[]} ];
 
     # compare and put errors into $error
     my $error = [];
     my $check_exp_out = _mk_cmp_closure($sorted_exp_out, $error);
     my $check_exp_err = _mk_cmp_closure($sorted_exp_err, $error);
 
-    map { $check_exp_out->($_) } sort split(/\n/,$$out);
-    map { $check_exp_err->($_) } sort split(/\n/,$$err);
+    map { $check_exp_out->($_) } sort split(/\n/,$out);
+    map { $check_exp_err->($_) } sort split(/\n/,$err);
 
     _check_cmp_closure_output($cmd, $msg, $args, $sorted_exp_out, $error);
 }
