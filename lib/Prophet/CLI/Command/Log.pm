@@ -2,17 +2,38 @@ package Prophet::CLI::Command::Log;
 use Moose;
 extends 'Prophet::CLI::Command';
 
+# Default: last 20 entries.
+# sd log --all                    # show it all (overrides everything else)
+# sd log --range 0..LATEST~5      # shows the first until 5 from the latest
+# sd log --range LATEST~10        # shows last 10 entries
+# sd log --range LATEST           # shows the latest entry
+
+# syntactic sugar in dispatcher:
+#  sd log 0..LATEST~5 => sd log --range 0..LATEST~5
+#  sd log LATEST~10   => sd log --range LATEST~10
+
 sub run {
     my $self   = shift;
-
-    $self->validate_args;
-
     my $handle = $self->handle;
-    my $newest = $self->arg('last') || $handle->latest_sequence_no;
-    my $start  = $newest - ( $self->arg('count') || '20' );
+
+    # --all overrides any other args
+    if ($self->has_arg('all')) {
+        $self->set_arg('range', '0..'.$handle->latest_sequence_no);
+    }
+
+    my ($start, $end) = $self->has_arg('range') ? $self->parse_range_arg() :
+        ($handle->latest_sequence_no - 20, $handle->latest_sequence_no);
+
+    # parse_range returned undef
+    die "Invalid range specified.\n" if !defined($start) || !defined($end);
+
     $start = 0 if $start < 0;
+
+    die "START must be before END in START..END.\n" if $end - $start < 0;
+
     $handle->traverse_changesets(
-        after    => $start,
+        after    => $start - 1,
+        until    => $end,
         callback => sub {
             my $changeset = shift;
             $self->handle_changeset($changeset);
@@ -22,14 +43,65 @@ sub run {
 
 }
 
-sub validate_args {
+=head2 parse_range_arg
+
+Parses the string in the 'range' arg into start and end sequence numbers
+and returns them in that order.
+
+Returns undef if the string is malformed.
+
+=cut
+
+sub parse_range_arg {
     my $self = shift;
-    if ($self->has_arg('last') && $self->arg('last') !~ /\d+/) {
-        die "Value passed to --last must be a number.\n";
+    my $range = $self->arg('range');
+
+    # split on .. (denotes range)
+    my @start_and_end = split(/\.\./, $range, 2);
+    my ($start, $end);
+    if (@start_and_end == 1) {
+        # only one delimiter was specified -- this will be the
+        # START; END defaults to the latest
+        $end = $self->handle->latest_sequence_no;
+        $start = $self->_parse_delimiter($start_and_end[0]);
+    } elsif (@start_and_end == 2) {
+        # both delimiters were specified
+        # parse the first one as START
+        $start = $self->_parse_delimiter($start_and_end[0]);
+        # parse the second one as END
+        $end = $self->_parse_delimiter($start_and_end[1]);
+    } else {
+        # something wrong was specified
+        return undef;
     }
-    if ($self->has_arg('count') && $self->arg('count') !~ /\d+/) {
-        die "Value passed to --count must be a number.\n";
+    return ($start, $end);
+}
+
+=head2 _parse_delimiter($delim)
+
+Takes a delimiter string and parses into a sequence number. If
+it is not either an integer number or of the form LATEST~#,
+returns undef (invalid delimiter).
+
+=cut
+
+sub _parse_delimiter {
+    my ($self, $delim) = @_;
+
+    if ($delim =~ m/^\d+$/) {
+        # a sequence number was specified, just use it
+        return $delim;
+    } else {
+        # try to parse what was given as LATEST~#
+        # if it's just LATEST, we want only the last change
+        my $offset;
+        $offset = 0 if $delim eq 'LATEST';
+        (undef, $offset) = split(/~/, $delim, 2) if $delim =~ m/^LATEST~/;
+        return undef unless $offset =~ m/^\d+$/;
+
+        return $self->handle->latest_sequence_no - $offset;
     }
+    return undef;
 }
 
 sub handle_changeset {

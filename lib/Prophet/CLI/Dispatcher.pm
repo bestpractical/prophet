@@ -44,6 +44,13 @@ on qr{^(clone|pull) (\S+)$} => sub {
     run($1, $self);
 };
 
+# log range => log --range range
+on qr{log\s*([0-9LATEST.~]+)} => sub {
+    my $self = shift;
+    $self->context->set_arg(range => $1);
+    run('log', $self);
+};
+
 on [ ['create', 'new'] ]         => run_command("Create");
 on [ ['show', 'display'] ]       => run_command("Show");
 on [ ['update', 'edit'] ]        => run_command("Update");
