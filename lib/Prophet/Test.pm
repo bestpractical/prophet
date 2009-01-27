@@ -262,9 +262,6 @@ sub _mk_cmp_closure {
     }
 }
 
-# factored out so it can be shared between is_script_output
-# and run_script_matches_unordered
-
 # XXX note that this sub doesn't check to make sure we got
 # all the errors we were expecting (there can be more lines
 # in the expected stderr than the received stderr as long
@@ -312,25 +309,56 @@ outputs.
 
 sub run_output_matches_unordered {
     my ($cmd, $args, $stdout, $stderr, $msg) = @_;
+    $stderr ||= [];
 
     my ($val, $out, $err)  = run_script( $cmd, $args );
 
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
-    # in order to not force an ordering on the output, we sort both
-    # the expected and received output before comparing them
-    my $sorted_exp_out = [sort @$stdout];
-    my $sorted_exp_err = [sort @{$stderr||[]} ];
+    # Check if each line matches a line in the expected output and
+    # delete that line if we have a match. If no match is found,
+    # add an error.
+    my $errors = [];
+    my @lines = split /\n/, $out;
+    OUTPUT: while (my $line = shift @lines) {
+        for my $exp_line (@$stdout) {
+            if ((ref($exp_line) eq 'Regexp' ? ( $line =~ m/$exp_line/ ) :
+                                            ( $line eq $exp_line ))) {
+                # remove the found element from the array of expected output
+                $stdout = [grep { $_ ne $exp_line } @$stdout];
+                next OUTPUT;
+            }
+        }
+        # we didn't find a match
+        push @$errors, "couldn't find match for ($line)\n";
+    }
 
-    # compare and put errors into $error
-    my $error = [];
-    my $check_exp_out = _mk_cmp_closure($sorted_exp_out, $error);
-    my $check_exp_err = _mk_cmp_closure($sorted_exp_err, $error);
+    # do the same for STDERR
+    @lines = split /\n/, $err;
+    ERROR: while (my $line = shift @lines) {
+        for my $exp_line (@$stderr) {
+            if ((ref($exp_line) eq 'Regexp' ? ( $line =~ m/$exp_line/ ) :
+                                            ( $line eq $exp_line ))) {
+                # remove the found element from the array of expected output
+                $stderr = [grep { $_ ne $exp_line } @$stderr];
+                next ERROR;
+            }
+        }
+        # we didn't find a match
+        push @$errors, "couldn't find match for ($line)\n";
+    }
 
-    map { $check_exp_out->($_) } sort split(/\n/,$out);
-    map { $check_exp_err->($_) } sort split(/\n/,$err);
+    # add any expected lines that we didn't find to the errors
+    for my $exp_line (@$stdout, @$stderr) {
+        push @$errors, "got nothing, expected: $exp_line";
+    }
 
-    _check_cmp_closure_output($cmd, $msg, $args, $sorted_exp_out, $error);
+    my $test_name = join( ' ', $msg ? "$msg:" : '', $cmd, @$args );
+    is(scalar(@$errors), 0, $test_name);
+
+    if (@$errors) {
+        diag( "Errors: " . join( "\n", @$errors ) );
+    }
 }
 
 =head2 repo_path_for($username)
