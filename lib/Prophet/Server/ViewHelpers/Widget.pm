@@ -75,8 +75,8 @@ sub render {
         type  => 'hidden'
     );
 
-    outs_raw( $orig->render_input );
     outs_raw( $self->field->render );
+    outs_raw( $orig->render_input );
     if ($self->autocomplete) {
         $self->_render_autocompleter();
     }

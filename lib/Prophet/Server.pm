@@ -74,7 +74,9 @@ sub setup_template_roots {
 
 
 sub css {
-    return '/static/prophet/jquery/css/superfish.css',
+    return 
+            '/static/prophet/yui/css/reset.css', 
+            '/static/prophet/jquery/css/superfish.css',
             '/static/prophet/jquery/css/superfish-navbar.css',
            '/static/prophet/jquery/css/jquery.autocomplete.css',
            '/static/prophet/jquery/css/tablesorter/style.css',
