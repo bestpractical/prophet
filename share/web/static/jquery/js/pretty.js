@@ -8,11 +8,13 @@
 // Takes an ISO time and returns a string representing how
 // long ago the date represents.
 function prettyDate(time){
-	var date = new Date((time || "").replace(/-/g,"/").replace(/[TZ]/g," ")),
-		diff = (((new Date()).getTime() - date.getTime()) / 1000),
-		day_diff = Math.floor(diff / 86400);
+	var date = new Date((time || "").replace(/-/g,"/").replace(/[TZ]/g," "));
+        var now = new Date();
+        // Timezone offsets are in minutes
+		var diff = (((now.getTime() + (now.getTimezoneOffset() * 60 * 1000)) - date.getTime()) / 1000);
+		var day_diff = Math.floor(diff / 86400);
 			
-	if ( isNaN(day_diff) || day_diff < 0 || day_diff >= 31 )
+	if ( isNaN(day_diff) || day_diff < 0 || day_diff > 300 )
 		return;
 		
     // JRV 2009-01-26 - date thresholds changed	
@@ -25,7 +27,7 @@ function prettyDate(time){
 		day_diff == 1 && "Yesterday" ||
 		day_diff < 13 && day_diff + " days ago" ||
 		day_diff < 45 && Math.ceil( day_diff / 7 ) + " weeks ago" ||
-        day_diff < 100 && Math.ceil(day_diff/30) + "months ago"
+        day_diff < 300 && Math.ceil(day_diff/30) + " months ago"
 }
 
 // If jQuery is included in the page, adds a jQuery plugin to handle it as well
@@ -42,11 +44,11 @@ if ( typeof jQuery != "undefined" ) {
     // an HREF on 2009-01-26
     jQuery.fn.prettyDateTag = function(){
         return this.each(function(){
-            var original_date = this.innerHTML;
-            var date = prettyDate(this.innerHTML);
+            var original_date = (this.title || this.innerHTML);
+            var date = prettyDate(original_date);
              if (!date) return;
             jQuery(this).attr('title', original_date) ;
-            jQuery(this).text( date );
+            jQuery(this).html('<span style="display: none">'+original_date+'</span>'+ date );
         });
     }
 
