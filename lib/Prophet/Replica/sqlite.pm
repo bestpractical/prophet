@@ -402,9 +402,11 @@ sub traverse_changesets {
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $latest = $args{until} ? $args{until} : $self->latest_sequence_no();
+    my $latest = $self->latest_sequence_no;
 
-    $latest = $self->latest_sequence_no() if $latest > $self->latest_sequence_no();
+    if ( defined $args{until} && $args{until} < $latest) {
+            $latest = $args{until};
+    }
 
     $self->log_debug("Traversing changesets between $first_rev and $latest");
     for my $rev ( $first_rev .. $latest ) {
