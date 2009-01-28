@@ -31,11 +31,15 @@ around run => sub {
     $export_replica = 1 if !$export_html;
 
     # if we have the html argument, populate the tempdir with rendered templates
-    $self->export_html() if ($export_html);
-
+    if ($export_html) {
+        print "Exporting a static HTML version of this replia\n";
+        $self->export_html() 
+    }
     # otherwise, do the normal prophet export this replica
-        $self->$orig(@_) if ($export_replica);
-    
+    if ($export_replica) {
+        print "Exporting a clone of this replia\n";
+        $self->$orig(@_) 
+    } 
 };
 
 # the tempdir is populated, now publish it
@@ -44,12 +48,13 @@ after run => sub {
     my $from = $self->arg('path');
     my $to   = $self->arg('to');
 
+    print "Publishing the exported clone of the replica to $to with rsync\n";
     $self->publish_dir(
         from => $from,
         to   => $to,
     );
 
-    print "Publish complete.\n";
+    print "Publication complete.\n";
 };
 
 sub export_html {

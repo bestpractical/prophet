@@ -77,7 +77,9 @@ sub export {
     my $self = shift;
 
     $self->init_export_metadata();
+    print " Exporting records...\n";
     $self->export_all_records();
+    print " Exporting changesets...\n";
     $self->export_changesets();
 
     unless ($self->source_replica->is_resdb) {
@@ -87,6 +89,7 @@ sub export {
             app_handle => $self->app_handle
         
     );
+    print "Exporting resolution database\n";
     $resolutions->export();
     }
 }
