@@ -1,12 +1,12 @@
-use warnings;
-use strict;
-
 package TestApp::Bug;
 use Moose;
 extends 'Prophet::Record';
 
+has type => ( default => 'bug' );
 
-sub new { shift->SUPER::new( @_, type => 'bug' ) }
+use constant collection_class => 'TestApp::Bugs';
+
+__PACKAGE__->register_reference( bugcatcher => 'TestApp::BugCatcher' );
 
 sub validate_prop_name {
     my $self = shift;
@@ -25,5 +25,8 @@ sub canonicalize_prop_email {
 }
 
 sub default_prop_status { 'new' }
+
+__PACKAGE__->meta->make_immutable;
+no Moose;
 
 1;
