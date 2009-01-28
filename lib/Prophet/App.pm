@@ -20,7 +20,7 @@ has handle => (
             if ( !File::Spec->file_name_is_absolute($ENV{'PROPHET_REPO'}) ) {
             # if PROPHET_REPO env var exists and is relative, make it absolute
             # to avoid breakage/confusing error messages later
-            $ENV{'PROPHET_REPO'} = $self->default_replica_type . ":file://".  File::Spec->rel2abs($ENV{'PROPHET_REPO'});
+            $ENV{'PROPHET_REPO'} = $self->default_replica_type . ":file://".  File::Spec->rel2abs(glob($ENV{'PROPHET_REPO'}));
 
             } else {
             $ENV{'PROPHET_REPO'} = $self->default_replica_type . ":file://".  $ENV{'PROPHET_REPO'};
