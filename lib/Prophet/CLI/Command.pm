@@ -1,5 +1,6 @@
 package Prophet::CLI::Command;
 use Moose;
+use MooseX::ClassAttribute;
 
 use Params::Validate qw(validate);
 
@@ -15,7 +16,7 @@ has cli => (
 has context => (
     is => 'rw',
     isa => 'Prophet::CLIContext',
-    handles => [ 
+    handles => [
         qw/args  set_arg  arg  has_arg  delete_arg  arg_names/,
         qw/props set_prop prop has_prop delete_prop prop_names/,
         'add_to_prop_set', 'prop_set',
@@ -23,6 +24,73 @@ has context => (
 
 );
 
+class_has ARG_TRANSLATIONS => (
+    is => 'rw',
+    isa => 'HashRef',
+    default => sub { { 'v' => 'verbose', 'a' => 'all' } },
+    documentation => 'A hash of arguments that will be translated on '.
+                     'command instantiation',
+);
+
+=head2 register_arg_translations
+
+This is the Prophet CLI's way of supporting short forms for arguments,
+e.g. you want to let '-v' be able to used for the same purpose as
+'--verbose' without dirtying your code checking both or manually
+setting them if they exist. We want it to be as easy as possible
+to have short commands.
+
+To use, have your command subclass do:
+
+    __PACKAGE__->register_arg_translations( f => 'file' );
+
+You can register as many translations at a time as you want.
+The arguments will be translated when the command object is
+instantiated. If an arg already exists in the arg translation
+table, it is overwritten with the new value.
+
+=cut
+
+sub register_arg_translations {
+    my $class = shift;
+    my %args = @_;
+
+    $class->ARG_TRANSLATIONS({ %{$class->ARG_TRANSLATIONS}, %args });
+}
+
+=head2 clear_arg_translations
+
+Don't like the defaults? Get rid of 'em.
+
+Example:
+
+    __PACKAGE__->clear_arg_translations;
+
+=cut
+
+sub clear_arg_translations {
+    my $class = shift;
+
+    $class->ARG_TRANSLATIONS({});
+}
+
+sub _translate_args {
+    my $self = shift;
+
+    for my $arg (keys %{$self->ARG_TRANSLATIONS}) {
+        $self->set_arg($self->ARG_TRANSLATIONS->{$arg}, $self->arg($arg))
+            if $self->has_arg($arg);
+    }
+}
+
+# run arg translations on object instantiation
+sub BUILD {
+    my $self = shift;
+
+    $self->_translate_args();
+
+    return $self;
+}
 
 sub fatal_error {
     my $self   = shift;
@@ -194,6 +262,7 @@ sub prompt_Yn {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
+no MooseX::ClassAttribute;
 
 1;
 

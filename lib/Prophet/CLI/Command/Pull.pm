@@ -2,6 +2,8 @@ package Prophet::CLI::Command::Pull;
 use Moose;
 extends 'Prophet::CLI::Command::Merge';
 
+__PACKAGE__->register_arg_translations( l => 'local' );
+
 sub run {
     my $self = shift;
     my @from;

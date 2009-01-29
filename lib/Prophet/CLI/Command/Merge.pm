@@ -5,6 +5,7 @@ extends 'Prophet::CLI::Command';
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
 
+__PACKAGE__->register_arg_translations( f => 'force' );
 
 sub run {
     my $self = shift;

@@ -83,8 +83,8 @@ has primary_commands => (
 
 =head2 mutate_attributes ( args => $hashref, props => $hashref, type => 'str' )
 
-A hook for running a second command from within a command without having       
-to use the commandline argument parsing.  
+A hook for running a second command from within a command without having
+to use the commandline argument parsing.
 
 If C<type>, C<uuid>, or C<primary_commands> are not passed in, the values
 from the previous command run are used.
@@ -133,7 +133,8 @@ sub cmp_regex { '!=|<>|=~|!~|=|\bne\b' }
 
 =head2 setup_from_args
 
-Sets up this context object's arguments and key/value pairs from an array that looks like an @ARGV.
+Sets up this context object's arguments and key/value pairs from an array that
+looks like an @ARGV.
 
 =cut
 
@@ -167,10 +168,10 @@ sub require_uuid {
 =head2 parse_args @args
 
 This routine pulls arguments (specified by --key=value or --key
-value) and properties (specified by --props key=value or -- key=value)
-as passed on the command line out of ARGV (or something else emulating
-ARGV) and sticks them in L</args> or L</props> and L</prop_set> as
-necessary. Argument keys have leading "--" stripped.
+value or -k value) and properties (specified by --props key=value or --
+key=value) as passed on the command line out of ARGV (or something else
+emulating ARGV) and sticks them in L</args> or L</props> and L</prop_set> as
+necessary. Argument keys have leading "--" or "-" stripped.
 
 If a key is not given a value on the command line, its value is set to undef.
 
@@ -180,14 +181,14 @@ L</cmp_regex> for details).
 =cut
 
 sub parse_args {
-    my $self = shift; 
+    my $self = shift;
     my @args = (@_);
     my @primary;
-    push @primary, shift @args while ( $args[0] && $args[0] !~ /^--/ );
+    push @primary, shift @args while ( $args[0] && $args[0] !~ /^-/ );
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
-    $self->set_arg( id => pop @primary )
-        if @primary && $primary[-1] =~ /^(?:\d+|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$/i;
+    $self->set_arg( id => pop @primary ) if @primary && $primary[-1] =~
+        /^(?:\d+|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$/i;
 
     my $collecting_props = 0;
 
@@ -196,7 +197,7 @@ sub parse_args {
 
     while ( my $name = shift @args ) {
         die "$name doesn't look like --argument"
-            if !$collecting_props && $name !~ /^--/;
+            if !$collecting_props && $name !~ /^-/;
 
         if ( $name eq '--' || $name eq '--props' ) {
             $collecting_props = 1;
@@ -208,13 +209,13 @@ sub parse_args {
 
         ( $name, $cmp, $val ) = ( $1, $2, $3 )
             if $name =~ /^(.*?)($cmp_re)(.*)$/;
-        $name =~ s/^--//;
+        $name =~ s/^(?:--|-)//;
 
         # no value specified, pull it from the next argument, unless the next
         # argument is another option
         if ( !defined($val) ) {
             $val = shift @args
-                if @args && $args[0] !~ /^--/;
+                if @args && $args[0] !~ /^-/;
 
             no warnings 'uninitialized';
 

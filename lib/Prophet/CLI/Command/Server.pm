@@ -2,6 +2,8 @@ package Prophet::CLI::Command::Server;
 use Moose;
 extends 'Prophet::CLI::Command';
 
+__PACKAGE__->register_arg_translations( p => 'port', w => 'writable' );
+
 use Prophet::Server;
 
 sub run {

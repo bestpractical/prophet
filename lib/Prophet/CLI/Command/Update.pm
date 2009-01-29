@@ -3,6 +3,8 @@ use Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 
+__PACKAGE__->register_arg_translations( e => 'edit' );
+
 sub edit_record {
     my $self   = shift;
     my $record = shift;
