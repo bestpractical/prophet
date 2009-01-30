@@ -124,12 +124,19 @@ sub mutate_attributes {
 
 =head2 cmp_regex
 
-Returns the regex to use for matching property key/value separators.
+The regex to use for matching property key/value separators.
 
 =cut
 
-sub cmp_regex { '!=|<>|=~|!~|=|\bne\b' }
+use constant cmp_regex => '!=|<>|=~|!~|=|\bne\b';
 
+=head2 id_regex
+
+The regex to use for matching the id argument (luid / uuid).
+
+=cut
+
+use constant id_regex => '^(?:\d+|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$';
 
 =head2 setup_from_args
 
@@ -187,8 +194,8 @@ sub parse_args {
     push @primary, shift @args while ( $args[0] && $args[0] !~ /^-/ );
 
     # "ticket show 4" should DWIM and "ticket show --id=4"
-    $self->set_arg( id => pop @primary ) if @primary && $primary[-1] =~
-        /^(?:\d+|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$/i;
+    my $id_re = $self->id_regex;
+    $self->set_arg( id => pop @primary ) if @primary && $primary[-1] =~ /$id_re/i;
 
     my $collecting_props = 0;
 
