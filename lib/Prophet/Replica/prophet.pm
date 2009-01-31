@@ -770,19 +770,10 @@ sub _write_file {
     my %args = validate( @_, { path => 1, content => 1 } );
 
     my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
-    my ( undef, $parent, $filename ) = File::Spec->splitpath($file);
-    unless ( -d $parent ) {
-        eval { mkpath( [$parent] ) };
-        if ( my $msg = $@ ) {
-            die "Failed to create directory " . $parent . " - $msg";
-        }
-    }
-
-    open( my $fh, ">$file" ) || die $!;
-    print $fh scalar( $args{'content'} )
-        ; # can't do "||" as we die if we print 0" || die "Could not write to " . $args{'path'} . " " . $!;
-    close $fh || die $!;
+    Prophet::Util->write_file( file => $file, content => $args{content});
 }
+
+
 
 =head2 _file_exists PATH
 
