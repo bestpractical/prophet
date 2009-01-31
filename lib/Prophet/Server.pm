@@ -102,7 +102,7 @@ sub js {
 sub handle_request {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
-    $self->app_handle->log( localtime()." [".$ENV{'REMOTE_ADDR'}."] ".$cgi->request_method . " ".$cgi->path_info);
+    $self->log_request();
     $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
     $self->result( Prophet::Web::Result->new() );
     if ( $ENV{'PROPHET_DEVEL'} ) {
@@ -123,12 +123,17 @@ sub handle_request {
               $dispatcher_class = "Prophet::Server::Dispatcher";
     }
 
-
     my $d = $dispatcher_class->new( server => $self );
 
     $d->run( $cgi->request_method . $cgi->path_info, $d )
         || $self->_send_404;
 
+}
+
+sub log_request {
+    my $self = shift;
+    my $cgi = $self->cgi;
+    $self->app_handle->log( localtime()." [".$ENV{'REMOTE_ADDR'}."] ".$cgi->request_method . " ".$cgi->path_info);
 }
 
 sub update_record_prop {
