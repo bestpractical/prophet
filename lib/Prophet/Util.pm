@@ -1,6 +1,8 @@
 package Prophet::Util;
 use strict;
 use File::Basename;
+use File::Spec;
+use File::Path;
 use Params::Validate;
 
 =head2 updir PATH
@@ -78,4 +80,22 @@ sub escape_utf8 {
     $$ref =~ s/'/&#39;/g;
 }
 
+
+sub write_file {
+    my $self = shift;
+    my %args = validate( @_, { file => 1, content => 1 } );
+
+    my ( undef, $parent, $filename ) = File::Spec->splitpath($args{file});
+    unless ( -d $parent ) {
+        eval { mkpath( [$parent] ) };
+        if ( my $msg = $@ ) {
+            die "Failed to create directory " . $parent . " - $msg";
+        }
+    }
+
+    open( my $fh, ">", $args{file} ) || die $!;
+    print $fh scalar( $args{'content'} )
+        ; # can't do "||" as we die if we print 0" || die "Could not write to " . $args{'path'} . " " . $!;
+    close $fh || die $!;
+}
 1;
