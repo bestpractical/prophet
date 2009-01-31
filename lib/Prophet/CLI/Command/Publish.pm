@@ -7,10 +7,6 @@ with 'Prophet::CLI::CollectionCommand';
 use File::Path;
 use File::Spec;
 
-sub view_classes {
- return ['Prophet::Server::View'];
-}
-
 before run => sub {
     my $self = shift;
     die "Please specify a --to.\n" unless $self->has_arg('to');
