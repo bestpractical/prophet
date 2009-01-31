@@ -822,7 +822,12 @@ sub _do_db_upgrades {
 }
 
 
-sub DEMOLISH { shift->dbh->disconnect }
+sub DEMOLISH {
+    my $self = shift;
+    $self->dbh->disconnect if ( $self->dbh );
+}
+
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 
