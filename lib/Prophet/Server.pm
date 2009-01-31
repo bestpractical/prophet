@@ -34,7 +34,8 @@ has app_handle => (
 
 has cgi        => ( isa => 'Maybe[CGI]',                is  => 'rw' );
 has nav        => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
-has read_only  => ( is  => 'rw',                        isa => 'Bool' );
+has read_only  => ( isa  => 'Bool',                        is => 'rw' );
+has static     => ( isa =>  'Bool',                        is => 'rw');
 has view_class => ( isa => 'Str',                       is  => 'rw' );
 has result     => ( isa => 'Prophet::Web::Result',      is  => 'rw' );
 
