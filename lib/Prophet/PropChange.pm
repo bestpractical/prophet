@@ -43,12 +43,12 @@ What L</name> changed I<to>.
 
 sub summary {
     my $self = shift;
-    my $name = $self->name;
+    my $name = $self->name || '(property name missing)';
     my $old  = $self->old_value;
     my $new  = $self->new_value;
 
     if (!defined($old)) {
-        return qq{+ "$name" set to "$new"};
+        return qq{+ "$name" set to "}.($new||'').qq{"};
     }
     elsif (!defined($new)) {
         return qq{- "$name" "$old" deleted.};
