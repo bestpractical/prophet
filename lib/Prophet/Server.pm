@@ -16,15 +16,7 @@ use Cwd ();
 use JSON;
 use HTTP::Date;
 
-my $PROPHET_STATIC_ROOT =
-  File::Spec->catdir( Prophet::Util->updir( $INC{'Prophet.pm'} ),
-    "..", "share", "web", "static" );
 
-$PROPHET_STATIC_ROOT
-    = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
-    if ( !-d $PROPHET_STATIC_ROOT );
-
-$PROPHET_STATIC_ROOT = Cwd::abs_path($PROPHET_STATIC_ROOT);
 
 has app_handle => (
     isa     => 'Prophet::App',
@@ -74,6 +66,51 @@ sub setup_template_roots {
 }
 
 
+our $PROPHET_STATIC_ROOT;
+sub prophet_static_root {
+    my $self = shift;
+    unless ($PROPHET_STATIC_ROOT) {
+
+        $PROPHET_STATIC_ROOT = File::Spec->catdir( Prophet::Util->updir( $INC{'Prophet.pm'} ),
+            "..", "share", "web", "static" );
+
+        $PROPHET_STATIC_ROOT
+            = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
+            if ( !-d $PROPHET_STATIC_ROOT );
+
+        $PROPHET_STATIC_ROOT = Cwd::abs_path($PROPHET_STATIC_ROOT);
+
+    }
+
+    return $PROPHET_STATIC_ROOT;
+}
+
+
+
+
+our $APP_STATIC_ROOT;
+sub app_static_root {
+    my $self = shift;
+    unless ($APP_STATIC_ROOT) {
+
+        my $app_file = ref($self->app_handle) .".pm";
+        $app_file =~ s|::|/|g;
+
+         $APP_STATIC_ROOT = File::Spec->catdir( Prophet::Util->updir( $INC{$app_file} ),
+          "..",  "..", "share", "web", "static" );
+
+        my $dist = ref($self->app_handle);
+        $dist =~ s/::/-/g;
+        $APP_STATIC_ROOT
+            = File::Spec->catfile( File::ShareDir::dist_dir($dist), 'web/static' )
+            if ( !-d $APP_STATIC_ROOT );
+
+        $APP_STATIC_ROOT = Cwd::abs_path($APP_STATIC_ROOT);
+
+    }
+    return $APP_STATIC_ROOT;
+}
+
 sub css {
     return 
             '/static/prophet/yui/css/reset.css', 
@@ -95,9 +132,6 @@ sub js {
      '/static/prophet/jquery/js/supersubs.js', 
      '/static/prophet/jquery/js/jquery.tablesorter.min.js'
 }
-
-
-
 
 sub handle_request {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
@@ -292,17 +326,19 @@ sub send_static_file {
         $type = 'text/javascript';
     } elsif ( $filename =~ /.css$/ ) {
         $type = 'text/css';
+    } elsif ( $filename =~ /.png$/ ) {
+        $type = 'image/png';
+    }
+    warn "Looking for $filename";
+    for my $root ( $self->app_static_root, $self->prophet_static_root) {
+        next unless -f File::Spec->catfile( $root => $filename );
+        my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $root => $filename ) );
+        next if substr( $qualified_file, 0, length($root) ) ne $root;
+        my $content = Prophet::Util->slurp($qualified_file);
+        return $self->send_content( static => 1, content => $content, content_type => $type );
     }
 
-    for ($PROPHET_STATIC_ROOT) {
-        my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $PROPHET_STATIC_ROOT => $filename ) );
-        next if substr( $qualified_file, 0, length($PROPHET_STATIC_ROOT) ) ne $PROPHET_STATIC_ROOT;
-        my $content = Prophet::Util->slurp($qualified_file);
-        return $self->send_content( static => 1, content => $content , content_type => $type );
-    }
-    
     return $self->_send_404;
-    
 
 }
 
