@@ -329,7 +329,6 @@ sub send_static_file {
     } elsif ( $filename =~ /.png$/ ) {
         $type = 'image/png';
     }
-    warn "Looking for $filename";
     for my $root ( $self->app_static_root, $self->prophet_static_root) {
         next unless -f File::Spec->catfile( $root => $filename );
         my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $root => $filename ) );
