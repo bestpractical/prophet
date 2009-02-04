@@ -18,9 +18,7 @@ requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires('Scalar::Defer' => '0.18');
 requires('Class::MOP' => '0.70');
-requires('Moose' => '0.61'); # Moose::Util::TypeConstraints Moose::Role
-requires('MooseX::AttributeHelpers' => '0.12');
-requires('MooseX::ClassAttribute' => '0.04');
+requires('Any::Moose');
 requires('XML::Atom::SimpleFeed');
 requires('Path::Dispatcher' => '0.06'); # Path::Dispatcher::Declarative
 requires('Time::Progress');
