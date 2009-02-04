@@ -1,7 +1,6 @@
 package Prophet::Change;
 use Moose;
 use Prophet::Meta::Types;
-use MooseX::AttributeHelpers;
 use Prophet::PropChange;
 use Params::Validate;
 
@@ -31,16 +30,14 @@ has is_resolution => (
 );
 
 has prop_changes => (
-    metaclass  => 'Collection::Array',
     is         => 'rw',
     isa        => 'ArrayRef[Prophet::PropChange]',
     auto_deref => 1,
     default    => sub { [] },
-    provides   => {
-        count => 'has_prop_changes',
-        push  => '_add_prop_change',
-    },
 );
+
+sub has_prop_changes { scalar @{ $_[0]->prop_changes } }
+sub _add_prop_change { push @{ $_[0]->prop_changes }, $_[1] }
 
 =head1 NAME
 
