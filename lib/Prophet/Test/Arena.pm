@@ -1,6 +1,5 @@
 package Prophet::Test::Arena;
 use Moose;
-use MooseX::AttributeHelpers;
 
 has chickens => (
     is         => 'rw',
@@ -15,14 +14,15 @@ has record_callback => (
 );
 
 has history => (
-    metaclass => 'Collection::Array',
     is        => 'rw',
     isa       => 'ArrayRef[ArrayRef]',
     default   => sub { [] },
-    provides  => {
-        push => 'add_history',
-    },
 );
+
+sub add_history {
+    my $self = shift;
+    push @{ $self->history }, @_;
+}
 
 use Prophet::Test::Participant;
 use Prophet::Test;
