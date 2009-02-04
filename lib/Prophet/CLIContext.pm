@@ -26,53 +26,54 @@ has type => (
 );
 
 has args => (
-    metaclass => 'Collection::Hash',
     is        => 'rw',
     isa       => 'HashRef',
     default   => sub { {} },
-    provides  => {
-        set    => 'set_arg',
-        get    => 'arg',
-        exists => 'has_arg',
-        delete => 'delete_arg',
-        keys   => 'arg_names',
-        clear  => 'clear_args',
-    },
     documentation =>
         "This is a reference to the key-value pairs passed in on the commandline",
 );
 
+sub set_arg    { $_[0]->args->{$_[1]} = $_[2] }
+sub arg        { $_[0]->args->{$_[1]} }
+sub has_arg    { exists $_[0]->args->{$_[1]} }
+sub delete_arg { delete $_[0]->args->{$_[1]} }
+sub arg_names  { keys %{ $_[0]->args } }
+sub clear_args { %{ $_[0]->args } = () }
+
 has props => (
-    metaclass => 'Collection::Hash',
     is        => 'rw',
     isa       => 'HashRef',
     default   => sub { {} },
-    provides  => {
-        set    => 'set_prop',
-        get    => 'prop',
-        exists => 'has_prop',
-        delete => 'delete_prop',
-        keys   => 'prop_names',
-        clear  => 'clear_props',
-    },
 );
 
-# clear the prop_set too!
-after clear_props => sub { my $self = shift; $self->prop_set( () ); };
+sub set_prop    { $_[0]->props->{$_[1]} = $_[2] }
+sub prop        { $_[0]->props->{$_[1]} }
+sub has_prop    { exists $_[0]->props->{$_[1]} }
+sub delete_prop { delete $_[0]->props->{$_[1]} }
+sub prop_names  { keys %{ $_[0]->props } }
+
+sub clear_props {
+    %{ $_[0]->props } = ();
+
+    # clear the prop_set too!
+    $_[0]->prop_set( () );
+}
 
 has prop_set => (
-    metaclass  => 'Collection::Array',
     is         => 'rw',
     isa        => 'ArrayRef',
     default    => sub { [] },
     auto_deref => 1,
-    provides   => { push => 'add_to_prop_set', },
 );
-after add_to_prop_set => sub {
+
+sub add_to_prop_set {
     my $self = shift;
     my $args = shift;
+
+    push @{ $self->prop_set }, $args;
+
     $self->set_prop( $args->{prop} => $args->{value} );
-};
+}
 
 has primary_commands => (
     is            => 'rw',
