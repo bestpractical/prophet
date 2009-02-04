@@ -1,6 +1,5 @@
 package Prophet::Web::Result;
 use Moose;
-use MooseX::AttributeHelpers;
 
 use Prophet::Web::FunctionResult;
 
@@ -21,19 +20,15 @@ Prophet::Web::Result
 has success => ( isa => 'Bool', is => 'rw');
 has message => ( isa => 'Str', is => 'rw');
 has functions => (
-             metaclass => 'Collection::Hash',
              is        => 'rw',
              isa       => 'HashRef[Prophet::Web::FunctionResult]',
              default   => sub { {} },
-             provides  => {
-                 exists    => 'exists',
-                 keys      => 'items',
-                 get       => 'get',
-                 set       => 'set',
-             },
-
 );
 
+sub get    { $_[0]->functions->{$_[1]} }
+sub set    { $_[0]->functions->{$_[1]} = $_[2] }
+sub exists { exists $_[0]->functions->{$_[1]} }
+sub items  { keys %{ $_[0]->functions } }
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
