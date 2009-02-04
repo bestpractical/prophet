@@ -1,20 +1,11 @@
 package Prophet::CLI::Dispatcher;
 use Path::Dispatcher::Declarative -base;
 use Moose;
-use MooseX::ClassAttribute;
-use MooseX::AttributeHelpers;
 
 with 'Prophet::CLI::Parameters';
 
-class_has command_prefixes => (
-    isa => 'ArrayRef',
-    metaclass => 'Collection::Array',
-    is => 'rw',
-    default => sub { ['Prophet::CLI::Command'] },
-    provides => {
-        unshift => 'add_command_prefix'
-    }
-);
+our @PREFIXES = qw(Prophet::CLI::Command);
+sub add_command_prefix { unshift @PREFIXES, @_ }
 
 # "ticket display $ID" -> "ticket display --id=$ID"
 on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
@@ -113,7 +104,7 @@ sub run_command {
 sub class_names {
     my $self = shift;
     my $command = shift;
-    return map { $_."::".$command } @{$self->command_prefixes};
+    return map { $_."::".$command } @PREFIXES;
 
 }
 
