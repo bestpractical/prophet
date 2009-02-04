@@ -1,6 +1,5 @@
 package Prophet::Record;
 use Moose;
-use MooseX::ClassAttribute;
 use Params::Validate;
 use Prophet::App; # for require_module. Kinda hacky
 use constant collection_class => 'Prophet::Collection';
@@ -47,29 +46,19 @@ has luid => (
     default => sub { my $self = shift; $self->find_or_create_luid; },
 );
 
-class_has REFERENCES => (
-    is        => 'rw',
-    isa       => 'HashRef',
-    default   => sub { {} },
-    documentation => 'A hash of class_name => references.',
-);
+our $REFERENCES = {};
+sub REFERENCES { $REFERENCES }
 
-class_has PROPERTIES => (
-    is      => 'rw',
-    isa     => 'HashRef',
-    default => sub { {} },
-    documentation => 'A hash of properties that a record class declares.',
-);
+our $PROPERTIES = {};
+sub PROPERTIES { $PROPERTIES }
 
-
-class_has uuid_generator => (
-    is => 'ro',
-    isa => 'Data::UUID',
-    lazy => 1,
-    default => sub { require Data::UUID; Data::UUID->new()}
-);
-
-
+do {
+    my $uuid_generator;
+    sub uuid_generator {
+        require Data::UUID;
+        $uuid_generator ||= Data::UUID->new;
+    }
+}
 
 =head1 METHODS
 
@@ -933,5 +922,4 @@ sub collection_reference_methods {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
-no MooseX::ClassAttribute;
 1;
