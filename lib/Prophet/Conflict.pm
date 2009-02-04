@@ -1,6 +1,5 @@
 package Prophet::Conflict;
 use Moose;
-use MooseX::AttributeHelpers;
 use Params::Validate;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
@@ -38,15 +37,13 @@ has autoresolved => (
 );
 
 has conflicting_changes => (
-    metaclass => 'Collection::Array',
     is        => 'ro',
     isa       => 'ArrayRef[Prophet::ConflictingChange]',
     default   => sub { [] },
-    provides  => {
-        count => 'has_conflicting_changes',
-        push  => 'add_conflicting_change',
-    },
 );
+
+sub has_conflicting_changes { scalar @{ $_[0]->conflicting_changes } }
+sub add_conflicting_change  { push @{ $_[0]->conflicting_changes }, $_[1] }
 
 =head2 analyze_changeset Prophet::ChangeSet
 
