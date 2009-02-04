@@ -1,6 +1,5 @@
 package Prophet::Config;
 use Moose;
-use MooseX::AttributeHelpers;
 use File::Spec;
 use Prophet::Util;
 
@@ -18,17 +17,15 @@ has config_files => (
 );
 
 has config => (
-    metaclass   => 'Collection::Hash',
     is          => 'rw',
     isa         => 'HashRef',
     lazy        => 0,
     default     => sub {shift->load_from_files;},
-    provides    => {
-        get     => 'get',
-        set     => 'set',
-        keys    => 'list',
-    },
 );
+
+sub get  { $_[0]->config->{$_[1]} }
+sub set  { $_[0]->config->{$_[1]} = $_[2] }
+sub list { keys %{ $_[0]->config } }
 
 sub aliases {
     return $_[0]->config->{_aliases} || {};
