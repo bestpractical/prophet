@@ -1,6 +1,5 @@
 package Prophet::CLIContext;
 use Moose;
-use MooseX::ClassAttribute;
 
 has app_handle => (
     is      => 'rw',
@@ -291,6 +290,5 @@ sub set_type_and_uuid {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
-no MooseX::ClassAttribute;
 
 1;
