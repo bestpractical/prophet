@@ -58,7 +58,7 @@ do {
         require Data::UUID;
         $uuid_generator ||= Data::UUID->new;
     }
-}
+};
 
 =head1 METHODS
 
