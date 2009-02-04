@@ -1,6 +1,5 @@
 package Prophet::Collection;
 use Moose;
-use MooseX::AttributeHelpers;
 use Params::Validate;
 use Prophet::Record;
 
@@ -33,16 +32,14 @@ has type => (
 );
 
 has items => (
-    metaclass  => 'Collection::Array',
     is         => 'rw',
     isa        => 'ArrayRef[Prophet::Record]',
     default    => sub { [] },
     auto_deref => 1,
-    provides   => {
-        push   => 'add_item',
-        count  => 'count',
-    },
 );
+
+sub add_item { push @{ $_[0]->items }, $_[1] }
+sub count    { scalar @{ $_[0]->items } }
 
 =head1 NAME
 
