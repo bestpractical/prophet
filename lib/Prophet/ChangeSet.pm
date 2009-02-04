@@ -1,6 +1,5 @@
 package Prophet::ChangeSet;
 use Moose;
-use MooseX::AttributeHelpers;
 use Prophet::Change;
 use Params::Validate;
 
@@ -53,16 +52,14 @@ has is_resolution => (
 );
 
 has changes => (
-    metaclass  => 'Collection::Array',
     is         => 'rw',
     isa        => 'ArrayRef[Prophet::Change]',
     auto_deref => 1,
     default    => sub { [] },
-    provides   => {
-        push   => '_add_change',
-        count  => 'has_changes',
-    },
 );
+
+sub _add_change { push @{ $_[0]->changes }, $_[1] }
+sub has_changes { scalar @{ $_[0]->changes } }
 
 =head1 NAME
 
