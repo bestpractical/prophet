@@ -1,6 +1,5 @@
 package Prophet::ConflictingChange;
 use Moose;
-use MooseX::AttributeHelpers;
 use Prophet::Meta::Types;
 use Prophet::ConflictingPropChange;
 use JSON 'to_json';
@@ -37,15 +36,13 @@ has file_op_conflict => (
 );
 
 has prop_conflicts => (
-    metaclass => 'Collection::Array',
     is        => 'rw',
     isa       => 'ArrayRef',
     default   => sub { [] },
-    provides  => {
-        push  => 'add_prop_conflict',
-        count => 'has_prop_conflicts',
-    },
 );
+
+sub add_prop_conflict { push @{ $_[0]->prop_conflicts }, $_[1] }
+sub has_prop_conflicts { scalar @{ $_[0]->prop_conflicts } }
 
 sub as_hash {
     my $self = shift;
