@@ -1,6 +1,5 @@
 package Prophet::CLI::Command;
 use Moose;
-use MooseX::ClassAttribute;
 
 use Params::Validate qw(validate);
 
@@ -24,13 +23,16 @@ has context => (
 
 );
 
-class_has ARG_TRANSLATIONS => (
-    is => 'rw',
-    isa => 'HashRef',
-    default => sub { { 'v' => 'verbose', 'a' => 'all' } },
-    documentation => 'A hash of arguments that will be translated on '.
-                     'command instantiation',
+our %ARG_TRANSLATIONS = (
+    'v' => 'verbose',
+    'a' => 'all',
 );
+sub ARG_TRANSLATIONS {
+    my $self = shift;
+
+    return \%ARG_TRANSLATIONS if !@_;
+    %ARG_TRANSLATIONS = %{ $_[0] };
+}
 
 =head2 register_arg_translations
 
@@ -262,7 +264,6 @@ sub prompt_Yn {
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
-no MooseX::ClassAttribute;
 
 1;
 
