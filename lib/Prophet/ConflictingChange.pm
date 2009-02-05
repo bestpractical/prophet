@@ -1,5 +1,5 @@
 package Prophet::ConflictingChange;
-use Moose;
+use Any::Moose;
 use Prophet::Meta::Types;
 use Prophet::ConflictingPropChange;
 use JSON 'to_json';
@@ -80,6 +80,6 @@ sub fingerprint {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

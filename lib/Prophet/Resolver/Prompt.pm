@@ -1,5 +1,5 @@
 package Prophet::Resolver::Prompt;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Resolver';
 
 sub run {
@@ -58,7 +58,7 @@ sub run {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

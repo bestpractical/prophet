@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Server;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command';
 
 __PACKAGE__->register_arg_translations( p => 'port', w => 'writable' );
@@ -26,7 +26,7 @@ sub _setup_server {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

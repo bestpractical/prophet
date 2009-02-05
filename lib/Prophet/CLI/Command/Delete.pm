@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Delete;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 
@@ -18,7 +18,7 @@ sub run {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

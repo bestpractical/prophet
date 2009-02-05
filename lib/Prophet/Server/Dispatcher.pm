@@ -1,5 +1,5 @@
 package Prophet::Server::Dispatcher;
-use Moose;
+use Any::Moose;
 use Path::Dispatcher::Declarative -base;
 
 has server => ( isa => 'Prophet::Server', is => 'rw', weak_ref => 1 );
@@ -36,6 +36,6 @@ under 'GET' => sub {
 
 on qr'^(?:GET|POST|PUT|DELETE|PATCH)/(.*)$' => sub { shift->server->show_template($1) || next_rule; };
 
-no Moose;
+no Any::Moose;
 
 1;

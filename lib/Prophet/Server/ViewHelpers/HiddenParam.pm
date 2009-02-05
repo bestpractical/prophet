@@ -6,12 +6,12 @@ BEGIN { delete ${__PACKAGE__."::"}{meta};
  delete ${__PACKAGE__."::"}{with};
 }
 
-use Moose;
+use Any::Moose;
 
 extends 'Prophet::Server::ViewHelpers::Widget';
 
 
-use Moose::Util::TypeConstraints;
+use Any::Moose 'Util::TypeConstraints';
 
 
 has value => ( isa => 'Str', is => 'rw');
@@ -38,7 +38,7 @@ sub render {
 
 }
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

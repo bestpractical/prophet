@@ -1,5 +1,5 @@
 package Prophet::ChangeSet;
-use Moose;
+use Any::Moose;
 use Prophet::Change;
 use Params::Validate;
 
@@ -253,6 +253,6 @@ sub created_as_rfc3339 {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

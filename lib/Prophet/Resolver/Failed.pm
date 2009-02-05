@@ -1,5 +1,5 @@
 package Prophet::Resolver::Failed;
-use Moose;
+use Any::Moose;
 use Data::Dumper;
 extends 'Prophet::Resolver';
 
@@ -15,6 +15,6 @@ sub run {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

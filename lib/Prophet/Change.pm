@@ -1,5 +1,5 @@
 package Prophet::Change;
-use Moose;
+use Any::Moose;
 use Prophet::Meta::Types;
 use Prophet::PropChange;
 use Params::Validate;
@@ -196,6 +196,6 @@ sub new_from_hashref {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

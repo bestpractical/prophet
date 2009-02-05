@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Settings;
-use Moose;
+use Any::Moose;
 use Params::Validate qw/validate/;
 use JSON;
 
@@ -166,6 +166,6 @@ sub process_template {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

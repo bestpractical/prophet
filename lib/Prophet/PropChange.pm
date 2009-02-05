@@ -1,5 +1,5 @@
 package Prophet::PropChange;
-use Moose;
+use Any::Moose;
 
 has name => (
     is  => 'rw',
@@ -58,6 +58,6 @@ sub summary {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

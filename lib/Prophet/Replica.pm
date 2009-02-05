@@ -1,5 +1,5 @@
 package Prophet::Replica;
-use Moose;
+use Any::Moose;
 use Params::Validate qw(:all);
 use File::Spec ();
 
@@ -1064,6 +1064,6 @@ sub display_name_for_uuid {
 }
 
 __PACKAGE__->meta->make_immutable();
-no Moose;
+no Any::Moose;
 
 1;

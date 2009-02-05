@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Clone;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command::Merge';
 
 sub run {
@@ -60,6 +60,6 @@ sub merge_resolver { 'Prophet::Resolver::AlwaysTarget'}
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

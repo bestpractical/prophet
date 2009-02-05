@@ -1,5 +1,5 @@
 package Prophet::Record;
-use Moose;
+use Any::Moose;
 use Params::Validate;
 use Prophet::App; # for require_module. Kinda hacky
 use constant collection_class => 'Prophet::Collection';
@@ -921,5 +921,5 @@ sub collection_reference_methods {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 1;

@@ -1,5 +1,5 @@
 package Prophet::App;
-use Moose;
+use Any::Moose;
 use File::Spec ();
 use Prophet::Config;
 use Params::Validate qw/validate validate_pos/;
@@ -242,5 +242,5 @@ sub log_fatal {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 1;

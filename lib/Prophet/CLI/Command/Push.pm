@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Push;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command::Merge';
 
 before run => sub {
@@ -12,7 +12,7 @@ before run => sub {
 };
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

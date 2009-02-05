@@ -1,5 +1,5 @@
 package Prophet::Test::Participant;
-use Moose;
+use Any::Moose;
 use Prophet::Test;
 
 has name => (
@@ -197,6 +197,6 @@ sub call_func {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

@@ -1,5 +1,5 @@
 package Prophet::CLI::Command;
-use Moose;
+use Any::Moose;
 
 use Params::Validate qw(validate);
 
@@ -263,7 +263,7 @@ sub prompt_Yn {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

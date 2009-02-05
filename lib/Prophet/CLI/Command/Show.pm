@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Show;
-use Moose;
+use Any::Moose;
 use Params::Validate;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
@@ -100,7 +100,7 @@ sub stringify_props {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

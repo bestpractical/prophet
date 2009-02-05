@@ -1,5 +1,5 @@
 package Prophet::Test::Arena;
-use Moose;
+use Any::Moose;
 
 has chickens => (
     is         => 'rw',
@@ -173,6 +173,6 @@ sub record {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

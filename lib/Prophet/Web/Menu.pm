@@ -1,6 +1,6 @@
 package Prophet::Web::Menu;
 
-use Moose;
+use Any::Moose;
 use URI;
 
 has cgi => (isa =>'CGI', is=>'ro');

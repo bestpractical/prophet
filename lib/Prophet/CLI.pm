@@ -1,5 +1,5 @@
 package Prophet::CLI;
-use Moose;
+use Any::Moose;
 
 use Prophet;
 use Prophet::Replica;
@@ -156,7 +156,7 @@ sub invoke {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

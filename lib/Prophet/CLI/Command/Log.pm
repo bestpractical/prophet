@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Log;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command';
 
 # Default: last 20 entries.
@@ -128,5 +128,5 @@ sub change_header {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 1;

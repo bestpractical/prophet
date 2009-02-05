@@ -1,5 +1,5 @@
 package Prophet::Config;
-use Moose;
+use Any::Moose;
 use File::Spec;
 use Prophet::Util;
 
@@ -156,7 +156,7 @@ sub save {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

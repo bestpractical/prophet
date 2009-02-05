@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Search;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 with 'Prophet::CLI::CollectionCommand';
@@ -197,7 +197,7 @@ sub group_by_prop {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

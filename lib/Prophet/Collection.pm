@@ -1,5 +1,5 @@
 package Prophet::Collection;
-use Moose;
+use Any::Moose;
 use Params::Validate;
 use Prophet::Record;
 
@@ -98,6 +98,6 @@ Returns a reference to an array of all the items found
 =cut
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

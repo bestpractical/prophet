@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Merge;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command';
 
 has source => ( isa => 'Prophet::Replica', is => 'rw');
@@ -155,7 +155,7 @@ sub merge_resolver {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

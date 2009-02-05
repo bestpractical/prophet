@@ -1,5 +1,5 @@
 package Prophet::DatabaseSetting;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Record';
 
 use Params::Validate;
@@ -79,7 +79,7 @@ sub get {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

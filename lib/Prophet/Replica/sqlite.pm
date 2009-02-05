@@ -1,5 +1,5 @@
 package Prophet::Replica::sqlite;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use File::Spec  ();
@@ -828,6 +828,6 @@ sub DEMOLISH {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

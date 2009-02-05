@@ -1,5 +1,5 @@
 package Prophet::CLI::PublishCommand;
-use Moose::Role;
+use Any::Moose 'Role';
 
 use File::Temp ();
 
@@ -29,7 +29,7 @@ If you have rsync but it's not in your path, set environment variable \$RSYNC to
     return $ret;
 }
 
-no Moose::Role;
+no Any::Moose;
 
 1;
 

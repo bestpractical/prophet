@@ -1,5 +1,5 @@
 package Prophet::Web::FunctionResult;
-use Moose;
+use Any::Moose;
 
 =head1 NAME
 
@@ -31,7 +31,7 @@ sub get    { $_[0]->result>{$_[1]} }
 sub set    { $_[0]->result->{$_[1]} = $_[2] }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

@@ -17,8 +17,8 @@ BEGIN { delete ${__PACKAGE__."::"}{meta};
 
 =cut
 
-use Moose;
-use Moose::Util::TypeConstraints;
+use Any::Moose;
+use Any::Moose 'Util::TypeConstraints';
 
 
 has record => (
@@ -79,6 +79,6 @@ sub render {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 1;
 

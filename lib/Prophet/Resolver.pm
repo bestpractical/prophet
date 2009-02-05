@@ -1,8 +1,8 @@
 package Prophet::Resolver;
-use Moose;
+use Any::Moose;
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

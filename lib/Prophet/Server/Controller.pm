@@ -1,5 +1,5 @@
 package Prophet::Server::Controller;
-use Moose;
+use Any::Moose;
 use Prophet::Util;
 use Prophet::Web::Result;
 
@@ -246,7 +246,7 @@ sub string_to_hash {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

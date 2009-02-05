@@ -1,6 +1,6 @@
 package Prophet::CLI::Dispatcher;
 use Path::Dispatcher::Declarative -base;
-use Moose;
+use Any::Moose;
 
 with 'Prophet::CLI::Parameters';
 
@@ -109,7 +109,7 @@ sub class_names {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Publish;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command::Export';
 with 'Prophet::CLI::PublishCommand';
 with 'Prophet::CLI::CollectionCommand';
@@ -123,7 +123,7 @@ sub types_to_render {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

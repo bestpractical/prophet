@@ -1,5 +1,5 @@
 package Prophet::Resolver::FromResolutionDB;
-use Moose;
+use Any::Moose;
 use Prophet::Change;
 use Prophet::Collection;
 use JSON;
@@ -46,6 +46,6 @@ sub run {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

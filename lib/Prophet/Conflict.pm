@@ -1,5 +1,5 @@
 package Prophet::Conflict;
-use Moose;
+use Any::Moose;
 use Params::Validate;
 use Prophet::ConflictingPropChange;
 use Prophet::ConflictingChange;
@@ -266,7 +266,7 @@ sub generate_nullification_changeset {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

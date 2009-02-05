@@ -1,5 +1,5 @@
 package Prophet::ReplicaFeedExporter;
-use Moose;
+use Any::Moose;
 extends 'Prophet::ReplicaExporter';
 
 my $feed_updated;
@@ -168,5 +168,5 @@ sub tag ($$;&) {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 

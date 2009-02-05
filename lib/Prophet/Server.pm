@@ -1,5 +1,5 @@
 package Prophet::Server;
-use Moose;
+use Any::Moose;
 extends qw'HTTP::Server::Simple::CGI';
 
 use Prophet::Server::Controller;

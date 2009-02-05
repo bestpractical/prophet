@@ -1,5 +1,5 @@
 package Prophet::Resolver::AlwaysSource;
-use Moose;
+use Any::Moose;
 use Prophet::Change;
 extends 'Prophet::Resolver';
 
@@ -13,6 +13,6 @@ sub run {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

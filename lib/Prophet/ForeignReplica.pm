@@ -1,5 +1,5 @@
 package Prophet::ForeignReplica;
-use Moose;
+use Any::Moose;
 use Params::Validate qw(:all);
 use Data::UUID 'NameSpace_DNS';
 extends 'Prophet::Replica';
@@ -124,7 +124,7 @@ sub log {
 }
 
 
-no Moose;
+no Any::Moose;
 __PACKAGE__->meta->make_immutable;
 
 1;

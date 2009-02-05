@@ -1,5 +1,5 @@
 package Prophet::Replica::prophet;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
 use LWP::Simple ();
@@ -1090,6 +1090,6 @@ sub write_userdata {
 }
 
 __PACKAGE__->meta->make_immutable();
-no Moose;
+no Any::Moose;
 
 1;

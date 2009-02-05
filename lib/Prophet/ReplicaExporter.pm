@@ -1,5 +1,5 @@
 package Prophet::ReplicaExporter;
-use Moose;
+use Any::Moose;
 use Params::Validate qw(:all);
 use File::Spec;
 use Prophet::Record;
@@ -138,6 +138,6 @@ sub export_changesets {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

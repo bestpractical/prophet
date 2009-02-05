@@ -6,9 +6,9 @@ BEGIN { delete ${__PACKAGE__."::"}{meta};
  delete ${__PACKAGE__."::"}{with};
 }
 
-use Moose;
+use Any::Moose;
 
-use Moose::Util::TypeConstraints;
+use Any::Moose 'Util::TypeConstraints';
 
 =head1 NAME
 
@@ -110,7 +110,7 @@ sub _generate_name {
 =cut
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

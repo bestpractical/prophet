@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 package Prophet::CLI::Parameters;
-use Moose::Role;
+use Any::Moose 'Role';
 
 has cli => (
     is       => 'rw',
@@ -18,7 +18,7 @@ has context => (
     },
 );
 
-no Moose::Role;
+no Any::Moose;
 
 1;
 

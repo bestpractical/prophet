@@ -1,5 +1,5 @@
 package Prophet::Web::Field;
-use Moose;
+use Any::Moose;
 
 has name   => ( isa => 'Str',             is => 'rw' );
 has record => ( isa => 'Prophet::Record', is => 'rw' );
@@ -79,6 +79,6 @@ EOF
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;

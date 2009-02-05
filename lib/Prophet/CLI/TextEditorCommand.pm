@@ -1,5 +1,5 @@
 package Prophet::CLI::TextEditorCommand;
-use Moose::Role;
+use Any::Moose 'Role';
 use Params::Validate qw/validate/;
 
 requires 'process_template';
@@ -119,5 +119,5 @@ process_template
 
 =cut
 
-no Moose::Role;
+no Any::Moose;
 1;

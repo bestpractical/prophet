@@ -1,5 +1,5 @@
 package Prophet::CLI::Command::Config;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI::Command';
 
 sub run {
@@ -48,7 +48,7 @@ sub no_config_files {
 }
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 
