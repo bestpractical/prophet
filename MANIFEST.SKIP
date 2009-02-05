@@ -2,6 +2,8 @@
 .tmp*
 .sw?$
 .svn$
+.git/*
 .bak$
 ^blib/
 pm_to_blib
+.gitignore
