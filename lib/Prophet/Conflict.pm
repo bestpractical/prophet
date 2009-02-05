@@ -11,7 +11,7 @@ has prophet_handle => (
 
 has resolvers => (
     is         => 'rw',
-    isa        => 'ArrayRef[CodeRef]',
+    isa        => 'ArrayRef',
     default    => sub { [] },
     auto_deref => 1,
 );

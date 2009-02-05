@@ -3,7 +3,7 @@ use Any::Moose;
 
 has chickens => (
     is         => 'rw',
-    isa        => 'ArrayRef[Prophet::Test::Participant]',
+    isa        => 'ArrayRef',
     default    => sub { [] },
     auto_deref => 1,
 );
@@ -15,7 +15,7 @@ has record_callback => (
 
 has history => (
     is        => 'rw',
-    isa       => 'ArrayRef[ArrayRef]',
+    isa       => 'ArrayRef',
     default   => sub { [] },
 );
 

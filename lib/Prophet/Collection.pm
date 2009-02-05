@@ -33,7 +33,7 @@ has type => (
 
 has items => (
     is         => 'rw',
-    isa        => 'ArrayRef[Prophet::Record]',
+    isa        => 'ArrayRef',
     default    => sub { [] },
     auto_deref => 1,
 );

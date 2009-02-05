@@ -21,7 +21,7 @@ has success => ( isa => 'Bool', is => 'rw');
 has message => ( isa => 'Str', is => 'rw');
 has functions => (
              is        => 'rw',
-             isa       => 'HashRef[Prophet::Web::FunctionResult]',
+             isa       => 'HashRef',
              default   => sub { {} },
 );
 

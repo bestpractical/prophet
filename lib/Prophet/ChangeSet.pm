@@ -53,7 +53,7 @@ has is_resolution => (
 
 has changes => (
     is         => 'rw',
-    isa        => 'ArrayRef[Prophet::Change]',
+    isa        => 'ArrayRef',
     auto_deref => 1,
     default    => sub { [] },
 );

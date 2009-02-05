@@ -31,7 +31,7 @@ has is_resolution => (
 
 has prop_changes => (
     is         => 'rw',
-    isa        => 'ArrayRef[Prophet::PropChange]',
+    isa        => 'ArrayRef',
     auto_deref => 1,
     default    => sub { [] },
 );

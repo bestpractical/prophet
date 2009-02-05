@@ -21,7 +21,7 @@ has message => (isa => 'Str', is => 'rw');
 
 has result => (
              is        => 'rw',
-             isa       => 'HashRef[Str]',
+             isa       => 'HashRef',
              default   => sub { {} },
 );
 
