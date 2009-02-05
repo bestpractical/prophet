@@ -1,7 +1,5 @@
-use strict;
-use warnings;
-
 package Prophet::Meta::Types;
+use Any::Moose;
 use Any::Moose 'Util::TypeConstraints';
 
 enum 'Prophet::Type::ChangeType' => qw/add_file add_dir update_file delete/;
