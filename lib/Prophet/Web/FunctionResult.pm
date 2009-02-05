@@ -15,7 +15,7 @@ use Any::Moose;
 
 has class => ( isa => 'Str', is => 'rw');
 has function_name => ( isa => 'Str', is => 'rw');
-has record_uuid => (isa => 'Maybe[Str]', is => 'rw');
+has record_uuid => (isa => 'Str|Undef', is => 'rw');
 has success => (isa => 'Bool', is => 'rw');
 has message => (isa => 'Str', is => 'rw');
 

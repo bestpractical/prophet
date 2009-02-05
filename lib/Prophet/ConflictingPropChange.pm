@@ -8,17 +8,17 @@ has name => (
 
 has source_old_value => (
     is  => 'rw',
-    isa => 'Maybe[Str]',
+    isa => 'Str|Undef',
 );
 
 has target_value => (
     is  => 'rw',
-    isa => 'Maybe[Str]',
+    isa => 'Str|Undef',
 );
 
 has source_new_value => (
     is  => 'rw',
-    isa => 'Maybe[Str]',
+    isa => 'Str|Undef',
 );
 
 =head1 NAME

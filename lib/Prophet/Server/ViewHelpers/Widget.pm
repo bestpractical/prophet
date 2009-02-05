@@ -29,11 +29,11 @@ has prop => ( isa => 'Str', is => 'ro' );
 
 has field => ( isa => 'Prophet::Web::Field', is => 'rw');
 
-has type => ( isa => 'Maybe[Str]', is => 'rw');
+has type => ( isa => 'Str|Undef', is => 'rw');
 
 has autocomplete => (isa => 'Bool', is => 'rw', default => 1);
 
-has default => ( isa => 'Maybe[Str]', is => 'rw');
+has default => ( isa => 'Str|Undef', is => 'rw');
 
 sub render {
     my $self = shift;

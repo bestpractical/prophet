@@ -6,10 +6,10 @@ has record => ( isa => 'Prophet::Record', is => 'rw' );
 has prop  => ( isa => 'Str',             is => 'rw' );
 has value  => ( isa => 'Str',             is => 'rw' );
 has label => ( isa => 'Str', is => 'rw', default => sub {''});
-has id    => ( isa => 'Maybe[Str]', is => 'rw' );
-has class => ( isa => 'Maybe[Str]', is => 'rw' );
-has value => ( isa => 'Maybe[Str]', is => 'rw' );
-has type => ( isa => 'Maybe[Str]', is => 'rw', default => 'text');
+has id    => ( isa => 'Str|Undef', is => 'rw' );
+has class => ( isa => 'Str|Undef', is => 'rw' );
+has value => ( isa => 'Str|Undef', is => 'rw' );
+has type => ( isa => 'Str|Undef', is => 'rw', default => 'text');
 
 
 

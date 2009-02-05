@@ -8,7 +8,7 @@ use constant record_class => 'Prophet::Record';
 
 has app_handle => (
     is  => 'rw',
-    isa => 'Maybe[Prophet::App]',
+    isa => 'Prophet::App|Undef',
     required => 0,
     trigger => sub {
         my ($self, $app) = @_;

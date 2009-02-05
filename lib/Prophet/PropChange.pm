@@ -8,12 +8,12 @@ has name => (
 
 has old_value => (
     is  => 'rw',
-    isa => 'Maybe[Str]',
+    isa => 'Str|Undef',
 );
 
 has new_value => (
     is  => 'rw',
-    isa => 'Maybe[Str]',
+    isa => 'Str|Undef',
 );
 
 =head1 NAME

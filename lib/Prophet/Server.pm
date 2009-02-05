@@ -24,8 +24,8 @@ has app_handle => (
     handles => [qw/handle/]
 );
 
-has cgi        => ( isa => 'Maybe[CGI]',                is  => 'rw' );
-has nav        => ( isa => 'Maybe[Prophet::Web::Menu]', is  => 'rw' );
+has cgi        => ( isa => 'CGI|Undef',                is  => 'rw' );
+has nav        => ( isa => 'Prophet::Web::Menu|Undef', is  => 'rw' );
 has read_only  => ( isa  => 'Bool',                        is => 'rw' );
 has static     => ( isa =>  'Bool',                        is => 'rw');
 has view_class => ( isa => 'Str',                       is  => 'rw' );

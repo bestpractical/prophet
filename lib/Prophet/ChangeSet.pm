@@ -5,12 +5,12 @@ use Params::Validate;
 
 has creator => (
     is  => 'rw',
-    isa => 'Maybe[Str]',
+    isa => 'Str|Undef',
 );
 
 has created => (
     is      => 'rw',
-    isa     => 'Maybe[Str]',
+    isa     => 'Str|Undef',
     default => sub {
         my ($sec, $min, $hour, $day, $month, $year) = gmtime;
         $year += 1900;
@@ -28,7 +28,7 @@ has source_uuid => (
 
 has sequence_no => (
     is  => 'rw',
-    isa => 'Maybe[Int]',
+    isa => 'Int|Undef',
 );
 
 has original_source_uuid => (
@@ -38,7 +38,7 @@ has original_source_uuid => (
 
 has original_sequence_no => (
     is  => 'rw',
-    isa => 'Maybe[Int]',
+    isa => 'Int|Undef',
 );
 
 has is_nullification => (
