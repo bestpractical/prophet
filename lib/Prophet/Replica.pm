@@ -29,9 +29,9 @@ has is_resdb => (
 has db_uuid => (
     is     => 'rw',
     isa    => 'Str',
-    writer => 'set_db_uuid',
     documentation => 'The uuid of this replica.',
 );
+sub set_db_uuid { $_[0]->db_uuid(@_) }
 
 has url => (
     is  => 'rw',
