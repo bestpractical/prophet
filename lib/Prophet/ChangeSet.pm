@@ -58,8 +58,11 @@ has changes => (
     default    => sub { [] },
 );
 
-sub _add_change { push @{ $_[0]->changes }, $_[1] }
 sub has_changes { scalar @{ $_[0]->changes } }
+sub _add_change {
+    my $self = shift;
+    push @{ $self->changes }, @_;
+}
 
 =head1 NAME
 

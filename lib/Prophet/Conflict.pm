@@ -43,7 +43,10 @@ has conflicting_changes => (
 );
 
 sub has_conflicting_changes { scalar @{ $_[0]->conflicting_changes } }
-sub add_conflicting_change  { push @{ $_[0]->conflicting_changes }, $_[1] }
+sub add_conflicting_change  {
+    my $self = shift;
+    push @{ $self->conflicting_changes }, @_;
+}
 
 =head2 analyze_changeset Prophet::ChangeSet
 

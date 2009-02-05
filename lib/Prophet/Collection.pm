@@ -38,8 +38,11 @@ has items => (
     auto_deref => 1,
 );
 
-sub add_item { push @{ $_[0]->items }, $_[1] }
 sub count    { scalar @{ $_[0]->items } }
+sub add_item {
+    my $self = shift;
+    push @{ $self->items }, @_;
+}
 
 =head1 NAME
 

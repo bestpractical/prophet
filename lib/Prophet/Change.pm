@@ -37,7 +37,10 @@ has prop_changes => (
 );
 
 sub has_prop_changes { scalar @{ $_[0]->prop_changes } }
-sub _add_prop_change { push @{ $_[0]->prop_changes }, $_[1] }
+sub _add_prop_change {
+    my $self = shift;
+    push @{ $self->prop_changes }, @_;
+}
 
 =head1 NAME
 

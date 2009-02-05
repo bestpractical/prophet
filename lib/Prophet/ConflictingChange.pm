@@ -41,8 +41,11 @@ has prop_conflicts => (
     default   => sub { [] },
 );
 
-sub add_prop_conflict { push @{ $_[0]->prop_conflicts }, $_[1] }
 sub has_prop_conflicts { scalar @{ $_[0]->prop_conflicts } }
+sub add_prop_conflict {
+    my $self = shift;
+    push @{ $self->prop_conflicts }, @_;
+}
 
 sub as_hash {
     my $self = shift;
