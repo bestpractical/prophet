@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 7;
 use lib 't/lib';
 
 use File::Temp qw'tempdir';
@@ -35,11 +35,15 @@ $viceroy->create( props => { bugcatcher => $bugcatcher->uuid, species =>
         'viceroy' } );
 
 # test collection reference
-my @got      = sort { $a->uuid cmp $b->uuid } @{$bugcatcher->bugs};
-my @expected = sort { $a->uuid cmp $b->uuid } ($monarch, $viceroy);
+my @got = map { $_->uuid }
+          sort { $a->uuid cmp $b->uuid }
+          @{$bugcatcher->bugs};
 
-is($got[0]->uuid, $expected[0]->uuid, $got[0]->prop('species') . " uuid");
-is($got[1]->uuid, $expected[1]->uuid, $got[1]->prop('species') . " uuid");
+my @expected = map { $_->uuid }
+               sort { $a->uuid cmp $b->uuid }
+               ($monarch, $viceroy);
+
+is_deeply(\@got, \@expected, "collection's record uuids match");
 
 # test record reference
 is($bugcatcher->net->uuid, $net->uuid);
