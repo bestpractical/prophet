@@ -532,7 +532,7 @@ sub default_props {
     my $self   = shift;
     my $props  = shift;
 
-    my @methods = grep { /^default_prop_/ } $self->meta->get_method_list;
+    my @methods = grep { /^default_prop_/ } $self->meta->get_all_method_names;
 
     for my $method (@methods) {
         my ($key) = $method =~ /^default_prop_(.+)$/;
