@@ -236,7 +236,7 @@ Returns this replica's version.
 
 =cut
 
-sub replica_version { shift->_replica_version }
+sub replica_version { die "replica_version is read-only; you want set_replica_version." if @_ > 1; shift->_replica_version }
 
 =head2 set_replica_version
 

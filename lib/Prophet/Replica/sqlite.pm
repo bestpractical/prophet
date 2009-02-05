@@ -29,9 +29,8 @@ has '+db_uuid' => (
 
 has _uuid => ( is => 'rw', );
 
-has replica_version => (
-    is      => 'ro',
-    writer  => '_set_replica_version',
+has _replica_version => (
+    is      => 'rw',
     isa     => 'Int',
     lazy    => 1,
     default => sub { shift->fetch_local_metadata('replica-version') || 0 }
@@ -161,6 +160,14 @@ sub replica_exists {
     return -f $self->db_file ? 1 : 0;
 }
 
+=head2 replica_version
+
+Returns this replica's version.
+
+=cut
+
+sub replica_version { die "replica_version is read-only; you want set_replica_version." if @_ > 1; shift->_replica_version }
+
 =head2 set_replica_version
 
 Sets the replica's version to the given integer.
@@ -171,7 +178,7 @@ sub set_replica_version {
     my $self    = shift;
     my $version = shift;
 
-    $self->_set_replica_version($version);
+    $self->_replica_version($version);
 
     $self->store_local_metadata( 'replica-version' => $version,);
 
