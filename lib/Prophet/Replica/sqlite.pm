@@ -58,7 +58,6 @@ has fs_root => (
 has current_edit => ( is => 'rw', );
 
 has current_edit_records => (
-    metaclass => 'Collection::Array',
     is        => 'rw',
     isa       => 'ArrayRef',
     default   => sub { [] },
