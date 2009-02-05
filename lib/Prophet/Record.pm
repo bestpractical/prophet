@@ -532,12 +532,12 @@ sub default_props {
     my $self   = shift;
     my $props  = shift;
 
-    my @methods = grep { $_->name =~ /^default_prop_/ } $self->meta->get_all_methods;
+    my @methods = grep { /^default_prop_/ } $self->meta->get_method_list;
 
     for my $method (@methods) {
-        my ($key) = $method->name =~ /^default_prop_(.+)$/;
+        my ($key) = $method =~ /^default_prop_(.+)$/;
 
-        $props->{$key} = $method->( $self, props => $props)
+        $props->{$key} = $self->$method(props => $props)
             if !defined($props->{$key});
     }
 
