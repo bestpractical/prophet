@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 package App::Settings::CLI;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI';
 
 use App::Settings;
@@ -11,7 +11,7 @@ has '+app_class' => (
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

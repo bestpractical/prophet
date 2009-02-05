@@ -1,5 +1,5 @@
 package App::WebToy::Model::WikiPage;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Record';
 has type => ( default => 'wikipage');
 
@@ -27,7 +27,7 @@ sub default_prop_content {
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 

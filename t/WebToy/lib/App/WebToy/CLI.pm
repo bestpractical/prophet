@@ -1,5 +1,5 @@
 package App::WebToy::CLI;
-use Moose;
+use Any::Moose;
 extends 'Prophet::CLI';
 
 use App::WebToy;
@@ -10,7 +10,7 @@ has 'app_class' => (
 
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 
 1;
 
