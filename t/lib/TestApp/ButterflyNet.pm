@@ -1,9 +1,9 @@
 package TestApp::ButterflyNet;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Record';
 
 has type => ( default => 'net' );
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 1;

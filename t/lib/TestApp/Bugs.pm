@@ -1,9 +1,9 @@
 package TestApp::Bugs;
-use Moose;
+use Any::Moose;
 extends 'Prophet::Collection';
 
 use constant record_class => 'TestApp::Bug';
 
 __PACKAGE__->meta->make_immutable;
-no Moose;
+no Any::Moose;
 1;
