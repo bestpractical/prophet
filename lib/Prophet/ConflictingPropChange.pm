@@ -53,7 +53,7 @@ sub as_hash {
     my $self = shift;
     my $hashref = {};
 
-    for ($self->meta->get_attribute_list) {
+    for (qw(name source_old_value target_value source_new_value)) {
          $hashref->{$_} = $self->$_
     }
     return $hashref;
