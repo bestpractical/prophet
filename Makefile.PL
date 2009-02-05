@@ -19,6 +19,7 @@ requires('Proc::InvokeEditor');
 requires('Scalar::Defer' => '0.18');
 requires('Class::MOP' => '0.70');
 requires('Any::Moose');
+requires('Mouse');
 requires('XML::Atom::SimpleFeed');
 requires('Path::Dispatcher' => '0.06'); # Path::Dispatcher::Declarative
 requires('Time::Progress');
