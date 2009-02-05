@@ -22,9 +22,8 @@ has '+db_uuid' => (
 
 has _uuid => ( is => 'rw', );
 
-has replica_version => (
-    is      => 'ro',
-    writer  => '_set_replica_version',
+has _replica_version => (
+    is      => 'rw',
     isa     => 'Int',
     lazy    => 1,
     default => sub { shift->_read_file('replica-version') || 0 }
@@ -228,8 +227,16 @@ Returns false otherwise.
 
 sub replica_exists {
     my $self = shift;
-    return $self->replica_version ? 1 : 0;
+    return $self->_replica_version ? 1 : 0;
 }
+
+=head2 replica_version
+
+Returns this replica's version.
+
+=cut
+
+sub replica_version { shift->_replica_version }
 
 =head2 set_replica_version
 
@@ -241,7 +248,7 @@ sub set_replica_version {
     my $self    = shift;
     my $version = shift;
 
-    $self->_set_replica_version($version);
+    $self->_replica_version($version);
 
     $self->_write_file(
         path    => 'replica-version',
