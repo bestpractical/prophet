@@ -38,7 +38,7 @@ has autoresolved => (
 
 has conflicting_changes => (
     is        => 'ro',
-    isa       => 'ArrayRef[Prophet::ConflictingChange]',
+    isa       => 'ArrayRef',
     default   => sub { [] },
 );
 
