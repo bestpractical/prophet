@@ -31,7 +31,7 @@ has db_uuid => (
     isa    => 'Str',
     documentation => 'The uuid of this replica.',
 );
-sub set_db_uuid { $_[0]->db_uuid(@_) }
+sub set_db_uuid { shift->db_uuid(@_) }
 
 has url => (
     is  => 'rw',
