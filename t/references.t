@@ -35,9 +35,11 @@ $viceroy->create( props => { bugcatcher => $bugcatcher->uuid, species =>
         'viceroy' } );
 
 # test collection reference
-my @bugs = @{$bugcatcher->bugs};
-is($bugs[0]->uuid, $monarch->uuid, "monarch butterfly uuids match");
-is($bugs[1]->uuid, $viceroy->uuid, "viceroy butterfly uuids match");
+my @got      = sort { $a->uuid cmp $b->uuid } @{$bugcatcher->bugs};
+my @expected = sort { $a->uuid cmp $b->uuid } ($monarch, $viceroy);
+
+is($got[0]->uuid, $expected[0]->uuid, $got[0]->prop('species') . " uuid");
+is($got[1]->uuid, $expected[1]->uuid, $got[1]->prop('species') . " uuid");
 
 # test record reference
 is($bugcatcher->net->uuid, $net->uuid);
