@@ -902,9 +902,11 @@ sub record_integration_of_changeset {
     {
         return $self->store_local_metadata( 'last-changeset-from-' . $changeset->original_source_uuid => $changeset->original_sequence_no );
     }
+    if ($changeset->source_uuid) {
     if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
         return $self->store_local_metadata( 'last-changeset-from-' . $changeset->source_uuid => $changeset->sequence_no );
     }
+}
 }
 
 
