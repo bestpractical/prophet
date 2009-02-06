@@ -60,9 +60,11 @@ sub render_input {
     my $self = shift;
     
     if ($self->type eq 'textarea') {
+            my $value = $self->value() || '';
+            Prophet::Util::escape_utf8(\$value);
 
 return <<EOF;
-<textarea @{[$self->render_name]} @{[$self->render_id]} @{[$self->render_class]} >@{[$self->render_value]}</textarea>
+<textarea @{[$self->render_name]} @{[$self->render_id]} @{[$self->render_class]} >@{[$value]}</textarea>
 EOF
     } else {
 
