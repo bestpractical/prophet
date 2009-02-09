@@ -93,8 +93,6 @@ lib/Prophet/Web/Field.pm
 lib/Prophet/Web/FunctionResult.pm
 lib/Prophet/Web/Menu.pm
 lib/Prophet/Web/Result.pm
-Makefile
-Makefile.old
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
