@@ -7,18 +7,14 @@ with 'Prophet::CLI::CollectionCommand';
 use File::Path;
 use File::Spec;
 
-before run => sub {
+sub run {
     my $self = shift;
+
     die "Please specify a --to.\n" unless $self->has_arg('to');
 
     # set the temp directory where we will do all of our work, which will be
     # published via rsync
     $self->set_arg(path => $self->tempdir);
-};
-
-around run => sub {
-    my $orig = shift;
-    my $self = shift;
 
     my $export_html = $self->has_arg('html');
     my $export_replica = $self->has_arg('replica');
@@ -34,13 +30,9 @@ around run => sub {
     # otherwise, do the normal prophet export this replica
     if ($export_replica) {
         print "Exporting a clone of this replia\n";
-        $self->$orig(@_) 
+        $self->SUPER::run(@_) 
     } 
-};
 
-# the tempdir is populated, now publish it
-after run => sub {
-    my $self = shift;
     my $from = $self->arg('path');
     my $to   = $self->arg('to');
 
@@ -51,7 +43,7 @@ after run => sub {
     );
 
     print "Publication complete.\n";
-};
+}
 
 sub export_html {
 	my $self = shift;

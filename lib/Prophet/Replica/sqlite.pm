@@ -327,10 +327,11 @@ sub set_replica_uuid {
 
 }
 
-before set_db_uuid => sub {
+sub set_db_uuid {
     my $self = shift;
     my $uuid = shift;
     $self->store_local_metadata( 'database-uuid', => $uuid);
+    $self->SUPER::set_db_uuid($uuid);
 };
 
 =head1 Internals of record handling

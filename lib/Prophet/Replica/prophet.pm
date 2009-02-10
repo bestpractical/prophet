@@ -382,14 +382,15 @@ sub set_replica_uuid {
 
 }
 
-before set_db_uuid => sub {
+sub set_db_uuid {
     my $self = shift;
     my $uuid = shift;
     $self->_write_file(
         path    => 'database-uuid',
         content => $uuid
     );
-};
+    $self->SUPER::set_db_uuid($uuid);
+}
 
 =head1 Internals of record handling
 
