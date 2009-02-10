@@ -17,11 +17,10 @@ requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires('Scalar::Defer' => '0.18');
-requires('Class::MOP' => '0.70');
-requires('Any::Moose');
+requires('Any::Moose' => '0.03');
 requires('Mouse' => '0.16');
 requires('XML::Atom::SimpleFeed');
-requires('Path::Dispatcher' => '0.06'); # Path::Dispatcher::Declarative
+requires('Path::Dispatcher' => '0.09'); # Path::Dispatcher::Declarative
 requires('Time::Progress');
 
 build_requires('Test::Exception' => '0.26');
