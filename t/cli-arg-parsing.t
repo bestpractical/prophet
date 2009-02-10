@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 47;
+use Prophet::Test tests => 47;
 use Test::Exception;
 
 use File::Temp qw'tempdir';
