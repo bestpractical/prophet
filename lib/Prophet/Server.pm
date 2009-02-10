@@ -159,7 +159,14 @@ sub handle_request {
 
     my $d = $dispatcher_class->new( server => $self );
 
-    $d->run( $cgi->request_method . $cgi->path_info, $d )
+    my $path = Path::Dispatcher::Path->new(
+        path => $cgi->path_info,
+        metadata => {
+            method => $cgi->request_method,
+        },
+    );
+
+    $d->run( $path, $d )
         || $self->_send_404;
 
 }

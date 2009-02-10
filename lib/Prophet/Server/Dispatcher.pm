@@ -7,7 +7,7 @@ has server => ( isa => 'Prophet::Server', is => 'rw', weak_ref => 1 );
 sub token_delimiter       {'/'}
 sub case_sensitive_tokens {0}
 
-under 'POST' => sub {
+under { method => 'POST' } => sub {
     on qr'.*' => sub {
         my $self = shift;
         return $self->server->_send_401 if ( $self->server->read_only );
@@ -21,7 +21,7 @@ under 'POST' => sub {
     };
 };
 
-under 'GET' => sub {
+under { method => 'GET' } => sub {
     on qr'^=/prophet/autocomplete' => sub {
         shift->server->show_template('/_prophet_autocompleter') };
     on qr'^static/prophet/(.*)$' => sub { shift->server->send_static_file($1)};
@@ -34,7 +34,7 @@ under 'GET' => sub {
     };
 };
 
-on qr'^(?:GET|POST|PUT|DELETE|PATCH)(/.*)$' => sub { shift->server->show_template($1) || next_rule; };
+on qr'^(/.*)$' => sub { shift->server->show_template($1) || next_rule; };
 
 no Any::Moose;
 
