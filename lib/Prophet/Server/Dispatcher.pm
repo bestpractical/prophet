@@ -14,7 +14,7 @@ under { method => 'POST' } => sub {
         next_rule;
     };
 
-    under 'records' => sub {
+    under '/records' => sub {
         on qr|^(.*)/(.*)/(.*)$| => sub { shift->server->update_record_prop($1,$2,$3) };
         on qr|^(.*)/(.*).json$| => sub { shift->server->update_record($1,$2) };
         on qr|^(.*).json$|     => sub { shift->server->create_record($1) };
@@ -22,19 +22,19 @@ under { method => 'POST' } => sub {
 };
 
 under { method => 'GET' } => sub {
-    on qr'^=/prophet/autocomplete' => sub {
+    on qr'^/=/prophet/autocomplete' => sub {
         shift->server->show_template('/_prophet_autocompleter') };
-    on qr'^static/prophet/(.*)$' => sub { shift->server->send_static_file($1)};
-    on qr'replica/+(.*)$' => sub { shift->server->serve_replica($1) };
-    on 'records.json' => sub { shift->server->get_record_types };
-    under 'records' => sub {
+    on qr'^/static/prophet/(.*)$' => sub { shift->server->send_static_file($1)};
+    on qr'/replica/+(.*)$' => sub { shift->server->serve_replica($1) };
+    on '/records.json' => sub { shift->server->get_record_types };
+    under '/records' => sub {
         on qr|^(.*)/(.*)/(.*)$| => sub { shift->server->get_record_prop($1,$2,$3); };
         on qr|^(.*)/(.*).json$| => sub { shift->server->get_record($1,$2) };
         on qr|^(.*).json$|      => sub { shift->server->get_record_list($1) };
     };
 };
 
-on qr'^(/.*)$' => sub { shift->server->show_template($1) || next_rule; };
+on qr'^/(.*)$' => sub { shift->server->show_template($1) || next_rule; };
 
 no Any::Moose;
 
