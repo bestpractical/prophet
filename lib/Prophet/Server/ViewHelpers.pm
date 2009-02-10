@@ -7,7 +7,7 @@ use base 'Exporter::Lite';
 use Params::Validate qw/validate/;
 use Template::Declare::Tags;
 use Prophet::Web::Field;
-our @EXPORT = ( qw(form page content widget function param_from_function hidden_param));
+our @EXPORT = (qw(form page content widget function param_from_function hidden_param));
 use Prophet::Server::ViewHelpers::Widget;
 use Prophet::Server::ViewHelpers::Function;
 use Prophet::Server::ViewHelpers::ParamFromFunction;

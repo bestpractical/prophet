@@ -5,7 +5,10 @@ package Prophet::Server::View;
 use base 'Template::Declare';
 
 use Template::Declare::Tags;
-use Prophet::Server::ViewHelpers;
+BEGIN {
+    no warnings 'redefine'; # we stomp on form{}
+    use Prophet::Server::ViewHelpers;
+}
 use Params::Validate;
 use Prophet::Web::Menu;
 
