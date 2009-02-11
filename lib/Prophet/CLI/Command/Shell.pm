@@ -42,6 +42,7 @@ sub preamble {
 
 sub read {
     my $self = shift;
+    Prophet::CLI->end_pager; # in case a previous command died
     $self->readline($self->prompt);
 }
 

@@ -172,8 +172,8 @@ sub start_pager {
     my $self = shift;
     my $content = shift;
     if (is_interactive() && !$ORIGINAL_STDOUT) {
-        local  $ENV{'LESS'} = '-FXE';
-        local  $ENV{'MORE'} = '-FXE';
+        local  $ENV{'LESS'} = '-FXe';
+        local  $ENV{'MORE'} = '-FXe';
 
         my $pager = $self->get_pager();
         return unless $pager;
