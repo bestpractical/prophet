@@ -104,7 +104,9 @@ sub run_one_command {
     $self->context->setup_from_args(@args);
     my $dispatcher = $self->dispatcher_class->new( cli => $self );
     my $dispatch = $dispatcher->dispatch( join ' ', @{ $self->context->primary_commands });
+    $self->start_pager();
     $dispatch->run($dispatcher);
+    $self->end_pager();
 }
 
 sub _command_matches_alias {
@@ -152,6 +154,41 @@ sub invoke {
     warn $@ if $@;
     select $ofh if $ofh;
     return $ret;
+}
+
+
+sub is_interactive {
+  return -t STDIN && -t STDOUT;
+}
+
+sub get_pager {
+    my $self = shift;
+    return $ENV{'PAGER'} || `which less` || `which more`;
+}
+
+our $ORIGINAL_STDOUT;
+
+sub start_pager {
+    my $self = shift;
+    my $content = shift;
+    if (is_interactive() && !$ORIGINAL_STDOUT) {
+        local  $ENV{'LESS'} = '-FXE';
+        local  $ENV{'MORE'} = '-FXE';
+
+        my $pager = $self->get_pager();
+        return unless $pager;
+        open (my $cmd, "|-", $pager) || return;
+        $|++;
+        $ORIGINAL_STDOUT = *STDOUT;
+        *STDOUT = $cmd;
+    }
+}
+
+sub end_pager {
+    return unless ($ORIGINAL_STDOUT);
+    *STDOUT = $ORIGINAL_STDOUT ;
+    close($pager);
+    $ORIGINAL_STDOUT=undef;
 }
 
 

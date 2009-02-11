@@ -58,10 +58,12 @@ sub eval {
 
 sub _run {
     my $self = shift;
+    Prophet::CLI->end_pager;
 
     local $| = 1;
 
     print $self->preamble . "\n";
+    # we don't want to run the pager for the shell
 
     $self->cli->interactive_shell(1);
     while ( defined(my $cmd = $self->read)) {
