@@ -69,6 +69,7 @@ sub prompt_for_login {
 
     my $password;
 
+    Prophet::CLI->end_pager();
     # XXX belongs to some CLI callback
     use Term::ReadKey;
     local $| = 1;
@@ -85,6 +86,7 @@ sub prompt_for_login {
     chomp $password;
     ReadMode 1;
     print "\n";
+    Prophet::CLI->start_pager();
     return ( $username, $password );
 }
 
