@@ -10,6 +10,7 @@ __PACKAGE__->register_arg_translations( f => 'force' );
 sub run {
     my $self = shift;
 
+    Prophet::CLI->end_pager();
     $self->source( Prophet::Replica->get_handle(
         url       => $self->arg('from'),
         app_handle => $self->app_handle,
@@ -31,12 +32,14 @@ sub run {
 
     my $changesets = $self->_do_merge();
 
+    Prophet::CLI->start_pager();
     $self->print_report($changesets);
 }
 
 sub print_report {
     my $self = shift;
     my $changesets = shift;
+    print "\n";
     if ($changesets == 0) {
         print "No new changesets.\n";
     }

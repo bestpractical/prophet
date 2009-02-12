@@ -69,6 +69,7 @@ sub prompt_for_login {
 
     my $password;
 
+    my $was_in_pager = Prophet::CLI->in_pager();
     Prophet::CLI->end_pager();
     # XXX belongs to some CLI callback
     use Term::ReadKey;
@@ -86,7 +87,7 @@ sub prompt_for_login {
     chomp $password;
     ReadMode 1;
     print "\n";
-    Prophet::CLI->start_pager();
+    Prophet::CLI->start_pager() if ($was_in_pager);
     return ( $username, $password );
 }
 

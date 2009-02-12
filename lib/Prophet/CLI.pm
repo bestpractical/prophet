@@ -184,8 +184,13 @@ sub start_pager {
     }
 }
 
+sub in_pager {
+    return $ORIGINAL_STDOUT ? 1 :0;
+}
+
 sub end_pager {
-    return unless ($ORIGINAL_STDOUT);
+    my $self = shift;
+    return unless ($self->in_pager);
     *STDOUT = $ORIGINAL_STDOUT ;
     close($pager);
     $ORIGINAL_STDOUT=undef;
