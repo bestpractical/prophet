@@ -37,6 +37,9 @@ sub run {
         require Net::Rendezvous::Publish;
         Net::Rendezvous::Publish->new;
     };
+
+    eval { require Template::Declare }  || return "Without Template::Declare installed, Prophet's Web UI won't work";
+
     if ($publisher) {
         $publisher->publish(
             name   => $self->handle->db_uuid,
