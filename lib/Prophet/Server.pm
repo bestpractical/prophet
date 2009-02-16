@@ -10,7 +10,6 @@ use Prophet::Web::Menu;
 use Prophet::Web::Result;
 
 use Params::Validate qw/:all/;
-use File::ShareDir qw//;
 use File::Spec ();
 use Cwd ();
 use JSON;
@@ -39,6 +38,7 @@ sub run {
     };
 
     eval { require Template::Declare }  || return "Without Template::Declare installed, Prophet's Web UI won't work";
+    eval { require File::ShareDir }  || return "Without File::ShareDir installed, Prophet's Web UI won't work";
 
     if ($publisher) {
         $publisher->publish(
