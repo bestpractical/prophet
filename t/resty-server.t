@@ -8,8 +8,14 @@ BEGIN {
 
 }
 
-use Prophet::Test tests => 26;
-use Test::WWW::Mechanize;
+use Prophet::Test;
+BEGIN {
+    eval {require Test::WWW::Mechanize; } || plan skip_all => "This test  file requirs Test::WWW::Mechanize";
+}
+
+
+
+plan tests => 26;
 use JSON;
 
 use_ok('Prophet::Record');
