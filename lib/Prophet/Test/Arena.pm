@@ -26,7 +26,6 @@ sub add_history {
 
 use Prophet::Test::Participant;
 use Prophet::Test;
-use YAML::Syck ();
 
 sub setup {
     my $self  = shift;
@@ -55,12 +54,14 @@ sub run_from_yaml {
     return $self->run_from_yamlfile(@ARGV) unless fileno($fh);
 
     local $/;
+    eval { require YAML::Syck; } || Test::More::plan(skip_all => 'YAML::Syck required for these tests');
     $self->run_from_data( YAML::Syck::Load(<$fh>) );
 
 }
 
 sub run_from_yamlfile {
     my ( $self, $file ) = @_;
+    eval { require YAML::Syck; } || Test::More::plan(skip_all => 'YAML::Syck required for these tests');
     $self->run_from_data( YAML::Syck::LoadFile($file) );
 }
 
