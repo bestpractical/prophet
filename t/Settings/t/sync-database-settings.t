@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use Prophet::Test tests => 12;
-use lib 't/Settings/lib';
+$ENV{'PERL5LIB'} .=  ':t/Settings/lib';
 
 
 as_alice {
