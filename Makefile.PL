@@ -17,7 +17,7 @@ requires('Module::Pluggable');
 requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires( 'Scalar::Defer' => '0.18' );
-requires( 'Any::Moose'    => '0.03' );
+requires( 'Any::Moose'    => '0.04' );
 requires( 'Mouse'         => '0.16' );
 requires('XML::Atom::SimpleFeed');
 requires( 'Path::Dispatcher' => '0.09' );    # Path::Dispatcher::Declarative
