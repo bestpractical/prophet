@@ -2,7 +2,6 @@
 
 use warnings;
 use strict;
-use Test::Exception;
 
 use Prophet::Test tests => 17;
 use Test::Exception;
