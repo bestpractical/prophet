@@ -167,7 +167,6 @@ sub get_pager {
 }
 
 our $ORIGINAL_STDOUT;
-our $pager;
 
 sub start_pager {
     my $self = shift;
@@ -176,11 +175,13 @@ sub start_pager {
         local  $ENV{'LESS'} = '-FXe';
         local  $ENV{'MORE'} = '-FXe';
 
-        $pager = $self->get_pager();
+        my $pager = $self->get_pager();
         return unless $pager;
         open (my $cmd, "|-", $pager) || return;
         $|++;
         $ORIGINAL_STDOUT = *STDOUT;
+
+        # $pager will be closed once we restore STDOUT to $ORIGINAL_STDOUT
         *STDOUT = $cmd;
     }
 }
@@ -193,8 +194,8 @@ sub end_pager {
     my $self = shift;
     return unless ($self->in_pager);
     *STDOUT = $ORIGINAL_STDOUT ;
-    close($pager);
-    $pager = undef;
+
+    # closes the pager
     $ORIGINAL_STDOUT = undef;
 }
 
