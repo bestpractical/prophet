@@ -1,7 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 7;
-
+use Prophet::Test tests => 7;
 use File::Temp qw'tempdir';
 
 # test coverage for Prophet::CLI::Command arg translation
@@ -25,8 +24,8 @@ my $command = Prophet::CLI::Command->new( handle => $cxn, context => $context );
 is($command->has_arg('all'), 1, 'translation of -a to --all correct');
 is($command->has_arg('verbose'), 1, 'translation of -v to --verbose correct');
 
-diag('Checking a subclass arg translation (with value)');
 use_ok('Prophet::CLI::Command::Server');
 $context->set_arg( p => '8080');
-my $server = Prophet::CLI::Command->new( handle => $cxn, context => $context );
-is($command->context->arg('port'), '8080', 'translation of -p to --port correct');
+my $server = Prophet::CLI::Command::Server->new( handle => $cxn, context => $context );
+diag('Checking a subclass arg translation (with value)');
+is($server->context->arg('port'), '8080', 'translation of -p to --port correct');

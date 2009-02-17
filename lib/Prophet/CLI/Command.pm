@@ -23,18 +23,13 @@ has context => (
 
 );
 
-our %ARG_TRANSLATIONS = (
-    'v' => 'verbose',
-    'a' => 'all',
-);
 sub ARG_TRANSLATIONS {
     my $self = shift;
-
-    return \%ARG_TRANSLATIONS if !@_;
-    %ARG_TRANSLATIONS = %{ $_[0] };
+    return (    'v' => 'verbose',
+                'a' => 'all' );
 }
 
-=head2 register_arg_translations
+=head2 Registering argument translations
 
 This is the Prophet CLI's way of supporting short forms for arguments,
 e.g. you want to let '-v' be able to used for the same purpose as
@@ -44,7 +39,7 @@ to have short commands.
 
 To use, have your command subclass do:
 
-    __PACKAGE__->register_arg_translations( f => 'file' );
+    around ARG_TRANSLATIONS => sub { shift->(),  f => 'file' };
 
 You can register as many translations at a time as you want.
 The arguments will be translated when the command object is
@@ -53,34 +48,12 @@ table, it is overwritten with the new value.
 
 =cut
 
-sub register_arg_translations {
-    my $class = shift;
-    my %args = @_;
-
-    $class->ARG_TRANSLATIONS({ %{$class->ARG_TRANSLATIONS}, %args });
-}
-
-=head2 clear_arg_translations
-
-Don't like the defaults? Get rid of 'em.
-
-Example:
-
-    __PACKAGE__->clear_arg_translations;
-
-=cut
-
-sub clear_arg_translations {
-    my $class = shift;
-
-    $class->ARG_TRANSLATIONS({});
-}
-
 sub _translate_args {
     my $self = shift;
+    my %translations = $self->ARG_TRANSLATIONS;
 
-    for my $arg (keys %{$self->ARG_TRANSLATIONS}) {
-        $self->set_arg($self->ARG_TRANSLATIONS->{$arg}, $self->arg($arg))
+    for my $arg (keys %translations) {
+        $self->set_arg($translations{$arg}, $self->arg($arg))
             if $self->has_arg($arg);
     }
 }

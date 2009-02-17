@@ -5,7 +5,7 @@ use Params::Validate qw/validate/;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::TextEditorCommand';
 
-__PACKAGE__->register_arg_translations( a => 'add', d => 'delete', s => 'show' );
+around ARG_TRANSLATIONS => sub { shift->(),  a => 'add', d => 'delete', s => 'show' };
 
 sub run {
     my $self     = shift;

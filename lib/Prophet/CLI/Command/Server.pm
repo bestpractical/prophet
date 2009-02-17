@@ -2,7 +2,7 @@ package Prophet::CLI::Command::Server;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 
-__PACKAGE__->register_arg_translations( p => 'port', w => 'writable' );
+around ARG_TRANSLATIONS =>  sub { shift->(),  p => 'port', w => 'writable' };
 
 use Prophet::Server;
 
