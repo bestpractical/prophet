@@ -2,7 +2,7 @@ package Prophet::CLI::Command::Server;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 
-around ARG_TRANSLATIONS =>  sub { shift->(),  p => 'port', w => 'writable' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  p => 'port', w => 'writable' };
 
 use Prophet::Server;
 

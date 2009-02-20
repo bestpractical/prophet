@@ -6,7 +6,7 @@ use JSON;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::TextEditorCommand';
 
-around ARG_TRANSLATIONS => sub { shift->(),  s => 'show' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  s => 'show' };
 
 sub run {
     my $self     = shift;

@@ -51,8 +51,6 @@ sub replica_config_file {
     return File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' )
 }
 
-#my $singleton;
-#around new => sub { return $singleton if $singleton; my $orig = shift; return $singleton = $orig->(@_); };
 
 sub load_from_files {
     my $self = shift;

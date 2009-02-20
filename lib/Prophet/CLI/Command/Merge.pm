@@ -5,7 +5,7 @@ extends 'Prophet::CLI::Command';
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
 
-around ARG_TRANSLATIONS => sub { shift->(),  f => 'force' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  f => 'force' };
 
 sub run {
     my $self = shift;

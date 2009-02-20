@@ -2,7 +2,7 @@ package Prophet::CLI::Command::Pull;
 use Any::Moose;
 extends 'Prophet::CLI::Command::Merge';
 
-around ARG_TRANSLATIONS => sub { shift->(),  l => 'local' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  l => 'local' };
 
 sub run {
     my $self = shift;

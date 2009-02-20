@@ -4,7 +4,7 @@ use Params::Validate;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 
-around ARG_TRANSLATIONS => sub { shift->(),  'b' => 'batch' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  'b' => 'batch' };
 
 sub run {
     my $self = shift;

@@ -39,7 +39,7 @@ to have short commands.
 
 To use, have your command subclass do:
 
-    around ARG_TRANSLATIONS => sub { shift->(),  f => 'file' };
+    sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  f => 'file' };
 
 You can register as many translations at a time as you want.
 The arguments will be translated when the command object is

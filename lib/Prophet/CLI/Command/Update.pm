@@ -3,7 +3,7 @@ use Any::Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::RecordCommand';
 
-around ARG_TRANSLATIONS => sub { shift->(), e => 'edit' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(), e => 'edit' };
 
 sub edit_record {
     my $self   = shift;
