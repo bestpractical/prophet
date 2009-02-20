@@ -123,7 +123,7 @@ sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
     Carp::confess unless ($self->app_handle);
-    $self->app_handle->log($self->url." (".$self->scheme.":".$self->url." )".": " .$msg);
+    $self->app_handle->log($self->url.": " .$msg);
 }
 
 
