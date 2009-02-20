@@ -7,7 +7,7 @@ use File::Spec  ();
 use File::Path;
 use Cwd ();
 use Digest::SHA1 qw(sha1_hex);
-use File::Find::Rule;
+use File::Find;
 use Data::UUID;
 use Prophet::Util;
 use JSON;
@@ -162,7 +162,7 @@ TODO: define the format for changesets and records
 
 Files inside the C<records> directory are index files which list off all published versions of a record and the key necessary to retrieve the record from the I<content-addressed store>.
 
-Inside the C<records> directory, you'll find directories named for each
+Inside the C<records> directory, you'll     warn "Got types ".join(',',@types);find directories named for each
 C<type> in your database. Inside each C<type> directory, you'll find a two-level directory tree of single hexadecimal digits. You'll find the record with the type <Foo> and the UUID C<29A3CA16-03C5-11DD-9AE0-E25CFCEE7EC4> stored in 
 
  records/Foo/2/9/29A3CA16-03C5-11DD-9AE0-E25CFCEE7EC4
@@ -1029,13 +1029,11 @@ sub list_records {
 
     return [] unless $self->type_exists( type => $args{type} );
     #return just the filenames, which, File::Find::Rule doesn't seem capable of
-    my @record_uuids
-        = map { my @path = split( qr'/', $_ ); pop @path }
-        File::Find::Rule->file->maxdepth(3)->in(
+    my @record_uuids;
+        find sub { return unless -f $_; push @record_uuids, $_ },
         File::Spec->catdir(
-            $self->fs_root => $self->_record_type_dir( $args{'type'} )
-        )
-        );
+            $self->fs_root => $self->_record_type_dir( $args{'type'} ));
+
     return [
         map { 
             my $record = $args{record_class}->new( { app_handle => $self->app_handle,  handle => $self, type => $args{type} } );
@@ -1053,11 +1051,11 @@ sub list_records {
 
 sub list_types {
     my $self = shift;
-
-    return [ map { my @path = split( qr'/', $_ ); pop @path }
-            File::Find::Rule->mindepth(1)->maxdepth(1)
-            ->in( File::Spec->catdir( $self->fs_root => $self->record_dir ) ) ];
-
+    opendir( my $dh, File::Spec->catdir( $self->fs_root => $self->record_dir ) )
+        || die "can't open type directory $!";
+    my @types = grep {$_ !~ /^\./ } readdir($dh);
+    closedir $dh;
+    return \@types;
 }
 
 sub type_exists {

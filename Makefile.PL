@@ -14,7 +14,6 @@ requires('URI');
 requires('HTTP::Date');
 requires( 'JSON' => '2.00' );
 requires('Module::Pluggable');
-requires('File::Find::Rule');
 requires('Proc::InvokeEditor');
 requires( 'Scalar::Defer' => '0.18' );
 requires( 'Any::Moose'    => '0.04' );
