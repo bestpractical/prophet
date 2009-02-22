@@ -13,7 +13,6 @@ use File::Spec;
 use File::Temp qw/tempdir tempfile/;
 use Test::Exception;
 use Params::Validate ':all';
-use Scalar::Defer qw/lazy defer force/;
 use Prophet::Util;
 
 use Prophet::CLI;
@@ -306,7 +305,6 @@ sub run_command {
 }
 
 {
-    my $connection = lazy { Prophet::CLI->new->handle };
 
 =head2 load_record($type, $uuid)
 
@@ -314,10 +312,12 @@ Loads and returns a record object for the record with the given type and uuid.
 
 =cut
 
+    my $connection;
     sub load_record {
         my $type = shift;
         my $uuid = shift;
         require Prophet::Record;
+        $connection ||=  Prophet::CLI->new->handle;
         my $record = Prophet::Record->new(handle => $connection, type => $type);
         $record->load(uuid => $uuid);
         return $record;

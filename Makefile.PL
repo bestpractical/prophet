@@ -15,7 +15,6 @@ requires('HTTP::Date');
 requires( 'JSON' => '2.00' );
 requires('Module::Pluggable');
 requires('Proc::InvokeEditor');
-requires( 'Scalar::Defer' => '0.18' );
 requires( 'Any::Moose'    => '0.04' );
 requires( 'Mouse'         => '0.16' );
 requires('XML::Atom::SimpleFeed');
