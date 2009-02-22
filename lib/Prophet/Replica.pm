@@ -384,7 +384,6 @@ sub has_seen_changeset {
         $self->log_debug("\t  - We have seen this or a more recent changeset from remote.");
         return 1;
     } else {
-        $self->log_debug("\t  - We have not.");
         return undef;
     }
 }
@@ -1019,7 +1018,7 @@ sub log {
 sub log_debug { 
     my $self = shift;
     my $msg = shift;
-    $self->app_handle->log_debug($self->display_name_for_uuid." (".$self->scheme.":".$self->url." )".": " .$msg);
+    $self->app_handle->log_debug($self->display_name_for_uuid." (".$self->url." )".": " .$msg);
 }
 
 =head2 log_fatal $MSG
