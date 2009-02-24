@@ -1,5 +1,3 @@
-=pod
-
 =head1 NAME
 
 Prophet::Manual - What Prophet is, how it works and how to use it
@@ -8,7 +6,7 @@ Prophet::Manual - What Prophet is, how it works and how to use it
 
 =head2 What is Prophet?
 
-Prophet is a new kind of database designed for the post Web-2.0 world. It's made to let you collaborate with your friends and coworkers without needing any kind of special server or internet provider.
+Prophet is a new kind of database designed for the post Web-2.0 world. It's made to let you collaborate with your friends and coworkers without needing any kind of special server or Internet provider.
 
 Prophet's buzzword-laden pitch reads something like this:
 
@@ -36,5 +34,13 @@ which is a shorthand identifier used for local identification. For example:
 =head2 Property
 
 =head1 FAQ
+
+=head2 Why doesn't Prophet use git or svn to track changes?
+
+The short answer: "The way you want to handle changes in a B<code>base (for source code) are very different than the way you want to handle changes in a B<data>base (for records and properties)"
+
+=head2 Does Prophet currently do sub-property (content-level) diffing?
+
+No it does not... yet. However, the conflict resolution in Prophet is pluggable, so it's a possibility
 
 =cut
