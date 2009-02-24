@@ -1,0 +1,28 @@
+=pod
+
+=head1 NAME
+
+Prophet::Manual - How Prophet works and how to use it
+
+=head1 Introduction
+
+A Prophet database is composed of records, each of which has several properties. Two core record properties
+are C<type> and C<uuid>. A record's C<type> indicates the kind of record (comment, ticket, user, etc.) and the
+C<uuid> of the record uniquely identifies it so that it can be referenced elsewhere. Another core property is a record's C<luid>
+which is a shorthand identifier used for local identification. For example:
+
+    # Instead of specifying the uuid
+    ticket show e4e5f9d8-ff7a-40c1-8c7f-2d6fcdd859ed
+
+    # ...you can use the luid
+    ticket show 9
+
+=head1 Glossary
+
+=head2 Record
+
+=head2 Property
+
+=head1 FAQ
+
+=cut
