@@ -1,101 +1,174 @@
-Wikipedia Fallacies_of_Distributed_Computing
+=head1 FALLACIES OF DISTRIBUTED COMPUTING
 
-The Fallacies of Distributed Computing are a set of common but flawed assumptions made by programmers when first developing distributed applications. The fallacies are summarized as follows [1]:
+The Fallacies of Distributed Computing are a set of common but flawed
+assumptions made by programmers when first developing distributed
+applications. The fallacies are summarized as follows:
 
-   1. The network is reliable.
-   2. Latency is zero.
-   3. Bandwidth is infinite.
-   4. The network is secure.
-   5. Topology doesn't change.
-   6. There is one administrator.
-   7. Transport cost is zero.
-   8. The network is homogeneous.
+=over
+
+=item 1.
+
+The network is reliable.
+
+=item 2.
+
+Latency is zero.
+
+=item 3.
+
+Bandwidth is infinite.
+
+=item 4.
+
+The network is secure.
+
+=item 5.
+
+Topology doesn't change.
+
+=item 6.
+
+There is one administrator.
+
+=item 7.
+
+Transport cost is zero.
+
+=item 8.
+
+The network is homogeneous.
+
+=back
 
 
-Glossary:
-
-=head1 Terms
 
 
+=head1 GLOSSARY
 
 =head2 Database
-    A term to describe a uniquely identified set of object types and records sharing a single 'base' revision and Replica identifier
-    A database contains multiple Records
+
+A term to describe a uniquely identified set of object types and
+records sharing a single 'base' revision and Replica identifier
+
+A database contains multiple Records
    
-    Has one: uuid
+Has one: uuid
 
 
 =head2 Replica
-    An instance of a database. Replicas are expected to contain all Changesets from any other replica they have been synchronized with, but those Changesets are not guaranteed to be in the same sequence on each replica
 
+An instance of a database. Replicas are expected to contain all
+Changesets from any other replica they have been synchronized with,
+but those Changesets are not guaranteed to be in the same sequence on
+each replica
 
-    Has one: uuid
+Has one: uuid
+
 
 =head2 Changeset
-    A changeset contains "old" and "new" versions of a set of database "Records", they can be of any Record Type.
-    
-    Has one: source_uuid, sequence_no
-    Has many: changes
 
+A changeset contains "old" and "new" versions of a set of database
+"Records", they can be of any Record Type.
+
+Has one: source_uuid, sequence_no
+
+Has many: changes
 
 
 =head2 Change
-    An entry in a changeset. Contains all the updates to a given record for this changeset
-   
+
+An entry in a changeset. Contains all the updates to a given record
+for this changeset
+
+
 =head2 Record
-    A Record is composed of zero or more Attributes and a universally unique identifier. Each record is categorized into a Record Type.
-       
 
-    Has one: uuid
-    Has many: attributes
+A Record is composed of zero or more Attributes and a universally
+unique identifier. Each record is categorized into a Record Type.
 
+Has one: uuid
+
+Has many: attributes
 
 
 =head2 Record Type 
-    A Record Type is a category or "bucket" for zero or more records applications may define specific behaviours for Records of a certain Record Type, but Prophet does no more than to tag Records with a Record Type.
-Record Types are uniquely identified with a textual name and a UUID
-    
-    Has one: textual label, uuid
 
+A Record Type is a category or "bucket" for zero or more records
+applications may define specific behaviours for Records of a certain
+Record Type, but Prophet does no more than to tag Records with a
+Record Type.  Record Types are uniquely identified with a textual name
+and a UUID
 
-
+Has one: textual label, uuid
 
 =head2 Attribute
-    A key-value pair on a Record.    
 
-    Has one: key, value
+A key-value pair on a Record.
 
+Has one: key, value
 
 =head2 Conflict
-    A Conflict occurs when a Changeset is being applied and the current state of a Replica meets any of the following criteria:
 
-        * The Replica already contains a record marked as "created" in the changeset
-        * The Replica doesn't contain a record marked as "deleted" in the changeset
-        * The Replica doesn't contain a record marked as "updated" in the changeset
-        * The Replica contains a record marked as "updated" in the changeset, but the current state of the properties on the record does not match the "old" state of the record in the changeset.
-    
+A Conflict occurs when a Changeset is being applied and the current state of a Replica meets any of the following criteria:
+
+=over 4
+
+=item
+
+The Replica already contains a record marked as "created" in the changeset
+
+=item
+
+The Replica doesn't contain a record marked as "deleted" in the changeset
+
+=item
+
+The Replica doesn't contain a record marked as "updated" in the changeset
+
+=item
+
+The Replica contains a record marked as "updated" in the changeset,
+but the current state of the properties on the record does not match
+the "old" state of the record in the changeset.
+
+=back
+
+
 =head2 Resolution
-    When the local Replica 
+
+When the local Replica 
+
 
 =head2 Export/Publish
 
-Exporting is the act of cloning a replica. The replica uuid (which is its
-identity) remains the same. An exported replica is useful for copying to another machine or USB stick, so that other people may pull your changes.
+Exporting is the act of cloning a replica. The replica uuid (which is
+its identity) remains the same. An exported replica is useful for
+copying to another machine or USB stick, so that other people may pull
+your changes.
 
-Publishing a replica just export it to another machine, usually over ssh.
+Publishing a replica just export it to another machine, usually over
+ssh.
 
-Exporting or publishing to an existing replica just updates that replica, it
-does not perform a merge, since the replica uuid is the same for both copies.
+Exporting or publishing to an existing replica just updates that
+replica, it does not perform a merge, since the replica uuid is the
+same for both copies.
+
 
 =head2 Push/Pull
 
-Pushing and pulling merge changes from two different replicas. Pushing to or
-pulling from an empty replica creates it and assigns it a new replica uuid.
+Pushing and pulling merge changes from two different replicas. Pushing
+to or pulling from an empty replica creates it and assigns it a new
+replica uuid.
+
 
 =head2 Foreign Replica
 
-A (possibly read-only) data store that is not a Prophet replica (such as RT or
-Twitter). A Prophet replica can act as a gateway to a foreign replica.
+A (possibly read-only) data store that is not a Prophet replica (such
+as RT or Twitter). A Prophet replica can act as a gateway to a foreign
+replica.
+
+
+
 
 =head1 NON-TERMS
 
@@ -103,10 +176,8 @@ Twitter). A Prophet replica can act as a gateway to a foreign replica.
 
 Too many things get called records
 
+
 =head2 revision
 
-Revision is a term from version control. the backing store may describe it but it's not a Prophet term
-
-=head2 
-
-
+Revision is a term from version control. the backing store may
+describe it but it's not a Prophet term
