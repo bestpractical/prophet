@@ -2,13 +2,25 @@
 
 =head1 NAME
 
-Prophet::Manual - How Prophet works and how to use it
+Prophet::Manual - What Prophet is, how it works and how to use it
 
 =head1 Introduction
 
-A Prophet database is composed of records, each of which has several properties. Two core record properties
+=head2 What is Prophet?
+
+Prophet is a new kind of database designed for the post Web-2.0 world. It's made to let you collaborate with your friends and coworkers without needing any kind of special server or internet provider.
+
+Prophet's buzzword-laden pitch reads something like this:
+
+    A grounded, semirelational, peer to peer replicated, disconnected, versioned, property database with self-healing conflict resolution. 
+
+Here is a slideshow describing why Prophet came about: L<http://www.slideshare.net/obrajesse/web-20-is-sharecropping>
+
+=head2 How does it work?
+
+A Prophet database is composed of records, each of which has several properties. Two core properties
 are C<type> and C<uuid>. A record's C<type> indicates the kind of record (comment, ticket, user, etc.) and the
-C<uuid> of the record uniquely identifies it so that it can be referenced elsewhere. Another core property is a record's C<luid>
+C<uuid> of the record uniquely identifies it so that it can be referenced elsewhere. Another core property is a record's C<luid>,
 which is a shorthand identifier used for local identification. For example:
 
     # Instead of specifying the uuid
