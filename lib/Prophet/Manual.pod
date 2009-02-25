@@ -51,23 +51,55 @@ Currently, the record object does not actually store any data. Rather, it acts a
 
 There is no save method corresponding to load. Properties are immediately saved to the replica once they are set.
 
-Before properties are sent to the replica, the record object is responsible for canonicalizing and validating them. If they 
+Before properties are sent to the replica, the record object is responsible for canonicalizing and validating them.
 
-Currently, the record object does not actually store any data. Rather, it acts as a proxy to the replica. This means that everytime you set a property, the entire record is diffed against the most recent version in the replica.
+=head2 Definining a property: declaring, defaulting, and recommending
 
-=head2 Definining a property
+You can declare properties for a record by defining a C<declared_props> routine for a record. The routine should return a list of properties declared for the record type. Don't forget to return inherited properties! Here is an example:
+
+    sub declared_props {
+        return ('email', shift->SUPER::declared_props(@_))
+    }
+
+Prophet knows how to default a property by looking for a C<default_prop_$prop> method in the record class. If it finds one, it will pass the properties (not just the property to be defaulted) through in the form of a hashref. The returned value is the default value for the property. The default method is NOT triggered if the property value is already defined (not undef)
+
+Generating property defaults takes place during record creation.
+
+You can also recommend values for a property. Recommending values for a property is mainly used for validation. To recommend values for a property, define a C<_recommended_values_for_prop_$prop> routine in your record class. The routine should return a list of which is the range of values for the property. Here is an example of how SD uses value recommending to validate:
+
+    # A globally defined "statuses" setting is specified in App::SD
+    sub database_settings {
+        ...
+        statuses => ['24183C4D-EFD0-4B16-A207-ED7598E875E6' => qw/new open stalled closed rejected/],
+        ...
+    }
+
+    ...
+
+    # App::SD::Model::Ticket uses the "statuses" setting for recommended values
+    sub _recommended_values_for_prop_status {
+       return @{ shift->app_handle->setting( label => 'statuses' )->get() };
+    }
+
+    ...
+
+    # App::SD::Model::Ticket uses the recommended values for "status" to validate
+    sub validate_prop_status {
+        my ( $self, %args ) = @_;
+        return $self->validate_prop_from_recommended_values( 'status', \%args );
+    }
 
 =head2 Property canonicalization
 
 Property canonicalization makes sure a property is in the right format. It includes trimmming leading and trailing whitespace, making sure text is in the right case, and more.
 
-Prophet knows how to canonicalize a property by looking for a C<canonical_prop_$prop> method in the record class. If it finds one, it will be pass the properties (not just the named property) through in the form of a hashref to be canonicalized.
+Prophet knows how to canonicalize a property by looking for a C<canonical_prop_$prop> method in the record class. If it finds one, it will pass the properties (not just the named property) through in the form of a hashref to be canonicalized.
 
 =head2 Property validation
 
 Property validation makes sure a property has a valid value before committing it to the replica.
 
-Prophet knows how to validate a property by looking for a C<validate_prop_$prop> method in the record class. If it finds one, it will be pass the properties (not just the named property) through in the form of a hashref to be validated.
+Prophet knows how to validate a property by looking for a C<validate_prop_$prop> method in the record class. If it finds one, it will pass the properties (not just the named property) through in the form of a hashref to be validated.
 
 If the validation routine makes note of an error, Prophet will abort with an exception (die).
 
@@ -77,9 +109,17 @@ You can also ask Prophet to validate a property based on recommended values.
 
 =head2 Record
 
+A record is a collection of properties (much like an SQL table is a collection of columns). A record must have a type and uuid. It may also have an luid, which is like a uuid but only valid for the local environment/replica.
+
 =head2 Property
 
-=head2 Replica
+A property is a name/value pair associated with a record.
+
+=head2 Collection
+
+A collection is used to search for and operate on records matching certain criteria. 
+
+=head2 Replica (WIP)
 
 The database that a Prophet application works from. 
 The local state of all the data. Alice keeps her most recent fetch of the database in her replica.
@@ -95,7 +135,7 @@ The short answer: "The way you want to handle changes in a B<code>base (for sour
 
 No it does not... yet. However, the conflict resolution in Prophet is pluggable, so it's a possibility
 
-=head2 What do C<app_handle> and C<handle> refer to? What is the difference between them?
+=head2 What do C<app_handle> and C<handle> refer to? What's the difference between them?
 
 C<app_handle> is a reference to your application object, like an instance of C<MyApp.pm> that extends from C<Prophet::App>
 
@@ -110,6 +150,8 @@ If you're familliar with DBI, you'll recognize it as the database handle that is
 While Gears and Air allow you to take cloud applications offline, they don't solve the data merging/synchronization problem.
 
 <Insert something here about Gears/Air being based in JavaScript/Flash and Prophet not having that limitation>
+
+=head2 How does Prophet ensure that synchronized/shared data is valid?
 
 =cut
 
