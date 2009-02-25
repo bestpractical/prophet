@@ -16,6 +16,14 @@ Here is a slideshow describing why Prophet came about: L<http://www.slideshare.n
 
 =head2 How does it work?
 
+There are two ways to create a Prophet database: cloning and initing
+
+One way is to clone an existing database. When you clone an existing database, a local replica is created for you with the uuid of the cloned database.
+
+Another way is to init a database. This creates a database with a new uuid. Anyone who clones from this database will get a replica of the data and share the database uuid.
+
+Note that Prophet will prevent you from merging databases unless they have the same database uuid (although you can force the merge of different databases if you want).
+
 A Prophet database is composed of records, each of which has several properties. Two core properties
 are C<type> and C<uuid>. A record's C<type> indicates the kind of record (comment, ticket, user, etc.) and the
 C<uuid> of the record uniquely identifies it so that it can be referenced elsewhere. Another core property is a record's C<luid>,
@@ -39,13 +47,31 @@ Once you have a record object configured with a type and uuid, you can load data
 
 Currently, the record object does not actually store any data. Rather, it acts as a proxy to the replica.
 
-=head3 Saving a record from the database
+=head3 Saving a record to the database
 
 There is no save method corresponding to load. Properties are immediately saved to the replica once they are set.
 
+Before properties are sent to the replica, the record object is responsible for canonicalizing and validating them. If they 
+
 Currently, the record object does not actually store any data. Rather, it acts as a proxy to the replica. This means that everytime you set a property, the entire record is diffed against the most recent version in the replica.
 
-=head2 Property overview
+=head2 Definining a property
+
+=head2 Property canonicalization
+
+Property canonicalization makes sure a property is in the right format. It includes trimmming leading and trailing whitespace, making sure text is in the right case, and more.
+
+Prophet knows how to canonicalize a property by looking for a C<canonical_prop_$prop> method in the record class. If it finds one, it will be pass the properties (not just the named property) through in the form of a hashref to be canonicalized.
+
+=head2 Property validation
+
+Property validation makes sure a property has a valid value before committing it to the replica.
+
+Prophet knows how to validate a property by looking for a C<validate_prop_$prop> method in the record class. If it finds one, it will be pass the properties (not just the named property) through in the form of a hashref to be validated.
+
+If the validation routine makes note of an error, Prophet will abort with an exception (die).
+
+You can also ask Prophet to validate a property based on recommended values.
 
 =head1 Glossary
 
@@ -53,13 +79,11 @@ Currently, the record object does not actually store any data. Rather, it acts a
 
 =head2 Property
 
-=head2 Database
-
-The global state of all the data. The latest data that Alice and Bob have committed are in the database.
-
 =head2 Replica
 
+The database that a Prophet application works from. 
 The local state of all the data. Alice keeps her most recent fetch of the database in her replica.
+The global state of all the data. The latest data that Alice and Bob have committed are in the database.
 
 =head1 FAQ
 
@@ -88,3 +112,30 @@ While Gears and Air allow you to take cloud applications offline, they don't sol
 <Insert something here about Gears/Air being based in JavaScript/Flash and Prophet not having that limitation>
 
 =cut
+
+12:55 < grink> what is a good word for the datastore in Prophet? database? replica database?
+12:55 < Sartak> database is the global state, replica is the local state
+12:56 < Sartak> so you probably want just replica :)
+12:56 < grink> sweeeeet
+12:57  * grink edits out "storage-thingy"
+13:15 < obra> local replica == local copy of the database
+13:15 < obra> grink: sd is the main app on Prophet we're working on right now
+13:17 < grink> isn't local replica redundant then?
+13:18 < obra> not really
+13:18 < obra> EVERY copy is a replica
+13:18 < grink> or are you saying, "Alice's local state" and "Bob's local state"
+13:18 < obra> my local replica is the one I'm working from
+13:19 < grink> so the database is the theoretical merging of all the replicas, but no one would ever work from the "database"
+13:19 < grink> you always interface through a replica
+13:20 < obra> there isn't really "the database"
+13:20 < obra> database is a word that describes any/all replicas. 
+13:20 < obra> every replica shares the same database uuid
+13:20 < obra> so you don't merge your replica of the foo database into my replica of the bar database
+13:21 < obra> it's kind of like cylons
+13:21 < obra> there are many copies.
+13:21 < grink> lol
+13:21 < obra> they're sort of interchangable
+13:21 < obra> but each comes from the same prototype
+13:21 < obra> and clones of the same kind can get inside each others' heads much more easily
+13:21 < obra> (This is ~why SD's milestones are named for cylons)
+
