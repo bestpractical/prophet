@@ -27,11 +27,39 @@ which is a shorthand identifier used for local identification. For example:
     # ...you can use the luid
     ticket show 9
 
+=head2 Record overview
+
+=head3 The record object (Prophet::Record)
+
+A record object in Prophet is initially an empty husk. First, the record class is found. The default record class is L<Prophet::Record>, but designating a custom class, one that extends from L<Prophet::Record> is possible. Once the record class is found, the object is instantiated and passed the app_handle, handle, and type of the record. The record is now ready for use.
+
+=head3 Loading a record from the database
+
+Once you have a record object configured with a type and uuid, you can load data from the replica. This consists of asking the replica (handle) for the properties corresponding to the given record type and uuid.
+
+Currently, the record object does not actually store any data. Rather, it acts as a proxy to the replica.
+
+=head3 Saving a record from the database
+
+There is no save method corresponding to load. Properties are immediately saved to the replica once they are set.
+
+Currently, the record object does not actually store any data. Rather, it acts as a proxy to the replica. This means that everytime you set a property, the entire record is diffed against the most recent version in the replica.
+
+=head2 Property overview
+
 =head1 Glossary
 
 =head2 Record
 
 =head2 Property
+
+=head2 Database
+
+The global state of all the data. The latest data that Alice and Bob have committed are in the database.
+
+=head2 Replica
+
+The local state of all the data. Alice keeps her most recent fetch of the database in her replica.
 
 =head1 FAQ
 
@@ -42,5 +70,21 @@ The short answer: "The way you want to handle changes in a B<code>base (for sour
 =head2 Does Prophet currently do sub-property (content-level) diffing?
 
 No it does not... yet. However, the conflict resolution in Prophet is pluggable, so it's a possibility
+
+=head2 What do C<app_handle> and C<handle> refer to? What is the difference between them?
+
+C<app_handle> is a reference to your application object, like an instance of C<MyApp.pm> that extends from C<Prophet::App>
+
+If you're familliar with Catalyst, you'll recognize it as being similar to the C<$catalyst> instance
+
+C<handle> is a reference to your repository "database", depending on what kind of Replica you're using
+
+If you're familliar with DBI, you'll recognize it as the database handle that is returned when you connect to a database via C<< DBI->connect >>
+
+=head2 How is Prophet different from something like Google Gears or Adobe Air?
+
+While Gears and Air allow you to take cloud applications offline, they don't solve the data merging/synchronization problem.
+
+<Insert something here about Gears/Air being based in JavaScript/Flash and Prophet not having that limitation>
 
 =cut
