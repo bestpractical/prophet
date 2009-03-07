@@ -1,11 +1,10 @@
 package Prophet::Server::Dispatcher;
 use Any::Moose;
-use Path::Dispatcher::Declarative -base;
+use Path::Dispatcher::Declarative -base, -default => {
+    token_delimiter => '/',
+};
 
 has server => ( isa => 'Prophet::Server', is => 'rw', weak_ref => 1 );
-
-sub token_delimiter       {'/'}
-sub case_sensitive_tokens {0}
 
 under { method => 'POST' } => sub {
     on qr'.*' => sub {
