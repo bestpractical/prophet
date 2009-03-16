@@ -9,11 +9,11 @@ use Prophet::Server;
 sub run {
     my $self = shift;
     Prophet::CLI->end_pager();
-    my $server = $self->_setup_server();
+    my $server = $self->setup_server();
     $server->run;
 }
 
-sub _setup_server {
+sub setup_server {
     my $self = shift;
      my $server_class = ref($self->app_handle) . "::Server";
      if (!$self->app_handle->try_to_require($server_class)) {
