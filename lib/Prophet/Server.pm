@@ -177,7 +177,7 @@ sub handle_request {
 sub log_request {
     my $self = shift;
     my $cgi = $self->cgi;
-    $self->app_handle->log( localtime()." [".$ENV{'REMOTE_ADDR'}."] ".$cgi->request_method . " ".$cgi->path_info);
+    $self->app_handle->log_debug( localtime()." [".$ENV{'REMOTE_ADDR'}."] ".$cgi->request_method . " ".$cgi->path_info);
 }
 
 sub update_record_prop {
