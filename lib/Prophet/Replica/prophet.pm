@@ -6,7 +6,7 @@ use LWP::Simple ();
 use File::Spec  ();
 use File::Path;
 use Cwd ();
-use Digest::SHA1 qw(sha1_hex);
+use Digest::SHA qw(sha1_hex);
 use File::Find;
 use Data::UUID;
 use Prophet::Util;

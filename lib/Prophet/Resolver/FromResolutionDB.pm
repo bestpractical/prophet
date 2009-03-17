@@ -3,7 +3,7 @@ use Any::Moose;
 use Prophet::Change;
 use Prophet::Collection;
 use JSON;
-use Digest::SHA1 'sha1_hex';
+use Digest::SHA 'sha1_hex';
 extends 'Prophet::Resolver';
 
 sub run {

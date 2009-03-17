@@ -3,7 +3,7 @@ use Any::Moose;
 use Prophet::Meta::Types;
 use Prophet::ConflictingPropChange;
 use JSON 'to_json';
-use Digest::SHA1 'sha1_hex';
+use Digest::SHA 'sha1_hex';
 
 has record_type => (
     is  => 'rw',

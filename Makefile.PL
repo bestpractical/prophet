@@ -8,7 +8,7 @@ requires('Exporter::Lite');
 requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
-requires('Digest::SHA1');    # Core in 5.10
+requires('Digest::SHA');
 requires('LWP::Simple');     # Part of lib-www-perl
 requires('URI');
 requires('HTTP::Date');
