@@ -266,10 +266,14 @@ sub integrate_changeset {
     if (   $changeset->is_resolution || $changeset->is_nullification || !$changeset->has_changes ) {
         # if it's a changeset we don't care about, mark it as seen and move on
         $self->record_integration_of_changeset($changeset);
+        $args{'reporting_callback'}->( changeset => $changeset,
+           ) if ( $args{'reporting_callback'} );
         return;
 
     }  elsif ( $self->has_seen_changeset($changeset) ) {
                $self->record_integration_of_changeset($changeset);
+        $args{'reporting_callback'}->( changeset => $changeset,
+           ) if ( $args{'reporting_callback'} );
         return;
         }
 
