@@ -33,7 +33,7 @@ under { method => 'GET' } => sub {
     };
 };
 
-on qr'^/(.*)$' => sub { shift->server->show_template($1) || next_rule; };
+on qr'^(.*)$' => sub { shift->server->show_template($1) || next_rule; };
 
 no Any::Moose;
 
