@@ -96,8 +96,10 @@ sub run_command {
         for my $class (@classes) {
             Prophet::App->try_to_require($class) or next;
             $class->new(%constructor_args)->run;
-            last;
+            return;
         }
+
+        die "Invalid command command class suffix '$name'";
     };
 }
 
