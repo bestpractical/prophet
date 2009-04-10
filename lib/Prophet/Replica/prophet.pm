@@ -507,12 +507,11 @@ sub _read_record_index {
     return undef unless $index;
     utf8::decode($index) if utf8::is_utf8($index); # When we get data from LWP it sometimes ends up with a charset. that is wrong here
 
-    # XXX TODO THIS CODE IS HACKY AND SHOULD BE SHOT;
     my $count = length($index) / RECORD_INDEX_SIZE;
     my @entries;
-    for my $offset ( 0 .. ( $count - 1 ) ) {
+    for my $record ( 1 .. $count ) {
         my ( $seq, $key ) = unpack( 'NH40',
-            substr( $index, ($offset) * RECORD_INDEX_SIZE, RECORD_INDEX_SIZE )
+            substr( $index, ($record - 1) * RECORD_INDEX_SIZE, RECORD_INDEX_SIZE )
         );
         push @entries, [ $seq => $key ];
     }
@@ -597,29 +596,27 @@ sub _write_changeset {
         cas_dir => $self->changeset_cas_dir
     );
 
-    my $packed_cas_key = pack( 'H40', $cas_key );
-
-    my $changeset_index_line = pack( 'Na16Na20',
+    my $changeset_index_line = pack( 'Na16NH40',
         $seqno,
         Data::UUID->new->from_string( $changeset->original_source_uuid ),
         $changeset->original_sequence_no,
-        $packed_cas_key );
+        $cas_key );
+
     print $fh $changeset_index_line || die $!;
 
 }
+
 
 use constant CHG_RECORD_SIZE => ( 4 + 16 + 4 + 20 );
 
 sub _get_changeset_index_entry {
     my $self = shift;
     my %args = validate( @_, { sequence_no => 1, index_file => 1 } );
-
     my $chgidx = $args{index_file};
+
     my $rev    = $args{'sequence_no'};
-    my $index_record
-        = substr( $$chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
-    my ( $seq, $orig_uuid, $orig_seq, $key )
-        = unpack( 'Na16NH40', $index_record );
+    my $index_record = substr( $$chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
+    my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record );
 
     $self->log_debug( join( ",", ( $seq, $orig_uuid, $orig_seq, $key ) ) );
     $orig_uuid = Data::UUID->new->to_string($orig_uuid);
