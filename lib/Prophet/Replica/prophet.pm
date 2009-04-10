@@ -2,7 +2,8 @@ package Prophet::Replica::prophet;
 use Any::Moose;
 extends 'Prophet::Replica';
 use Params::Validate qw(:all);
-use LWP::Simple ();
+use LWP::UserAgent;
+use LWP::ConnCache;
 use File::Spec  ();
 use File::Path;
 use Cwd ();
@@ -69,6 +70,19 @@ has '+resolution_db_handle' => (
         );
     },
 );
+
+has lwp_useragent => (
+    isa => 'LWP::UserAgent',
+    is => 'ro',
+    lazy => 1,
+    default => sub {
+        my $ua = LWP::UserAgent->new;
+        $ua->timeout(10);
+        $ua->conn_cache(LWP::ConnCache->new());
+        return $ua;
+    }
+    );
+
 
 use constant scheme   => 'prophet';
 use constant cas_root => 'cas';
@@ -828,7 +842,7 @@ sub _read_file {
                 File::Spec->catfile( $self->fs_root => $file ) );
         };
     } else {    # http replica
-        return LWP::Simple::get( $self->url . "/" . $file );
+        return $self->lwp_get( $self->url . "/" . $file );
     }
 
 }
@@ -1092,6 +1106,19 @@ sub write_userdata {
         path    => File::Spec->catfile( $self->userdata_dir, $args{path} ),
         content => $args{content},
     );
+}
+
+sub lwp_get {
+    my $self     = shift;
+    my $url      = shift;
+    my $response = $self->lwp_useragent->get($url);
+    if ( $response->is_success ) {
+        return $response->decoded_content;
+    } else {
+        warn "Request FAILED ". $url . " ". $response->status_line;
+        return undef;
+    }
+
 }
 
 __PACKAGE__->meta->make_immutable();

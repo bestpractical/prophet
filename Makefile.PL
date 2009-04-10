@@ -9,7 +9,7 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Digest::SHA');
-requires('LWP::Simple');     # Part of lib-www-perl
+requires('LWP::UserAgent');     #  LWP::ConnCache too
 requires('URI');
 requires('HTTP::Date');
 requires( 'JSON' => '2.00' );
