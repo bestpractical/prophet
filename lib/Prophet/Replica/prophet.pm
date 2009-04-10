@@ -505,6 +505,7 @@ sub _read_record_index {
 
     my $index = $self->_read_file($idx_filename);
     return undef unless $index;
+    utf8::decode($index) if utf8::is_utf8($index); # When we get data from LWP it sometimes ends up with a charset. that is wrong here
 
     # XXX TODO THIS CODE IS HACKY AND SHOULD BE SHOT;
     my $count = length($index) / RECORD_INDEX_SIZE;
@@ -685,6 +686,7 @@ sub _read_changeset_index {
     my $self = shift;
     $self->log_debug("Reading changeset index file");
     my $chgidx = $self->_read_file( $self->changeset_index );
+    utf8::decode($chgidx) if utf8::is_utf8($chgidx); # When we get data from LWP it sometimes ends up with a charset. that is wrong here
     return \$chgidx;
 }
 
