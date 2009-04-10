@@ -33,6 +33,13 @@ has args => (
         "This is a reference to the key-value pairs passed in on the commandline",
 );
 
+has raw_args => (
+    is => 'rw',
+    isa => 'ArrayRef',
+    default => sub {[]},
+);
+
+
 sub set_arg    { $_[0]->args->{$_[1]} = $_[2] }
 sub arg        { $_[0]->args->{$_[1]} }
 sub has_arg    { exists $_[0]->args->{$_[1]} }
@@ -147,6 +154,7 @@ looks like an @ARGV.
 
 sub setup_from_args {
     my $self = shift;
+    $self->raw_args([@_]);
     $self->parse_args(@_);
     $self->set_type_and_uuid();
 
