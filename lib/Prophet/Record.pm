@@ -325,6 +325,9 @@ sub set_props {
 
     $self->canonicalize_props( $args{'props'} );
     $self->validate_props( $args{'props'} ) || return undef;
+
+    return 0 unless grep { defined } values %{$args{props}}; 
+
     $self->handle->set_record_props(
         type  => $self->type,
         uuid  => $self->uuid,
