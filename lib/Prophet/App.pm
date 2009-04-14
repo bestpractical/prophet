@@ -241,6 +241,13 @@ sub log_fatal {
     Carp::confess(@_);
 }
 
+
+sub current_user_email {
+    my $self = shift;
+    return $self->config->get('email_address') || $ENV{'PROPHET_EMAIL'} || $ENV{'EMAIL'};
+
+}
+
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
 1;

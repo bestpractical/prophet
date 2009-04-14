@@ -549,7 +549,7 @@ sub default_props {
 
 =head2 default_prop_creator
 
-Default the creator of every record to the changeset_creator (usually C<$USER>)
+Default the creator of every record to the changeset_creator (usually the current user's email address.)
 
 =cut
 

@@ -1046,7 +1046,10 @@ The string to use as the creator of a changeset.
 
 =cut
 
-sub changeset_creator { $ENV{PROPHET_USER} || $ENV{USER} }
+sub changeset_creator {
+    my $self = shift;
+    return $self->app_handle->current_user_email;
+}
 
 =head2 display_name_for_uuid [uuid]
 

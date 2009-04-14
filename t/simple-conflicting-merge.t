@@ -34,7 +34,7 @@ as_bob {
         [ 'show', '--batch', '--type', 'Bug', '--uuid', $record_id ],
         [
             qr/id: (\d+) \($record_id\)/,
-              'creator: alice',
+              'creator: alice@example.com',
               'from: alice',
               'original_replica: ' . replica_uuid_for('alice'),
               'status: stalled',
@@ -57,7 +57,7 @@ as_alice {
         ['show', '--type', 'Bug', '--uuid', $record_id, '--batch', ],
         [
             qr/id: (\d+) \($record_id\)/,
-              'creator: alice',
+              'creator: alice@example.com',
               'from: alice',
               'original_replica: ' . replica_uuid_for('alice'),
               'status: stalled',
@@ -159,7 +159,7 @@ as_bob {
     is_deeply(
         $from_alice_as_hash,
         {
-            creator              => 'alice',
+            creator              => 'alice@example.com',
             created              => undef,
             is_nullification     => undef,
             is_resolution        => undef,

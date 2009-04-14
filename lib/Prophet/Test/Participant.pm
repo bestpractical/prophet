@@ -168,8 +168,8 @@ sub call_func_ok {
     my @ret;
     lives_and {
         @ret = call_func(@args);
-        diag("As ".$ENV{'PROPHET_USER'}. " ".join(' ',@{$args[0]}));
-        ok( 1, join( " ", $ENV{'PROPHET_USER'}, @{ $args[0] } ) );
+        diag("As ".$ENV{'PROPHET_EMAIL'}. " ".join(' ',@{$args[0]}));
+        ok( 1, join( " ", $ENV{'PROPHET_EMAIL'}, @{ $args[0] } ) );
     };
     return @ret;
 }

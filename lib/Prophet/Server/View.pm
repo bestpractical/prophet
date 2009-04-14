@@ -273,7 +273,7 @@ sub generate_changeset_feed {
     my $feed = XML::Atom::SimpleFeed->new(
         id     => "urn:uuid:" . $handle->uuid,
         title  => $title,
-        author => $ENV{USER},
+        author => $self->app_handle->current_user_email,
     );
 
     my $newest = $handle->latest_sequence_no;

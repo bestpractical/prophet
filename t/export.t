@@ -40,7 +40,7 @@ as_bob {
         ['show', '--type', 'Bug', '--uuid', $record_id, '--batch'],
         [
             qr/id: (\d+) \($record_id\)/,
-              'creator: alice',
+              'creator: alice@example.com',
               'from: alice',
               'original_replica: ' . replica_uuid_for('alice'),
               'status: stalled',

@@ -8,8 +8,8 @@ use Prophet::Server;
 
 sub run {
     my $self = shift;
-    Prophet::CLI->end_pager();
     my $server = $self->setup_server();
+    Prophet::CLI->end_pager();
     $server->run;
 }
 

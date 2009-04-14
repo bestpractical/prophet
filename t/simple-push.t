@@ -91,7 +91,7 @@ my $orig_seq = delete $changesets->[0]->{'original_sequence_no'};
 is( $seq, $orig_seq );
 my $cs_data =    [   {    #'sequence_no'          => 3,
              #'original_sequence_no' => 3, # the number is different on different replica types
-            'creator'              => 'bob',
+            'creator'              => 'bob@example.com',
             'created'              => $changesets->[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
@@ -109,7 +109,7 @@ my $cs_data =    [   {    #'sequence_no'          => 3,
                             'old_value' => undef
                         },
                         'creator' => {
-                            'new_value' => 'bob',
+                            'new_value' => 'bob@example.com',
                             'old_value' => undef
                         },
                         'original_replica' => {
@@ -177,7 +177,7 @@ is( delete $new_changesets->[0]->{'sequence_no'},
 
    #     'sequence_no'          => 4,  # the number varies based on replica type
    #    'original_sequence_no' => 4,
-            'creator'              => 'bob',
+            'creator'              => 'bob@example.com',
             'created'              => $new_changesets->[0]->{created},
             'original_source_uuid' => replica_uuid_for('bob'),
             'is_resolution'        => undef,
@@ -195,7 +195,7 @@ is( delete $new_changesets->[0]->{'sequence_no'},
                             'old_value' => undef
                         },
                         'creator' => {
-                            'new_value' => 'bob',
+                            'new_value' => 'bob@example.com',
                             'old_value' => undef,
                         },
                         'original_replica' => {

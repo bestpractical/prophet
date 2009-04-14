@@ -65,19 +65,19 @@ is($end, $handle->latest_sequence_no, 'LATEST ends at latest');
 # run the command and test its output
 
 my $replica_uuid = replica_uuid;
-my $first = " $ENV{USER}".' at \d{4}-\d{2}-\d{2} .+	\(1\@'.$replica_uuid.'\)
+my $first = " $ENV{PROPHET_EMAIL}".' at \d{4}-\d{2}-\d{2} .+	\(1\@'.$replica_uuid.'\)
  # Person 1 \(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\)
   \+ "original_replica" set to "'.$replica_uuid.'"
-  \+ "creator" set to "'.$ENV{USER}.'"
+  \+ "creator" set to "'.$ENV{PROPHET_EMAIL}.'"
   \+ "name" set to "Mao"
   \+ "species" set to "cat"
   \+ "age" set to "0.7"';
 
-my $second = " $ENV{USER}".' at \d{4}-\d{2}-\d{2} .+	\(2\@'.$replica_uuid.'\)
+my $second = " $ENV{PROPHET_EMAIL}".' at \d{4}-\d{2}-\d{2} .+	\(2\@'.$replica_uuid.'\)
  # Person 1 \(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\)
   > "age" changed from "0.7" to "1"\.';
 
-my $third = " $ENV{USER}".' at \d{4}-\d{2}-\d{2} .+	\(3\@'.$replica_uuid.'\)
+my $third = " $ENV{PROPHET_EMAIL}".' at \d{4}-\d{2}-\d{2} .+	\(3\@'.$replica_uuid.'\)
  # Person 1 \(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\)
   \+ "color" set to "black"';
 

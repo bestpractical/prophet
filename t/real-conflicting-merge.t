@@ -36,7 +36,7 @@ as_bob {
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
         qr/id: (\d+) \($record_id\)/,
-          'creator: alice',
+          'creator: alice@example.com',
           'from: alice',
           'original_replica: ' . replica_uuid_for('alice'),
           'status: stalled',
@@ -53,7 +53,7 @@ as_alice {
         [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
         [
             qr/id: (\d+) \($record_id\)/,
-              'creator: alice',
+              'creator: alice@example.com',
               'from: alice',
               'original_replica: ' . replica_uuid_for('alice'),
               'status: open',
@@ -191,7 +191,7 @@ sub check_bob_final_state_ok {
                 original_source_uuid => replica_uuid(),
             },
             {
-                creator              => 'alice',
+                creator              => 'alice@example.com',
                 created              => $changesets[1]->created,
                 is_nullification     => undef,
                 is_resolution        => undef,
@@ -213,7 +213,7 @@ sub check_bob_final_state_ok {
             },
 
             {
-                creator              => 'bob',
+                creator              => 'bob@example.com',
                 created              => $changesets[2]->created,
                 is_nullification     => undef,
                 is_resolution        => 1,

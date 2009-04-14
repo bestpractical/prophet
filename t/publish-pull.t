@@ -115,7 +115,7 @@ sub changeset_ok {
                 },
                 creator => {
                     old_value => undef,
-                    new_value => 'alice',
+                    new_value => 'alice@example.com',
                 },
                 original_replica => {
                     old_value => undef,
@@ -137,7 +137,7 @@ sub changeset_ok {
     }
 
     is_deeply($changeset, {
-        creator              => 'alice',
+        creator              => 'alice@example.com',
         created              => $changeset->{created},
         is_resolution        => undef,
         is_nullification     => undef,

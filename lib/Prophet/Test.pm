@@ -68,7 +68,7 @@ sub import_extra {
     }
 
     delete $ENV{'PROPHET_APP_CONFIG'};
-    $ENV{'EMAIL'} = 'nobody@example.com';
+    $ENV{'PROPHET_EMAIL'} = 'nobody@example.com';
 }
 
 =head2 in_gladiator($code)
@@ -177,9 +177,8 @@ our %DATABASE_UUIDS;
 sub as_user {
     my $username = shift;
     my $coderef  = shift;
-    local $ENV{'PROPHET_USER'} = $username;
     local $ENV{'PROPHET_REPO'} = repo_path_for($username);
-    local $ENV{'EMAIL'}        = $username . '@example.com';
+    local $ENV{'PROPHET_EMAIL'}        = $username . '@example.com';
 
     my $ret = $coderef->();
 
