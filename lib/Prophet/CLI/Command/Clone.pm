@@ -35,6 +35,12 @@ sub run {
             resdb_uuid => $source->resolution_db_handle->db_uuid,
         );
     }
+
+    unless ($source->replica_exists) {
+        print "The source replica '@{[$source->url]}' doesn't exist or is unreadable.";
+        exit 1;
+    }
+
     $target->initialize(%init_args);
 
     $self->app_handle->config->set(
