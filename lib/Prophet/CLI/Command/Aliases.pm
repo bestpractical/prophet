@@ -132,7 +132,7 @@ sub process_template {
     }
 
     for my $delete ( @deleted ) {
-        print 'Deleted alias ' . "'$delete\n";
+        print "Deleted alias '$delete'\n";
     }
 
     $self->app_handle->config->set(_aliases => $config );
