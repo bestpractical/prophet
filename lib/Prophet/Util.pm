@@ -30,7 +30,7 @@ depending on the context.
 sub slurp {
     my $self = shift;
     my $abspath = shift;
-    open (my $fh, "<", "$abspath") || die $!;
+    open (my $fh, "<", "$abspath") || die "$abspath: $!";
 
     my @lines = <$fh>;
     close $fh;
