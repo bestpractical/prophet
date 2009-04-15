@@ -48,6 +48,26 @@ has fs_root => (
     },
 );
 
+has record_cas => (
+    is  => 'rw',
+    isa => 'Prophet::ContentAddressedStore',
+    lazy => 1,
+    default => sub {
+        my $self = shift;
+        Prophet::ContentAddressedStore->new( { root => File::Spec->catfile( $self->fs_root => $self->record_cas_dir ) } );
+    },
+);
+
+has changeset_cas => (
+    is  => 'rw',
+    isa => 'Prophet::ContentAddressedStore',
+    lazy => 1,
+    default => sub {
+        my $self = shift;
+        Prophet::ContentAddressedStore->new( { root => File::Spec->catfile( $self->fs_root => $self->changeset_cas_dir ) } );
+    },
+);
+    
 has current_edit => ( is => 'rw', );
 
 has current_edit_records => (
@@ -383,6 +403,7 @@ Return the replica SVN repository's UUID
 sub uuid {
     my $self = shift;
     $self->_uuid( $self->_read_file('replica-uuid') ) unless $self->_uuid;
+#    die $@ if $@;
     return $self->_uuid;
 }
 
@@ -430,6 +451,7 @@ sub _write_serialized_record {
         delete $args{'props'}->{$_}
             if ( !defined $args{'props'}->{$_} || $args{'props'}->{$_} eq '' );
     }
+    # my $cas_key = $self->record_cas->write( $args{props} );
     my ($cas_key) = $self->_write_to_cas(
         data    => $args{props},
         cas_dir => $self->record_cas_dir
@@ -605,6 +627,7 @@ sub _write_changeset {
     my $seqno = delete $hash_changeset->{'sequence_no'};
     my $uuid  = delete $hash_changeset->{'replica_uuid'};
 
+    # my $cas_key = $self->changeset_cas->write( $hash_changeset );
     my $cas_key = $self->_write_to_cas(
         data    => $hash_changeset,
         cas_dir => $self->changeset_cas_dir
