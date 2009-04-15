@@ -7,14 +7,15 @@ use LWP::ConnCache;
 use File::Spec  ();
 use File::Path;
 use Cwd ();
-use Digest::SHA qw(sha1_hex);
 use File::Find;
 use Data::UUID;
 use Prophet::Util;
-use JSON;
 use POSIX qw();
 use Memoize;
+use Prophet::ContentAddressedStore;
 
+use JSON;
+use Digest::SHA qw(sha1_hex);
 
 has '+db_uuid' => (
     lazy    => 1,
@@ -451,11 +452,7 @@ sub _write_serialized_record {
         delete $args{'props'}->{$_}
             if ( !defined $args{'props'}->{$_} || $args{'props'}->{$_} eq '' );
     }
-    # my $cas_key = $self->record_cas->write( $args{props} );
-    my ($cas_key) = $self->_write_to_cas(
-        data    => $args{props},
-        cas_dir => $self->record_cas_dir
-    );
+    my $cas_key = $self->record_cas->write( $args{props} );
 
     my $record = {
         uuid    => $args{uuid},
@@ -582,14 +579,7 @@ memoize '_record_index_filename';
 sub _record_index_filename {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
-    return File::Spec->catfile( $self->_record_type_dir( $args{'type'} ), $self->_hashed_dir_name( $args{uuid} ));
-}
-
-sub _hashed_dir_name {
-    my $self = shift;
-    my $hash = shift;
-
-    return ( substr( $hash, 0, 1 ), substr( $hash, 1, 1 ), $hash );
+    return File::Spec->catfile( $self->_record_type_dir( $args{'type'} ), Prophet::Util::hashed_dir_name( $args{uuid} ));
 }
 
 sub _record_cas_filename {
@@ -602,7 +592,7 @@ sub _record_cas_filename {
     );
 
     return undef unless ( $key and ( $key ne '0' x 40 ) );
-    return File::Spec->catfile( $self->record_cas_dir, $self->_hashed_dir_name($key) );
+    return File::Spec->catfile( $self->record_cas_dir, Prophet::Util::hashed_dir_name($key) );
 }
 
 sub _record_type_dir {
@@ -627,11 +617,7 @@ sub _write_changeset {
     my $seqno = delete $hash_changeset->{'sequence_no'};
     my $uuid  = delete $hash_changeset->{'replica_uuid'};
 
-    # my $cas_key = $self->changeset_cas->write( $hash_changeset );
-    my $cas_key = $self->_write_to_cas(
-        data    => $hash_changeset,
-        cas_dir => $self->changeset_cas_dir
-    );
+    my $cas_key = $self->changeset_cas->write( $hash_changeset );
 
     my $changeset_index_line = pack( 'Na16NH40',
         $seqno,
@@ -663,7 +649,7 @@ sub _get_changeset_index_entry {
 
     # XXX: deserialize the changeset content from the cas with $key
     my $casfile = File::Spec->catfile(
-        $self->changeset_cas_dir => $self->_hashed_dir_name($key) );
+        $self->changeset_cas_dir => Prophet::Util::hashed_dir_name($key) );
 
     my $changeset = $self->_deserialize_changeset(
         content              => $self->_read_file($casfile),
@@ -791,24 +777,6 @@ sub _get_changeset_index_handle {
         ">>" . File::Spec->catfile( $self->fs_root => $self->changeset_index )
     ) || die $!;
     return $cs_file;
-}
-
-sub _write_to_cas {
-    my $self = shift;
-    my %args = validate( @_, { content_ref => 0, cas_dir => 1, data => 0 } );
-    my $content;
-    if ( $args{'content_ref'} ) {
-        $content = ${ $args{'content_ref'} };
-    } elsif ( $args{'data'} ) {
-        $content = to_json( $args{'data'},
-            { canonical => 1, pretty => 0, utf8 => 1 } );
-    }
-    my $fingerprint      = sha1_hex($content);
-    my $content_filename = File::Spec->catfile(
-        $args{'cas_dir'} => $self->_hashed_dir_name($fingerprint) );
-
-    $self->_write_file( path => $content_filename, content => $content );
-    return $fingerprint;
 }
 
 sub _write_file {

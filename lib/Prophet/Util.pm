@@ -98,4 +98,11 @@ sub write_file {
         ; # can't do "||" as we die if we print 0" || die "Could not write to " . $args{'path'} . " " . $!;
     close $fh || die $!;
 }
+
+sub hashed_dir_name {
+    my $hash = shift;
+
+    return ( substr( $hash, 0, 1 ), substr( $hash, 1, 1 ), $hash );
+}
+
 1;
