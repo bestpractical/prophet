@@ -55,7 +55,9 @@ has record_cas => (
     lazy => 1,
     default => sub {
         my $self = shift;
-        Prophet::ContentAddressedStore->new( { root => File::Spec->catfile( $self->fs_root => $self->record_cas_dir ) } );
+        Prophet::ContentAddressedStore->new(
+            { fs_root => $self->fs_root,
+              root    => $self->record_cas_dir } );
     },
 );
 
@@ -65,10 +67,12 @@ has changeset_cas => (
     lazy => 1,
     default => sub {
         my $self = shift;
-        Prophet::ContentAddressedStore->new( { root => File::Spec->catfile( $self->fs_root => $self->changeset_cas_dir ) } );
+        Prophet::ContentAddressedStore->new(
+            { fs_root => $self->fs_root,
+              root    => $self->changeset_cas_dir } );
     },
 );
-    
+
 has current_edit => ( is => 'rw', );
 
 has current_edit_records => (
@@ -592,7 +596,7 @@ sub _record_cas_filename {
     );
 
     return undef unless ( $key and ( $key ne '0' x 40 ) );
-    return File::Spec->catfile( $self->record_cas_dir, Prophet::Util::hashed_dir_name($key) );
+    return $self->record_cas->filename($key)
 }
 
 sub _record_type_dir {
@@ -648,8 +652,7 @@ sub _get_changeset_index_entry {
             . " data key $key" );
 
     # XXX: deserialize the changeset content from the cas with $key
-    my $casfile = File::Spec->catfile(
-        $self->changeset_cas_dir => Prophet::Util::hashed_dir_name($key) );
+    my $casfile = $self->changeset_cas->filename($key);
 
     my $changeset = $self->_deserialize_changeset(
         content              => $self->_read_file($casfile),
