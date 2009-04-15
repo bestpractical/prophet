@@ -52,6 +52,7 @@ on version  => run_command("Version");
 on init     => run_command("Init");
 on clone    => run_command("Clone");
 on merge    => run_command("Merge");
+on mirror   => run_command('Mirror');
 on pull     => run_command("Pull");
 on publish  => run_command("Publish");
 on server   => run_command("Server");

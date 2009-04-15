@@ -1,6 +1,8 @@
 package Prophet::Replica::prophet;
 use Any::Moose;
 extends 'Prophet::Replica';
+with 'Prophet::FilesystemReplica';
+
 use Params::Validate qw(:all);
 use LWP::UserAgent;
 use LWP::ConnCache;
@@ -95,18 +97,6 @@ has '+resolution_db_handle' => (
         );
     },
 );
-
-has lwp_useragent => (
-    isa => 'LWP::UserAgent',
-    is => 'ro',
-    lazy => 1,
-    default => sub {
-        my $ua = LWP::UserAgent->new;
-        $ua->timeout(10);
-        $ua->conn_cache(LWP::ConnCache->new());
-        return $ua;
-    }
-    );
 
 
 use constant scheme   => 'prophet';
@@ -298,25 +288,6 @@ sub set_replica_version {
 }
 
 
-sub store_local_metadata {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-    $self->_write_file(
-        path    =>File::Spec->catfile( $self->local_metadata_dir,  $key),
-        content => $value,
-    );
-
-
-}
-
-sub fetch_local_metadata {
-    my $self = shift;
-    my $key = shift;
-    $self->_read_file(File::Spec->catfile($self->local_metadata_dir, $key));
-
-}
-
 sub can_initialize {
     my $self = shift;
     if ( $self->fs_root_parent && -w $self->fs_root_parent ) {
@@ -447,6 +418,8 @@ sub _write_record {
         props => $record->get_props,
     );
 }
+
+# Working with records {
 
 sub _write_serialized_record {
     my $self = shift;
@@ -605,64 +578,8 @@ sub _record_type_dir {
     return File::Spec->catdir( $self->record_dir, $type );
 }
 
-sub _write_changeset {
-    my $self = shift;
-    my %args = validate( @_,
-        { index_handle => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
 
-    my $changeset = $args{'changeset'};
-    my $fh        = $args{'index_handle'};
-
-    my $hash_changeset = $changeset->as_hash;
-
-# XXX TODO: we should not be calculating the changeset's sha1 with the 'replica_uuid' and 'sequence_no' inside it. that makes every replica have a different hash for what should be the samechangeset.
-
-    # These ttwo things should never actually get stored
-    my $seqno = delete $hash_changeset->{'sequence_no'};
-    my $uuid  = delete $hash_changeset->{'replica_uuid'};
-
-    my $cas_key = $self->changeset_cas->write( $hash_changeset );
-
-    my $changeset_index_line = pack( 'Na16NH40',
-        $seqno,
-        Data::UUID->new->from_string( $changeset->original_source_uuid ),
-        $changeset->original_sequence_no,
-        $cas_key );
-
-    print $fh $changeset_index_line || die $!;
-
-}
-
-
-use constant CHG_RECORD_SIZE => ( 4 + 16 + 4 + 20 );
-
-sub _get_changeset_index_entry {
-    my $self = shift;
-    my %args = validate( @_, { sequence_no => 1, index_file => 1 } );
-    my $chgidx = $args{index_file};
-
-    my $rev    = $args{'sequence_no'};
-    my $index_record = substr( $$chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
-    my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record );
-
-    $self->log_debug( join( ",", ( $seq, $orig_uuid, $orig_seq, $key ) ) );
-    $orig_uuid = Data::UUID->new->to_string($orig_uuid);
-    $self->log_debug( "REV: $rev - seq $seq - originally $orig_seq from "
-            . substr( $orig_uuid, 0, 6 )
-            . " data key $key" );
-
-    # XXX: deserialize the changeset content from the cas with $key
-    my $casfile = $self->changeset_cas->filename($key);
-
-    my $changeset = $self->_deserialize_changeset(
-        content              => $self->_read_file($casfile),
-        original_source_uuid => $orig_uuid,
-        original_sequence_no => $orig_seq,
-        sequence_no          => $seq
-    );
-
-    return $changeset;
-}
+# }
 
 =head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
 
@@ -693,7 +610,7 @@ sub traverse_changesets {
             $latest = $args{until};
     }
 
-    my $chgidx = $self->_read_changeset_index;
+    my $chgidx = $self->read_changeset_index;
     $self->log_debug("Traversing changesets between $first_rev and $latest");
     my @range = ( $first_rev .. $latest );
     @range = reverse @range if $args{reverse};
@@ -708,13 +625,6 @@ sub traverse_changesets {
     }
 }
 
-sub _read_changeset_index {
-    my $self = shift;
-    $self->log_debug("Reading changeset index file");
-    my $chgidx = $self->_read_file( $self->changeset_index );
-    utf8::decode($chgidx) if utf8::is_utf8($chgidx); # When we get data from LWP it sometimes ends up with a charset. that is wrong here
-    return \$chgidx;
-}
 
 =head2 changesets_for_record { uuid => $uuid, type => $type }
 
@@ -734,7 +644,7 @@ sub changesets_for_record {
         uuid => $args{'uuid'}
     );
 
-    my $changeset_index = $self->_read_changeset_index();
+    my $changeset_index = $self->read_changeset_index();
 
     my @changesets;
     for my $item (@record_index) {
@@ -750,99 +660,8 @@ sub changesets_for_record {
 
 }
 
-sub _deserialize_changeset {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   content              => 1,
-            original_sequence_no => 1,
-            original_source_uuid => 1,
-            sequence_no          => 1
-        }
-    );
-
-    require Prophet::ChangeSet;
-    my $content_struct = from_json( $args{content}, { utf8 => 1 } );
-    my $changeset = Prophet::ChangeSet->new_from_hashref($content_struct);
-
-    $changeset->source_uuid( $self->uuid );
-    $changeset->sequence_no( $args{'sequence_no'} );
-    $changeset->original_source_uuid( $args{'original_source_uuid'} );
-    $changeset->original_sequence_no( $args{'original_sequence_no'} );
-    return $changeset;
-}
-
-sub _get_changeset_index_handle {
-    my $self = shift;
-
-    open(
-        my $cs_file,
-        ">>" . File::Spec->catfile( $self->fs_root => $self->changeset_index )
-    ) || die $!;
-    return $cs_file;
-}
-
-sub _write_file {
-    my $self = shift;
-    my %args = validate( @_, { path => 1, content => 1 } );
-
-    my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
-    Prophet::Util->write_file( file => $file, content => $args{content});
-}
 
 
-
-=head2 _file_exists PATH
-
-Returns true if PATH is a file or directory in this replica's directory structure
-
-=cut
-
-sub _file_exists {
-    my $self = shift;
-    my ($file) = validate_pos( @_, 1 );
-
-    if ( !$self->fs_root ) {
-
-        # HTTP Replica
-        return $self->_read_file($file) ? 1 : 0;
-    }
-
-    my $path = File::Spec->catfile( $self->fs_root, $file );
-    if    ( -f $path ) { return 1 }
-    elsif ( -d $path ) { return 2 }
-    else               { return 0 }
-}
-
-sub read_file {
-    my $self = shift;
-    my ($file) = validate_pos( @_, 1 );
-    if ( $self->fs_root ) {
-
-        # make sure we don't try to read files outside the replica
-        my $qualified_file = Cwd::fast_abs_path(
-            File::Spec->catfile( $self->fs_root => $file ) );
-        return undef
-            if substr( $qualified_file, 0, length( $self->fs_root ) ) ne
-                $self->fs_root;
-    }
-    return $self->_read_file($file);
-}
-
-sub _read_file {
-    my $self = shift;
-    my ($file) = validate_pos( @_, 1 );
-    if ( $self->fs_root ) {
-        return eval {
-            local $SIG{__DIE__} = 'DEFAULT';
-            Prophet::Util->slurp(
-                File::Spec->catfile( $self->fs_root => $file ) );
-        };
-    } else {    # http replica
-        return $self->lwp_get( $self->url . "/" . $file );
-    }
-
-}
 
 sub begin_edit {
     my $self = shift;
@@ -1074,49 +893,6 @@ sub type_exists {
     return $self->_file_exists( $self->_record_type_dir( $args{'type'} ) );
 }
 
-=head2 read_userdata_file
-
-Returns the contents of the given file in this replica's userdata directory.
-Returns C<undef> if the file does not exist.
-
-=cut
-
-sub read_userdata {
-    my $self = shift;
-    my %args = validate( @_, { path => 1 } );
-
-    $self->_read_file(
-        File::Spec->catfile( $self->userdata_dir, $args{path} ) );
-}
-
-=head2 write_userdata
-
-Writes the given string to the given file in this replica's userdata directory.
-
-=cut
-
-sub write_userdata {
-    my $self = shift;
-    my %args = validate( @_, { path => 1, content => 1 } );
-
-    $self->_write_file(
-        path    => File::Spec->catfile( $self->userdata_dir, $args{path} ),
-        content => $args{content},
-    );
-}
-
-sub lwp_get {
-    my $self     = shift;
-    my $url      = shift;
-    my $response = $self->lwp_useragent->get($url);
-    if ( $response->is_success ) {
-        return $response->decoded_content;
-    } else {
-        warn "Request FAILED ". $url . " ". $response->status_line;
-        return undef;
-    }
-
-}
 
 __PACKAGE__->meta->make_immutable();
 no Any::Moose;
