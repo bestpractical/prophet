@@ -42,7 +42,7 @@ sub run {
 sub no_config_files {
     my $self = shift;
     return "No configuration files found. "
-         . " Either create a file called 'prophetrc' inside of "
+         . " Either create a file called 'config' inside of "
          . $self->handle->fs_root
          . " or set the PROPHET_APP_CONFIG environment variable.\n\n";
 }

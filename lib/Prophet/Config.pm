@@ -48,7 +48,9 @@ sub app_config_file {
 
 sub replica_config_file {
     my $self = shift;
-    return File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' )
+     return 
+     $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'config' )) ||
+     $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' ));
 }
 
 
@@ -187,7 +189,7 @@ Takes no arguments. Automatically loads the config for you.
 =head2 app_config_file
 
 The file which controls configuration for this application
-(the $PROPHET_APP_CONFIG environmental variable, C<$PROPHET_REPO/prophetrc>,
+(the $PROPHET_APP_CONFIG environmental variable, C<$PROPHET_REPO/config>,
 or C<$HOME/.prophetrc>, in that order).
 
 =head2 load_from_files [files]
