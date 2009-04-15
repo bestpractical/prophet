@@ -5,7 +5,6 @@ use JSON;
 use Digest::SHA qw(sha1_hex);
 
 has fs_root => (
-    isa => 'Str',
     is  => 'rw',
 );
 
