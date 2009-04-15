@@ -487,21 +487,42 @@ sub _write_record_index_entry {
     close $record_index;
 }
 
+sub _read_file_range {
+    my $self = shift;
+    my %args = validate( @_, { path => 1, position => 1, whence => 1, length => 1 } );
+
+    if ($self->fs_root) {
+        my $f = File::Spec->catfile( $self->fs_root => $args{path} );
+        open( my $index, "<:bytes", $f) || return undef;
+        seek($index, $args{position}, $args{whence}) || return undef;
+        my $record;
+        read( $index, $record, $args{length}) || return undef;
+        return $record;
+    }
+    else {
+        # XXX: do range get if possible
+        my $content = $self->lwp_get( $self->url . "/" . $args{path} );
+        if ($args{whence} == 2) {
+            return substr($content, $args{position}, $args{length});
+        }
+        else {
+            die "unsupprted";
+        }
+    }
+}
+
 sub _last_record_index_entry {
     my $self = shift;
     my %args = ( type => undef, uuid => undef, @_);
 
-    my $idx_filename = File::Spec->catfile(
-        $self->fs_root => $self->_record_index_filename( uuid => $args{uuid}, type => $args{type})
-    );
+    my $idx_filename;
+    my $record = $self->_read_file_range(
+        path => $self->_record_index_filename( uuid => $args{uuid}, type => $args{type}),
+        position => (0 - RECORD_INDEX_SIZE), whence => 2,
+        length => RECORD_INDEX_SIZE ) || return undef;
 
-    open( my $index, "<:bytes", $idx_filename) || return undef;
-    seek($index, (0 - RECORD_INDEX_SIZE), 2) || return undef;
-    my $record;
-    read( $index, $record, RECORD_INDEX_SIZE) || return undef;
     my ( $seq, $key ) = unpack( "NH40", $record ) ;
     return ( $seq, $key );
-
 }
 
 sub _read_record_index {
