@@ -83,7 +83,7 @@ my $third = " $ENV{PROPHET_EMAIL}".' at \d{4}-\d{2}-\d{2} .+	\(3\@'.$replica_uui
 
 # --all
 my $out = run_command('log', '--all');
-like($out, qr{$first\n\n$second\n\n$third\n\n}, "--all outputs all changes");
+like($out, qr{$third\n\n$second\n\n$first\n\n}, "--all outputs all changes");
 
 # range: digit and LATEST
 $out = run_command('log', '--range=0..LATEST~2');
@@ -91,11 +91,11 @@ like($out, qr{$first\n\n}, "just the first change");
 
 # range: assumed end
 $out = run_command('log', '--range=LATEST~2');
-like($out, qr{$second\n\n$third\n\n}, "last two changes");
+like($out, qr{$third\n\n$second\n\n}, "last two changes");
 
 # syntactic sugar
 $out = run_command('log', 'LATEST~2');
-like($out, qr{$second\n\n$third\n\n}, "syntactic sugar doesn't change output");
+like($out, qr{$third\n\n$second\n\n}, "syntactic sugar doesn't change output");
 
 # error -- invalid input
 run_output_matches('prophet', [ 'log', 'invalid' ],
