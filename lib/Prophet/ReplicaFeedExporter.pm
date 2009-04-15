@@ -1,29 +1,57 @@
 package Prophet::ReplicaFeedExporter;
 use Any::Moose;
+use IO::Handle;
 extends 'Prophet::ReplicaExporter';
 
+has output_handle => (
+    is => 'rw',
+    lazy => 1,
+    default => sub {
+        my $self = shift;
+        if ($self->has_target_path) {
+            open(my $outs, ">", $self->target_path) || die $!;
+            $outs->autoflush(1);
+            return $outs;
+        } else {
+            return <STDOUT>;
+        }
+
+    }
+
+);
+
+
 my $feed_updated;
+
+
+sub output {
+    my $self = shift;
+    my $content = shift;
+   $self->output_handle->print( $content);
+
+
+}
 
 sub export {
     my $self = shift;
 
-    print $self->feed_header();
+    $self->output( $self->feed_header());
     $self->source_replica->resolution_db_handle->traverse_changesets(
         after    => 0,
         callback => sub {
             my $cs = shift;
-            $self->output_resolution_changeset($cs);
+            $self->output( $self->format_resolution_changeset($cs));
         }
     );
     $self->source_replica->traverse_changesets(
         after    => 0,
         callback => sub {
             my $cs = shift;
-            $self->output_changeset($cs);
+            $self->output( $self->format_changeset($cs));
         }
     );
-    print tag( 'updated', $feed_updated );
-    print "</feed>";
+    $self->output( tag( 'updated', $feed_updated ));
+    $self->output( "</feed>");
 }
 
 sub feed_header {
@@ -41,12 +69,12 @@ sub feed_header {
     );
 }
 
-sub output_resolution_changeset {
+sub format_resolution_changeset {
     my $self = shift;
     my $cs   = shift;
 
     $feed_updated = $cs->created_as_rfc3339;
-    print tag(
+    return tag(
         'entry', undef,
         sub {
             my $output =
@@ -64,19 +92,19 @@ sub output_resolution_changeset {
                 . tag('prophet:resolution')
                 . tag( 'prophet:sequence' => $cs->sequence_no )
                 . output_changes($cs)
-                . '</content>';
+                . "</content>"."\n";
             return $output;
 
         }
     );
 }
 
-sub output_changeset {
+sub format_changeset {
     my $self = shift;
     my $cs   = shift;
 
     $feed_updated = $cs->created_as_rfc3339;
-    print tag(
+    return tag(
         'entry', undef,
         sub {
             my $output =
