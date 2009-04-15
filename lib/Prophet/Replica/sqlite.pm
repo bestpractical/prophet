@@ -405,6 +405,7 @@ sub traverse_changesets {
         {   after    => 1,
             callback => 1,
             until    => 0,
+            reverse  => 0,
         }
     );
 
@@ -416,7 +417,9 @@ sub traverse_changesets {
     }
 
     $self->log_debug("Traversing changesets between $first_rev and $latest");
-    for my $rev ( $first_rev .. $latest ) {
+    my @range = ( $first_rev .. $latest );
+    @range = reverse @range if $args{reverse};
+    for my $rev ( @range ) {
         $self->log_debug("Fetching changeset $rev");
         my $changeset = $self->_load_changeset_from_db( sequence_no => $rev,);
         $args{callback}->($changeset);

@@ -32,6 +32,7 @@ sub run {
     die "START must be before END in START..END.\n" if $end - $start < 0;
 
     $handle->traverse_changesets(
+        reverse  => 1,
         after    => $start - 1,
         until    => $end,
         callback => sub {
