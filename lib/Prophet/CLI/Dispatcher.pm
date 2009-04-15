@@ -61,6 +61,7 @@ on log      => run_command("Log");
 on shell    => run_command("Shell");
 on aliases  => run_command("Aliases");
 on export => run_command('Export');
+on info   => run_command('Info');
 
 on push => sub {
     my $self = shift;
