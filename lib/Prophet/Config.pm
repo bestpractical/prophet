@@ -50,7 +50,8 @@ sub replica_config_file {
     my $self = shift;
      return 
      $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'config' )) ||
-     $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' ));
+     $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' )) ||
+      File::Spec->catfile( $self->app_handle->handle->fs_root => 'config' );
 }
 
 
