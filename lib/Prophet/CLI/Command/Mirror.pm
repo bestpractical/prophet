@@ -1,5 +1,8 @@
 package Prophet::CLI::Command::Mirror;
 use Any::Moose;
+use Params::Validate qw/:all/;
+use Time::Progress;
+
 extends 'Prophet::CLI::Command';
 
 has source => ( isa => 'Prophet::Replica', is => 'rw');
@@ -51,63 +54,31 @@ sub run {
     );
     $target->initialize(%resdb_init_args);    # XXX only do this when we need to
     $target_resdb->initialize(%init_args);    # XXX only do this when we need to
-    $self->mirror_data($source->resolution_db_handle,$target_resdb);
-    $self->mirror_data($source,$target);
-
-
+    print "Mirroring resolutions from ".$source->url."\n";
+    $target->mirror_from(source => $source->resolution_db_handle, 
+            reporting_callback => $self->progress_bar( max => $source->resolution_db_handle->latest_sequence_no));
+    print "\nMirroring changesets from ".$source->url."\n";
+    $target->mirror_from(source => $source,
+            reporting_callback => $self->progress_bar( max => $source->latest_sequence_no));
+    print "\nDone.\n";
 }
-    sub mirror_data {
-        my $self = shift;
-            my ($source, $target) = @_;
-
-    if ( $source->can('read_changeset_index') ) {
-        $target->_write_file(
-            path    => $target->changeset_index,
-            content => ${ $source->read_changeset_index }
-        );
-
-        $target->traverse_changesets(
-            load_changesets => 0,
-            callback =>
-
-                sub {
-                my $data = shift;
-                my ( $seq, $orig_uuid, $orig_seq, $key ) = @{$data};
-                return
-                    if (
-                    -f File::Spec->catdir( $target->fs_root,
-                        $target->changeset_cas->filename($key) ) );
-
-                my $content = $source->_read_file( $source->changeset_cas->filename($key) );
-                utf8::decode($content) if utf8::is_utf8($content);
-                my $newkey = $target->changeset_cas->write(
-                    $content
-
-                );
-
-                my $existsp = File::Spec->catdir( $target->fs_root,
-                    $target->changeset_cas->filename($key) );
-                if ( !-f $existsp ) {
-                    die "AAA couldn't find changeset $key at $existsp";
-
-                }
-                }
-
-            ,
-            after => 0,
-            until => 10
-        );
-    } else {
-        warn "Sorry, we only support replicas with a changeset index file";
-    }
-}
-
 sub validate_args {
     my $self = shift;
     die "Please specify a --from.\n"
         unless $self->has_arg('from');
 }
 
+sub progress_bar { 
+    my $self = shift;
+    my %args = validate(@_, {max => 1});
+    my $bar = Time::Progress->new();
+    $bar->attr(max => $args{max});
+    my $bar_count = 0;
+    return sub {
+       print $bar->report( "%30b %p %L (%E remaining)\r", ++$bar_count );
+    }
+
+}
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

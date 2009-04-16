@@ -79,30 +79,6 @@ use constant can_read_changesets => 1;
 sub can_write_changesets { return ( shift->fs_root ? 1 : 0 ) }
 use constant can_write_records    => 0;
 
-=head2 replica_exists
-
-Returns true if the replica already exists / has been initialized.
-Returns false otherwise.
-
-=cut
-
-sub replica_exists {
-    my $self = shift;
-    return $self->_replica_version ? 1 : 0;
-}
-
-# XXX should be in a mixin
-sub can_initialize {
-    my $self = shift;
-    if ( $self->fs_root_parent && -w $self->fs_root_parent ) {
-        return 1;
-
-    }
-    return 0;
-}
-
-
-
 sub initialize {
     my $self = shift;
     my %args = validate(
@@ -142,68 +118,60 @@ sub initialize {
     $self->after_initialize->($self);
 }
 
-
-
-=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
-
-Walks through all changesets from $after to $until, calling $callback on each.
-
-If no $until is specified, the latest changeset is assumed.
-
-
-XXXX THIS SHOULD BE IN FilesystemReplica, but mouse mixins are broken for conflicting method names
-
-=cut
-
-# each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-#                  4                    16              4                 20
-
-
-sub traverse_changesets {
+sub latest_sequence_no {
     my $self = shift;
-    my %args = validate(
-        @_,
-        {   after           => 1,
-            callback        => 1,
-            until           => 0,
-            reverse         => 0,
-            load_changesets => 0
-        }
-    );
-
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
-
-    my $chgidx = $self->read_changeset_index;
-    my $latest = $self->_changeset_index_size(index_file => $chgidx);
-
-      if ( defined $args{until} && $args{until} < $latest) {
-    my $latest = $args{until};
-
-    }
-
-    $self->log_debug("Traversing changesets between $first_rev and $latest");
-    my @range = ( $first_rev .. $latest );
-    @range = reverse @range if $args{reverse};
-    for my $rev (@range) {
-        $self->log_debug("Fetching changeset $rev");
-        if ( $args{load_changesets} ) {
-            my $changeset = $self->_get_changeset_index_entry(
-                sequence_no => $rev,
-                index_file  => $chgidx
-            );
-            $args{callback}->($changeset);
-        } else {
-            my $data = $self->_changeset_index_entry(
-                sequence_no => $rev,
-                index_file  => $chgidx
-            );
-            $args{callback}->($data);
-        }
-
-    }
+    my $count = (-s File::Spec->catdir($self->fs_root => $self->changeset_index )) / $self->CHG_RECORD_SIZE;
+    return $count;
 }
 
 
+
+sub mirror_from {
+        my $self = shift;
+        my %args = validate( @_, { source => 1, reporting_callback => {type => CODEREF, optional => 1 } });
+
+    my $source = $args{source};
+    if ( $source->can('read_changeset_index') ) {
+        $self->_write_file(
+            path    => $self->changeset_index,
+            content => ${ $source->read_changeset_index }
+        );
+
+        $self->traverse_changesets(
+            load_changesets => 0,
+            callback =>
+
+                sub {
+                my $data = shift;
+                my ( $seq, $orig_uuid, $orig_seq, $key ) = @{$data};
+                return
+                    if (
+                    -f File::Spec->catdir( $self->fs_root,
+                        $self->changeset_cas->filename($key) ) );
+
+                my $content = $source->_read_file( $source->changeset_cas->filename($key) );
+                utf8::decode($content) if utf8::is_utf8($content);
+                my $newkey = $self->changeset_cas->write(
+                    $content
+
+                );
+
+                my $existsp = File::Spec->catdir( $self->fs_root,
+                    $self->changeset_cas->filename($key) );
+                if ( !-f $existsp ) {
+                    die "AAA couldn't find changeset $key at $existsp";
+
+                }
+                }
+
+            ,
+            after => 0,
+            $args{reporting_callback} ? (reporting_callback => $args{reporting_callback}) : (),
+        );
+    } else {
+        warn "Sorry, we only support replicas with a changeset index file";
+    }
+    }
 
 
 1;

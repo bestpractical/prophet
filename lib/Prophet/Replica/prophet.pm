@@ -247,18 +247,6 @@ sub BUILD {
 
 }
 
-=head2 replica_exists
-
-Returns true if the replica already exists / has been initialized.
-Returns false otherwise.
-
-=cut
-
-sub replica_exists {
-    my $self = shift;
-    return $self->_replica_version ? 1 : 0;
-}
-
 =head2 replica_version
 
 Returns this replica's version.
@@ -407,6 +395,9 @@ sub set_db_uuid {
 
 =cut
 
+
+# Working with records {
+
 sub _write_record {
     my $self   = shift;
     my %args   = validate( @_, { record => { isa => 'Prophet::Record' }, } );
@@ -418,9 +409,6 @@ sub _write_record {
         props => $record->get_props,
     );
 }
-
-# Working with records {
-
 sub _write_serialized_record {
     my $self = shift;
     my %args = validate( @_, { type => 1, uuid => 1, props => 1 } );
@@ -601,50 +589,6 @@ sub _record_type_dir {
 
 
 # }
-
-=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
-
-Walks through all changesets from $after to $until, calling $callback on each.
-
-If no $until is specified, the latest changeset is assumed.
-
-=cut
-
-# each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
-#                  4                    16              4                 20
-
-sub traverse_changesets {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   after    => 1,
-            callback => 1,
-            until    => 0,
-            reverse  => 0,
-        }
-    );
-
-    my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $latest = $self->latest_sequence_no;
-
-    if ( defined $args{until} && $args{until} < $latest) {
-            $latest = $args{until};
-    }
-
-    my $chgidx = $self->read_changeset_index;
-    $self->log_debug("Traversing changesets between $first_rev and $latest");
-    my @range = ( $first_rev .. $latest );
-    @range = reverse @range if $args{reverse};
-    for my $rev ( @range ) {
-        $self->log_debug("Fetching changeset $rev");
-        my $changeset = $self->_get_changeset_index_entry(
-            sequence_no => $rev,
-            index_file  => $chgidx
-        );
-
-        $args{callback}->($changeset);
-    }
-}
 
 
 =head2 changesets_for_record { uuid => $uuid, type => $type }

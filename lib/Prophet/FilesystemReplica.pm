@@ -18,6 +18,27 @@ has lwp_useragent => (
     }
 );
 
+=head2 replica_exists
+
+Returns true if the replica already exists / has been initialized.
+Returns false otherwise.
+
+=cut
+
+sub replica_exists {
+    my $self = shift;
+    return $self->_replica_version ? 1 : 0;
+}
+
+sub can_initialize {
+    my $self = shift;
+    if ( $self->fs_root_parent && -w $self->fs_root_parent ) {
+        return 1;
+
+    }
+    return 0;
+}
+
 =head2 _file_exists PATH
 
 Returns true if PATH is a file or directory in this replica's directory structure
@@ -124,6 +145,61 @@ sub _changeset_index_size {
 
 }
 
+
+=head2 traverse_changesets { after => SEQUENCE_NO, callback => sub { } } 
+
+Walks through all changesets from $after to $until, calling $callback on each.
+
+If no $until is specified, the latest changeset is assumed.
+
+=cut
+
+# each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
+#                  4                    16              4                 20
+
+sub traverse_changesets {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   after    => 1,
+            callback => { type => CODEREF} ,
+            reporting_callback => { type => CODEREF, optional => 1 },
+            until    => 0,
+            reverse  => 0,
+            load_changesets => { default => 1 }
+        }
+    );
+
+    my $first_rev = ( $args{'after'} + 1 ) || 1;
+    my $latest = $self->latest_sequence_no;
+
+    if ( defined $args{until} && $args{until} < $latest) {
+            $latest = $args{until};
+    }
+
+    my $chgidx = $self->read_changeset_index;
+    $self->log_debug("Traversing changesets between $first_rev and $latest");
+    my @range = ( $first_rev .. $latest );
+    @range = reverse @range if $args{reverse};
+    for my $rev ( @range ) {
+        $self->log_debug("Fetching changeset $rev");
+        my $data;
+        if ( $args{load_changesets} ) {
+            $data = $self->_get_changeset_index_entry(
+                sequence_no => $rev,
+                index_file  => $chgidx
+            );
+        } else {
+           $data = $self->_changeset_index_entry(
+                sequence_no => $rev,
+                index_file  => $chgidx
+            );
+        }
+            $args{callback}->($data);
+        $args{reporting_callback}->($data) if ($args{reporting_callback});
+
+    }
+}
 sub _changeset_index_entry {
     my $self = shift;
     my %args = validate( @_, { sequence_no => 1, index_file => 1 } );
