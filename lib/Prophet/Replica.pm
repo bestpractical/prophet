@@ -163,7 +163,7 @@ sub import_changesets {
 
     my $source = $args{'from'};
 
-    warn "The source does not exist" unless ($source->replica_exists);
+    warn "The source (@{[$source->url]}) does not exist" unless ($source->replica_exists);
 
     $source->traverse_new_changesets(
         for      => $self,
