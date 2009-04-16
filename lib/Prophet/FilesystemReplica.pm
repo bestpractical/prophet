@@ -12,7 +12,7 @@ has lwp_useragent => (
     lazy => 1,
     default => sub {
         my $ua = LWP::UserAgent->new;
-        $ua->timeout(10);
+        $ua->timeout(60);
         $ua->conn_cache(LWP::ConnCache->new());
         return $ua;
     }
@@ -267,16 +267,17 @@ sub _get_changeset_index_handle {
 }
 
 sub lwp_get {
-    my $self     = shift;
-    my $url      = shift;
-    my $response = $self->lwp_useragent->get($url);
-    if ( $response->is_success ) {
-        return $response->decoded_content;
-    } else {
-        warn "Request FAILED ". $url . " ". $response->status_line;
-        return undef;
+    my $self = shift;
+    my $url  = shift;
+    my $response;
+    for ( 1 .. 4 ) {
+        $response = $self->lwp_useragent->get($url);
+        if ( $response->is_success ) {
+            return $response->decoded_content;
+        }
     }
-
+    warn "Could not fetch" . $url . " - " . $response->status_line;
+    return undef;
 }
           
       

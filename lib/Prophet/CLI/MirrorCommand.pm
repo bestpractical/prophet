@@ -5,7 +5,7 @@ use Params::Validate ':all';
 
 
 
-sub get_mirror_for_source {
+sub get_cache_for_source {
     my $self = shift;
     my ($source) = validate_pos(@_,{isa => 'Prophet::Replica'});
     my $target = Prophet::Replica->get_handle( url => 'prophet_cache:' . $source->uuid , app_handle => $self->app_handle );
@@ -18,7 +18,7 @@ sub get_mirror_for_source {
     return $target;
 }
 
-sub sync_mirror_from_source {
+sub sync_cache_from_source {
     my $self = shift;
     my %args = validate(@_, { target => { isa => 'Prophet::Replica::prophet_cache'}, source => { isa => 'Prophet::Replica'}});
 

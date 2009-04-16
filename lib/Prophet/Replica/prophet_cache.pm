@@ -233,6 +233,7 @@ sub mirror_from {
                     -f File::Spec->catdir( $self->fs_root,
                         $self->changeset_cas->filename($key) ) );
 
+                #warn "we don't have it at ".File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) );
                 my $content = $source->_read_file( $source->changeset_cas->filename($key) );
                 utf8::decode($content) if utf8::is_utf8($content);
                 my $newkey = $self->changeset_cas->write(
@@ -243,7 +244,7 @@ sub mirror_from {
                 my $existsp = File::Spec->catdir( $self->fs_root,
                     $self->changeset_cas->filename($key) );
                 if ( !-f $existsp ) {
-                    die "AAA couldn't find changeset $key at $existsp";
+                    die "The mirror @{[$self->url]} appears to be incomplete. Perhaps a sync operation was aborted?\nCouldn't find changeset $key\n";
 
                 }
                 }
