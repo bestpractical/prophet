@@ -6,6 +6,8 @@ use File::Spec  ();
 use Data::UUID;
 use File::Path;
 use Prophet::Util;
+use JSON;
+use Digest::SHA1 qw/sha1_hex/;
 use DBI;
 
 has dbh => (
@@ -96,9 +98,8 @@ sub BUILD {
 
 sub _check_for_upgrades {
     my $self = shift;
-   if  ( $self->replica_version && $self->replica_version < 2) {
-        $self->_upgrade_replica_to_v2();
-   } 
+   if  ( $self->replica_version && $self->replica_version < 2) { $self->_upgrade_replica_to_v2(); } 
+   if  ( $self->replica_version && $self->replica_version < 3) { $self->_upgrade_replica_to_v3(); } 
 
 }
 
@@ -253,7 +254,8 @@ CREATE TABLE changesets (
     is_resolution boolean,
 
     original_source_uuid text,
-    original_sequence_no INTEGER
+    original_sequence_no INTEGER,
+    sha1 TEXT
 )
 }, q{
 CREATE TABLE changes (
@@ -294,7 +296,7 @@ CREATE TABLE userdata (
 
     $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
     $self->set_replica_uuid( Data::UUID->new->create_str );
-    $self->set_replica_version(2);
+    $self->set_replica_version(3);
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} )
       if !$self->is_resdb;
     $self->after_initialize->($self);
@@ -464,7 +466,7 @@ sub _load_changeset_from_db {
 
     my $sth = $self->dbh->prepare("SELECT creator, created, sequence_no, ".
                                   "original_source_uuid, original_sequence_no, ".
-                                  "is_nullification, is_resolution from changesets ".
+                                  "is_nullification, is_resolution, sha1 from changesets ".
                                   "WHERE sequence_no = ?");
             $sth->execute($args{sequence_no});
 
@@ -477,6 +479,7 @@ sub _instantiate_changeset_from_db {
     my $self = shift;
     my $data = shift;
     require Prophet::ChangeSet;
+    my $sha1 = delete $data->{sha1};
     my $changeset = Prophet::ChangeSet->new(%$data, source_uuid => $self->uuid );
 
     
@@ -494,6 +497,11 @@ sub _instantiate_changeset_from_db {
             $change->add_prop_change( name => $pc->{name}, old => $pc->{old_value}, new => $pc->{new_value});
         }
         push @{$changeset->changes}, $change;
+    }
+
+    if(!$sha1) {
+         my $update_sth = $self->dbh->prepare('UPDATE changesets set sha1 = ? where sequence_no = ?');
+        $update_sth->execute($self->_calculate_changeset_sha1($changeset), $changeset->sequence_no);
     }
 
     return $changeset;
@@ -537,21 +545,38 @@ sub commit_edit {
     $self->current_edit(undef);
 }
 
+sub _calculate_changeset_sha1 {
+my $self = shift;
+my $changeset = shift;
+    my $hash_changeset = $changeset->as_hash;
+    # These two things should never actually get stored
+    my $seqno = delete $hash_changeset->{'sequence_no'};
+    my $uuid  = delete $hash_changeset->{'source_uuid'};
+
+    my $sha1 = sha1_hex(to_json( $hash_changeset,
+                        { canonical => 1, pretty => 0, utf8 => 1 } ));
+
+    return $sha1;
+}
+
 sub _write_changeset_to_db {
     my $self = shift;
     my $changeset = shift;
+
+    my $sha1 = $self->_calculate_changeset_sha1($changeset);
 
     $self->dbh->do(
         "INSERT INTO changesets "
             . "(creator, created,"
             . "original_source_uuid, original_sequence_no, "
-            . "is_nullification, is_resolution) "
+            . "is_nullification, is_resolution, sha1) "
             . "VALUES(?,?,?,?,?,?)", {},
         $changeset->creator, $changeset->created,
 
         $changeset->original_source_uuid,
         $changeset->original_sequence_no, $changeset->is_nullification,
-        $changeset->is_resolution
+        $changeset->is_resolution,
+        $sha1
 
     );
 
@@ -812,6 +837,18 @@ sub _upgrade_replica_to_v2 {
     );
 
 }
+sub _upgrade_replica_to_v3 {
+    my $self = shift;
+
+    $self->_do_db_upgrades(
+        statements => [
+            q{ALTER TABLE changesets ADD COLUMN sha1 text}
+        ],
+        version => 3
+    );
+
+}
+
 
 sub _do_db_upgrades {
     my $self = shift;
