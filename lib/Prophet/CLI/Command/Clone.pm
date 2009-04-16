@@ -42,11 +42,7 @@ sub run {
     }
 
     $target->initialize(%init_args);
-
-    $self->app_handle->config->set(
-        _sources =>
-            { $self->arg('from') => $self->arg('from') }
-    );
+    $self->app_handle->config->set( _sources => { $self->arg('from') => $self->arg('from') });
     $self->app_handle->config->save;
 
     $self->SUPER::run();
