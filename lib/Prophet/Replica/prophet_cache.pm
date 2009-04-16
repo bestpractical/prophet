@@ -183,7 +183,6 @@ sub initialize {
     $self->after_initialize->($self);
 }
 
-
 sub set_resdb_replica_uuid {
     my $self = shift;
     my $id   = shift;
@@ -192,7 +191,6 @@ sub set_resdb_replica_uuid {
         content => scalar($id)
     );
 }
-
 
 sub replica_exists {
     my $self = shift;
@@ -209,8 +207,6 @@ sub latest_sequence_no {
     my $count = ((-s File::Spec->catdir($self->fs_root => $self->changeset_index )) ||0) / $self->CHG_RECORD_SIZE;
     return $count;
 }
-
-
 
 sub mirror_from {
     my $self = shift;
@@ -232,17 +228,14 @@ sub mirror_from {
                 sub {
                 my $data = shift;
                 my ( $seq, $orig_uuid, $orig_seq, $key ) = @{$data};
-                return if ( -f File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ) );
-
-                #warn "Cache miss on ".File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ."\n");
+                if ( -e File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ) ) {
+                    return;
+                }
                 my $content = $source->_read_file( $source->changeset_cas->filename($key) );
                 utf8::decode($content) if utf8::is_utf8($content);
                 my $newkey = $self->changeset_cas->write( $content );
-
-                my $existsp = File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) );
-                if ( !-f $existsp ) {
-                    die "The mirror @{[$self->url]} appears to be incomplete. Perhaps a sync operation was aborted?\nCouldn't find changeset $key\n";
-
+                if ($newkey ne  $key) {
+                    Carp::confess "writing a mirrored changeset to the CAS resulted in an inconsistent hash. Corrupted upstream?";
                 }
                 }
 
@@ -254,6 +247,5 @@ sub mirror_from {
         warn "Sorry, we only support replicas with a changeset index file";
     }
 }
-
 
 1;
