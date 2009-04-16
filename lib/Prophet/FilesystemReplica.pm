@@ -117,11 +117,11 @@ sub _write_changeset {
 
     my $hash_changeset = $changeset->as_hash;
 
-# XXX TODO: we should not be calculating the changeset's sha1 with the 'replica_uuid' and 'sequence_no' inside it. that makes every replica have a different hash for what should be the samechangeset.
+# XXX TODO: we should not be calculating the changeset's sha1 with the 'source_uuid' and 'sequence_no' inside it. that makes every replica have a different hash for what should be the samechangeset.
 
-    # These ttwo things should never actually get stored
+    # These two things should never actually get stored
     my $seqno = delete $hash_changeset->{'sequence_no'};
-    my $uuid  = delete $hash_changeset->{'replica_uuid'};
+    my $uuid  = delete $hash_changeset->{'source_uuid'};
 
     my $cas_key = $self->changeset_cas->write( $hash_changeset );
 

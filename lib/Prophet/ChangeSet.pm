@@ -23,7 +23,7 @@ has created => (
 
 has source_uuid => (
     is  => 'rw',
-    isa => 'Str',
+    isa => 'Str|Undef',
 );
 
 has sequence_no => (
