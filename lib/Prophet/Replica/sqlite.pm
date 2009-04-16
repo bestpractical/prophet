@@ -570,7 +570,7 @@ sub _write_changeset_to_db {
             . "(creator, created,"
             . "original_source_uuid, original_sequence_no, "
             . "is_nullification, is_resolution, sha1) "
-            . "VALUES(?,?,?,?,?,?)", {},
+            . "VALUES(?,?,?,?,?,?,?)", {},
         $changeset->creator, $changeset->created,
 
         $changeset->original_source_uuid,
