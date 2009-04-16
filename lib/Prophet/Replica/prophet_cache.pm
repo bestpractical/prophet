@@ -218,7 +218,7 @@ sub mirror_from {
     if ( $source->can('read_changeset_index') ) {
         $self->_write_file(
             path    => $self->changeset_index,
-            content => ${ $source->read_changeset_index }
+            content => ${ $source->read_changeset_index ||''}
         );
 
         $self->traverse_changesets(
