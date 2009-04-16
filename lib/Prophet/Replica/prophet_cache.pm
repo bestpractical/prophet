@@ -55,12 +55,14 @@ has  resdb_replica_uuid  => (
 has '+resolution_db_handle' => (
     isa     => 'Prophet::Replica | Undef',
     lazy    => 1,
+    weak_ref => 1,
     default => sub {
         my $self = shift;
-        return if $self->is_resdb ;
+        return $self if $self->is_resdb ;
         my $suffix = 'remote_replica_cache';
         return Prophet::Replica->get_handle(
-            {   url        => 'prophet_cache:'.$self->resdb_replica_uuid,
+            { 
+                url        => 'prophet_cache:'.$self->resdb_replica_uuid,
                 fs_root    => File::Spec->catdir($self->app_handle->handle->resolution_db_handle->fs_root =>  $suffix),
                 app_handle => $self->app_handle,
                 db_uuid => $self->app_handle->handle->resolution_db_handle->db_uuid,
@@ -175,7 +177,7 @@ sub initialize {
         mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
     }
 
-    $self->set_db_uuid( $self->app_handle->handle->db_uuid);
+    $self->set_db_uuid( $args{db_uuid});
     $self->set_resdb_replica_uuid($args{resdb_replica_uuid}) unless ($self->is_resdb);
     $self->resolution_db_handle->initialize(db_uuid => $args{resdb_uuid}, replica_uuid => $args{resdb_replica_uuid})  unless ($self->is_resdb);
     $self->after_initialize->($self);
@@ -204,23 +206,25 @@ sub replica_exists {
 
 sub latest_sequence_no {
     my $self = shift;
-    my $count = (-s File::Spec->catdir($self->fs_root => $self->changeset_index )) / $self->CHG_RECORD_SIZE;
+    my $count = ((-s File::Spec->catdir($self->fs_root => $self->changeset_index )) ||0) / $self->CHG_RECORD_SIZE;
     return $count;
 }
 
 
 
 sub mirror_from {
-        my $self = shift;
-        my %args = validate( @_, { source => 1, reporting_callback => {type => CODEREF, optional => 1 } });
+    my $self = shift;
+    my %args
+        = validate( @_, { source => 1, reporting_callback => { type => CODEREF, optional => 1 } } );
 
     my $source = $args{source};
     if ( $source->can('read_changeset_index') ) {
+        my $content = ${ $source->read_changeset_index } ||'';
+
         $self->_write_file(
             path    => $self->changeset_index,
-            content => ${ $source->read_changeset_index ||''}
+            content => $content
         );
-
         $self->traverse_changesets(
             load_changesets => 0,
             callback =>
@@ -228,21 +232,14 @@ sub mirror_from {
                 sub {
                 my $data = shift;
                 my ( $seq, $orig_uuid, $orig_seq, $key ) = @{$data};
-                return
-                    if (
-                    -f File::Spec->catdir( $self->fs_root,
-                        $self->changeset_cas->filename($key) ) );
+                return if ( -f File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ) );
 
                 #warn "Cache miss on ".File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ."\n");
                 my $content = $source->_read_file( $source->changeset_cas->filename($key) );
                 utf8::decode($content) if utf8::is_utf8($content);
-                my $newkey = $self->changeset_cas->write(
-                    $content
+                my $newkey = $self->changeset_cas->write( $content );
 
-                );
-
-                my $existsp = File::Spec->catdir( $self->fs_root,
-                    $self->changeset_cas->filename($key) );
+                my $existsp = File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) );
                 if ( !-f $existsp ) {
                     die "The mirror @{[$self->url]} appears to be incomplete. Perhaps a sync operation was aborted?\nCouldn't find changeset $key\n";
 
@@ -251,12 +248,12 @@ sub mirror_from {
 
             ,
             after => 0,
-            $args{reporting_callback} ? (reporting_callback => $args{reporting_callback}) : (),
+            $args{reporting_callback} ? ( reporting_callback => $args{reporting_callback} ) : (),
         );
     } else {
         warn "Sorry, we only support replicas with a changeset index file";
     }
-    }
+}
 
 
 1;
