@@ -1,6 +1,7 @@
 package Prophet::CLI::Command::Merge;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::ProgressBar';
 
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
@@ -21,9 +22,11 @@ sub run {
         app_handle => $self->app_handle,
     ));
 
-
     
     return  unless $self->validate_merge_replicas($self->source => $self->target);
+
+
+
 
     $self->target->import_resolutions_from_remote_replica(
         from  => $self->source,
@@ -99,17 +102,7 @@ sub _do_merge {
             $changesets++;
         };
     } else {
-        require Time::Progress;
-        my $progress = Time::Progress->new();
-        $progress->attr( max => ($source_latest - $source_last_seen));
-
-        $import_args{reporting_callback} = sub {
-            my %args = @_;
-            $changesets++;
-            print $progress->report( "%30b %p %E // ". ($args{changeset}->created || 'Undated'). " " .(sprintf("%-12s",$args{changeset}->creator||'')) ."\r" , $changesets);
-
-        };
-
+        $import_args{reporting_callback} = $self->progress_bar( max => ($source_latest - $source_last_seen), format => "%30b %p %E\r" );
     }
 
     $self->target->import_changesets( %import_args);

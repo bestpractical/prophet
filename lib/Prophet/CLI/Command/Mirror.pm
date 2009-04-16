@@ -1,9 +1,9 @@
 package Prophet::CLI::Command::Mirror;
 use Any::Moose;
 use Params::Validate qw/:all/;
-use Time::Progress;
 
 extends 'Prophet::CLI::Command';
+with 'Prophet::CLI::ProgressBar';
 
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
@@ -17,19 +17,13 @@ sub run {
     $self->validate_args();
 
 
-    my $source = Prophet::Replica->get_handle(
-        url        => $self->arg('from'),
-        app_handle => $self->app_handle,
-    );
+    my $source = Prophet::Replica->get_handle( url        => $self->arg('from'), app_handle => $self->app_handle,);
     unless ( $source->replica_exists ) {
         print "The source replica '@{[$source->url]}' doesn't exist or is unreadable.";
         exit 1;
     }
 
-    $self->set_arg( 'to' => 'prophet_cache:' . $source->uuid);
-    my $target
-        = Prophet::Replica->get_handle( url => $self->arg('to'), app_handle => $self->app_handle );
-
+    my $target = Prophet::Replica->get_handle( url => 'prophet_cache:' . $source->uuid , app_handle => $self->app_handle );
     $target->uuid( $source->uuid );
     $target->resdb_replica_uuid( $source->resolution_db_handle->uuid );
 
@@ -47,8 +41,7 @@ sub run {
     print "Mirroring resolutions from " . $source->url . "\n";
     $target->resolution_db_handle->mirror_from(
         source => $source->resolution_db_handle,
-        reporting_callback =>
-            $self->progress_bar( max => $source->resolution_db_handle->latest_sequence_no )
+        reporting_callback => $self->progress_bar( max => $source->resolution_db_handle->latest_sequence_no )
     );
     print "\nMirroring changesets from " . $source->url . "\n";
     $target->mirror_from(
@@ -61,18 +54,6 @@ sub validate_args {
     my $self = shift;
     die "Please specify a --from.\n"
         unless $self->has_arg('from');
-}
-
-sub progress_bar { 
-    my $self = shift;
-    my %args = validate(@_, {max => 1});
-    my $bar = Time::Progress->new();
-    $bar->attr(max => $args{max});
-    my $bar_count = 0;
-    return sub {
-       print $bar->report( "%30b %p %L (%E remaining)\r", ++$bar_count );
-    }
-
 }
 
 __PACKAGE__->meta->make_immutable;
