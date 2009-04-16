@@ -233,7 +233,7 @@ sub mirror_from {
                     -f File::Spec->catdir( $self->fs_root,
                         $self->changeset_cas->filename($key) ) );
 
-                #warn "we don't have it at ".File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) );
+                #warn "Cache miss on ".File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ."\n");
                 my $content = $source->_read_file( $source->changeset_cas->filename($key) );
                 utf8::decode($content) if utf8::is_utf8($content);
                 my $newkey = $self->changeset_cas->write(
