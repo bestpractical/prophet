@@ -25,7 +25,7 @@ has fs_root_parent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->app_handle->handle->url =~ m{^file://(.*)/.*?$} ? $1 : undef;
+        return $self->fs_root =~ m{^(.*)/.+/?$} ? $1 : undef;
     },
 );
 
@@ -42,6 +42,16 @@ has changeset_cas => (
     },
 );
 
+has  resdb_replica_uuid  => (
+    is => 'rw',
+    lazy => 1,
+    isa => 'Str',
+    default => sub {
+            my $self = shift;
+           return  $self->_read_file( $self->resolution_db_replica_uuid_file );
+        }
+  );
+            
 has '+resolution_db_handle' => (
     isa     => 'Prophet::Replica | Undef',
     lazy    => 1,
@@ -50,10 +60,10 @@ has '+resolution_db_handle' => (
         return if $self->is_resdb ;
         my $suffix = 'remote_replica_cache';
         return Prophet::Replica->get_handle(
-            {   url        => 'prophet_cache:'.$self->app_handle->handle->resolution_db_handle->url . "/".$suffix,
+            {   url        => 'prophet_cache:'.$self->resdb_replica_uuid,
                 fs_root    => File::Spec->catdir($self->app_handle->handle->resolution_db_handle->fs_root =>  $suffix),
-                fs_root_parent    => File::Spec->catdir($self->app_handle->handle->resolution_db_handle->fs_root_parent => $suffix),
                 app_handle => $self->app_handle,
+                db_uuid => $self->app_handle->handle->resolution_db_handle->db_uuid,
                 is_resdb   => 1,
             }
         );
@@ -85,6 +95,15 @@ has changeset_index => (
     }
 
 );    
+has resolution_db_replica_uuid_file => (
+    is => 'rw',
+    lazy => 1,
+    default => sub {
+        my $self = shift;
+        File::Spec->catdir($self->replica_dir , $self->uuid, 'resolution_replica');
+    }
+
+);    
 
 use constant can_read_records    => 0;
 use constant can_read_changesets => 1;
@@ -94,11 +113,15 @@ use constant can_write_records    => 0;
 sub BUILD {
     my $self = shift;
     my $args = shift;
-    if ($self->url =~ m|^prophet_cache:file://(.*)/([AF09\-]+)/?$|i) {
-        my $root = $1;
-        my $uuid = $2;
-        $self->fs_root(File::Spec->catdir($root => 'remote-replica-cache' ));
+    warn "we're building";
+    if ($self->url =~ /^prophet_cache:(.*)$/i) {
+        my $uuid = $1;
         $self->uuid($uuid);
+        if ($self->is_resdb) {
+            $self->fs_root(File::Spec->catdir($self->app_handle->handle->resolution_db_handle->fs_root => 'remote-replica-cache' ));
+        } else {
+            $self->fs_root(File::Spec->catdir($self->app_handle->handle->fs_root => 'remote-replica-cache' ));
+        }
     }
 }
 
@@ -141,8 +164,19 @@ sub initialize {
     }
 
     $self->set_db_uuid( $self->app_handle->handle->db_uuid);
+    $self->set_resdb_replica_uuid($args{resdb_replica_uuid}) unless ($self->is_resdb);
     $self->resolution_db_handle->initialize(db_uuid => $args{resdb_uuid}, replica_uuid => $args{resdb_replica_uuid})  unless ($self->is_resdb);
     $self->after_initialize->($self);
+}
+
+
+sub set_resdb_replica_uuid {
+    my $self = shift;
+    my $id   = shift;
+    $self->_write_file(
+        path    => $self->resolution_db_replica_uuid_file ,
+        content => scalar($id)
+    );
 }
 
 
@@ -151,7 +185,6 @@ sub replica_exists {
     if (-e File::Spec->catdir($self->fs_root, $self->changeset_index)) { 
             return 1;
     } else {
-        warn File::Spec->catdir($self->fs_root, $self->changeset_index) ." does not exist";
         return undef;
     }
 

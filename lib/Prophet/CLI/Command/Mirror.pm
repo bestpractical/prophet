@@ -16,8 +16,6 @@ sub run {
 
     $self->validate_args();
 
-    $self->set_arg(
-        'to' => 'prophet_cache:' . $self->app_handle->handle->url . '/remote-replica-cache/' );
 
     my $source = Prophet::Replica->get_handle(
         url        => $self->arg('from'),
@@ -28,11 +26,12 @@ sub run {
         exit 1;
     }
 
+    $self->set_arg( 'to' => 'prophet_cache:' . $source->uuid);
     my $target
         = Prophet::Replica->get_handle( url => $self->arg('to'), app_handle => $self->app_handle );
 
     $target->uuid( $source->uuid );
-    $target->resolution_db_handle->uuid( $source->resolution_db_handle->uuid );
+    $target->resdb_replica_uuid( $source->resolution_db_handle->uuid );
 
     if ( !$target->replica_exists && !$target->can_initialize ) {
         die "The target replica path you specified can't be created.\n";
