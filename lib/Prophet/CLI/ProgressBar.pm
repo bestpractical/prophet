@@ -14,8 +14,7 @@ sub progress_bar {
     my $bar_count = 0;
     my $format = $args{format};
     return sub {
-       print $bar->report(  $format,
-           , ++$bar_count );
+       print $bar->report(  $format, ++$bar_count );
     }
 }
 no Any::Moose;
