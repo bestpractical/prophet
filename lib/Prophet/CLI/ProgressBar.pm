@@ -14,7 +14,6 @@ sub progress_bar {
     my $bar_count = 0;
     my $format = $args{format};
     return sub {
-        my %args = shift;
        print $bar->report(  $format,
            , ++$bar_count );
     }

@@ -3,7 +3,7 @@ use Any::Moose;
 use Params::Validate qw/:all/;
 
 extends 'Prophet::CLI::Command';
-with 'Prophet::CLI::ProgressBar';
+with 'Prophet::CLI::MirrorCommand';
 
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
@@ -23,33 +23,12 @@ sub run {
         exit 1;
     }
 
-    my $target = Prophet::Replica->get_handle( url => 'prophet_cache:' . $source->uuid , app_handle => $self->app_handle );
-    $target->uuid( $source->uuid );
-    $target->resdb_replica_uuid( $source->resolution_db_handle->uuid );
-
-    if ( !$target->replica_exists && !$target->can_initialize ) {
-        die "The target replica path you specified can't be created.\n";
-    }
-
-    my %init_args = (
-        db_uuid            => $source->db_uuid,
-        replica_uuid       => $source->uuid,
-        resdb_uuid         => $source->resolution_db_handle->db_uuid,
-        resdb_replica_uuid => $source->resolution_db_handle->uuid,
-    );
-    $target->initialize(%init_args);    # XXX only do this when we need to
-    print "Mirroring resolutions from " . $source->url . "\n";
-    $target->resolution_db_handle->mirror_from(
-        source => $source->resolution_db_handle,
-        reporting_callback => $self->progress_bar( max => $source->resolution_db_handle->latest_sequence_no )
-    );
-    print "\nMirroring changesets from " . $source->url . "\n";
-    $target->mirror_from(
-        source             => $source,
-        reporting_callback => $self->progress_bar( max => $source->latest_sequence_no )
-    );
+    my $target = $self->get_mirror_for_source($source);
+    $self->sync_mirror_from_source( target=> $target, source => $source);
     print "\nDone.\n";
 }
+
+
 sub validate_args {
     my $self = shift;
     die "Please specify a --from.\n"

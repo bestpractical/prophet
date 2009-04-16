@@ -113,7 +113,6 @@ use constant can_write_records    => 0;
 sub BUILD {
     my $self = shift;
     my $args = shift;
-    warn "we're building";
     if ($self->url =~ /^prophet_cache:(.*)$/i) {
         my $uuid = $1;
         $self->uuid($uuid);
@@ -125,6 +124,19 @@ sub BUILD {
     }
 }
 
+sub initialize_from_source {
+    my $self = shift;
+    my ($source) = validate_pos(@_,{isa => 'Prophet::Replica'});
+
+
+    my %init_args = (
+        db_uuid            => $source->db_uuid,
+        replica_uuid       => $source->uuid,
+        resdb_uuid         => $source->resolution_db_handle->db_uuid,
+        resdb_replica_uuid => $source->resolution_db_handle->uuid,
+    );
+    $self->initialize(%init_args);    # XXX only do this when we need to
+}
 
 sub initialize {
     my $self = shift;
