@@ -25,12 +25,12 @@ sub sync_cache_from_source {
     print "Mirroring resolutions from " . $args{source}->url . "\n";
     $args{target}->resolution_db_handle->mirror_from(
         source => $args{source}->resolution_db_handle,
-        reporting_callback => $self->progress_bar( max => $args{source}->resolution_db_handle->latest_sequence_no )
+        reporting_callback => $self->progress_bar( max => ($args{source}->resolution_db_handle->latest_sequence_no ||0) )
     );
     print "\nMirroring changesets from " . $args{source}->url . "\n";
     $args{target}->mirror_from(
         source             => $args{source},
-        reporting_callback => $self->progress_bar( max => $args{source}->latest_sequence_no )
+        reporting_callback => $self->progress_bar( max => ($args{source}->latest_sequence_no ||0) )
     );
 }
 
