@@ -2,6 +2,7 @@ package Prophet::CLI::Command::Merge;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::ProgressBar';
+with 'Prophet::CLI::MirrorCommand';
 
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
@@ -24,15 +25,16 @@ sub run {
 
     
     return  unless $self->validate_merge_replicas($self->source => $self->target);
-
-
-
-
+    if ( $self->source->can('read_changeset_index') && $self->target->url eq $self->app_handle->handle->url) {
+        my $original_source = $self->source;
+        $self->source($self->get_cache_for_source($original_source));
+        $self->sync_cache_from_source( target=> $self->source, source => $original_source);
+    }
     $self->target->import_resolutions_from_remote_replica(
         from  => $self->source,
         force => $self->has_arg('force'),
-    );
-
+    ) if ($self->source->resolution_db_handle);
+    
     my $changesets = $self->_do_merge();
 
     Prophet::CLI->start_pager();
