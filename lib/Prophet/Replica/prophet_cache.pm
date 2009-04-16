@@ -8,7 +8,7 @@ use File::Path qw/mkpath/;
 
 has '+db_uuid' => (
     lazy    => 1,
-    default => sub { shift->app_handle->handle->db_uuidl() }
+    default => sub { shift->app_handle->handle->db_uuid() }
 );
 
 has uuid => ( is => 'rw');
@@ -45,7 +45,19 @@ has changeset_cas => (
 has '+resolution_db_handle' => (
     isa     => 'Prophet::Replica | Undef',
     lazy    => 1,
-    default => sub { return shift }
+    default => sub {
+        my $self = shift;
+        return if $self->is_resdb ;
+        my $suffix = 'remote_replica_cache';
+        return Prophet::Replica->get_handle(
+            {   url        => 'prophet_cache:'.$self->app_handle->handle->resolution_db_handle->url . "/".$suffix,
+                fs_root    => File::Spec->catdir($self->app_handle->handle->resolution_db_handle->fs_root =>  $suffix),
+                fs_root_parent    => File::Spec->catdir($self->app_handle->handle->resolution_db_handle->fs_root_parent => $suffix),
+                app_handle => $self->app_handle,
+                is_resdb   => 1,
+            }
+        );
+    },
 );
 
 use constant userdata_dir    => 'userdata';
@@ -79,13 +91,27 @@ use constant can_read_changesets => 1;
 sub can_write_changesets { return ( shift->fs_root ? 1 : 0 ) }
 use constant can_write_records    => 0;
 
+sub BUILD {
+    my $self = shift;
+    my $args = shift;
+    if ($self->url =~ m|^prophet_cache:file://(.*)/([AF09\-]+)/?$|i) {
+        my $root = $1;
+        my $uuid = $2;
+        $self->fs_root(File::Spec->catdir($root => 'remote-replica-cache' ));
+        $self->uuid($uuid);
+    }
+}
+
+
 sub initialize {
     my $self = shift;
     my %args = validate(
         @_,
-        {   db_uuid    => 1,
+        {
+            db_uuid    => 1,
             replica_uuid => 1,
-            resdb_uuid => 0,
+            resdb_uuid    => 0,
+            resdb_replica_uuid => 0,
         }
     );
     if ( !$self->fs_root_parent ) {
@@ -115,7 +141,20 @@ sub initialize {
     }
 
     $self->set_db_uuid( $self->app_handle->handle->db_uuid);
+    $self->resolution_db_handle->initialize(db_uuid => $args{resdb_uuid}, replica_uuid => $args{resdb_replica_uuid})  unless ($self->is_resdb);
     $self->after_initialize->($self);
+}
+
+
+sub replica_exists {
+    my $self = shift;
+    if (-e File::Spec->catdir($self->fs_root, $self->changeset_index)) { 
+            return 1;
+    } else {
+        warn File::Spec->catdir($self->fs_root, $self->changeset_index) ." does not exist";
+        return undef;
+    }
+
 }
 
 sub latest_sequence_no {

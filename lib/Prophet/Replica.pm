@@ -84,7 +84,7 @@ sub get_handle {
     }
 
     Prophet::App->require($new_class);
-    return $new_class->new(%args);
+    $new_class->new(%args);
 }
 
 

@@ -16,7 +16,8 @@ sub run {
 
     $self->validate_args();
 
-    $self->set_arg( 'to' => 'prophet_cache:' . $self->app_handle->handle->url . '/remote-replica-cache/' );
+    $self->set_arg(
+        'to' => 'prophet_cache:' . $self->app_handle->handle->url . '/remote-replica-cache/' );
 
     my $source = Prophet::Replica->get_handle(
         url        => $self->arg('from'),
@@ -27,18 +28,11 @@ sub run {
         exit 1;
     }
 
-    my $target = Prophet::Replica->get_handle(
-        url        => $self->arg('to'),
-        app_handle => $self->app_handle,
-    );
+    my $target
+        = Prophet::Replica->get_handle( url => $self->arg('to'), app_handle => $self->app_handle );
+
     $target->uuid( $source->uuid );
-
-    my $target_resdb = Prophet::Replica->get_handle(
-        app_handle => $self->app_handle,
-        url        => $self->arg('to')
-    );
-    $target_resdb->uuid($source->resolution_db_handle->uuid);
-
+    $target->resolution_db_handle->uuid( $source->resolution_db_handle->uuid );
 
     if ( !$target->replica_exists && !$target->can_initialize ) {
         die "The target replica path you specified can't be created.\n";
@@ -47,19 +41,21 @@ sub run {
     my %init_args = (
         db_uuid            => $source->db_uuid,
         replica_uuid       => $source->uuid,
+        resdb_uuid         => $source->resolution_db_handle->db_uuid,
+        resdb_replica_uuid => $source->resolution_db_handle->uuid,
     );
-    my %resdb_init_args = (
-        db_uuid         => $source->resolution_db_handle->db_uuid,
-        replica_uuid => $source->resolution_db_handle->uuid,
+    $target->initialize(%init_args);    # XXX only do this when we need to
+    print "Mirroring resolutions from " . $source->url . "\n";
+    $target->resolution_db_handle->mirror_from(
+        source => $source->resolution_db_handle,
+        reporting_callback =>
+            $self->progress_bar( max => $source->resolution_db_handle->latest_sequence_no )
     );
-    $target->initialize(%resdb_init_args);    # XXX only do this when we need to
-    $target_resdb->initialize(%init_args);    # XXX only do this when we need to
-    print "Mirroring resolutions from ".$source->url."\n";
-    $target->mirror_from(source => $source->resolution_db_handle, 
-            reporting_callback => $self->progress_bar( max => $source->resolution_db_handle->latest_sequence_no));
-    print "\nMirroring changesets from ".$source->url."\n";
-    $target->mirror_from(source => $source,
-            reporting_callback => $self->progress_bar( max => $source->latest_sequence_no));
+    print "\nMirroring changesets from " . $source->url . "\n";
+    $target->mirror_from(
+        source             => $source,
+        reporting_callback => $self->progress_bar( max => $source->latest_sequence_no )
+    );
     print "\nDone.\n";
 }
 sub validate_args {
