@@ -8,6 +8,8 @@ sub run {
     my $self = shift;
     my @from;
 
+    Prophet::CLI->end_pager();
+
     my $previous_sources = $self->app_handle->config->sources;
 
 
