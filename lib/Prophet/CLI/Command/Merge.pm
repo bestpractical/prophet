@@ -38,20 +38,22 @@ sub run {
     my $changesets = $self->_do_merge();
 
     Prophet::CLI->start_pager();
-    $self->print_report($changesets);
+    $self->print_report($changesets) 
 }
 
 sub print_report {
-    my $self = shift;
+    my $self       = shift;
     my $changesets = shift;
-    if ($changesets == 0) {
-        print "No new changesets.\n";
-    }
-    elsif ($changesets == 1) {
-        print "Merged one changeset.\n";
-    }
-    else {
-        print "Merged $changesets changesets.\n";
+    if ( $self->has_arg('verbose') ) {
+        if ( $changesets == 0 ) {
+            print "No new changesets.\n";
+        } elsif ( $changesets == 1 ) {
+            print "Merged one changeset.\n";
+        } else {
+            print "Merged $changesets changesets.\n";
+        }
+    } else {
+        print "Done.\n";
     }
 }
 
@@ -103,7 +105,7 @@ sub _do_merge {
             $changesets++;
         };
     } else {
-        $import_args{reporting_callback} = sub { $changesets++; $self->progress_bar( max => ($source_latest - $source_last_seen), format => "%30b %p %E\r" );}
+        $import_args{reporting_callback} = $self->progress_bar( max => ($source_latest - $source_last_seen), format => "%30b %p %E\r" )
     }
 
     $self->target->import_changesets( %import_args);
