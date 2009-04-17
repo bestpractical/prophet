@@ -37,7 +37,7 @@ sub run {
     
     my $changesets = $self->_do_merge();
 
-    Prophet::CLI->start_pager();
+    #Prophet::CLI->start_pager();
     $self->print_report($changesets) 
 }
 
