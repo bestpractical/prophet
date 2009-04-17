@@ -231,10 +231,14 @@ sub mirror_from {
                 if ( -e File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ) ) {
                     return;
                 }
-                my $content = $source->_read_file( $source->changeset_cas->filename($key) );
+                my $content = $source->fetch_serialized_changeset(sha1 => $key);
                 utf8::decode($content) if utf8::is_utf8($content);
                 my $newkey = $self->changeset_cas->write( $content );
                 if ($newkey ne  $key) {
+                    warn "Original key: $key";
+                    warn "New key $newkey";
+                    warn "Original content:\n".$content."\n";
+                    warn "New content:\n".$self->_read_file($self->changeset_cas->filename($newkey))."\n";
                     Carp::confess "writing a mirrored changeset to the CAS resulted in an inconsistent hash. Corrupted upstream?";
                 }
                 }
