@@ -26,9 +26,9 @@ sub run {
     
     return  unless $self->validate_merge_replicas($self->source => $self->target);
     if ( $self->source->can('read_changeset_index') && $self->target->url eq $self->app_handle->handle->url) {
-        my $original_source = $self->source;
-        $self->source($self->get_cache_for_source($original_source));
-        $self->sync_cache_from_source( target=> $self->source, source => $original_source);
+        #   my $original_source = $self->source;
+        #   $self->source($self->get_cache_for_source($original_source));
+        #   $self->sync_cache_from_source( target=> $self->source, source => $original_source);
     }
     $self->target->import_resolutions_from_remote_replica(
         from  => $self->source,
