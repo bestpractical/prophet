@@ -436,6 +436,27 @@ sub traverse_changesets {
     }
 }
 
+
+sub read_changeset_index {
+    my $self =shift;
+    my $index = '';
+    $self->traverse_changesets(
+                after=> 0,
+                load_changesets => 0,
+                callback => sub {
+                    my $data            = shift;
+                    my $changeset_index_line = pack( 'Na16NH40',
+                        $data->[0],
+                        Data::UUID->new->from_string( $data->[1]),
+                        $data->[2],
+                        $data->[3]);
+                    $index .= $changeset_index_line;
+                }
+            );
+return \$index;
+
+}
+
 =head2 changesets_for_record { uuid => $uuid, type => $type }
 
 Returns an ordered set of changeset objects for all changesets containing
