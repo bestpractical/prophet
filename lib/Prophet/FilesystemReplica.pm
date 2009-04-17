@@ -242,10 +242,8 @@ sub _get_changeset_index_entry {
     # XXX: deserialize the changeset content from the cas with $key
     my ( $seq, $orig_uuid, $orig_seq, $key )  =@{ $self->_changeset_index_entry(%args)};
 
-    my $casfile = $self->changeset_cas->filename($key);
-
     my $changeset = $self->_deserialize_changeset(
-        content              => $self->_read_file($casfile),
+        content              => $self->fetch_serialized_changeset(sha1 => $key),
         original_source_uuid => $orig_uuid,
         original_sequence_no => $orig_seq,
         sequence_no          => $seq
@@ -253,6 +251,14 @@ sub _get_changeset_index_entry {
 
     return $changeset;
 }
+
+sub fetch_serialized_changeset {
+    my $self = shift;
+    my %args = validate(@_, { sha1 => 1 });
+    my $casfile = $self->changeset_cas->filename($args{sha1});
+    return $self->_read_file($casfile);
+}
+
 sub _get_changeset_index_handle {
     my $self = shift;
 
@@ -273,7 +279,7 @@ sub lwp_get {
             return $response->decoded_content;
         }
     }
-    warn "Could not fetch" . $url . " - " . $response->status_line;
+    warn "Could not fetch " . $url . " - " . $response->status_line;
     return undef;
 }
           
