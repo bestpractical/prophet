@@ -44,7 +44,6 @@ sub run {
 sub print_report {
     my $self = shift;
     my $changesets = shift;
-    print "\n";
     if ($changesets == 0) {
         print "No new changesets.\n";
     }
@@ -104,7 +103,7 @@ sub _do_merge {
             $changesets++;
         };
     } else {
-        $import_args{reporting_callback} = $self->progress_bar( max => ($source_latest - $source_last_seen), format => "%30b %p %E\r" );
+        $import_args{reporting_callback} = sub { $changesets++; $self->progress_bar( max => ($source_latest - $source_last_seen), format => "%30b %p %E\r" );}
     }
 
     $self->target->import_changesets( %import_args);
