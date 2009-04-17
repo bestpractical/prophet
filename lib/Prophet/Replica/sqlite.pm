@@ -408,6 +408,7 @@ sub traverse_changesets {
             callback => 1,
             until    => 0,
             reverse  => 0,
+            load_changesets => { default => 1 }
         }
     );
 
@@ -421,10 +422,17 @@ sub traverse_changesets {
     $self->log_debug("Traversing changesets between $first_rev and $latest");
     my @range = ( $first_rev .. $latest );
     @range = reverse @range if $args{reverse};
-    for my $rev ( @range ) {
+    for my $rev (@range) {
         $self->log_debug("Fetching changeset $rev");
-        my $changeset = $self->_load_changeset_from_db( sequence_no => $rev,);
-        $args{callback}->($changeset);
+        my $data;
+        if ( $args{load_changesets} ) {
+            $data = $self->_load_changeset_from_db( sequence_no => $rev );
+        } else {
+            my $row = $self->_load_changeset_metadata_from_db( sequence_no => $rev );
+            $data = [ $row->{sequence_no}, $row->{original_source_uuid}, $row->{original_sequence_no}, $row->{sha1} ];
+
+        }
+        $args{callback}->($data);
     }
 }
 
@@ -459,27 +467,60 @@ sub changesets_for_record {
     return @changesets;
 }
 
+
+sub fetch_serialized_changeset {
+    my $self = shift;
+    my %args = validate(@_, { sha1 => 1 });
+    my $cs = $self->_load_changeset_from_db(sha1 => $args{sha1});
+    return $cs->canonical_json_representation;
+}   
+
 sub _load_changeset_from_db {
     my $self = shift;
-    my %args = validate( @_, {   sequence_no          => 1 });
+    my %args = validate(
+        @_,
+        {   sequence_no => 0,
+            sha1        => 0
 
-
-    my $sth = $self->dbh->prepare("SELECT creator, created, sequence_no, ".
-                                  "original_source_uuid, original_sequence_no, ".
-                                  "is_nullification, is_resolution, sha1 from changesets ".
-                                  "WHERE sequence_no = ?");
-            $sth->execute($args{sequence_no});
-
-
-    my $data = $sth->fetchrow_hashref;
+        }
+    );
+    my $data = $self->_load_changeset_metadata_from_db(%args);
     return $self->_instantiate_changeset_from_db($data);
 }
+
+sub _load_changeset_metadata_from_db {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   sequence_no => 0,
+            sha1        => 0
+
+        }
+    );
+    my ( $attr, @bind );
+    if ( $args{sequence_no} ) {
+        $attr = 'sequence_no';
+        @bind = ( $args{sequence_no} );
+    } elsif ( $args{sha1} ) {
+        $attr = 'sha1';
+        @bind = ( $args{sha1} );
+    } else {
+        die "$self->_load_changeset_from_db called with neither a sequence_no nor a sha1";
+    }
+    my $sth = $self->dbh->prepare( "SELECT creator, created, sequence_no, "
+            . "original_source_uuid, original_sequence_no, "
+            . "is_nullification, is_resolution, sha1 from changesets "
+            . "WHERE $attr = ?" );
+    $sth->execute(@bind);
+    my $data = $sth->fetchrow_hashref;
+
+}
+
 
 sub _instantiate_changeset_from_db {
     my $self = shift;
     my $data = shift;
     require Prophet::ChangeSet;
-    my $sha1 = delete $data->{sha1};
     my $changeset = Prophet::ChangeSet->new(%$data, source_uuid => $self->uuid );
 
     
@@ -499,9 +540,12 @@ sub _instantiate_changeset_from_db {
         push @{$changeset->changes}, $change;
     }
 
-    if(!$sha1) {
+    if(!$data->{sha1}) {
+        my $sha1 = $changeset->calculate_sha1();
          my $update_sth = $self->dbh->prepare('UPDATE changesets set sha1 = ? where sequence_no = ?');
-        $update_sth->execute($self->_calculate_changeset_sha1($changeset), $changeset->sequence_no);
+        $update_sth->execute($sha1, $changeset->sequence_no);
+        $changeset->sha1($sha1);
+
     }
 
     return $changeset;
@@ -545,25 +589,11 @@ sub commit_edit {
     $self->current_edit(undef);
 }
 
-sub _calculate_changeset_sha1 {
-my $self = shift;
-my $changeset = shift;
-    my $hash_changeset = $changeset->as_hash;
-    # These two things should never actually get stored
-    my $seqno = delete $hash_changeset->{'sequence_no'};
-    my $uuid  = delete $hash_changeset->{'source_uuid'};
-
-    my $sha1 = sha1_hex(to_json( $hash_changeset,
-                        { canonical => 1, pretty => 0, utf8 => 1 } ));
-
-    return $sha1;
-}
-
 sub _write_changeset_to_db {
     my $self = shift;
     my $changeset = shift;
 
-    my $sha1 = $self->_calculate_changeset_sha1($changeset);
+    my $sha1 = $changeset->calculate_sha1();
 
     $self->dbh->do(
         "INSERT INTO changesets "
