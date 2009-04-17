@@ -46,6 +46,7 @@ sub run {
     my $done = 0;
 
     while ( !$done ) {
+        Prophet::CLI->end_pager();
         $done = $self->try_to_edit( template => \$template );
     }
 

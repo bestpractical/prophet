@@ -9,7 +9,6 @@ use File::Spec;
 
 sub run {
     my $self = shift;
-
     die "Please specify a --to.\n" unless $self->has_arg('to');
 
     # set the temp directory where we will do all of our work, which will be
@@ -22,6 +21,7 @@ sub run {
     # if the user specifies nothing, then publish the replica
     $export_replica = 1 if !$export_html;
 
+    Prophet::CLI->end_pager();
     # if we have the html argument, populate the tempdir with rendered templates
     if ($export_html) {
         print "Exporting a static HTML version of this replia\n";
