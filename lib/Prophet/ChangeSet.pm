@@ -2,6 +2,8 @@ package Prophet::ChangeSet;
 use Any::Moose;
 use Prophet::Change;
 use Params::Validate;
+use Digest::SHA1 qw/sha1_hex/;
+use JSON;
 
 has creator => (
     is  => 'rw',
@@ -57,6 +59,11 @@ has changes => (
     auto_deref => 1,
     default    => sub { [] },
 );
+
+has sha1 => ( 
+    is => 'rw',
+    isa => 'Maybe[Str]'
+    );
 
 sub has_changes { scalar @{ $_[0]->changes } }
 sub _add_change {
@@ -250,6 +257,26 @@ sub created_as_rfc3339 {
     my $c = $self->created;
     $c =~ s/ /T/;
     return $c."Z";
+}
+
+sub calculate_sha1 {
+    my $self = shift;
+    return sha1_hex($self->canonical_json_representation);
+}
+
+sub canonical_json_representation {
+my $self = shift;
+    my $hash_changeset = $self->as_hash;
+    # These two things should never actually get stored
+     delete $hash_changeset->{'sequence_no'};
+     delete $hash_changeset->{'source_uuid'};
+
+
+    return to_json( $hash_changeset,
+                        { canonical => 1, pretty => 0, utf8 => 1 } );
+
+
+
 }
 
 __PACKAGE__->meta->make_immutable;
