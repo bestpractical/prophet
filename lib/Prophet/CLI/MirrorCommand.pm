@@ -22,6 +22,11 @@ sub sync_cache_from_source {
     my $self = shift;
     my %args = validate(@_, { target => { isa => 'Prophet::Replica::prophet_cache'}, source => { isa => 'Prophet::Replica'}});
 
+    if ($args{target}->latest_sequence_no == $args{source}->latest_sequence_no) {
+        print "Mirror of ".$args{source}->url. " is already up to date\n";
+        return 
+    }
+
     print "Mirroring resolutions from " . $args{source}->url . "\n";
     $args{target}->resolution_db_handle->mirror_from(
         source => $args{source}->resolution_db_handle,
