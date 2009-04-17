@@ -286,11 +286,18 @@ sub serve_replica {
         return undef unless $self->handle->can('read_file');
         my $content = $self->handle->read_file($repo_file);
         return unless defined $content && length($content);
+        $self->send_replica_content($content);
+    }
+
+sub send_replica_content {
+    my $self = shift;
+    my $content = shift;
         return $self->send_content(
             content_type => 'application/x-prophet',
             content      => $content
         );
-    }
+
+}
 
 sub show_template {
     my $self = shift;
