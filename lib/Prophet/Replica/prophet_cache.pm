@@ -232,7 +232,6 @@ sub mirror_from {
                     return;
                 }
                 my $content = $source->fetch_serialized_changeset(sha1 => $key);
-                utf8::decode($content) if utf8::is_utf8($content);
                 my $newkey = $self->changeset_cas->write( $content );
                 if ($newkey ne  $key) {
                     warn "Original key: $key";

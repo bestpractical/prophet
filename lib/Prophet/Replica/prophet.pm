@@ -489,7 +489,7 @@ sub _read_file_range {
     }
     else {
         # XXX: do range get if possible
-        my $content = $self->lwp_get( $self->url . "/" . $args{path}, 1 );
+        my $content = $self->lwp_get( $self->url . "/" . $args{path} );
         if ($args{whence} == 2) {
             return substr($content, $args{position}, $args{length});
         }
@@ -524,7 +524,6 @@ sub _read_record_index {
 
     my $index = $self->_read_file($idx_filename);
     return undef unless $index;
-    utf8::decode($index) if utf8::is_utf8($index); # When we get data from LWP it sometimes ends up with a charset. that is wrong here
 
     my $count = length($index) / RECORD_INDEX_SIZE;
     my @entries;
