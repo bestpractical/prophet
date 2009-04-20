@@ -489,7 +489,7 @@ sub _read_file_range {
     }
     else {
         # XXX: do range get if possible
-        my $content = $self->lwp_get( $self->url . "/" . $args{path} );
+        my $content = $self->lwp_get( $self->url . "/" . $args{path}, 1 );
         if ($args{whence} == 2) {
             return substr($content, $args{position}, $args{length});
         }
