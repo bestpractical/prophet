@@ -1022,7 +1022,7 @@ sub log {
 sub log_debug { 
     my $self = shift;
     my $msg = shift;
-    $self->app_handle->log_debug($self->display_name_for_uuid." (".$self->url." )".": " .$msg);
+    $self->app_handle->log_debug($self->display_name_for_uuid.": " .$msg);
 }
 
 =head2 log_fatal $MSG

@@ -206,7 +206,6 @@ sub _changeset_index_entry {
     my $index_record = substr( $$chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
     my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record );
 
-    $self->log_debug( join( ",", ( $seq, $orig_uuid, $orig_seq, $key ) ) );
     $orig_uuid = Data::UUID->new->to_string($orig_uuid);
     $self->log_debug( "REV: $rev - seq $seq - originally $orig_seq from "
             . substr( $orig_uuid, 0, 6 )
