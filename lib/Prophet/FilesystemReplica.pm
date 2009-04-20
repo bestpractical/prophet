@@ -103,7 +103,6 @@ sub read_changeset_index {
     my $self = shift;
     $self->log_debug("Reading changeset index file" .$self->changeset_index);
     my $chgidx = $self->_read_file( $self->changeset_index );
-    utf8::decode($chgidx) if utf8::is_utf8($chgidx); # When we get data from LWP it sometimes ends up with a charset. that is wrong here
     return \$chgidx;
 }
       
@@ -271,11 +270,12 @@ sub _get_changeset_index_handle {
 sub lwp_get {
     my $self = shift;
     my $url  = shift;
+
     my $response;
     for ( 1 .. 4 ) {
         $response = $self->lwp_useragent->get($url);
         if ( $response->is_success ) {
-            return $response->decoded_content;
+            return $response->content;
         }
     }
     warn "Could not fetch " . $url . " - " . $response->status_line;
