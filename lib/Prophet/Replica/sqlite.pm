@@ -922,7 +922,7 @@ sub _do_db_upgrades {
 
 sub DEMOLISH {
     my $self = shift;
-    $self->dbh->disconnect if ( $self->dbh );
+    $self->dbh->disconnect if ( $self->replica_exists and $self->dbh );
 }
 
 
