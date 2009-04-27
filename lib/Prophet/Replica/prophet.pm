@@ -110,11 +110,6 @@ use constant userdata_dir    => 'userdata';
 use constant changeset_index => 'changesets.idx';
 use constant local_metadata_dir => 'local_metadata';
 
-sub replica_exists {
-    my $self = shift;
-    return -d $self->fs_root ? 1 : 0;
-}
-
 =head1 Replica Format
 
 =head4 overview
