@@ -11,17 +11,21 @@ sub new {
     my $class = shift;
     my %args = @_;
 
-    my @types = ('sqlite');
+    my @types = ('file','sqlite');
     unshift @types, $ENV{PROPHET_REPLICA_TYPE} if $ENV{PROPHET_REPLICA_TYPE};
-    for (@types) {
+
+    my @possible;
+    for my $type (@types) {
         my $ret = eval {
-            my $other = "Prophet::Replica::$_";
-            Prophet::App->require($other);
-            $ret = $other->new(@_);
+            my $other = "Prophet::Replica::$type";
+            Prophet::App->try_to_require($other);
+            $ret = $type eq "file" ? $other->SUPER::new(@_) : $other->new(@_);
         };
-        return $ret if not $@ and $ret and $ret->replica_exists;
+        next if $@ or not $ret;
+        return $ret if $ret->replica_exists;
+        push @possible, $ret;
     }
-    return $class->SUPER::new(@_);
+    return $possible[0];
 }
 
 1;
