@@ -4,7 +4,9 @@ sub scheme { 'file' }
 
 sub replica_exists {
     my $self = shift;
-    return -d $self->fs_root ? 1 : 0;
+    return 0 unless -d $self->fs_root;
+    return 0 unless -e File::Spec->catfile( $self->fs_root => 'database-uuid' );
+    return 1;
 }
 
 sub new {
