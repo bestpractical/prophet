@@ -2,6 +2,8 @@ package Prophet::Resolver::Failed;
 use Any::Moose;
 use Data::Dumper;
 extends 'Prophet::Resolver';
+$Data::Dumper::Indent = 1;
+
 
 sub run {
     my $self               = shift;
