@@ -155,8 +155,8 @@ sub as_string {
     return '' if @prop_changes == 0;
     $out .= $args{header_callback}->($self) if ( $args{header_callback} );
 
-    for my $prop_change (@prop_changes) {
-        $out .= "  " . $prop_change->summary . "\n";
+    for my $summary ( sort grep {defined }(map { $_->summary} @prop_changes)) {
+        $out .= "  " . $summary . "\n";
     }
 
     return $out;
