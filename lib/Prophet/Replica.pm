@@ -354,7 +354,7 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    return $self->fetch_local_metadata('last-changeset-from-'.$source)||0;
+    return $self->fetch_local_metadata('last-changeset-from-'.$source)||-1;
 }
 
 

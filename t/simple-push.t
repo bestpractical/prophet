@@ -134,7 +134,7 @@ as_alice {
 
     # sync from bob
     diag('Alice syncs from bob');
-    is( $alice->last_changeset_from_source( $bob->uuid ) => 0 );
+    is( $alice->last_changeset_from_source( $bob->uuid ) => -1 );
     run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob') ],
         "Sync ran ok!" );
     is( $alice->last_changeset_from_source( $bob->uuid ) =>
