@@ -67,11 +67,11 @@ is($end, $handle->latest_sequence_no, 'LATEST ends at latest');
 my $replica_uuid = replica_uuid;
 my $first = " $ENV{PROPHET_EMAIL}".' at \d{4}-\d{2}-\d{2} .+	\(1\@'.$replica_uuid.'\)
  # Person 1 \(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\)
-  \+ "original_replica" set to "'.$replica_uuid.'"
+  \+ "age" set to "0.7"
   \+ "creator" set to "'.$ENV{PROPHET_EMAIL}.'"
   \+ "name" set to "Mao"
-  \+ "species" set to "cat"
-  \+ "age" set to "0.7"';
+  \+ "original_replica" set to "'.$replica_uuid.'"
+  \+ "species" set to "cat"';
 
 my $second = " $ENV{PROPHET_EMAIL}".' at \d{4}-\d{2}-\d{2} .+	\(2\@'.$replica_uuid.'\)
  # Person 1 \(\w{8}-\w{4}-\w{4}-\w{4}-\w{12}\)
