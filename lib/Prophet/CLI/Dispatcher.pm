@@ -69,7 +69,7 @@ on push => sub {
 
     die "Please specify a --to.\n" if !$self->context->has_arg('to');
 
-    $self->context->set_arg(from => $self->cli->app_handle->default_replica_type.":file://".$self->cli->handle->fs_root);
+    $self->context->set_arg(from => $self->cli->handle->url);
     $self->context->set_arg(db_uuid => $self->cli->handle->db_uuid);
     run('merge', $self, @_);
 };
