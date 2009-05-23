@@ -17,6 +17,7 @@ inc/Module/Install/Fetch.pm
 inc/Module/Install/Include.pm
 inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
+inc/Module/Install/Scripts.pm
 inc/Module/Install/Share.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
@@ -34,12 +35,13 @@ lib/Prophet/CLI/Command/Create.pm
 lib/Prophet/CLI/Command/Delete.pm
 lib/Prophet/CLI/Command/Export.pm
 lib/Prophet/CLI/Command/History.pm
+lib/Prophet/CLI/Command/Info.pm
 lib/Prophet/CLI/Command/Init.pm
 lib/Prophet/CLI/Command/Log.pm
 lib/Prophet/CLI/Command/Merge.pm
+lib/Prophet/CLI/Command/Mirror.pm
 lib/Prophet/CLI/Command/Publish.pm
 lib/Prophet/CLI/Command/Pull.pm
-lib/Prophet/CLI/Command/Push.pm
 lib/Prophet/CLI/Command/Search.pm
 lib/Prophet/CLI/Command/Server.pm
 lib/Prophet/CLI/Command/Settings.pm
@@ -47,7 +49,9 @@ lib/Prophet/CLI/Command/Shell.pm
 lib/Prophet/CLI/Command/Show.pm
 lib/Prophet/CLI/Command/Update.pm
 lib/Prophet/CLI/Dispatcher.pm
+lib/Prophet/CLI/MirrorCommand.pm
 lib/Prophet/CLI/Parameters.pm
+lib/Prophet/CLI/ProgressBar.pm
 lib/Prophet/CLI/PublishCommand.pm
 lib/Prophet/CLI/RecordCommand.pm
 lib/Prophet/CLI/TextEditorCommand.pm
@@ -57,8 +61,11 @@ lib/Prophet/Config.pm
 lib/Prophet/Conflict.pm
 lib/Prophet/ConflictingChange.pm
 lib/Prophet/ConflictingPropChange.pm
+lib/Prophet/ContentAddressedStore.pm
 lib/Prophet/DatabaseSetting.pm
+lib/Prophet/FilesystemReplica.pm
 lib/Prophet/ForeignReplica.pm
+lib/Prophet/Manual.pod
 lib/Prophet/Meta/Types.pm
 lib/Prophet/PropChange.pm
 lib/Prophet/Record.pm
@@ -66,6 +73,7 @@ lib/Prophet/Replica.pm
 lib/Prophet/Replica/file.pm
 lib/Prophet/Replica/http.pm
 lib/Prophet/Replica/prophet.pm
+lib/Prophet/Replica/prophet_cache.pm
 lib/Prophet/Replica/sqlite.pm
 lib/Prophet/ReplicaExporter.pm
 lib/Prophet/ReplicaFeedExporter.pm
@@ -103,9 +111,6 @@ share/web/static/jquery/css/tablesorter/desc.gif
 share/web/static/jquery/images/arrows-cccccc.png
 share/web/static/jquery/images/arrows-ffffff.png
 share/web/static/jquery/images/shadow.png
-t/01-dependencies.t
-t/99-pod-coverage.t
-t/99-pod.t
 t/aliases.t
 t/canonicalize.t
 t/cli-arg-parsing.t
@@ -157,3 +162,6 @@ t/WebToy/lib/App/WebToy/Collection/WikiPage.pm
 t/WebToy/lib/App/WebToy/Model/WikiPage.pm
 t/WebToy/lib/App/WebToy/Server/Dispatcher.pm
 t/WebToy/lib/App/WebToy/Server/View.pm
+xt/01-dependencies.t
+xt/99-pod-coverage.t
+xt/99-pod.t
