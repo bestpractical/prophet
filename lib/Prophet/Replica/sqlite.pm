@@ -7,7 +7,7 @@ use Data::UUID;
 use File::Path;
 use Prophet::Util;
 use JSON;
-use Digest::SHA1 qw/sha1_hex/;
+use Digest::SHA qw/sha1_hex/;
 use DBI;
 
 has dbh => (

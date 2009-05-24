@@ -9,7 +9,6 @@ requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
 requires('Digest::SHA');
-requires('Digest::SHA1');
 requires('LWP::UserAgent');     #  LWP::ConnCache too
 requires('URI');
 requires('HTTP::Date');
