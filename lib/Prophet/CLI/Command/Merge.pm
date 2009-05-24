@@ -90,7 +90,7 @@ sub _do_merge {
 
     my $changesets = 0;
 
-    my $source_latest = $self->source->latest_sequence_no() ;
+    my $source_latest = $self->source->latest_sequence_no() ||0;
     my $source_last_seen = $self->target->last_changeset_from_source($self->source->uuid);
 
     if( $self->has_arg('verbose') ) {
