@@ -665,7 +665,7 @@ sub commit_edit {
     my $self     = shift;
     my $sequence = $self->_increment_sequence_no;
     $self->current_edit->original_sequence_no($sequence)
-        unless ( $self->current_edit->original_sequence_no );
+        unless ( defined $self->current_edit->original_sequence_no );
     $self->current_edit->original_source_uuid( $self->uuid )
         unless ( $self->current_edit->original_source_uuid );
     $self->current_edit->sequence_no($sequence);
