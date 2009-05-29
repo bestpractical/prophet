@@ -146,8 +146,8 @@ sub merge_resolver {
     my $prefer = $self->arg('prefer') || 'none';
 
     my $resolver = $ENV{'PROPHET_RESOLVER'} ? 'Prophet::Resolver::' . $ENV{'PROPHET_RESOLVER'}
-        : $prefer eq 'to'   ? 'Prophet::Resolver::AlwaysTarget'
-        : $prefer eq 'from' ? 'Prophet::Resolver::AlwaysSource'
+        : $prefer =~ /^(?:to|target)$/   ? 'Prophet::Resolver::AlwaysTarget'
+        : $prefer =~ /^(?:from|source)$/ ? 'Prophet::Resolver::AlwaysSource'
         :                     ();
     return $resolver;
 }
