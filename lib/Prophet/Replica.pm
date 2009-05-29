@@ -360,9 +360,6 @@ sub last_changeset_from_source {
 }
 
 
-
-
-
 =head3 has_seen_changeset L<Prophet::ChangeSet>
 
 Returns true if we've previously integrated this changeset, even if we
@@ -905,15 +902,21 @@ sub record_integration_of_changeset {
     if ( $changeset->original_source_uuid ne $self->uuid && 
         ( $self->last_changeset_from_source( $changeset->original_source_uuid ) < $changeset->original_sequence_no ) )
     {
-        return $self->store_local_metadata( 'last-changeset-from-' . $changeset->original_source_uuid => $changeset->original_sequence_no );
+            $self->record_last_changeset_from_replica($changeset->original_source_uuid => $changeset->original_sequence_no );
     }
     if ($changeset->source_uuid) {
     if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
-        return $self->store_local_metadata( 'last-changeset-from-' . $changeset->source_uuid => $changeset->sequence_no );
+            $self->record_last_changeset_from_replica($changeset->source_uuid => $changeset->sequence_no );
     }
 }
 }
 
+sub record_last_changeset_from_replica {
+    my $self = shift;
+    my ($uuid, $sequence) = validate_pos(@_, 1,1);
+        return $self->store_local_metadata( 'last-changeset-from-' . $uuid => $sequence );
+
+}
 
 =head2 routines which need to be implemented by any Prophet backend store
 
