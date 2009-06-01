@@ -263,32 +263,32 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
 
 
-    if (   $changeset->is_resolution || $changeset->is_nullification || !$changeset->has_changes ) {
+    if (   $changeset->is_resolution
+        || $changeset->is_nullification
+        || !$changeset->has_changes
+        || $self->has_seen_changeset($changeset) ) {
+
         # if it's a changeset we don't care about, mark it as seen and move on
         $self->record_integration_of_changeset($changeset);
-        $args{'reporting_callback'}->( changeset => $changeset,
-           ) if ( $args{'reporting_callback'} );
+        $args{'reporting_callback'}->( changeset => $changeset, )
+            if ( $args{'reporting_callback'} );
         return;
-
-    }  elsif ( $self->has_seen_changeset($changeset) ) {
-               $self->record_integration_of_changeset($changeset);
-        $args{'reporting_callback'}->( changeset => $changeset,
-           ) if ( $args{'reporting_callback'} );
-        return;
-        }
-
+    }
     elsif ( my $conflict = $self->conflicts_from_changeset($changeset) ) {
-        $self->log_debug("Integrating conflicting changeset ".$changeset->original_sequence_no .  " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
+        $self->log_debug( "Integrating conflicting changeset "
+                . $changeset->original_sequence_no
+                . " from "
+                . $self->display_name_for_uuid( $changeset->original_source_uuid ) );
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
-            Prophet::App->require($args{resolver_class}) || die $@;
+            Prophet::App->require( $args{resolver_class} ) || die $@;
             $conflict->resolvers(
                 [   sub {
                         $args{resolver_class}->new->run(@_);
                         }
                 ]
-                )
+            );
         }
         my $resolutions = $conflict->generate_resolution( $args{resdb} );
 
@@ -306,8 +306,10 @@ sub integrate_changeset {
         # integrate the conflict resolution change
         $self->record_resolutions( $conflict->resolution_changeset );
 
-        $args{'reporting_callback'}->( changeset => $changeset,
-            conflict => $conflict ) if ( $args{'reporting_callback'} );
+        $args{'reporting_callback'}->(
+            changeset => $changeset,
+            conflict  => $conflict
+        ) if ( $args{'reporting_callback'} );
         return 1;
     } else {
         $self->log_debug("Integrating changeset ".$changeset->original_sequence_no .
@@ -356,9 +358,6 @@ sub last_changeset_from_source {
 
     return $self->fetch_local_metadata('last-changeset-from-'.$source)||-1;
 }
-
-
-
 
 
 =head3 has_seen_changeset L<Prophet::ChangeSet>
@@ -903,15 +902,21 @@ sub record_integration_of_changeset {
     if ( $changeset->original_source_uuid ne $self->uuid && 
         ( $self->last_changeset_from_source( $changeset->original_source_uuid ) < $changeset->original_sequence_no ) )
     {
-        return $self->store_local_metadata( 'last-changeset-from-' . $changeset->original_source_uuid => $changeset->original_sequence_no );
+            $self->record_last_changeset_from_replica($changeset->original_source_uuid => $changeset->original_sequence_no );
     }
     if ($changeset->source_uuid) {
     if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
-        return $self->store_local_metadata( 'last-changeset-from-' . $changeset->source_uuid => $changeset->sequence_no );
+            $self->record_last_changeset_from_replica($changeset->source_uuid => $changeset->sequence_no );
     }
 }
 }
 
+sub record_last_changeset_from_replica {
+    my $self = shift;
+    my ($uuid, $sequence) = validate_pos(@_, 1,1);
+        return $self->store_local_metadata( 'last-changeset-from-' . $uuid => $sequence );
+
+}
 
 =head2 routines which need to be implemented by any Prophet backend store
 
