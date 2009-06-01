@@ -45,6 +45,17 @@ sub run {
     $self->app_handle->config->set( _sources => { $self->arg('from') => $self->arg('from') });
     $self->app_handle->config->save;
 
+    if ( $source->can('database_settings') ) {
+        my $remote_db_settings = $source->database_settings;
+        my $default_settings   = $self->app_handle->database_settings;
+        for my $name ( keys %$remote_db_settings ) {
+            my $uuid = $default_settings->{$name}[0];
+            die $name unless $uuid;
+            my $s = $self->app_handle->setting( uuid => $uuid );
+            $s->set( $remote_db_settings->{$name} );
+        }
+    }
+
     $self->SUPER::run();
 }
 
