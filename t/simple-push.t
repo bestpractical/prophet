@@ -75,9 +75,8 @@ as_bob {
 };
 
 my $changesets;
-$bob->traverse_new_changesets(
-    for      => $alice,
-    force    => 1,
+$bob->traverse_changesets(
+    after    => $alice->last_changeset_from_source($bob->uuid),
     callback => sub {
         my $cs = shift;
         return unless $bob->should_send_changeset( changeset => $cs, to => $alice);
@@ -157,9 +156,8 @@ as_bob {
 };
 
 my $new_changesets;
-$bob->traverse_new_changesets(
-    for      => $alice,
-    force    => 1,
+$bob->traverse_changesets(
+    after    => $alice->last_changeset_from_source($bob->uuid),
     callback => sub {
         my $cs = shift;
         return unless $cs->has_changes, push @{$new_changesets}, $cs->as_hash;

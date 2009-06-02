@@ -162,12 +162,13 @@ sub import_changesets {
     );
 
     my $source = $args{'from'};
+    
+    $source->_check_db_uuids_on_merge(for => $self, force => $args{'force'});
 
     warn "The source (@{[$source->url]}) does not exist" unless ($source->replica_exists);
 
-    $source->traverse_new_changesets(
-        for      => $self,
-        force    => $args{'force'},
+    $source->traverse_changesets(
+        after    => $self->last_changeset_from_source( $self->uuid ),
         callback => sub {
             $self->integrate_changeset(
                 changeset          => $_[0],
@@ -432,36 +433,6 @@ sub conflicts_from_changeset {
     return $conflict;
 }
 
-=head3 traverse_new_changesets ( for => $replica, callback => sub { my $changeset = shift; ... } )
-
-Traverse the new changesets for C<$replica> and call C<callback> for each new
-changeset.
-
-This also provide hinting callbacks for the caller to know in advance how many
-changesets are there for traversal.
-
-=cut
-
-sub traverse_new_changesets {
-    my $self = shift;
-    my %args = validate(
-        @_,
-        {   for      => { isa => 'Prophet::Replica' },
-            callback => 1,
-            force    => 0,
-        }
-    );
-
-    $self->_check_db_uuids_on_merge(for => $args{for}, force => $args{'force'});
-
-    $self->traverse_changesets(
-        after    => $args{for}->last_changeset_from_source( $self->uuid ),
-        callback => sub {
-            $args{callback}->( $_[0] ) ;#  if $self->should_send_changeset( changeset => $_[0], to => $args{for});
-        }
-    );
-}
-
 sub _check_db_uuids_on_merge {
     my $self = shift;
     my %args = validate( @_,
@@ -509,7 +480,7 @@ Fetch all changesets from this replica after the local sequence number SEQUENCE_
 
 Returns a reference to an array of L<Prophet::ChangeSet/> objects.
 
-See also L<traverse_new_changesets> for replica implementations to provide
+See also L<traverse_changesets> for replica implementations to provide
 streamly interface.
 
 =cut
