@@ -22,7 +22,7 @@ requires( 'Path::Dispatcher' => '0.09' );    # Path::Dispatcher::Declarative
 requires('Time::Progress');
 
 build_requires( 'Test::Exception' => '0.26' );
-build_requires( 'Test::Script::Run' );
+build_requires( 'Test::Script::Run' => '0.02' );
 
 use Term::ReadLine;                          # if we don't do this, ::Perl fails
 feature 'Improved interactive shell' => -default => 1,
