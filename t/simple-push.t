@@ -79,8 +79,7 @@ $bob->traverse_changesets(
     after    => $alice->last_changeset_from_source($bob->uuid),
     callback => sub {
         my $cs = shift;
-        return unless $bob->should_send_changeset( changeset => $cs, to => $alice);
-        return unless $cs->has_changes;
+        return unless $alice->should_accept_changeset( $cs);
         push @{$changesets}, $cs->as_hash;
     }
 );

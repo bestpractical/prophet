@@ -264,11 +264,7 @@ sub integrate_changeset {
     # we'll want to skip or remove those changesets
 
 
-    if (   $changeset->is_resolution
-        || $changeset->is_nullification
-        || !$changeset->has_changes
-        || $self->has_seen_changeset($changeset) ) {
-
+    if (!  $self->should_accept_changeset($changeset) ){
         # if it's a changeset we don't care about, mark it as seen and move on
         $self->record_integration_of_changeset($changeset);
         $args{'reporting_callback'}->( changeset => $changeset, )
@@ -453,23 +449,22 @@ sub _check_db_uuids_on_merge {
     }
 }
 
-=head3 should_send_changeset { to => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
+=head3 should_accept_changeset { from => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
 
-Returns true if the replica C<to> hasn't yet seen the changeset C<changeset>.
+Returns true if this replica hasn't yet seen the changeset C<changeset>.
 
 =cut
 
-sub should_send_changeset {
+sub should_accept_changeset {
     my $self = shift;
-    my %args = validate( @_, { to => { isa => 'Prophet::Replica' },
-                               changeset => { isa => 'Prophet::ChangeSet' } });
+    my ($changeset) = validate_pos( @_, { changeset => { isa => 'Prophet::ChangeSet' } });
 
-    $self->log_debug("Should I send " .$args{changeset}->original_sequence_no .
-        " from ".$self->display_name_for_uuid($args{changeset}->original_source_uuid) . " to " .
-        $args{'to'}->display_name_for_uuid);
+    $self->log_debug("Should I accept " .$changeset->original_sequence_no .
+        " from ".$self->display_name_for_uuid($changeset->original_source_uuid));
 
-    return undef if ( $args{'changeset'}->is_nullification || $args{'changeset'}->is_resolution );
-    return undef if $args{'to'}->has_seen_changeset( $args{'changeset'} );
+    return undef if (! $changeset->has_changes);
+    return undef if ( $changeset->is_nullification || $changeset->is_resolution );
+    return undef if $self->has_seen_changeset( $changeset );
 
     return 1;
 }
