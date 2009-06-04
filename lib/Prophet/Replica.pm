@@ -170,8 +170,9 @@ sub import_changesets {
     $source->traverse_changesets(
         after    => $self->last_changeset_from_source( $self->uuid ),
         callback => sub {
+            my %callback_args = (@_);
             $self->integrate_changeset(
-                changeset          => $_[0],
+                changeset          => $callback_args{changeset},
                 conflict_callback  => $args{conflict_callback},
                 reporting_callback => $args{'reporting_callback'},
                 resolver           => $args{resolver},
@@ -692,7 +693,7 @@ sub _read_luid2guid_mappings {
     return \%luid2guid;
 }
 
-=head3 traverse_changesets { after => SEQUENCE_NO, until => SEQUENCE_NO, callback => sub {} }
+=head3 traverse_changesets { after => SEQUENCE_NO, until => SEQUENCE_NO, callback => sub { my %data = (changeset => undef, @_} }
 
 Walk through each changeset in the replica after SEQUENCE_NO, calling the
 C<callback> for each one in turn.

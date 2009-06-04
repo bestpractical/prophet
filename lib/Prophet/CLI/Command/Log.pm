@@ -36,8 +36,8 @@ sub run {
         after    => $start - 1,
         until    => $end,
         callback => sub {
-            my $changeset = shift;
-            $self->handle_changeset($changeset);
+            my %args = (@_);
+            $self->handle_changeset($args{changeset});
 
         },
     );

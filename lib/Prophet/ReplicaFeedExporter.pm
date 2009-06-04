@@ -39,15 +39,15 @@ sub export {
     $self->source_replica->resolution_db_handle->traverse_changesets(
         after    => 0,
         callback => sub {
-            my $cs = shift;
-            $self->output( $self->format_resolution_changeset($cs));
+            my %args = shift;
+            $self->output( $self->format_resolution_changeset($args{changeset}));
         }
     );
     $self->source_replica->traverse_changesets(
         after    => 0,
         callback => sub {
-            my $cs = shift;
-            $self->output( $self->format_changeset($cs));
+            my %args = (@_);
+            $self->output( $self->format_changeset($args{changeset}));
         }
     );
     $self->output( tag( 'updated', $feed_updated ));

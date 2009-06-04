@@ -427,12 +427,13 @@ sub traverse_changesets {
         my $data;
         if ( $args{load_changesets} ) {
             $data = $self->_load_changeset_from_db( sequence_no => $rev );
+            $args{callback}->(changeset => $data);
         } else {
             my $row = $self->_load_changeset_metadata_from_db( sequence_no => $rev );
             $data = [ $row->{sequence_no}, $row->{original_source_uuid}, $row->{original_sequence_no}, $row->{sha1} ];
+            $args{callback}->($data);
 
         }
-        $args{callback}->($data);
     }
 }
 

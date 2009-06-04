@@ -283,10 +283,9 @@ sub generate_changeset_feed {
     $handle->traverse_changesets(
         after    => $start,
         callback => sub {
-            my $change = shift;
-
+            my %args = (@_);
             $feed->add_entry(
-                title => 'Changeset ' . $change->sequence_no,
+                title => 'Changeset ' . $args{changeset}->sequence_no,
                 # need uuid or absolute link :(
                 category => 'Changeset',
             );

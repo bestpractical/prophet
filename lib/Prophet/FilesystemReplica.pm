@@ -11,9 +11,7 @@ has lwp_useragent => (
     is => 'ro',
     lazy => 1,
     default => sub {
-        my $ua = LWP::UserAgent->new;
-        $ua->timeout(60);
-        $ua->conn_cache(LWP::ConnCache->new());
+        my $ua = LWP::UserAgent->new( timeout => 60, keep_alive => 4, agent => "Prophet/".$Prophet::VERSION);
         return $ua;
     }
 );
@@ -191,7 +189,7 @@ sub traverse_changesets {
                 index_file  => $chgidx
             );
         }
-            $args{callback}->($data);
+            $args{callback}->( changeset => $data);
         $args{reporting_callback}->($data) if ($args{reporting_callback});
 
     }
