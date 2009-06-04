@@ -145,6 +145,16 @@ sub _url_to_replica_class {
 Given a L<Prophet::Replica> to import changes from, traverse all the
 changesets we haven't seen before and integrate them into this replica.
 
+This routine calls L<traverse_changesets> on the 'from' replica,
+passing in the most recent changeset the current replica has seen
+and a callback routine which calls L<integrate_changeset> on the
+local replica.
+
+That callback itself takes a callback, L<after_integrate_changeset>
+, which a replica implementation can use to perform some action
+after a changeset is integrated into a peer.  L<after_integrate_changeset>
+takes a paramhash, currently with only a single key, 'changeset'.
+
 =cut
 
 sub import_changesets {
@@ -179,6 +189,12 @@ sub import_changesets {
                 resolver_class     => $args{'resolver_class'},
                 resdb              => $args{'resdb'},
             );
+
+            if (ref ($callback_args{after_integrate_changeset})) {
+                $callback_args{after_integrate_changeset}->(changeset => $callback_args{changeset});
+            }
+
+
         }
     );
 }
@@ -486,7 +502,7 @@ sub fetch_changesets {
     my %args = validate( @_, { after => 1 } );
     my @results;
 
-    $self->traverse_changesets( %args, callback => sub { push @results, $_[0] } );
+    $self->traverse_changesets( %args, callback => sub { my %args = @_; push @results, $args{changeset} } );
 
     return \@results;
 }

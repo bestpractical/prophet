@@ -97,7 +97,7 @@ sub _do_merge {
     $self->source->traverse_changesets(
         after    => $source_last_seen,
         callback => sub { 
-                my %args = shift;
+                my %args = (@_);
                 if ($self->target->should_accept_changeset($args{changeset})) {
                         print $args{changeset}->as_string;
                 } 
