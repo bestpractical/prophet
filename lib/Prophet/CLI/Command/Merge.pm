@@ -7,7 +7,7 @@ with 'Prophet::CLI::MirrorCommand';
 has source => ( isa => 'Prophet::Replica', is => 'rw');
 has target => ( isa => 'Prophet::Replica', is => 'rw');
 
-sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  f => 'force' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  f => 'force' , n => 'dry-run' };
 
 sub run {
     my $self = shift;
@@ -75,7 +75,7 @@ Returns the number of changesets merged.
 =cut
 
 sub _do_merge {
-    my ( $self) = @_;
+    my ($self) = @_;
 
     my %import_args = (
         from  => $self->source,
@@ -85,31 +85,43 @@ sub _do_merge {
 
     local $| = 1;
 
-
     $import_args{resolver_class} = $self->merge_resolver();
 
     my $changesets = 0;
 
-    my $source_latest = $self->source->latest_sequence_no() ||0;
-    my $source_last_seen = $self->target->last_changeset_from_source($self->source->uuid);
+    my $source_latest = $self->source->latest_sequence_no() || 0;
+    my $source_last_seen = $self->target->last_changeset_from_source( $self->source->uuid );
 
-    if( $self->has_arg('verbose') ) {
-        print "Integrating changes from ".$source_last_seen . " to ". $source_latest."\n";
-    }
+    if ( $self->has_arg('dry-run') ) {
 
+    $self->source->traverse_changesets(
+        after    => $source_last_seen,
+        callback => sub { 
+                my $changeset = shift;
+                if ($self->target->should_accept_changeset($changeset)) {
+                        print $changeset->as_string;
+                } 
+         });
 
-    if( $self->has_arg('verbose') ) {
-        $import_args{reporting_callback} = sub {
-            my %args = @_;
-            print $args{changeset}->as_string;
-            $changesets++;
-        };
     } else {
-        $import_args{reporting_callback} = $self->progress_bar( max => ($source_latest - $source_last_seen), format => "%30b %p %E\r" )
-    }
 
-    $self->target->import_changesets( %import_args);
-    return $changesets;
+        if ( $self->has_arg('verbose') ) {
+            print "Integrating changes from " . $source_last_seen . " to " . $source_latest . "\n";
+            $import_args{reporting_callback} = sub {
+                my %args = @_;
+                print $args{changeset}->as_string;
+                $changesets++;
+            };
+        } else {
+            $import_args{reporting_callback} = $self->progress_bar(
+                max    => ( $source_latest - $source_last_seen ),
+                format => "%30b %p %E\r"
+            );
+        }
+
+        $self->target->import_changesets(%import_args);
+        return $changesets;
+    }
 }
 
 sub validate_merge_replicas {
