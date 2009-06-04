@@ -94,14 +94,15 @@ sub _do_merge {
 
     if ( $self->has_arg('dry-run') ) {
 
-    $self->source->traverse_changesets(
-        after    => $source_last_seen,
-        callback => sub { 
+        $self->source->traverse_changesets(
+            after    => $source_last_seen,
+            callback => sub {
                 my %args = (@_);
-                if ($self->target->should_accept_changeset($args{changeset})) {
-                        print $args{changeset}->as_string;
-                } 
-         });
+                if ( $self->target->should_accept_changeset( $args{changeset} ) ) {
+                    print $args{changeset}->as_string;
+                }
+            }
+        );
 
     } else {
 
