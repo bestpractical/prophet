@@ -370,7 +370,9 @@ sub last_changeset_from_source {
     my $self = shift;
     my ($source) = validate_pos( @_, { type => SCALAR } );
 
-    return $self->fetch_local_metadata('last-changeset-from-'.$source)||-1;
+    my $changeset_num =  $self->fetch_local_metadata('last-changeset-from-'.$source);
+    # 0 is a valid changeset # 
+    return defined $changeset_num ? $changeset_num : -1;
 }
 
 
@@ -384,7 +386,6 @@ originally received it from a different peer.
 sub has_seen_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
-
     $self->log_debug("Checking to see if we've ever seen changeset " .
         $changeset->original_sequence_no . " from " .
         $self->display_name_for_uuid($changeset->original_source_uuid));
@@ -476,12 +477,13 @@ sub should_accept_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { changeset => { isa => 'Prophet::ChangeSet' } });
 
+
     $self->log_debug("Should I accept " .$changeset->original_sequence_no .
         " from ".$self->display_name_for_uuid($changeset->original_source_uuid));
-
     return undef if (! $changeset->has_changes);
     return undef if ( $changeset->is_nullification || $changeset->is_resolution );
     return undef if $self->has_seen_changeset( $changeset );
+    $self->log_debug("Yes, it has changes, isn't a nullification and I haven't seen it before");
 
     return 1;
 }
