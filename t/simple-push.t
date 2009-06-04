@@ -78,9 +78,9 @@ my $changesets;
 $bob->traverse_changesets(
     after    => $alice->last_changeset_from_source($bob->uuid),
     callback => sub {
-        my $cs = shift;
-        return unless $alice->should_accept_changeset( $cs);
-        push @{$changesets}, $cs->as_hash;
+        my %args = (@_);
+        return unless $alice->should_accept_changeset( $args{changeset});
+        push @{$changesets}, $args{changeset}->as_hash;
     }
 );
 
@@ -158,8 +158,8 @@ my $new_changesets;
 $bob->traverse_changesets(
     after    => $alice->last_changeset_from_source($bob->uuid),
     callback => sub {
-        my $cs = shift;
-        return unless $cs->has_changes, push @{$new_changesets}, $cs->as_hash;
+        my %args = (@_);
+        return unless $args{changeset}->has_changes, push @{$new_changesets}, $args{changeset}->as_hash;
         }
 
 );
