@@ -155,11 +155,12 @@ sub traverse_changesets {
     my $self = shift;
     my %args = validate(
         @_,
-        {   after    => 1,
-            callback => { type => CODEREF} ,
-            reporting_callback => { type => CODEREF, optional => 1 },
-            until    => 0,
-            reverse  => 0,
+        {   after                          => 1,
+            callback                       => { type => CODEREF },
+            before_load_changeset_callback => { type => CODEREF, optional => 1 },
+            reporting_callback             => { type => CODEREF, optional => 1 },
+            until                          => 0,
+            reverse                        => 0,
             load_changesets => { default => 1 }
         }
     );
@@ -167,35 +168,49 @@ sub traverse_changesets {
     my $first_rev = ( $args{'after'} + 1 ) || 1;
     my $latest = $self->latest_sequence_no;
 
-    if ( defined $args{until} && $args{until} < $latest) {
-            $latest = $args{until};
+    if ( defined $args{until} && $args{until} < $latest ) {
+        $latest = $args{until};
     }
 
     my $chgidx = $self->read_changeset_index;
     $self->log_debug("Traversing changesets between $first_rev and $latest");
     my @range = ( $first_rev .. $latest );
     @range = reverse @range if $args{reverse};
-    for my $rev ( @range ) {
+    for my $rev (@range) {
         $self->log_debug("Fetching changeset $rev");
+
+        if ( $args{'before_load_changeset_callback'} ) {
+            my $continue = $args{'before_load_changeset_callback'}->(
+                changeset_metadata => $self->_changeset_index_entry(
+                    sequence_no => $rev,
+                    index_file  => $chgidx
+                )
+            );
+
+            next unless $continue;
+
+        }
+
         my $data;
         if ( $args{load_changesets} ) {
             $data = $self->_get_changeset_via_index(
                 sequence_no => $rev,
                 index_file  => $chgidx
             );
-            $args{callback}->( changeset => $data);
+            $args{callback}->( changeset => $data );
         } else {
-           $data = $self->_changeset_index_entry(
+            $data = $self->_changeset_index_entry(
                 sequence_no => $rev,
                 index_file  => $chgidx
             );
-            $args{callback}->( changeset_metadata => $data);
+            $args{callback}->( changeset_metadata => $data );
 
         }
-        $args{reporting_callback}->($data) if ($args{reporting_callback});
+        $args{reporting_callback}->($data) if ( $args{reporting_callback} );
 
     }
 }
+
 sub _changeset_index_entry {
     my $self = shift;
     my %args = validate( @_, { sequence_no => 1, index_file => 1 } );
