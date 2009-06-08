@@ -91,34 +91,6 @@ sub prompt_for_login {
     return ( $username, $password );
 }
 
-
-=head2 has_seen_changeset Prophet::ChangeSet
-
-This is a simplification of L<Prophet::Replica/has_seen_changeset>. Because
-only a single Prophet replica is talking to this foreign replica, we only need
-to care about whether that replica (not the original replica) has given us the
-changeset.
-
-=cut
-
-sub has_seen_changeset {
-    my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
-
-    # Has our host replica given this changeset to us yet?
-    # XXX TODO - should actually be checking the changeset id and the record id in a lookup table
-    # of all the changesets that may have come from the source
-    #
-    if ($changeset->original_source_uuid eq $self->uuid) { return 1}
-
-    if ($self->last_changeset_from_source($changeset->original_source_uuid) >= $changeset->original_sequence_no) { 
-        # XXX TODO - don't need this, right? || $self->last_changeset_from_source($changeset->source_uuid) >= $changeset->sequence_no ) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
 sub log {
     my $self = shift;
     my ($msg) = validate_pos(@_, 1);
