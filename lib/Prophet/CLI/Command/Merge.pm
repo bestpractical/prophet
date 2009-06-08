@@ -34,9 +34,8 @@ sub run {
         from  => $self->source,
         force => $self->has_arg('force'),
     ) if ($self->source->resolution_db_handle);
-    
+   
     my $changesets = $self->_do_merge();
-
     #Prophet::CLI->start_pager();
     $self->print_report($changesets) 
 }
@@ -77,25 +76,49 @@ Returns the number of changesets merged.
 sub _do_merge {
     my ($self) = @_;
 
+    my $source_latest = $self->source->latest_sequence_no() || 0;
+    my $last_seen_from_source = $self->target->last_changeset_from_source( $self->source->uuid );
     my %import_args = (
         from  => $self->source,
         resdb => $self->resdb_handle,
+        resolver_class => $self->merge_resolver(),
         force => $self->has_arg('force'),
+        before_load_changeset_callback  => sub { 
+                my %args = (@_);
+                my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
+                # skip changesets we've seen before
+                if (
+                $self->target->has_seen_changeset( source_uuid => $orig_uuid,
+                                           sequence_no => $orig_seq) ){
+                        return undef;
+                } else {
+                    return 1;
+                }
+
+            },
     );
 
     local $| = 1;
 
-    $import_args{resolver_class} = $self->merge_resolver();
 
     my $changesets = 0;
 
-    my $source_latest = $self->source->latest_sequence_no() || 0;
-    my $source_last_seen = $self->target->last_changeset_from_source( $self->source->uuid );
 
     if ( $self->has_arg('dry-run') ) {
 
         $self->source->traverse_changesets(
-            after    => $source_last_seen,
+            after    => $last_seen_from_source,
+            before_load_changeset_callback  => sub { 
+                my $data = shift;
+                my ($seq, $orig_uuid, $orig_seq, $key) = @$data;
+                # skip changesets we've seen before
+                if ( $self->has_seen_changeset( source_uuid => $orig_uuid, sequence_no => $orig_seq) ){
+                        return undef;
+                } else {
+                    return 1;
+                }
+
+            },
             callback => sub {
                 my %args = (@_);
                 if ( $self->target->should_accept_changeset( $args{changeset} ) ) {
@@ -107,7 +130,7 @@ sub _do_merge {
     } else {
 
         if ( $self->has_arg('verbose') ) {
-            print "Integrating changes from " . $source_last_seen . " to " . $source_latest . "\n";
+            print "Integrating changes from " . $last_seen_from_source . " to " . $source_latest . "\n";
             $import_args{reporting_callback} = sub {
                 my %args = @_;
                 print $args{changeset}->as_string;
@@ -115,11 +138,10 @@ sub _do_merge {
             };
         } else {
             $import_args{reporting_callback} = $self->progress_bar(
-                max    => ( $source_latest - $source_last_seen ),
+                max    => ( $source_latest - $last_seen_from_source ),
                 format => "%30b %p %E\r"
             );
         }
-
         $self->target->import_changesets(%import_args);
         return $changesets;
     }
