@@ -177,6 +177,8 @@ sub import_changesets {
 
     warn "The source (@{[$source->url]}) does not exist" unless ($source->replica_exists);
 
+    $self->log_debug("Integrating changesets from ".$source->uuid. " after ". $self->last_changeset_from_source( $self->uuid ));
+
     $source->traverse_changesets(
         after    => $self->last_changeset_from_source( $self->uuid ),
         callback => sub {

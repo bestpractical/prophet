@@ -404,10 +404,10 @@ sub traverse_changesets {
     my $self = shift;
     my %args = validate(
         @_,
-        {   after    => 1,
-            callback => 1,
-            until    => 0,
-            reverse  => 0,
+        {   after           => 1,
+            callback        => 1,
+            until           => 0,
+            reverse         => 0,
             load_changesets => { default => 1 }
         }
     );
@@ -415,8 +415,8 @@ sub traverse_changesets {
     my $first_rev = ( $args{'after'} + 1 ) || 1;
     my $latest = $self->latest_sequence_no;
 
-    if ( defined $args{until} && $args{until} < $latest) {
-            $latest = $args{until};
+    if ( defined $args{until} && $args{until} < $latest ) {
+        $latest = $args{until};
     }
 
     $self->log_debug("Traversing changesets between $first_rev and $latest");
@@ -427,11 +427,11 @@ sub traverse_changesets {
         my $data;
         if ( $args{load_changesets} ) {
             $data = $self->_load_changeset_from_db( sequence_no => $rev );
-            $args{callback}->(changeset => $data);
+            $args{callback}->( changeset => $data );
         } else {
             my $row = $self->_load_changeset_metadata_from_db( sequence_no => $rev );
             $data = [ $row->{sequence_no}, $row->{original_source_uuid}, $row->{original_sequence_no}, $row->{sha1} ];
-            $args{callback}->($data);
+            $args{callback}->(changeset_metadata => $data);
 
         }
     }
@@ -445,7 +445,8 @@ sub read_changeset_index {
                 after=> 0,
                 load_changesets => 0,
                 callback => sub {
-                    my $data            = shift;
+                    my %args = (@_);
+                    my $data            = $args{changeset_metadata};
                     my $changeset_index_line = pack( 'Na16NH40',
                         $data->[0],
                         Data::UUID->new->from_string( $data->[1]),

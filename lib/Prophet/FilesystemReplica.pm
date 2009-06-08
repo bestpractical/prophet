@@ -183,13 +183,15 @@ sub traverse_changesets {
                 sequence_no => $rev,
                 index_file  => $chgidx
             );
+            $args{callback}->( changeset => $data);
         } else {
            $data = $self->_changeset_index_entry(
                 sequence_no => $rev,
                 index_file  => $chgidx
             );
+            $args{callback}->( changeset_metadata => $data);
+
         }
-            $args{callback}->( changeset => $data);
         $args{reporting_callback}->($data) if ($args{reporting_callback});
 
     }

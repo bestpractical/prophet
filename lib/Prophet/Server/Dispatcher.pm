@@ -56,7 +56,8 @@ under { method => 'GET' } => sub {
                 after=> 0,
                 load_changesets => 0,
                 callback => sub {
-                    my $data            = shift;
+                    my %args = (@_);
+                    my $data            = $args{changeset_metadata};
                     my $changeset_index_line = pack( 'Na16NH40',
                         $data->[0],
                         Data::UUID->new->from_string( $data->[1]),

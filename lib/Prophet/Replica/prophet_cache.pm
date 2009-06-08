@@ -226,7 +226,8 @@ sub mirror_from {
             callback =>
 
                 sub {
-                my $data = shift;
+                my %args = (@_);
+                my $data = $args{changeset_metadata};
                 my ( $seq, $orig_uuid, $orig_seq, $key ) = @{$data};
                 if ( -e File::Spec->catdir( $self->fs_root, $self->changeset_cas->filename($key) ) ) {
                     return;
