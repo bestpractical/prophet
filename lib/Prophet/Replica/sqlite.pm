@@ -408,6 +408,9 @@ sub traverse_changesets {
             callback        => 1,
             until           => 0,
             reverse         => 0,
+            before_load_changeset_callback => { type => CODEREF, optional => 1},
+            reporting_callback => { type => CODEREF, optional => 1 },
+
             load_changesets => { default => 1 }
         }
     );
@@ -423,18 +426,36 @@ sub traverse_changesets {
     my @range = ( $first_rev .. $latest );
     @range = reverse @range if $args{reverse};
     for my $rev (@range) {
+
+        if ( $args{'before_load_changeset_callback'} ) {
+            my $continue = $args{'before_load_changeset_callback'}->(
+                changeset_metadata => $self->_changeset_index_entry(
+                    sequence_no => $rev,
+                )
+            );
+        }
+
         $self->log_debug("Fetching changeset $rev");
         my $data;
         if ( $args{load_changesets} ) {
             $data = $self->_load_changeset_from_db( sequence_no => $rev );
-            $args{callback}->( changeset => $data );
+            $args{callback}->( changeset =>$data);
         } else {
-            my $row = $self->_load_changeset_metadata_from_db( sequence_no => $rev );
-            $data = [ $row->{sequence_no}, $row->{original_source_uuid}, $row->{original_sequence_no}, $row->{sha1} ];
+            $data = $self->_changeset_index_entry( sequence_no => $rev);
             $args{callback}->(changeset_metadata => $data);
 
         }
+        $args{reporting_callback}->($data) if ($args{reporting_callback});
+
     }
+}
+
+sub _changeset_index_entry {
+    my $self = shift;
+    my %args = ( sequence_no => undef, @_ );
+    my $row  = $self->_load_changeset_metadata_from_db( sequence_no => $args{sequence_no} );
+    my $data = [ $row->{sequence_no}, $row->{original_source_uuid}, $row->{original_sequence_no}, $row->{sha1} ];
+    return $data;
 }
 
 
