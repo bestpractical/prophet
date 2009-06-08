@@ -180,15 +180,19 @@ sub import_changesets {
     $self->log_debug("Integrating changesets from ".$source->uuid. " after ". $self->last_changeset_from_source( $self->uuid ));
 
     $source->traverse_changesets(
-        after                          => $self->last_changeset_from_source( $self->uuid ),
+        after                          => $self->last_changeset_from_source( $source->uuid ),
         before_load_changeset_callback  => sub { 
                 my %args = (@_);
                 my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
                 # skip changesets we've seen before
-                if (
-                $self->has_seen_changeset( source_uuid => $orig_uuid,
-                                           sequence_no => $orig_seq) ){
-                        return undef;
+                if ( $self->has_seen_changeset( source_uuid => $orig_uuid, sequence_no => $orig_seq) ){
+                    # If we've seen the changeset, yet we still got here, it means we saw it by original 
+                    # replica/sequence pair, but not # the direct upstream's uuid/sequence pair.
+                    # recording that can help performance a whole bunch for next sync
+                    if ($source->uuid && $seq > $self->last_changeset_from_source($source->uuid)) {
+                          $self->record_last_changeset_from_replica( $source->uuid => $seq);
+                    }
+                    return undef;
                 } else {
                     return 1;
                 }
