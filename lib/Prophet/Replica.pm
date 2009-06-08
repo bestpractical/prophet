@@ -167,7 +167,6 @@ sub import_changesets {
             resolver_class                 => { optional => 1 },
             conflict_callback              => { type => CODEREF, optional => 1 },
             reporting_callback             => { type => CODEREF, optional => 1 },
-            before_load_changeset_callback => { type => CODEREF, optional => 1 },
             force                          => { optional => 1 },
         }
     );
@@ -182,7 +181,19 @@ sub import_changesets {
 
     $source->traverse_changesets(
         after                          => $self->last_changeset_from_source( $self->uuid ),
-        ($args{before_load_changeset_callback} ? (before_load_changeset_callback => $args{before_load_changeset_callback}) : ()),
+        before_load_changeset_callback  => sub { 
+                my %args = (@_);
+                my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
+                # skip changesets we've seen before
+                if (
+                $self->has_seen_changeset( source_uuid => $orig_uuid,
+                                           sequence_no => $orig_seq) ){
+                        return undef;
+                } else {
+                    return 1;
+                }
+
+            },
         callback                       => sub {
             my %callback_args = (@_);
             $self->integrate_changeset(
@@ -231,21 +242,6 @@ sub import_resolutions_from_remote_replica {
 
     $self->resolution_db_handle->import_changesets(
         from     => $source->resolution_db_handle,
-        before_load_changeset_callback  => sub {
-                my %args = (@_);
-                my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
-                # skip changesets we've seen before
-                if (
-                $self->resolution_db_handle->has_seen_changeset( source_uuid => $orig_uuid,
-                                           sequence_no => $orig_seq) ){
-                        return undef;
-                } else {
-                    return 1;
-                }
-
-            },
-
-
         resolver => sub { die "not implemented yet" },
         force    => $args{force},
     );

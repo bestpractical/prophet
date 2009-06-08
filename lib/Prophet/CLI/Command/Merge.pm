@@ -83,19 +83,6 @@ sub _do_merge {
         resdb => $self->resdb_handle,
         resolver_class => $self->merge_resolver(),
         force => $self->has_arg('force'),
-        before_load_changeset_callback  => sub { 
-                my %args = (@_);
-                my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
-                # skip changesets we've seen before
-                if (
-                $self->target->has_seen_changeset( source_uuid => $orig_uuid,
-                                           sequence_no => $orig_seq) ){
-                        return undef;
-                } else {
-                    return 1;
-                }
-
-            },
     );
 
     local $| = 1;
