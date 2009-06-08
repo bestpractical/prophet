@@ -161,13 +161,14 @@ sub import_changesets {
     my $self = shift;
     my %args = validate(
         @_,
-        {   from               => { isa      => 'Prophet::Replica' },
-            resdb              => { optional => 1 },
-            resolver           => { optional => 1 },
-            resolver_class     => { optional => 1 },
-            conflict_callback  => { optional => 1 },
-            reporting_callback => { optional => 1 },
-            force              => { optional => 1 },
+        {   from                           => { isa      => 'Prophet::Replica' },
+            resdb                          => { optional => 1 },
+            resolver                       => { optional => 1 },
+            resolver_class                 => { optional => 1 },
+            conflict_callback              => { type => CODEREF, optional => 1 },
+            reporting_callback             => { type => CODEREF, optional => 1 },
+            before_load_changeset_callback => { type => CODEREF, optional => 1 },
+            force                          => { optional => 1 },
         }
     );
 
@@ -180,22 +181,22 @@ sub import_changesets {
     $self->log_debug("Integrating changesets from ".$source->uuid. " after ". $self->last_changeset_from_source( $self->uuid ));
 
     $source->traverse_changesets(
-        after    => $self->last_changeset_from_source( $self->uuid ),
-        callback => sub {
+        after                          => $self->last_changeset_from_source( $self->uuid ),
+        ($args{before_load_changeset_callback} ? (before_load_changeset_callback => $args{before_load_changeset_callback}) : ()),
+        callback                       => sub {
             my %callback_args = (@_);
             $self->integrate_changeset(
                 changeset          => $callback_args{changeset},
-                conflict_callback  => $args{conflict_callback},
+                conflict_callback  => $args{'conflict_callback'},
                 reporting_callback => $args{'reporting_callback'},
-                resolver           => $args{resolver},
+                resolver           => $args{'resolver'},
                 resolver_class     => $args{'resolver_class'},
                 resdb              => $args{'resdb'},
             );
 
-            if (ref ($callback_args{after_integrate_changeset})) {
-                $callback_args{after_integrate_changeset}->(changeset => $callback_args{changeset});
+            if ( ref( $callback_args{'after_integrate_changeset'} ) ) {
+                $callback_args{'after_integrate_changeset'}->( changeset => $callback_args{'changeset'} );
             }
-
 
         }
     );
@@ -230,6 +231,21 @@ sub import_resolutions_from_remote_replica {
 
     $self->resolution_db_handle->import_changesets(
         from     => $source->resolution_db_handle,
+        before_load_changeset_callback  => sub {
+                my %args = (@_);
+                my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
+                # skip changesets we've seen before
+                if (
+                $self->resolution_db_handle->has_seen_changeset( source_uuid => $orig_uuid,
+                                           sequence_no => $orig_seq) ){
+                        return undef;
+                } else {
+                    return 1;
+                }
+
+            },
+
+
         resolver => sub { die "not implemented yet" },
         force    => $args{force},
     );
@@ -378,7 +394,7 @@ sub last_changeset_from_source {
 }
 
 
-=head3 has_seen_changeset L<Prophet::ChangeSet>
+=head3 has_seen_changeset { source_uuid => <uuid>, sequence_no => <int> }
 
 Returns true if we've previously integrated this changeset, even if we
 originally received it from a different peer.
@@ -387,20 +403,20 @@ originally received it from a different peer.
 
 sub has_seen_changeset {
     my $self = shift;
-    my ($changeset) = validate_pos( @_, { isa => "Prophet::ChangeSet" } );
+    my %args = validate( @_, {source_uuid => 1, sequence_no => 1});
     $self->log_debug("Checking to see if we've ever seen changeset " .
-        $changeset->original_sequence_no . " from " .
-        $self->display_name_for_uuid($changeset->original_source_uuid));
+        $args{sequence_no} . " from " .
+        $self->display_name_for_uuid($args{source_uuid}));
 
     # If the changeset originated locally, we never want it
-    if  ($changeset->original_source_uuid eq $self->uuid ) {
+    if ($args{source_uuid} eq $self->uuid ) {
         $self->log_debug("\t  - We have. (It originated locally.)");
         return 1 
     }
     # Otherwise, if the we have a merge ticket from the source, we don't want
     # the changeset if the source's sequence # is >= the changeset's sequence
     # #, we can safely skip it
-    elsif ( $self->last_changeset_from_source( $changeset->original_source_uuid ) >= $changeset->original_sequence_no ) {
+    elsif ( $self->last_changeset_from_source( $args{source_uuid} ) >= $args{sequence_no} ) {
         $self->log_debug("\t  - We have seen this or a more recent changeset from remote.");
         return 1;
     } else {
@@ -484,7 +500,7 @@ sub should_accept_changeset {
         " from ".$self->display_name_for_uuid($changeset->original_source_uuid));
     return undef if (! $changeset->has_changes);
     return undef if ( $changeset->is_nullification || $changeset->is_resolution );
-    return undef if $self->has_seen_changeset( $changeset );
+    return undef if $self->has_seen_changeset( sequence_no => $changeset->original_sequence_no,  source_uuid => $changeset->original_source_uuid );
     $self->log_debug("Yes, it has changes, isn't a nullification and I haven't seen it before");
 
     return 1;
