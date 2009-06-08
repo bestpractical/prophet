@@ -613,7 +613,7 @@ sub changesets_for_record {
     for my $item (@record_index) {
         my $sequence = $item->[0];
         push @changesets,
-            $self->_get_changeset_index_entry(
+            $self->_get_changeset_via_index(
             sequence_no => $sequence,
             index_file  => $changeset_index
             );

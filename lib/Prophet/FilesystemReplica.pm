@@ -179,7 +179,7 @@ sub traverse_changesets {
         $self->log_debug("Fetching changeset $rev");
         my $data;
         if ( $args{load_changesets} ) {
-            $data = $self->_get_changeset_index_entry(
+            $data = $self->_get_changeset_via_index(
                 sequence_no => $rev,
                 index_file  => $chgidx
             );
@@ -232,7 +232,8 @@ sub _deserialize_changeset {
     $changeset->original_sequence_no( $args{'original_sequence_no'} );
     return $changeset;
 }
-sub _get_changeset_index_entry {
+
+sub _get_changeset_via_index {
     my $self = shift;
     my %args = validate( @_, { sequence_no => 1, index_file => 1 } );
     # XXX: deserialize the changeset content from the cas with $key
