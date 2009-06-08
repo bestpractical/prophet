@@ -902,16 +902,17 @@ sub record_integration_of_changeset {
     my $self = shift;
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
-    if ( $changeset->original_source_uuid ne $self->uuid && 
-        ( $self->last_changeset_from_source( $changeset->original_source_uuid ) < $changeset->original_sequence_no ) )
-    {
-            $self->record_last_changeset_from_replica($changeset->original_source_uuid => $changeset->original_sequence_no );
+    if ( $changeset->original_source_uuid ne $self->uuid
+        && ( $self->last_changeset_from_source( $changeset->original_source_uuid ) < $changeset->original_sequence_no )
+        ) {
+        $self->record_last_changeset_from_replica(
+            $changeset->original_source_uuid => $changeset->original_sequence_no );
     }
-    if ($changeset->source_uuid) {
-    if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
-            $self->record_last_changeset_from_replica($changeset->source_uuid => $changeset->sequence_no );
+    if ( $changeset->source_uuid ) {
+        if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
+            $self->record_last_changeset_from_replica( $changeset->source_uuid => $changeset->sequence_no );
+        }
     }
-}
 }
 
 sub record_last_changeset_from_replica {
