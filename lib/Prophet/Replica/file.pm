@@ -1,5 +1,6 @@
 package Prophet::Replica::file;
-use base 'Prophet::Replica::prophet';
+use Any::Moose;
+extends 'Prophet::Replica::prophet';
 sub scheme { 'file' }
 
 sub replica_exists {
@@ -12,22 +13,26 @@ sub replica_exists {
 sub new {
     my $class = shift;
     my %args = @_;
+    
+    my @probe_types = ($args{app_handle}->default_replica_type, 'file', 'sqlite');
 
-    my @types = ('file','sqlite');
-    unshift @types, $args{app_handle}->default_replica_type;
-
-    my @possible;
-    for my $type (@types) {
-        my $ret = eval {
+    my %possible;
+    for my $type (@probe_types) {
+        my $ret;
+        eval {
             my $other = "Prophet::Replica::$type";
             Prophet::App->try_to_require($other);
             $ret = $type eq "file" ? $other->SUPER::new(@_) : $other->new(@_);
         };
         next if $@ or not $ret;
         return $ret if $ret->replica_exists;
-        push @possible, $ret;
+        $possible{$type} = $ret;
     }
-    return $possible[0];
+    if (my $default_type =  $possible{$args{app_handle}->default_replica_type} ) { 
+        return $default_type;
+    } else {
+        $class->log_fatal("I don't know what to do with the Prophet replica type you specified: ".$args{app_handle}->default_replica_type);
+    }
 }
 
 1;
