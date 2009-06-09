@@ -14,7 +14,7 @@ has handle => (
         if   ($ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
             my $path = $ENV{PROPHET_REPO};
             $path = File::Spec->rel2abs(glob($path)) unless File::Spec->file_name_is_absolute($path);
-            $ENV{PROPHET_REPO} = $self->default_replica_type.":file://$path";
+            $ENV{PROPHET_REPO} = "file://$path";
         }
 
         return Prophet::Replica->get_handle( url =>  $ENV{'PROPHET_REPO'}, app_handle => $self, );

@@ -14,7 +14,7 @@ sub new {
     my %args = @_;
 
     my @types = ('file','sqlite');
-    unshift @types, $ENV{PROPHET_REPLICA_TYPE} if $ENV{PROPHET_REPLICA_TYPE};
+    unshift @types, $args{app_handle}->default_replica_type;
 
     my @possible;
     for my $type (@types) {
