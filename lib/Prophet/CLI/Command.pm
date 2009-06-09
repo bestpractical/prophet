@@ -8,7 +8,7 @@ has cli => (
     isa => 'Prophet::CLI',
     weak_ref => 1,
     handles => [
-        qw/app_handle handle resdb_handle config/,
+        qw/app_handle handle config/,
     ],
 );
 

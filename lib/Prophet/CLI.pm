@@ -26,7 +26,7 @@ has app_handle => (
     is      => 'rw',
     isa     => 'Prophet::App',
     lazy    => 1,
-    handles => [qw/handle resdb_handle config/],
+    handles => [qw/handle config/],
     default => sub {
         return $_[0]->app_class->new;
     },

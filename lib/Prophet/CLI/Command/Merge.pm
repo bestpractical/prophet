@@ -80,7 +80,7 @@ sub _do_merge {
     my $last_seen_from_source = $self->target->last_changeset_from_source( $self->source->uuid );
     my %import_args = (
         from  => $self->source,
-        resdb => $self->resdb_handle,
+        resdb => $self->app_handle->handle->resolution_db_handle,
         resolver_class => $self->merge_resolver(),
         force => $self->has_arg('force'),
     );

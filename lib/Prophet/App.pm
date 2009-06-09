@@ -11,34 +11,13 @@ has handle => (
     default => sub {
         my $self = shift;
 
-        if ( ! $ENV{PROPHET_REPO}) { 
-            $ENV{'PROPHET_REPO'} = "file://".File::Spec->catdir($ENV{'HOME'}, '.prophet');
-
-        }
-        elsif   ($ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
+        if   ($ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
             my $path = $ENV{PROPHET_REPO};
             $path = File::Spec->rel2abs(glob($path)) unless File::Spec->file_name_is_absolute($path);
-            $ENV{PROPHET_REPO} = "file://$path";
+            $ENV{PROPHET_REPO} = $self->default_replica_type.":file://$path";
         }
 
         return Prophet::Replica->get_handle( url =>  $ENV{'PROPHET_REPO'}, app_handle => $self, );
-    },
-);
-
-has resdb_handle => (
-    is      => 'rw',
-    isa     => 'Prophet::Replica',
-    lazy    => 1,
-    default => sub {
-        my $self = shift;
-        return $self->handle->resolution_db_handle
-            if $self->handle->resolution_db_handle;
-        my $root = ($ENV{'PROPHET_REPO'} || File::Spec->catdir($ENV{'HOME'}, '.prophet')) . "_res";
-        my $type = $self->default_replica_type;
-        my $r = Prophet::Replica->get_handle( url => $type.':file://' . $root );
-        if (!$r->replica_exists && $r->can_initialize) { $r->initialize}
-
-        return $r;
     },
 );
 
