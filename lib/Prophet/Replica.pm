@@ -79,7 +79,7 @@ sub get_handle {
 
     if ( !$new_class ) {
         $class->log_fatal(
-            "$scheme isn't a replica type I know how to handle. (The Replica URL given was $args{url})."
+            "I don't know how to deal the replica URL you provided - '@{[ $args{url}]}'"
         );
     }
 
@@ -130,6 +130,8 @@ sub _url_to_replica_class {
     my %args = (@_);
     my $url = $args{'url'};
     my ( $scheme, $real_url ) = $url =~ /^([^:]*):(.*)$/;
+
+    return undef unless $scheme;
 
     for my $class ( 
         ref( $args{app_handle} ) . "::Replica::" . $scheme,
@@ -1045,8 +1047,11 @@ sub log_fatal {
 
     # always skip this fatal_error function when generating a stack trace
     local $Carp::CarpLevel = $Carp::CarpLevel + 1;
-
-    $self->app_handle->log_fatal(@_);
+    if ( eval {$self->app_handle }) {
+        $self->app_handle->log_fatal(@_);
+    } else {
+        die join('',@_) ."\n";
+    }
 }
 
 =head2 changeset_creator
