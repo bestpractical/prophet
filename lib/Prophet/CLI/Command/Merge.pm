@@ -96,10 +96,11 @@ sub _do_merge {
         $self->source->traverse_changesets(
             after    => $last_seen_from_source,
             before_load_changeset_callback  => sub { 
-                my $data = shift;
+                my %args = (@_);
+                my $data = $args{changeset_metadata};
                 my ($seq, $orig_uuid, $orig_seq, $key) = @$data;
                 # skip changesets we've seen before
-                if ( $self->has_seen_changeset( source_uuid => $orig_uuid, sequence_no => $orig_seq) ){
+                if ( $self->target->has_seen_changeset( source_uuid => $orig_uuid, sequence_no => $orig_seq) ){
                         return undef;
                 } else {
                     return 1;
