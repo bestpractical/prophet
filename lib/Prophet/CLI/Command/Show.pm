@@ -24,12 +24,6 @@ sub run {
 Returns a stringified form of the properties suitable for displaying directly
 to the user. Also includes luid and uuid.
 
-You may define a "color_prop" method which transforms a property name and value
-(by adding color).
-
-You may also define a "color_prop_foo" method which transforms values of
-property "foo" (by adding color).
-
 =cut
 
 sub stringify_props {
@@ -41,7 +35,6 @@ sub stringify_props {
     my $record = $args{'record'};
     my $props = $record->get_props;
 
-    my $colorize = $args{'batch'} ? 0 : 1;
 
     # which props are we going to display?
     my @show_props;
@@ -72,29 +65,19 @@ sub stringify_props {
         # don't bother displaying unset fields
         next if !defined($value);
 
-        # color if we can (and should)
-        my ($colorized_field, $colorized_value);
-        if ($colorize) {
-            ($colorized_field,$colorized_value) = $record->colorize($field => $value);
+        push @fields, [$field, $value];
 
-    }
-        push @fields, [$field, ($colorized_field|| $field), ($colorized_value ||$value)];
-
-        # don't check length($field) here, since coloring will increase the
-        # length but we only care about display length
-        $max_length = length($field)
-            if length($field) > $max_length;
+        $max_length = length($field) if length($field) > $max_length;
     }
 
     $max_length = 0 if $args{batch};
 
-    # this code is kind of ugly. we need to format based on uncolored length
     return join '',
            map {
-               my ($field, $colorized_field, $colorized_value) = @$_;
-               $colorized_field .= ':';
-               $colorized_field .= ' ' x ($max_length - length($field));
-               "$colorized_field $colorized_value\n"
+               my ($field, $value) = @$_;
+               $field .= ':';
+               $field .= ' ' x ($max_length - length($field));
+               "$field $value\n"
            }
            @fields;
 }

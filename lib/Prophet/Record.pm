@@ -826,47 +826,6 @@ sub find_or_create_luid {
     return $luid;
 }
 
-=head2 colorize $field, $value
-
-Colorizes the given property / value pair according to the field's
-own C<color_prop_$field> routine, or else the generic L<color_prop> routine
-if a specific routine does not exist.
-
-=cut
-
-sub colorize {
-        my $self = shift;
-        my ($field, $value) = @_;
-        my $colorized_field;
-        my $colorized_value;
-
-            if (my $method = $self->can("color_prop_$field")) {
-                $colorized_value = $self->$method($value);
-            }
-            else {
-                ($colorized_field, $colorized_value) = $self->color_prop($field, $value);
-            }
-            return ($colorized_field, $colorized_value)
-        }
-
-
-=head2 color_prop property, value
-
-Colorize the given property and/or value. Return the (property, value) pair.
-
-You should not alter the length of the property/value display. This will mess
-up the table display. You should only use coloring escape codes.
-
-=cut
-
-sub color_prop {
-    my $self     = shift;
-    my $property = shift;
-    my $value    = shift;
-
-    return ($property, $value);
-}
-
 =head2 history_as_string
 
 Returns this record's changesets as a single string.
