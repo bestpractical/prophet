@@ -2,6 +2,7 @@ package Prophet::App;
 use Any::Moose;
 use File::Spec ();
 use Prophet::Config;
+use Prophet::UUIDGenerator;
 use Params::Validate qw/validate validate_pos/;
 
 has handle => (
@@ -30,6 +31,14 @@ has config => (
     },
     documentation => "This is the config instance for the running application",
 );
+
+
+has uuid_generator => (
+    is => 'rw',
+    isa => 'Prophet::UUIDGenerator',
+    default => sub { Prophet::UUIDGenerator->new}
+);
+
 
 use constant DEFAULT_REPLICA_TYPE => 'prophet';
 

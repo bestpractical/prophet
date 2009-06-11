@@ -60,7 +60,7 @@ under { method => 'GET' } => sub {
                     my $data            = $args{changeset_metadata};
                     my $changeset_index_line = pack( 'Na16NH40',
                         $data->[0],
-                        Data::UUID->new->from_string( $data->[1]),
+                        $self->app_handle->uuid_generator->from_string( $data->[1]),
                         $data->[2],
                         $data->[3]);
                     $index .= $changeset_index_line;

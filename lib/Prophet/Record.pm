@@ -52,14 +52,6 @@ sub REFERENCES { $REFERENCES }
 our $PROPERTIES = {};
 sub PROPERTIES { $PROPERTIES }
 
-do {
-    my $uuid_generator;
-    sub uuid_generator {
-        require Data::UUID;
-        $uuid_generator ||= Data::UUID->new;
-    }
-};
-
 =head1 METHODS
 
 =head2 new  { handle => Prophet::Replica, type => $type }
@@ -200,7 +192,7 @@ In case of failure, returns undef.
 sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
-    my $uuid = $self->uuid_generator->create_str;
+    my $uuid = $self->handle->app_handle->uuid_generator->create_str;
 
     my $props = $args{props};
 

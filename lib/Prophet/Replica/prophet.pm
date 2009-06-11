@@ -10,7 +10,6 @@ use File::Spec  ();
 use File::Path;
 use Cwd ();
 use File::Find;
-use Data::UUID;
 use Prophet::Util;
 use POSIX qw();
 use Memoize;
@@ -324,9 +323,9 @@ sub initialize {
         mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
     }
 
-    $self->set_db_uuid( $args{'db_uuid'} || Data::UUID->new->create_str );
+    $self->set_db_uuid( $args{'db_uuid'} || $self->app_handle->uuid_generator->create_str );
     $self->set_latest_sequence_no("0");
-    $self->set_replica_uuid( Data::UUID->new->create_str );
+    $self->set_replica_uuid(  $self->app_handle->uuid_generator->create_str );
 
     $self->set_replica_version(1);
 

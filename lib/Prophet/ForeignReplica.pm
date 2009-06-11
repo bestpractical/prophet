@@ -61,7 +61,7 @@ sub db_uuid { return undef }
 
 sub uuid_for_url {
     my ( $self, $url ) = @_;
-    return Data::UUID->new->create_from_name_str( NameSpace_DNS, $url );
+    return $self->app_handle->uuid_generator->create_string_from_url( $url );
 }
 
 sub prompt_for_login {

@@ -8,6 +8,7 @@ requires('Exporter::Lite');
 requires('Params::Validate');
 requires('IPC::Run3');
 requires('Data::UUID');
+requires('Data::UUID::Base64URLSafe');
 requires('Digest::SHA');
 requires('LWP::UserAgent');     #  LWP::ConnCache too
 requires('URI');
