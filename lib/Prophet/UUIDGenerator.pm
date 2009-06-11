@@ -1,6 +1,7 @@
 package Prophet::UUIDGenerator;
 use Data::UUID qw'NameSpace_DNS';
 use Any::Moose;
+use MIME::Base64::URLSafe;
 
 our $UUIDGEN;
 
@@ -33,9 +34,30 @@ sub to_string {
     $self->_uuid_generator->to_string($uuid);
 }
 
-sub from_safe_b64 {}
+sub create_safe_b64 {
+    my $self = shift;
+   $self->to_safe_b64($self->_uuid_generator->create); 
+}
 
-sub to_safe_b64 {}
+    sub create_safe_b64_from_url {
+    my $self = shift;
+    my $url = shift;
+    local $!;
+    $self->to_safe_b64($self->_uuid_generator->create_from_name(NameSpace_DNS, $url ));
+
+}
+
+sub from_safe_b64 {
+    my $self = shift;
+    my $uuid = shift;
+    return urlsafe_b64decode($uuid);
+}
+
+sub to_safe_b64 {
+    my $self = shift;
+    my $uuid = shift;
+    return urlsafe_b64encode($uuid);
+}
 
 
 =head1 NAME
