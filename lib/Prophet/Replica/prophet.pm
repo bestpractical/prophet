@@ -358,7 +358,7 @@ sub _increment_sequence_no {
 
 =head2 uuid
 
-Return the replica SVN repository's UUID
+Return the replica's UUID
 
 =cut
 
