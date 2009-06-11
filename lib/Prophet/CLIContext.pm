@@ -143,7 +143,7 @@ The regex to use for matching the id argument (luid / uuid).
 
 =cut
 
-our $ID_REGEX = '^(?:\d+|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$';
+our $ID_REGEX = '^(?:\d+|[A-Za-z0-9\-\_]{22}|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$';
 
 =head2 setup_from_args
 

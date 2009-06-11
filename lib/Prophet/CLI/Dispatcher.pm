@@ -8,7 +8,7 @@ our @PREFIXES = qw(Prophet::CLI::Command);
 sub add_command_prefix { unshift @PREFIXES, @_ }
 
 # "ticket display $ID" -> "ticket display --id=$ID"
-on qr{^ (.*) \s+ ( \d+ | [A-Z0-9]{36} ) $ }x => sub {
+on qr{^ (.*) \s+ ( \d+ | [0-9a-zA-Z\-\_]{22} | [A-Z0-9]{36} ) $ }x => sub {
     my $self = shift;
     $self->context->set_arg(id => $2);
     run($1, $self, @_);
