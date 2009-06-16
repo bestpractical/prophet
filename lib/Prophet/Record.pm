@@ -641,8 +641,9 @@ L<_default_summary_format> if nothing better can be found.
 
 sub _summary_format {
     my $self = shift;
-    return $self->app_handle->config->get('summary_format_'.$self->type)
-        || $self->app_handle->config->get('default_summary_format')
+    return
+        $self->app_handle->config->get( key => $self->type.'.summary-format' )
+        || $self->app_handle->config->get( key => 'record.summary-format' )
         || $self->_default_summary_format;
 }
 
