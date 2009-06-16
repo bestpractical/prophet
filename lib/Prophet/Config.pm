@@ -2,6 +2,7 @@ package Prophet::Config;
 use Any::Moose;
 use File::Spec;
 use Prophet::Util;
+extends 'Config::GitLike';
 
 has app_handle => (
     is => 'ro',
@@ -10,151 +11,86 @@ has app_handle => (
     required => 0
 );
 
-has config_files => ( 
-    is => 'rw',
-    isa => 'ArrayRef' ,
-    default =>sub  {[]}
-);
-
-has config => (
-    is          => 'rw',
-    isa         => 'HashRef',
-    lazy        => 0,
-    default     => sub {shift->load_from_files;},
-);
-
-sub get  { $_[0]->config->{$_[1]} }
-sub set  { $_[0]->config->{$_[1]} = $_[2] }
-sub list { keys %{ $_[0]->config } }
-
-sub aliases {
-    return $_[0]->config->{_aliases} || {};
-}
-
-
-sub sources {
-    return $_[0]->config->{_sources};
-}
-
-
-sub app_config_file {
+# reload config after setting values
+after set => sub  {
     my $self = shift;
 
-    return $self->file_if_exists($ENV{'PROPHET_APP_CONFIG'})
-        || $self->file_if_exists( $self->replica_config_file)
-        || $self->file_if_exists( File::Spec->catfile( $ENV{'HOME'} => '.prophetrc' ))
-        || $self->replica_config_file
+    $self->load;
+};
+
+# per-replica config filename
+override dir_file => sub { 'config' };
+
+# Override the replica config file with the PROPHET_APP_CONFIG
+# env var if it's set. Also, don't walk up the given path if no replica
+# config is found.
+override load_dirs => sub {
+    my $self = shift;
+
+    $self->load_file( $self->replica_config_file )
+        if -f $self->replica_config_file;
+};
+
+# If PROPHET_APP_CONFIG is set, don't load anything else
+override user_file => sub {
+    my $self = shift;
+
+    return exists $ENV{PROPHET_APP_CONFIG} ? '' : $self->SUPER::user_file(@_);
+};
+
+override global_file => sub {
+    my $self = shift;
+
+    return exists $ENV{PROPHET_APP_CONFIG} ? '' : $self->SUPER::global_file(@_);
+};
+
+# grab all values in the 'alias' section and strip away the section name
+sub aliases {
+    my $self = shift;
+
+    my %aliases = $self->get_regexp( key => '^alias\.' );
+
+    my %new_aliases = map {
+        my $alias = $_;
+        $alias =~ s/^alias\.//;
+        ( $alias => $aliases{$_} );
+    } keys %aliases;
+
+    return wantarray ? %new_aliases : \%new_aliases;
+}
+
+# grab all values in the 'source' section and strip away the section name
+sub sources {
+    my $self = shift;
+
+    my %sources = $self->get_regexp( key => '^source\.' );
+
+    my %new_sources = map {
+        my $source = $_;
+        $source =~ s/^source\.//;
+        ( $source => $sources{$_} );
+    } keys %sources;
+
+    return wantarray ? %new_sources : \%new_sources;
 }
 
 sub replica_config_file {
     my $self = shift;
-     return 
-     $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'config' )) ||
-     $self->file_if_exists( File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' )) ||
-      File::Spec->catfile( $self->app_handle->handle->fs_root => 'config' );
+
+    return exists $ENV{PROPHET_APP_CONFIG} ? $ENV{PROPHET_APP_CONFIG}
+                : File::Spec->catfile(
+                    $self->app_handle->handle->fs_root, $self->dir_file
+    );
 }
 
-
-sub load_from_files {
-    my $self = shift;
-    my @config = @_;
-    @config = grep { -f $_ } $self->app_config_file if !@config;
-    my $config = {};
-
-    for my $file (@config) {
-        $self->load_from_file($file => $config);
-        push @{$self->config_files}, $file;
-    }
-
-    return $config;
-}
-
-sub load_from_file {
-    my $self   = shift;
-    my $file   = shift;
-    my $config = shift || {};
-
-    for my $line (Prophet::Util->slurp($file) ) {
-        $line =~ s/\#.*$//; # strip comments
-        next unless ($line =~ /^(.*?)\s*=\s*(.*)$/);
-        my $key = $1;
-        my $val = $2;
-        if ($key =~ m!alias\s+(.+)!) {
-            $config->{_aliases}->{$1} = $val;
-        } elsif ($key =~ m!source\s+(.+)!) {
-            $config->{_sources}->{$1} = $val;
-        } else { 
-            $config->{$key} = $val;
-        }
-    }
-    $config->{_aliases} ||= {}; # default aliases is null.
-    $config->{_sources} ||= {}; # default to no sources.
-}
-
+# friendly replica names go in the [display] section
 sub display_name_for_uuid {
     my $self = shift;
     my $uuid = shift;
 
-    my $friendly = $self->get("display_$uuid");
+    my $friendly = $self->get( key => "display.$uuid" );
     return defined($friendly) ? $friendly : $uuid;
 }
-
-=head2 file_if_exists FILENAME
-
-Returns the given filename if it exists on the filesystem, and an
-empty string otherwise.
-
-=cut
-
-sub file_if_exists {
-    my $self = shift;
-    my $file = shift || ''; # quiet warnings
-
-    return (-e $file) ? $file : '';
-}
-
-=head2 save FILENAME
-
-save the current config to file, if the file is not supplied,
-save to $self->app_config_file
-
-=cut
-
-#XXX TODO this won't save comments, which I think we should do.
-#in case of overwriting your file( you will hate me for that ), 
-#I chose to update alias and source lines only for now.
-
-sub save {
-    my $self = shift;
-    my $file = shift || $self->app_config_file;
-
-    my @lines;
-    if ( $self->file_if_exists($file) ) {
-        @lines = Prophet::Util->slurp($file);
-    }
-
-    open my $fh, '>', $file or die "can't save config to $file: $!";
-    for my $line (@lines) {
-
-        # skip old aliases and sources
-        next if $line =~ /^ \s* (?:alias|source) \s+ .+ \s* = \s* .+/x;
-        print $fh $line;
-    }
-
-    if ( $self->sources ) {
-        for my $source ( keys %{ $self->sources } ) {
-            print $fh "source $source = " . $self->sources->{$source} . "\n";
-        }
-    }
-    if ( $self->aliases ) {
-        for my $alias ( keys %{ $self->aliases } ) {
-            print $fh "alias $alias = " . $self->aliases->{$alias} . "\n";
-        }
-    }
-    close $fh;
-    return 1;
-}
-
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

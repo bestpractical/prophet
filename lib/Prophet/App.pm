@@ -12,7 +12,8 @@ has handle => (
     default => sub {
         my $self = shift;
 
-        if   ($ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
+        if ( defined $ENV{'PROPHET_REPO'}
+                && $ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
             my $path = $ENV{PROPHET_REPO};
             $path = File::Spec->rel2abs(glob($path)) unless File::Spec->file_name_is_absolute($path);
             $ENV{PROPHET_REPO} = "file://$path";
@@ -27,7 +28,10 @@ has config => (
     isa     => 'Prophet::Config',
     default => sub {
         my $self = shift;
-        return Prophet::Config->new(app_handle => $self);
+        return Prophet::Config->new(
+            app_handle => $self,
+            confname => 'prophetrc',
+        );
     },
     documentation => "This is the config instance for the running application",
 );
@@ -226,7 +230,7 @@ sub log_fatal {
 
 sub current_user_email {
     my $self = shift;
-    return $self->config->get('email_address') || $ENV{'PROPHET_EMAIL'} || $ENV{'EMAIL'};
+    return $self->config->get( key => 'user.email-address' ) || $ENV{'PROPHET_EMAIL'} || $ENV{'EMAIL'};
 
 }
 
