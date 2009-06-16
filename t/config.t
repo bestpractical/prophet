@@ -2,51 +2,79 @@
 #
 use warnings;
 use strict;
-use Prophet::Test 'no_plan';
+use Prophet::Test tests => 11;
+use File::Copy;
 use File::Temp qw'tempdir';
-    $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
-delete $ENV{'PROPHET_APP_CONFIG'};
+
+my $repo = $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
+
+# since we don't initialize the db for these tests, make the repo dir
+mkdir $ENV{PROPHET_REPO};
 
 use_ok('Prophet::CLI');
-# Test basic config file parsing
-use_ok('Prophet::Config');
-my $config = Prophet::Config->new(app_handle => Prophet::CLI->new->app_handle);
-
-isa_ok($config => 'Prophet::Config');
-can_ok($config  => 'load_from_files');
-
-can_ok($config, 'get');
-can_ok($config, 'set');
-can_ok($config, 'list');
-can_ok($config, 'aliases');
-
-is($config->get('_does_not_exist'), undef);
-is($config->set('_does_not_exist' => 'hey you!'), 'hey you!');
-is($config->get('_does_not_exist'), 'hey you!');
-is_deeply([$config->list], ['_does_not_exist'], "The deep structures match");
 
 # load up a prophet app instance
-
 
 my $a = Prophet::CLI->new();
 can_ok($a, 'app_handle');
 can_ok($a->app_handle, 'config');
 my $c = $a->config;
 
+$c->load;
+
+is( $c->config_files->[0], undef, 'no config files loaded' );
+
 # interrogate its config to see if we have any config options set
-my @keys = $c->list;
-is (scalar @keys,0);
+my @keys = $c->dump;
+is( scalar @keys, 0, 'no config options are set' );
 
 # set a config file 
-{ local $ENV{'PROPHET_APP_CONFIG'} = 't/test_app.conf';
-my $conf = Prophet::Config->new(app_handle => Prophet::CLI->new->app_handle);
-# interrogate its config to see if we have any config options set
-my @keys = $conf->list;
-is (scalar @keys,4);
-# test the alias
-is($conf->aliases->{tlist}, "ticket list", "Got correct alias");
+{
+    copy 't/test_app.conf', $repo;
+    local $ENV{'PROPHET_APP_CONFIG'}
+        = File::Spec->catfile($repo,'test_app.conf');
+
+    my $conf = Prophet::Config->new(
+        app_handle => Prophet::CLI->new->app_handle,
+        confname => 'testrc',
+    );
+    $conf->load;
+    # make sure we only have the one test config file loaded
+    is( length @{$conf->config_files}, 1, 'only test conf is loaded' );
+
+    # interrogate its config to see if we have any config options set
+    my @data = $conf->dump;
+    is( scalar @data, 6, '3 config options are set' );
+    # test the aliases sub
+    is( $conf->aliases->{tlist}, 'ticket list', 'Got correct alias' );
+    # test automatic reload after setting
+    $conf->set(
+        key => 'source.sd',
+        value => 'http://fsck.com/sd/',
+        filename => File::Spec->catfile($repo, 'test_app.conf'),
+    );
+    is( $conf->get( key => 'source.sd' ), 'http://fsck.com/sd/',
+        'automatic reload after set' );
+    # test the sources sub
+    is( $conf->sources->{sd}, 'http://fsck.com/sd/', 'Got correct alias' );
+
+    # run the cli "config" command
+    # make sure it matches with our file
+    my $got = run_command('config');
+    my $expect = <<EOF
+Configuration:
+
+Config files:
+
+$repo/test_app.conf
+
+Your configuration:
+
+alias.tlist=ticket list
+source.sd=http://fsck.com/sd/
+test.foo=bar
+test.re=rawr
+EOF
+    ;
+    is($got, $expect, 'output of config command');
 }
-
-
-# run the cli "show config" command 
-# make sure it matches with our file

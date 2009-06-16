@@ -13,38 +13,20 @@ sub run {
         print $self->no_config_files;
         return;
     }
+    print "Config files:\n\n";
     for my $file (@files) {
-        print "Config files:\n\n";
         print "$file\n";
     }
     print "\nYour configuration:\n\n";
-    for my $item ( $config->list ) {
-        if ( $item eq '_aliases' ) {
-            if ( my $aliases = $config->aliases ) {
-                for my $key ( keys %$aliases ) {
-                    print "alias $key = $aliases->{$key}\n";
-                }
-            }
-        }
-        elsif ( $item eq '_sources' ) {
-            if ( my $sources = $config->sources ) {
-                for my $key ( keys %$sources ) {
-                    print "source $key = $sources->{$key}\n";
-                }
-            }
-        }
-        else {
-            print $item . " = " . $config->get($item) . "\n";
-        }
-    }
+    $config->dump;
 }
 
 sub no_config_files {
     my $self = shift;
     return "No configuration files found. "
-         . " Either create a file called 'config' inside of "
-         . $self->handle->fs_root
-         . " or set the PROPHET_APP_CONFIG environment variable.\n\n";
+         . " Either create a file called
+         '".$self->handle->app_handle->config->replica_config_file.
+         "' or set the PROPHET_APP_CONFIG environment variable.\n\n";
 }
 
 __PACKAGE__->meta->make_immutable;
