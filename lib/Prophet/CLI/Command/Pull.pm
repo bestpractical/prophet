@@ -12,21 +12,18 @@ sub run {
 
     my $previous_sources = $self->app_handle->config->sources;
 
-
     my $explicit_from = '';
-    
+
     if ($self->has_arg('from')) {
         $explicit_from = $self->arg('from') ;
         push @from, $explicit_from;
     }
-
     elsif ($self->has_arg('all')){
         for my $source (values %$previous_sources) {
             my ($url, $uuid ) = split(qr/ \| /,$source,2);
             push @from, $url;
 
         }
-
     }
 
     $self->validate_args;
@@ -49,17 +46,19 @@ sub record_pull_from_source {
     my $self = shift;
     my $source = shift;
     my $from_uuid = shift;
-    my $previous_sources = $self->app_handle->config->sources;
+    my %previous_sources = $self->app_handle->config->sources;
     my %sources_by_url = map {
-            my $meta = $_;
-            my ($url,$uuid);
-            ($url, $uuid ) = split(qr/ \| /,$meta,2);
-         ($previous_sources->{$meta} => $url )
-     } keys %$previous_sources;
+            my $name = $_;
+            my ($url, $uuid);
+            ($url, $uuid ) = split(qr/ \| /, $previous_sources{$name}, 2);
+         ($url => $uuid )
+     } keys %previous_sources;
     if ( !exists $sources_by_url{$source}) {
-        $previous_sources->{$source} = $source ." | ".$from_uuid;
-        $self->app_handle->config->set(_sources => $previous_sources );
-        $self->app_handle->config->save;
+        $self->app_handle->config->set(
+            key => "source.'$source'",
+            value => "$source | $from_uuid",
+            filename => $self->app_handle->config->replica_config_file,
+        );
     }
 }
 
