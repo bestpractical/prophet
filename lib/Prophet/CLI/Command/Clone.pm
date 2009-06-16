@@ -42,8 +42,12 @@ sub run {
     }
 
     $target->initialize(%init_args);
-    $self->app_handle->config->set( _sources => { $self->arg('from') => $self->arg('from') });
-    $self->app_handle->config->save;
+
+    $self->app_handle->config->set(
+        key => 'source.'.$self->arg('from'),
+        value => $self->arg('from'),
+        filename => $self->app_handle->config->replica_config_file,
+    );
 
     if ( $source->can('database_settings') ) {
         my $remote_db_settings = $source->database_settings;
