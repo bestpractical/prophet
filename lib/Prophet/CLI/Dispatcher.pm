@@ -60,9 +60,9 @@ on config   => run_command("Config");
 on settings => run_command("Settings");
 on log      => run_command("Log");
 on shell    => run_command("Shell");
-on aliases  => run_command("Aliases");
-on export => run_command('Export');
-on info   => run_command('Info');
+on export   => run_command('Export');
+on info     => run_command('Info');
+on aliases     => run_command('Aliases');
 
 on push => sub {
     my $self = shift;
@@ -72,6 +72,27 @@ on push => sub {
     $self->context->set_arg(from => $self->cli->handle->url);
     $self->context->set_arg(db_uuid => $self->cli->handle->db_uuid);
     run('merge', $self, @_);
+};
+
+on qr/^alias(?:es)?\s*(.*)/ => sub {
+    my ( $self ) = @_;
+    my $arg = $1;
+    if ( $arg =~ /^show\b/ ) {
+        $self->context->set_arg(show => 1);
+    }
+    elsif ( $arg =~ /^delete\s+(.*)/ ) {
+        $self->context->set_arg(delete => $1);
+    }
+    elsif ( $arg =~ /^(?:add|set)?\s+(.*)/ ) {
+        $self->context->set_arg(set => $1);
+    }
+    elsif ( $arg =~ /=/ ) {
+        $self->context->set_arg(set => $arg);
+    }
+    else {
+        die 'no idea what you mean, sorry';
+    }
+    run( 'aliases', $self, @_ );
 };
 
 on history => run_command('History');

@@ -5,8 +5,6 @@ use Params::Validate qw/validate/;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::TextEditorCommand';
 
-sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'delete', s => 'show' };
-
 sub run {
     my $self     = shift;
     my $template = $self->make_template;
@@ -16,7 +14,7 @@ sub run {
         return;
     }
 
-    # --add is the same as --set
+    # add is the same as set
     if ( $self->context->has_arg('add') ) {
         $self->context->set_arg('set', $self->arg('add') )
     }
