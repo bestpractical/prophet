@@ -11,6 +11,8 @@ sub run {
     my $self     = shift;
     my $template = $self->make_template;
 
+    my $config = $self->app_handle->config;
+
     if ( $self->context->has_arg('show') ) {
         print $template. "\n";
         return;
@@ -22,17 +24,18 @@ sub run {
     }
 
     if ( $self->has_arg('set') || $self->has_arg('delete') ) {
-        my $aliases = $self->app_handle->config->aliases;
-        my $need_to_save;
 
         if ( $self->has_arg('set') ) {
             my $value = $self->arg('set');
             if ( $value =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/ ) {
-                if ( exists $aliases->{$1} ) {
-                    if ( $aliases->{$1} ne $2 ) {
-                        my $old = $aliases->{$1};
-                        $aliases->{$1} = $2;
-                        $need_to_save = 1;
+                my $old = $config->get( key => "alias.$1" );
+                if ( defined $old ) {
+                    if ( $old ne $2 ) {
+                        $config->set(
+                            key => "alias.$1",
+                            value => $2,
+                            filename => $config->replica_config_file,
+                        );
                         print
                           "changed alias '$1' from '$old' to '$2'\n";
                     }
@@ -41,27 +44,32 @@ sub run {
                     }
                 }
                 else {
-                    $need_to_save = 1;
-                    $aliases->{$1} = $2;
+                    $config->set(
+                        key => "alias.$1",
+                        value => $2,
+                        filename => $config->replica_config_file,
+                    );
                     print "added alias '$1 = $2'\n";
                 }
             }
         }
         elsif ( $self->has_arg('delete') ) {
             my $key = $self->arg('delete');
-            if ( exists $aliases->{$key} ) {
-                $need_to_save = 1;
-                print "deleted alias '$key = $aliases->{$key}'\n";
-                delete $aliases->{$key};
+
+            if ( defined $config->get( key => "alias.$key" ) ) {
+                print "deleted alias '$key = "
+                      .$config->get( key => "alias.$key" )."'\n";
+
+                $config->set(
+                    key => "alias.$key",
+                    filename => $config->replica_config_file,
+                );
             }
             else {
                 print "didn't find alias '$key'\n";
             }
         }
 
-        if ($need_to_save) {
-            $self->app_handle->config->save;
-        }
     }
     else {
 
@@ -71,8 +79,6 @@ sub run {
             $done = $self->try_to_edit( template => \$template );
         }
     }
-
-
 }
 
 sub make_template {
@@ -117,26 +123,42 @@ sub process_template {
     my ($config) = $self->parse_template($updated);
 
     my $aliases = $self->app_handle->config->aliases;
+    my $c = $self->app_handle->config;
 
-    my @added = grep { ! $aliases->{$_} } sort keys %$config;
+    my @added = grep { !$aliases->{$_} } sort keys %$config;
+
     my @changed =
-      grep { $config->{$_} && $aliases->{$_} ne $config->{$_} } sort keys %$aliases;
+      grep { $config->{$_} && $aliases->{$_} ne $config->{$_}
+      } sort keys %$aliases;
+
     my @deleted = grep { !$config->{$_} } sort keys %$aliases;
 
+    # TODO: 'set' all at once after implementing hash sets
     for my $add ( @added ) {
         print 'Added alias ' . "'$add' = '$config->{$add}'\n";
+        $c->set(
+            key => "alias.$add",
+            value => $config->{$add},
+            filename => $c->replica_config_file,
+        );
     }
 
     for my $change (@changed) {
         print 'Changed alias ' . "'$change' from '$aliases->{$change}' to '$config->{$change}'\n";
+        $c->set(
+            key => "alias.$change",
+            value => $config->{$change},
+            filename => $c->replica_config_file,
+        );
     }
 
     for my $delete ( @deleted ) {
         print "Deleted alias '$delete'\n";
+        $c->set(
+            key => "alias.$delete",
+            filename => $c->replica_config_file,
+        );
     }
-
-    $self->app_handle->config->set(_aliases => $config );
-    $self->app_handle->config->save;
 
     return 1;
 }
