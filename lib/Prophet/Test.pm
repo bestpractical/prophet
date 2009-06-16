@@ -23,6 +23,9 @@ our $REPO_BASE = File::Temp::tempdir();
 Test::More->import;
 diag( "Replicas can be found in $REPO_BASE" );
 
+# by default, load no configuration file
+$ENV{PROPHET_APP_CONFIG} = '';
+
 {
     no warnings 'redefine';
     require Test::More;
