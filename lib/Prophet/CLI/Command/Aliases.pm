@@ -72,7 +72,6 @@ sub run {
 
     }
     else {
-
         my $done = 0;
 
         while ( !$done ) {
@@ -86,7 +85,7 @@ sub make_template {
 
     my $content = '';
    
-    $content .= "# Format: alias new_cmd = cmd\n"
+    $content .= "# Format: new_cmd = cmd\n"
       unless $self->context->has_arg('show');
 
     # get all settings records
@@ -94,7 +93,7 @@ sub make_template {
 
     if ( $aliases ) {
         for my $key ( keys %$aliases ) {
-            $content .= "alias $key = $aliases->{$key}\n";
+            $content .= "$key = $aliases->{$key}\n";
         }
     }
 
@@ -107,7 +106,7 @@ sub parse_template {
 
     my %parsed;
     for my $line ( split( /\n/, $template ) ) {
-        if ( $line =~ /^\s*alias\s+(.+?)\s*=\s*(.+?)\s*$/ ) {
+        if ( $line =~ /^\s*([^#].*?)\s*=\s*(.+?)\s*$/ ) {
             $parsed{$1} = $2;
         }
     }
@@ -133,34 +132,48 @@ sub process_template {
 
     my @deleted = grep { !$config->{$_} } sort keys %$aliases;
 
-    # TODO: 'set' all at once after implementing hash sets
-    for my $add ( @added ) {
-        print 'Added alias ' . "'$add' = '$config->{$add}'\n";
-        $c->set(
-            key => "alias.$add",
-            value => $config->{$add},
-            filename => $c->replica_config_file,
+    # attempt to set all added/changed/deleted aliases at once
+    my @to_set = (
+        (map { { key => "alias.'$_'", value => $config->{$_} } }
+            (@added, @changed)),
+        (map { { key => "alias.'$_'" } } @deleted),
+    );
+
+    eval {
+        $c->group_set(
+            $c->replica_config_file,
+            \@to_set,
+        );
+    };
+    # if we fail, prompt the user to re-edit
+    # TODO: this doesn't really work correctly.
+    # Also, handle_template_errors gives messages that are very
+    # much tailored towards SD's ticket editing facility.
+    # Should genericise that.
+    if ($@) {
+        warn $@;
+        return $self->handle_template_errors(
+            rtype => 'aliases',
+            template_ref => $args{template},
+            bad_template => $args{edited},
+            error => "$@",
         );
     }
+    # otherwise, print out what changed and return happily
+    else {
+        for my $add ( @added ) {
+            print 'Added alias ' . "'$add' = '$config->{$add}'\n";
+        }
+        for my $change (@changed) {
+            print "Changed alias '$change' from '$aliases->{$change}'"
+                  ."to '$config->{$change}'\n";
+        }
+        for my $delete ( @deleted ) {
+            print "Deleted alias '$delete'\n";
+        }
 
-    for my $change (@changed) {
-        print 'Changed alias ' . "'$change' from '$aliases->{$change}' to '$config->{$change}'\n";
-        $c->set(
-            key => "alias.$change",
-            value => $config->{$change},
-            filename => $c->replica_config_file,
-        );
+        return 1;
     }
-
-    for my $delete ( @deleted ) {
-        print "Deleted alias '$delete'\n";
-        $c->set(
-            key => "alias.$delete",
-            filename => $c->replica_config_file,
-        );
-    }
-
-    return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
