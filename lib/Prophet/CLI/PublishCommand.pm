@@ -13,6 +13,10 @@ sub publish_dir {
     $args{from} .= '/';
 
     my @args;
+
+    # Set directories to be globally +rx, files to be globally +r
+    push @args, '--chmod=Da+rx,a+r';
+
     push @args, '--verbose' if $self->context->has_arg('verbose');
     
     push @args, '--recursive', '--' , $args{from}, $args{to};
