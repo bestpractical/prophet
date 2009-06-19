@@ -24,12 +24,12 @@ sub run {
     Prophet::CLI->end_pager();
     # if we have the html argument, populate the tempdir with rendered templates
     if ($export_html) {
-        print "Exporting a static HTML version of this replia\n";
+        print "Exporting a static HTML version of this replica\n";
         $self->export_html() 
     }
     # otherwise, do the normal prophet export this replica
     if ($export_replica) {
-        print "Exporting a clone of this replia\n";
+        print "Exporting a clone of this replica\n";
         $self->SUPER::run(@_) 
     } 
 
