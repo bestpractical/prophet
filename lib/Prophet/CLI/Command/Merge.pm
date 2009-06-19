@@ -52,7 +52,7 @@ sub print_report {
             print "Merged $changesets changesets.\n";
         }
     } else {
-        print "Done.\n";
+        print "\nDone.\n";
     }
 }
 
