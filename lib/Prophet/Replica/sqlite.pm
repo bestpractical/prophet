@@ -479,10 +479,12 @@ return \$index;
 
 }
 
-=head2 changesets_for_record { uuid => $uuid, type => $type }
+=head2 changesets_for_record { uuid => $uuid, type => $type, limit => $int }
 
 Returns an ordered set of changeset objects for all changesets containing
 changes to this object. 
+
+If "limit" is specified, only returns that many changesets (starting from record creation).
 
 Note that changesets may include changes to other records
 
@@ -490,13 +492,19 @@ Note that changesets may include changes to other records
 
 sub changesets_for_record {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1, type => 1 } );
+    my %args = validate( @_, { uuid => 1, type => 1, limit => 0 } );
 
-    my $sth = $self->dbh->prepare( "SELECT DISTINCT changesets.* "
+    my $statement = "SELECT DISTINCT changesets.* "
             . "FROM changes, changesets "
             . "WHERE  changesets.sequence_no = changes.changeset "
-            . "AND changes.record = ?"
-        );
+            . "AND changes.record = ?";
+
+    if (defined $args{limit}) {
+        $statement .= " ORDER BY changesets.sequence_no LIMIT ".$args{limit};
+
+    }
+
+    my $sth = $self->dbh->prepare( $statement    );
 
     require Prophet::ChangeSet;
     $sth->execute( $args{uuid} );
