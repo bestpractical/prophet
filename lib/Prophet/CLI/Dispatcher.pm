@@ -47,6 +47,7 @@ on [ ['show', 'display'] ]       => run_command("Show");
 on [ ['update', 'edit'] ]        => run_command("Update");
 on [ ['delete', 'del', 'rm'] ]   => run_command("Delete");
 on [ ['search', 'list', 'ls' ] ] => run_command("Search");
+on [ ['aliases', 'alias'] ]      => run_command('Aliases');
 
 on version  => run_command("Version");
 on init     => run_command("Init");
@@ -62,7 +63,7 @@ on log      => run_command("Log");
 on shell    => run_command("Shell");
 on export   => run_command('Export');
 on info     => run_command('Info');
-on aliases     => run_command('Aliases');
+on history  => run_command('History');
 
 on push => sub {
     my $self = shift;
@@ -89,13 +90,14 @@ on qr/^alias(?:es)?\s*(.*)/ => sub {
     elsif ( $arg =~ /=/ ) {
         $self->context->set_arg(set => $arg);
     }
+    elsif ( $arg =~ /^edit\b/ ) {
+        $self->context->set_arg(edit => 1);
+    }
     else {
         die 'no idea what you mean, sorry';
     }
     run( 'aliases', $self, @_ );
 };
-
-on history => run_command('History');
 
 sub run_command {
     my $name = shift;

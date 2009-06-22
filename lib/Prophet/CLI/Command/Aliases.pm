@@ -22,11 +22,6 @@ sub run {
 
     my $config = $self->app_handle->config;
 
-    if ( $self->context->has_arg('show') ) {
-        print $template. "\n";
-        return;
-    }
-
     if ($self->has_arg('global')) {
         $self->config_filename($config->global_file);
     }
@@ -87,13 +82,18 @@ sub run {
         }
 
     }
-    else {
+    elsif ( $self->has_arg('edit') ) {
         my $done = 0;
 
         while ( !$done ) {
             $done = $self->try_to_edit( template => \$template );
         }
     }
+    else {
+        print $template. "\n";
+        return;
+    }
+
 }
 
 sub make_template {
@@ -101,9 +101,9 @@ sub make_template {
 
     my $content = '';
    
-    $content .= $self->context->has_arg('show') ?
-        "Active aliases for the current repository (including user-wide and global\naliases if not overridden):\n\n"
-        : "# Format: new_cmd = cmd\n";
+    $content .= $self->context->has_arg('edit') ?
+        "# Format: new_cmd = cmd\n"
+        : "Active aliases for the current repository (including user-wide and global\naliases if not overridden):\n\n";
 
     # get all settings records
     my $aliases = $self->app_handle->config->aliases;
