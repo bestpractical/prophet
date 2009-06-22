@@ -18,7 +18,6 @@ sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'dele
 
 sub run {
     my $self     = shift;
-    my $template = $self->make_template;
 
     my $config = $self->app_handle->config;
 
@@ -28,6 +27,8 @@ sub run {
     elsif ($self->has_arg('user')) {
         $self->config_filename($config->user_file);
     }
+
+    my $template = $self->make_template;
 
     # add is the same as set
     if ( $self->context->has_arg('add') ) {
@@ -102,11 +103,16 @@ sub make_template {
     my $content = '';
    
     $content .= $self->context->has_arg('edit') ?
-        "# Format: new_cmd = cmd\n"
-        : "Active aliases for the current repository (including user-wide and global\naliases if not overridden):\n\n";
+        "# Editing aliases in config file ".$self->config_filename."\n\n"
+        ."# Format: new_cmd = cmd\n"
+        : "Active aliases for the current repository (including user-wide and"
+        ." global\naliases if not overridden):\n\n";
 
-    # get all settings records
-    my $aliases = $self->app_handle->config->aliases;
+    # get aliases from the config file we're going to edit, or all of them if
+    # we're just displaying
+    my $aliases = $self->has_arg('edit') ?
+                  $self->app_handle->config->aliases( $self->config_filename )
+                : $self->app_handle->config->aliases;
 
     if ( $aliases ) {
         for my $key ( keys %$aliases ) {
@@ -138,7 +144,7 @@ sub process_template {
     my $updated = $args{edited};
     my ($config) = $self->parse_template($updated);
 
-    my $aliases = $self->app_handle->config->aliases;
+    my $aliases = $self->app_handle->config->aliases( $self->config_filename );
     my $c = $self->app_handle->config;
 
     my @added = grep { !$aliases->{$_} } sort keys %$config;

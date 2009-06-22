@@ -47,14 +47,43 @@ override global_file => sub {
 # grab all values in the 'alias' section and strip away the section name
 sub aliases {
     my $self = shift;
+    my $file = shift;
 
-    my %aliases = $self->get_regexp( key => '^alias\.' );
+    my %new_aliases;
+    if ( $file ) {
+        # parse the given config file with parse_content and use the
+        # callbacks to add to an array
+        my $content = Prophet::Util->slurp( $file );
+        $self->parse_content(
+            content => $content,
+            callback => sub {
+                my %args = @_;
+                return unless defined $args{name};
+                if ( $args{section} eq 'alias' ) {
+                    $new_aliases{$args{name}} = $args{value};
+                }
+            },
+            # Most of the time this error sub won't get triggered since
+            # Prophet loads the config file whenever it first tries to use
+            # a value from the config file, and errors are detected at that
+            # point. This always happens before this since every command
+            # triggers alias processing. So this should really only explode
+            # if we're running a shell and the config file has changed
+            # in a bad way since we started up.
+            error => sub {
+                Config::GitLike::error_callback( @_, filename => $file );
+            },
+        );
+    }
+    else {
+        my %aliases = $self->get_regexp( key => '^alias\.' );
 
-    my %new_aliases = map {
-        my $alias = $_;
-        $alias =~ s/^alias\.//;
-        ( $alias => $aliases{$_} );
-    } keys %aliases;
+        %new_aliases = map {
+            my $alias = $_;
+            $alias =~ s/^alias\.//;
+            ( $alias => $aliases{$_} );
+        } keys %aliases;
+    }
 
     return wantarray ? %new_aliases : \%new_aliases;
 }
@@ -142,11 +171,14 @@ Both constructor arguments are required.
 The replica-specific configuration file, or the configuration file given
 by C<PROPHET_APP_CONFIG> if that environmental variable is set.
 
-=head2 aliases
+=head2 aliases( $config_filename )
 
 A convenience method that gets you a hash (or a hashref, depending on context)
 of all currently defined aliases. (Basically, every entry in the 'alias'
 section of the config file.)
+
+If a filename is passed in, this method will only return the aliases that
+are defined in that particular config file.
 
 =head2 sources
 
