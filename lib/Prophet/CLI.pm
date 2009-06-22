@@ -114,7 +114,7 @@ sub _command_matches_alias {
     my $cmd   = shift;
     my $alias = shift;
     my $dispatch_to = shift;;
-    if ( $cmd =~ /^$alias\s*(.*)$/ ) {
+    if ( $cmd =~ /^\Q$alias\E\s*(.*)$/ ) {
         no strict 'refs';
 
         my $rest = $1;
