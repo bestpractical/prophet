@@ -88,27 +88,42 @@ template (given by the arg C<bad_template> prefixed with the error messages
 given in the C<error> arg. If an errors section already exists in the
 template, it is replaced with an errors section containing the new errors.
 
+If the template you are editing is not section-based, you can override what
+will be prepended to the template by passing in the C<errors_pattern>
+argument, and passing in C<old_errors> if a template errors out repeatedly
+and there are old errors in the template that need to be replaced.
+
 Other arguments are: C<rtype>: the type of the record being edited. All
-arguments are required.
+arguments except overrides (C<errors_pattern> and C<old_errors> are
+required.
 
 =cut
 
 sub handle_template_errors {
     my $self = shift;
     my %args = validate( @_, { error => 1, template_ref => 1,
-                               bad_template => 1, rtype => 1 } );
-    my $errors_pattern = "=== errors in this $args{rtype} ===";
+                               bad_template => 1, rtype => 1,
+                               errors_pattern => 0, old_errors => 0 } );
+    my $errors_pattern = defined $args{errors_pattern}
+                       ? $args{errors_pattern}
+                       : "=== errors in this $args{rtype} ===";
 
     $self->prompt_Yn("Whoops, an error occurred processing your $args{rtype}.\nTry editing again? (Errors will be shown.)") || die "Aborted.\n";
 
-    # if the bad template already has an errors section in it, remove it
-    $args{bad_template} =~ s/$errors_pattern.*?\n(?==== .*? ===\n)//s;
+    # template is section-based
+    if ( !defined $args{old_errors} ) {
+        # if the bad template already has an errors section in it, remove it
+        $args{bad_template} =~ s/$errors_pattern.*?\n(?==== .*? ===\n)//s;
+    }
+    # template is not section-based: we allow passing in the old error to kill
+    else {
+        $args{bad_template} =~ s/\Q$args{old_errors}\E\n\n\n//;
+    }
 
     ${ $args{'template_ref'} }
-        = "$errors_pattern\n\n"
-        . $args{error} . "\n\n"
-        . 'You can bypass validation for a property by appending a ! to it.'
-        . "\n\n\n" . $args{bad_template};
+        = $errors_pattern ? "$errors_pattern\n\n" : ''
+        . $args{error} . "\n\n\n"
+        . $args{bad_template};
     return 0;
 }
 

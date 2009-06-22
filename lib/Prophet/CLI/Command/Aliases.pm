@@ -14,6 +14,12 @@ has config_filename => (
     },
 );
 
+has old_errors => (
+    is => 'rw',
+    isa => 'Str',
+    default => '',
+);
+
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'delete', s => 'show' };
 
 sub run {
@@ -172,23 +178,24 @@ sub process_template {
             \@to_set,
         );
     };
+
     # if we fail, prompt the user to re-edit
-
-    # one of the few ways to trigger this is to try to set a variable
+    #
+    # one of the few ways to trigger this is to try to create an alias
     # that starts with a [ character
-
-    # TODO: this doesn't really work correctly.
-    # Also, handle_template_errors gives messages that are very
-    # much tailored towards SD's ticket editing facility.
-    # Should genericise that.
     if ($@) {
-        warn $@;
-        return $self->handle_template_errors(
+        chomp $@;
+        my $error = "# Error: '$@'";
+        $self->handle_template_errors(
             rtype => 'aliases',
             template_ref => $args{template},
             bad_template => $args{edited},
-            error => "$@",
+            errors_pattern => '',
+            error => $error,
+            old_errors => $self->old_errors,
         );
+        $self->old_errors($error);
+        return 0;
     }
     # otherwise, print out what changed and return happily
     else {
