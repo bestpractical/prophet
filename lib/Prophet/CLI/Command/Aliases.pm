@@ -5,6 +5,15 @@ use Params::Validate qw/validate/;
 extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::TextEditorCommand';
 
+has config_filename => (
+    is => 'rw',
+    isa => 'Str',
+    lazy => 1,
+    default => sub {
+        $_[0]->app_handle->config->replica_config_file;
+    },
+);
+
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'delete', s => 'show' };
 
 sub run {
@@ -16,6 +25,13 @@ sub run {
     if ( $self->context->has_arg('show') ) {
         print $template. "\n";
         return;
+    }
+
+    if ($self->has_arg('global')) {
+        $self->config_filename($config->global_file);
+    }
+    elsif ($self->has_arg('user')) {
+        $self->config_filename($config->user_file);
     }
 
     # --add is the same as --set
@@ -34,7 +50,7 @@ sub run {
                         $config->set(
                             key => "alias.$1",
                             value => $2,
-                            filename => $config->replica_config_file,
+                            filename => $self->config_filename,
                         );
                         print
                           "changed alias '$1' from '$old' to '$2'\n";
@@ -47,7 +63,7 @@ sub run {
                     $config->set(
                         key => "alias.$1",
                         value => $2,
-                        filename => $config->replica_config_file,
+                        filename => $self->config_filename,
                     );
                     print "added alias '$1 = $2'\n";
                 }
@@ -62,7 +78,7 @@ sub run {
 
                 $config->set(
                     key => "alias.$key",
-                    filename => $config->replica_config_file,
+                    filename => $self->config_filename,
                 );
             }
             else {
@@ -141,7 +157,7 @@ sub process_template {
 
     eval {
         $c->group_set(
-            $c->replica_config_file,
+            $self->config_filename,
             \@to_set,
         );
     };
