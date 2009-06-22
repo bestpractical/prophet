@@ -34,7 +34,7 @@ sub run {
         $self->config_filename($config->user_file);
     }
 
-    # --add is the same as --set
+    # add is the same as set
     if ( $self->context->has_arg('add') ) {
         $self->context->set_arg('set', $self->arg('add') )
     }

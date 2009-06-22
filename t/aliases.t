@@ -2,8 +2,8 @@
 #
 use warnings;
 use strict;
-use Prophet::Test 'no_plan';
-use File::Temp qw/tempdir tempfile/;
+use Prophet::Test tests => 19;
+use File::Temp qw/tempfile/;
 
 $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
 $ENV{'PROPHET_APP_CONFIG'} = (tempfile(UNLINK => !$ENV{PROPHET_DEBUG}))[1];
@@ -22,43 +22,79 @@ is_deeply( scalar $config->aliases, {}, 'initial alias is empty' );
 
 my @cmds = (
     {
-        cmd => [ '--add', 'pull -a=pull --all' ],
+        cmd => [ 'show' ],
+        output  => qr/^\s*$/,
+        comment => 'show empty aliases',
+    },
+
+    {
+        cmd => [ 'add', 'pull -a=pull --all' ],
         output  => qr/added alias 'pull -a = pull --all/,
         comment => 'add a new alias',
     },
     {
-        cmd => [ '--add', 'pull -a=pull --all' ],
+        cmd => [ 'add', 'pull -a=pull --all' ],
         output  => qr/alias 'pull -a = pull --all' isn't changed, won't update/,
         comment => 'add the same alias will not change anything',
     },
     {
 
         # this alias is bad, please don't use it in real life
-        cmd => [ '--set', 'pull -a=pull --local' ],
+        cmd => [ 'set', 'pull -a=pull --local' ],
         output =>
           qr/changed alias 'pull -a' from 'pull --all' to 'pull --local'/,
         comment =>
           q{changed alias 'pull -a' from 'pull --all' to 'pull --local'},
     },
     {
-        cmd     => [ '--delete', 'pull -a' ],
+        cmd     => [ 'delete', 'pull -a' ],
         output  => qr/deleted alias 'pull -a = pull --local'/,
         comment => q{deleted alias 'pull -a = pull --local'},
     },
     {
-        cmd     => [ '--delete', 'pull -a' ],
+        cmd     => [ 'delete', 'pull -a' ],
         output  => qr/didn't find alias 'pull -a'/,
         comment => q{delete an alias that doesn't exist any more},
     },
     {
-        cmd => [ '--add', 'pull -a=pull --all' ],
+        cmd => [ 'add', 'pull -a=pull --all' ],
         output  => qr/added alias 'pull -a = pull --all/,
         comment => 'read a new alias',
     },
     {
-        cmd => [ '--add', 'pull -l=pull --local' ],
+        cmd => [ 'add', 'pull -l=pull --local' ],
         output  => qr/added alias 'pull -l = pull --local/,
         comment => 'add a new alias',
+    },
+    {
+        cmd => [ 'show' ],
+        output  => qr/alias pull -a = pull --all/s,
+        comment => 'show',
+    },
+    {
+        cmd => [ 'show' ],
+        output  => qr/alias pull -l = pull --local/s,
+        comment => 'show',
+    },
+    {
+        cmd => [ 'add', 'foo', 'bar', '=', 'bar',  'baz' ],
+        output  => qr/added alias 'foo bar = bar baz'/,
+        comment => 'added alias foo bar',
+    },
+    {
+        cmd => [ 'foo', 'bar', '=', 'bar',  'baz' ],
+        output  => qr/alias 'foo bar = bar baz' isn't changed, won't update/,
+        comment => 'readd alias foo bar',
+    },
+    {
+        cmd => [ 'delete', 'foo', 'bar' ],
+        output  => qr/deleted alias 'foo bar = bar baz'/,
+        comment => 'deleted alias foo bar',
+    },
+    {
+        cmd => [ 'set', 'foo', 'bar', '=bar baz'],
+        output => qr/added alias 'foo bar = bar baz'/,
+        comment => 'readd alias foo bar = bar baz',
     },
 );
 
@@ -79,6 +115,7 @@ is_deeply(
     {
         'pull -l' => 'pull --local',
         'pull -a' => 'pull --all',
+        'foo bar' => 'bar baz',
     },
     'non empty aliases',
 );
@@ -89,10 +126,16 @@ open my $fh, '<', $ENV{'PROPHET_APP_CONFIG'}
   or die "failed to open $ENV{'PROPHET_APP_CONFIG'}: $!";
 { local $/; $content = <$fh>; }
 is( $content, <<EOF, 'content in config' );
+<<<<<<< HEAD:t/aliases.t
 
 [alias]
 	pull -a = pull --all
 	pull -l = pull --local
+=======
+alias pull -l = pull --local
+alias foo bar = bar baz
+alias pull -a = pull --all
+>>>>>>> master:t/aliases.t
 EOF
 
 # TODO: need tests for interactive alias editing

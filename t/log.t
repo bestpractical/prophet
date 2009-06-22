@@ -1,8 +1,7 @@
 use warnings;
 use strict;
-use Test::More tests => 22;
+use Prophet::Test tests => 22;
 use File::Temp qw'tempdir';
-use Prophet::Test;
 
 # tests for log command
 

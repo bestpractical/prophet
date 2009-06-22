@@ -392,20 +392,26 @@ sub delete {
 
 }
 
-=head2 changesets
+=head2 changesets { limit => $int } 
 
 Returns an ordered list of changeset objects for all changesets containing
 changes to the record specified by this record object.
 
 Note that changesets may include changes to other records.
 
+If a limit is specified, this routine will only return that many
+changesets, starting from the changeset containing the record's
+creation.
+
 =cut
 
 sub changesets {
     my $self = shift;
+    my %args = validate(@_, { limit => 0});
     return $self->handle->changesets_for_record(
         uuid => $self->uuid,
         type => $self->type,
+        $args{limit} ? (limit => $args{limit}) : ()
     );
 }
 

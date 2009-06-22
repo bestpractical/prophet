@@ -588,18 +588,20 @@ sub _record_type_dir {
 # }
 
 
-=head2 changesets_for_record { uuid => $uuid, type => $type }
+=head2 changesets_for_record { uuid => $uuid, type => $type, limit => $int }
 
 Returns an ordered set of changeset objects for all changesets containing
 changes to this object. 
 
 Note that changesets may include changes to other records
 
+If "limit" is specified, only returns that many changesets (starting from record creation).
+
 =cut
 
 sub changesets_for_record {
     my $self = shift;
-    my %args = validate( @_, { uuid => 1, type => 1 } );
+    my %args = validate( @_, { uuid => 1, type => 1, limit => 0 } );
 
     my @record_index = $self->_read_record_index(
         type => $args{'type'},
@@ -616,6 +618,7 @@ sub changesets_for_record {
             sequence_no => $sequence,
             index_file  => $changeset_index
             );
+        last if (defined $args{limit} && --$args{limit});
     }
 
     return @changesets;
