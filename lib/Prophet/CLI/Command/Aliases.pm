@@ -101,8 +101,9 @@ sub make_template {
 
     my $content = '';
    
-    $content .= "# Format: new_cmd = cmd\n"
-      unless $self->context->has_arg('show');
+    $content .= $self->context->has_arg('show') ?
+        "Active aliases for the current repository (including user-wide and global\naliases if not overridden):\n\n"
+        : "# Format: new_cmd = cmd\n";
 
     # get all settings records
     my $aliases = $self->app_handle->config->aliases;
