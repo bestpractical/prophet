@@ -114,11 +114,15 @@ sub make_template {
                   $self->app_handle->config->aliases( $self->config_filename )
                 : $self->app_handle->config->aliases;
 
-    if ( $aliases ) {
+    if ( %$aliases ) {
         for my $key ( keys %$aliases ) {
             $content .= "$key = $aliases->{$key}\n";
         }
     }
+    else {
+        $content = "No aliases for the current repository.\n";
+    }
+
 
     return $content;
 }
@@ -169,6 +173,10 @@ sub process_template {
         );
     };
     # if we fail, prompt the user to re-edit
+
+    # one of the few ways to trigger this is to try to set a variable
+    # that starts with a [ character
+
     # TODO: this doesn't really work correctly.
     # Also, handle_template_errors gives messages that are very
     # much tailored towards SD's ticket editing facility.

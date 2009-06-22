@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 19;
+use Prophet::Test tests => 18;
 use File::Temp qw/tempfile/;
 
 $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
@@ -23,7 +23,7 @@ is_deeply( scalar $config->aliases, {}, 'initial alias is empty' );
 my @cmds = (
     {
         cmd => [ 'show' ],
-        output  => qr/^\s*$/,
+        output  => qr/^No aliases for the current repository.\n$/,
         comment => 'show empty aliases',
     },
 
@@ -68,12 +68,7 @@ my @cmds = (
     },
     {
         cmd => [ 'show' ],
-        output  => qr/alias pull -a = pull --all/s,
-        comment => 'show',
-    },
-    {
-        cmd => [ 'show' ],
-        output  => qr/alias pull -l = pull --local/s,
+        output  => qr/Active aliases for the current repository \(including user-wide and global\naliases if not overridden\):\n\npull -l = pull --local\npull -a = pull --all/s,
         comment => 'show',
     },
     {
@@ -84,7 +79,7 @@ my @cmds = (
     {
         cmd => [ 'foo', 'bar', '=', 'bar',  'baz' ],
         output  => qr/alias 'foo bar = bar baz' isn't changed, won't update/,
-        comment => 'readd alias foo bar',
+        comment => 'read alias foo bar',
     },
     {
         cmd => [ 'delete', 'foo', 'bar' ],
@@ -126,16 +121,11 @@ open my $fh, '<', $ENV{'PROPHET_APP_CONFIG'}
   or die "failed to open $ENV{'PROPHET_APP_CONFIG'}: $!";
 { local $/; $content = <$fh>; }
 is( $content, <<EOF, 'content in config' );
-<<<<<<< HEAD:t/aliases.t
 
 [alias]
 	pull -a = pull --all
 	pull -l = pull --local
-=======
-alias pull -l = pull --local
-alias foo bar = bar baz
-alias pull -a = pull --all
->>>>>>> master:t/aliases.t
+	foo bar = bar baz
 EOF
 
 # TODO: need tests for interactive alias editing
