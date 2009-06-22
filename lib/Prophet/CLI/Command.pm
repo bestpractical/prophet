@@ -229,6 +229,7 @@ sub prompt_Yn {
 
     my $a = <STDIN>;
     chomp $a;
+    print "\n";
 
     return 1 if $a =~ /^(|y|yes)$/i;
     return 0;
