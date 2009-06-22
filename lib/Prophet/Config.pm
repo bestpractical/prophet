@@ -8,7 +8,7 @@ has app_handle => (
     is => 'ro',
     weak_ref => 1,
     isa => 'Prophet::App',
-    required => 0
+    required => 1
 );
 
 # reload config after setting values
@@ -105,54 +105,74 @@ Prophet::Config
 
 =head1 SYNOPSIS
 
-    In the Prophet config file (see L</app_config_file>):
+From, for example, a class that inherits from Prophet::App:
 
-      prefer_luids: 1
-      summary_format_ticket = %4s },$luid | %-11.11s,status | %-70.70s,summary
+    has config => (
+        is      => 'rw',
+        isa     => 'Prophet::Config',
+        default => sub {
+            my $self = shift;
+            return Prophet::Config->new(
+                app_handle => $self,
+                confname => 'prophetrc',
+            );
+        },
+    );
+
 
 =head1 DESCRIPTION
 
 This class represents the configuration of Prophet and the application built on
-top of it.
+top of it. It's just an instance of L<Config::GitLike|Config::GitLike> with
+a few small customizations and additions.
 
 =head1 METHODS
 
-=head2 new
+=head2 new( confname => 'prophetrc', app_handle => $instance_of_prophet_app )
 
-Takes no arguments. Automatically loads the config for you.
+Initialize the configuration. Does NOT load the config for you! You need to
+call L<load|Config::GitLike/"load"> for that. The configuration will also
+load automatically the first time your prophet application tries to
+L<get|Config::GitLike/"get"> a config variable.
 
-=cut
+Both constructor arguments are required.
 
-=head2 app_config_file
+=head2 replica_config_file
 
-The file which controls configuration for this application
-(the $PROPHET_APP_CONFIG environmental variable, C<$PROPHET_REPO/config>,
-or C<$HOME/.prophetrc>, in that order).
+The replica-specific configuration file, or the configuration file given
+by C<PROPHET_APP_CONFIG> if that environmental variable is set.
 
-=head2 load_from_files [files]
+=head2 aliases
 
-Loads the given config files. If no files are passed in, it will use the
-default of L</app_config_file>.
+A convenience method that gets you a hash (or a hashref, depending on context)
+of all currently defined aliases. (Basically, every entry in the 'alias'
+section of the config file.)
 
-=head2 load_from_file file
+=head2 sources
 
-Loads the given config file.
-
-=head2 get
-
-Gets a specific config setting.
-
-=head2 set
-
-Sets a specific config setting.
-
-=head2 list
-
-Lists all configuration options.
+A convenience method that gets you a hash (or a hashref, depending on context)
+of all currently defined source replicas, in the format { 'name' =>
+{ url => 'URL', uuid => 'UUID } }. (Basically, every entry in the 'replica'
+section of the config file.)
 
 =head2 display_name_for_uuid UUID
 
 Returns a "friendly" id for the given uuid.
 
-=cut
+TODO: regexp search for 'replica.(.*).UUID' and extract the section
 
+=head1 CONFIG VARIABLES
+
+The following config variables are currently used in various places in
+Prophet:
+
+<record-type>.summary-format
+record.summary-format
+user.email-address
+alias.<alias>
+
+=head1 SEE ALSO
+
+Most of the useful methods for getting and setting configuration variables
+actually come from L<Config::GitLike|Config::GitLike>. See that module's
+documentation for details.
