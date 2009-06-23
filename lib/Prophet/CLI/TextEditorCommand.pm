@@ -121,7 +121,7 @@ sub handle_template_errors {
     }
 
     ${ $args{'template_ref'} }
-        = $errors_pattern ? "$errors_pattern\n\n" : ''
+        = ($errors_pattern ? "$errors_pattern\n\n" : '')
         . $args{error} . "\n\n\n"
         . $args{bad_template};
     return 0;
