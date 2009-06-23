@@ -1,6 +1,7 @@
 package Prophet::CLI::Command;
 use Any::Moose;
 
+use Prophet::CLI;
 use Params::Validate qw(validate);
 
 has cli => (
@@ -225,11 +226,14 @@ otherwise. Default answer is 'Yes' (returns true).
 sub prompt_Yn {
     my $self = shift;
     my $msg = shift;
+
+    Prophet::CLI->end_pager();
     print "$msg [Y/n]: ";
 
     my $a = <STDIN>;
     chomp $a;
     print "\n";
+    Prophet::CLI->start_pager();
 
     return 1 if $a =~ /^(|y|yes)$/i;
     return 0;
