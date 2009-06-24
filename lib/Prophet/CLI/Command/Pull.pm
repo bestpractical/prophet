@@ -42,22 +42,36 @@ sub run {
 
 }
 
+# Create a new [replica] config file section for this replica if we haven't
+# pulled from it before.
 sub record_pull_from_source {
     my $self = shift;
     my $source = shift;
     my $from_uuid = shift;
-    my %previous_sources = $self->app_handle->config->sources;
-    my %sources_by_url = map {
-            my $name = $_;
-            my ($url, $uuid);
-            ($url, $uuid ) = split(qr/ \| /, $previous_sources{$name}, 2);
-         ($url => $uuid )
-     } keys %previous_sources;
-    if ( !exists $sources_by_url{$source}) {
-        $self->app_handle->config->set(
-            key => "source.'$source'",
-            value => "$source | $from_uuid",
-            filename => $self->app_handle->config->replica_config_file,
+
+    my %previous_sources
+        = $self->app_handle->config->get_regexp( key => "^replica\..+\.url" );
+
+    my $found_prev_replica;
+    for my $key (keys %previous_sources) {
+        $found_prev_replica = $previous_sources{$key}
+            if $previous_sources{$key} eq $source;
+    }
+
+    if ( !$found_prev_replica ) {
+        warn "setting new replica";
+        $self->app_handle->config->group_set(
+            $self->app_handle->config->replica_config_file,
+            [
+            {
+                key => "replica.$source.url",
+                value => $source,
+            },
+            {
+                key => "replica.$source.uuid",
+                value => $from_uuid,
+            },
+            ],
         );
     }
 }
