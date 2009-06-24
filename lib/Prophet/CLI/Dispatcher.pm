@@ -75,23 +75,40 @@ on push => sub {
     run('merge', $self, @_);
 };
 
-on qr/^alias(?:es)?\s*(.*)/ => sub {
+on qr/^alias(?:es)?\s+(.*)/ => sub {
     my ( $self ) = @_;
     my $arg = $1;
+
     if ( $arg =~ /^show\b/ ) {
         $self->context->set_arg(show => 1);
     }
-    elsif ( $arg =~ /^delete\s+(.*)/ ) {
-        $self->context->set_arg(delete => $1);
-    }
-    elsif ( $arg =~ /^(?:add|set)?\s+(.*)/ ) {
-        $self->context->set_arg(set => $1);
-    }
-    elsif ( $arg =~ /=/ ) {
-        $self->context->set_arg(set => $arg);
-    }
     elsif ( $arg =~ /^edit\b/ ) {
         $self->context->set_arg(edit => 1);
+    }
+    # arg *might* be quoted
+    elsif ( $arg =~ /^delete\s+"?([^"]+)"?/ ) {
+        $self->context->set_arg(delete => $1);
+    }
+    # prophet alias "foo bar" = "foo baz"
+    # prophet alias foo = bar
+    # prophet alias add foo bar = "bar baz"
+    # prophet alias add foo bar = bar baz
+    elsif ( $arg =~ 
+        /^(?:add |set )?\s*(?:(?:"([^"]+)"|([^"]+))\s+=\s+(?:"([^"]+)"|([^"]+)))$/ ) {
+        my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
+        $self->context->set_arg(set => "$orig=$new");
+    }
+    # prophet alias "foo = bar"
+    # prophet alias "foo bar = foo baz"
+    elsif ( $arg =~ /^(?:add |set )?\s*"([^"]+=[^"]+)"$/ ) {
+        $self->context->set_arg(set => $1);
+    }
+    # alternate syntax (preferred):
+    # prophet alias "foo bar" "bar baz", prophet alias foo "bar baz",
+    # prophet alias foo bar, etc.
+    elsif ( $arg =~ /^(?:"([^"]+)"|([^"\s]+))\s+(?:"([^"]+)"|([^"\s]+))/ ) {
+        my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
+        $self->context->set_arg(set => "$orig=$new");
     }
     else {
         die 'no idea what you mean, sorry';

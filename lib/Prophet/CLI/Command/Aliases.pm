@@ -46,11 +46,11 @@ sub run {
         if ( $self->has_arg('set') ) {
             my $value = $self->arg('set');
             if ( $value =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/ ) {
-                my $old = $config->get( key => "alias.$1" );
+                my $old = $config->get( key => "alias.'$1'" );
                 if ( defined $old ) {
                     if ( $old ne $2 ) {
                         $config->set(
-                            key => "alias.$1",
+                            key => "alias.'$1'",
                             value => $2,
                             filename => $self->config_filename,
                         );
@@ -63,7 +63,7 @@ sub run {
                 }
                 else {
                     $config->set(
-                        key => "alias.$1",
+                        key => "alias.'$1'",
                         value => $2,
                         filename => $self->config_filename,
                     );
@@ -74,12 +74,12 @@ sub run {
         elsif ( $self->has_arg('delete') ) {
             my $key = $self->arg('delete');
 
-            if ( defined $config->get( key => "alias.$key" ) ) {
+            if ( defined $config->get( key => "alias.'$key'" ) ) {
                 print "deleted alias '$key = "
-                      .$config->get( key => "alias.$key" )."'\n";
+                      .$config->get( key => "alias.'$key'" )."'\n";
 
                 $config->set(
-                    key => "alias.$key",
+                    key => "alias.'$key'",
                     filename => $self->config_filename,
                 );
             }

@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 18;
+use Prophet::Test tests => 22;
 use File::Temp qw/tempfile/;
 
 $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
@@ -38,7 +38,6 @@ my @cmds = (
         comment => 'add the same alias will not change anything',
     },
     {
-
         # this alias is bad, please don't use it in real life
         cmd => [ 'set', 'pull -a=pull --local' ],
         output =>
@@ -87,10 +86,34 @@ my @cmds = (
         comment => 'deleted alias foo bar',
     },
     {
-        cmd => [ 'set', 'foo', 'bar', '=bar baz'],
+        cmd => [ 'set', 'foo', 'bar', '=', 'bar baz'],
         output => qr/added alias 'foo bar = bar baz'/,
-        comment => 'readd alias foo bar = bar baz',
+        comment => 'read alias foo bar = bar baz',
     },
+    # tests for alternate syntax
+    {
+        cmd => [ 'foo bar', 'bar baz'],
+        output  => qr/alias 'foo bar = bar baz' isn't changed, won't update/,
+        comment => 'read alias foo bar = bar baz',
+    },
+    {
+        cmd => [ 'foo', 'bar baz'],
+        output  => qr/added alias 'foo = bar baz'/,
+        comment => 'added alias foo',
+    },
+    {
+        cmd => [ 'foo bar', 'bar'],
+        output =>
+          qr/changed alias 'foo bar' from 'bar baz' to 'bar'/,
+        comment => 'changed alias foo bar',
+    },
+    {
+        cmd => [ 'pull --from http://www.example.com/', 'pfe'],
+        output =>
+          qr|added alias 'pull --from http://www.example.com/ = pfe'|,
+        comment => 'added alias with weird characters',
+    },
+,
 );
 
 for my $item ( @cmds ) {
@@ -110,7 +133,9 @@ is_deeply(
     {
         'pull -l' => 'pull --local',
         'pull -a' => 'pull --all',
-        'foo bar' => 'bar baz',
+        'foo bar' => 'bar',
+        'foo' => 'bar baz',
+        'pull --from http://www.example.com/' => 'pfe',
     },
     'non empty aliases',
 );
@@ -125,7 +150,9 @@ is( $content, <<EOF, 'content in config' );
 [alias]
 	pull -a = pull --all
 	pull -l = pull --local
-	foo bar = bar baz
+	foo bar = bar
+	foo = bar baz
+	pull --from http://www.example.com/ = pfe
 EOF
 
 # TODO: need tests for interactive alias editing
