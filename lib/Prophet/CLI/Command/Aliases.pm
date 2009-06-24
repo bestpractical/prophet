@@ -2,105 +2,35 @@ package Prophet::CLI::Command::Aliases;
 use Any::Moose;
 use Params::Validate qw/validate/;
 
-extends 'Prophet::CLI::Command';
-with 'Prophet::CLI::TextEditorCommand';
+extends 'Prophet::CLI::Command::Config';
 
-has config_filename => (
-    is => 'rw',
-    isa => 'Str',
-    lazy => 1,
-    default => sub {
-        $_[0]->app_handle->config->replica_config_file;
-    },
-);
-
-has old_errors => (
-    is => 'rw',
-    isa => 'Str',
-    default => '',
-);
-
-sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'delete', s => 'show' };
+sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(), s => 'show' };
 
 sub run {
     my $self     = shift;
 
-    my $config = $self->app_handle->config;
-
-    if ($self->has_arg('global')) {
-        $self->config_filename($config->global_file);
-    }
-    elsif ($self->has_arg('user')) {
-        $self->config_filename($config->user_file);
-    }
+    my $config = $self->config;
 
     my $template = $self->make_template;
 
+    # alias.pull --from http://foo-bar.com/
     # add is the same as set
     if ( $self->context->has_arg('add') ) {
         $self->context->set_arg('set', $self->arg('add') )
     }
 
-    if ( $self->has_arg('set') || $self->has_arg('delete') ) {
-
-        if ( $self->has_arg('set') ) {
-            my $value = $self->arg('set');
-            if ( $value =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/ ) {
-                my $old = $config->get( key => "alias.'$1'" );
-                if ( defined $old ) {
-                    if ( $old ne $2 ) {
-                        $config->set(
-                            key => "alias.'$1'",
-                            value => $2,
-                            filename => $self->config_filename,
-                        );
-                        print
-                          "changed alias '$1' from '$old' to '$2'\n";
-                    }
-                    else {
-                        print "alias '$1 = $2' isn't changed, won't update\n";
-                    }
-                }
-                else {
-                    $config->set(
-                        key => "alias.'$1'",
-                        value => $2,
-                        filename => $self->config_filename,
-                    );
-                    print "added alias '$1 = $2'\n";
-                }
-            }
-        }
-        elsif ( $self->has_arg('delete') ) {
-            my $key = $self->arg('delete');
-
-            if ( defined $config->get( key => "alias.'$key'" ) ) {
-                print "deleted alias '$key = "
-                      .$config->get( key => "alias.'$key'" )."'\n";
-
-                $config->set(
-                    key => "alias.'$key'",
-                    filename => $self->config_filename,
-                );
-            }
-            else {
-                print "didn't find alias '$key'\n";
-            }
-        }
-
-    }
-    elsif ( $self->has_arg('edit') ) {
-        my $done = 0;
-
-        while ( !$done ) {
-            $done = $self->try_to_edit( template => \$template );
-        }
-    }
-    else {
+    if ( ! ( $self->has_arg('set') ||
+             $self->has_arg('delete') || $self->has_arg('edit') ) ) {
         print $template. "\n";
         return;
     }
-
+    else {
+        $self->set_arg('set', 'alias.'.$self->arg('set'))
+            if $self->has_arg('set');
+        $self->set_arg('delete', 'alias.'.$self->arg('delete'))
+            if $self->has_arg('delete');
+        $self->SUPER::run(@_);
+    }
 }
 
 sub make_template {
@@ -125,7 +55,7 @@ sub make_template {
             $content .= "$key = $aliases->{$key}\n";
         }
     }
-    else {
+    elsif ( !$self->has_arg('edit') ) {
         $content = "No aliases for the current repository.\n";
     }
 

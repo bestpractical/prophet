@@ -75,9 +75,10 @@ on push => sub {
     run('merge', $self, @_);
 };
 
-on qr/^alias(?:es)?\s+(.*)/ => sub {
+on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
     my ( $self ) = @_;
-    my $arg = $1;
+    my $cmd = $1;
+    my $arg = $2;
 
     if ( $arg =~ /^show\b/ ) {
         $self->context->set_arg(show => 1);
@@ -96,6 +97,7 @@ on qr/^alias(?:es)?\s+(.*)/ => sub {
     elsif ( $arg =~ 
         /^(?:add |set )?\s*(?:(?:"([^"]+)"|([^"]+))\s+=\s+(?:"([^"]+)"|([^"]+)))$/ ) {
         my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
+        $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
         $self->context->set_arg(set => "$orig=$new");
     }
     # prophet alias "foo = bar"
@@ -106,14 +108,20 @@ on qr/^alias(?:es)?\s+(.*)/ => sub {
     # alternate syntax (preferred):
     # prophet alias "foo bar" "bar baz", prophet alias foo "bar baz",
     # prophet alias foo bar, etc.
-    elsif ( $arg =~ /^(?:"([^"]+)"|([^"\s]+))\s+(?:"([^"]+)"|([^"\s]+))/ ) {
+    elsif ( $arg =~ /^(?:"([^"]+)"|([^"\s]+))(?:\s+(?:"([^"]+)"|([^"\s]+)))?/ ) {
         my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
-        $self->context->set_arg(set => "$orig=$new");
+        $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
+        if ( $new ) {
+            $self->context->set_arg(set => "$orig=$new");
+        }
+        else {
+            $self->context->set_arg(set => $orig);
+        }
     }
     else {
         die 'no idea what you mean, sorry';
     }
-    run( 'aliases', $self, @_ );
+    run( $cmd, $self, @_ );
 };
 
 sub run_command {

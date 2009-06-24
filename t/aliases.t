@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 22;
+use Prophet::Test tests => 30;
 use File::Temp qw/tempfile/;
 
 $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
@@ -20,6 +20,7 @@ $config->load;
 
 is_deeply( scalar $config->aliases, {}, 'initial alias is empty' );
 
+# no news is good news
 my @cmds = (
     {
         cmd => [ 'show' ],
@@ -29,41 +30,55 @@ my @cmds = (
 
     {
         cmd => [ 'add', 'pull -a=pull --all' ],
-        output  => qr/added alias 'pull -a = pull --all/,
+        output  => qr//,
         comment => 'add a new alias',
     },
     {
-        cmd => [ 'add', 'pull -a=pull --all' ],
-        output  => qr/alias 'pull -a = pull --all' isn't changed, won't update/,
-        comment => 'add the same alias will not change anything',
+        cmd => [ 'pull -a' ],
+        output  => qr/pull --all/,
+        comment => 'new alias set correctly',
     },
     {
         # this alias is bad, please don't use it in real life
         cmd => [ 'set', 'pull -a=pull --local' ],
-        output =>
-          qr/changed alias 'pull -a' from 'pull --all' to 'pull --local'/,
+        output => qr//,
         comment =>
           q{changed alias 'pull -a' from 'pull --all' to 'pull --local'},
     },
     {
+        cmd => [ 'pull -a' ],
+        output  => qr/pull --local/,
+        comment => 'alias changed correctly',
+    },
+    {
         cmd     => [ 'delete', 'pull -a' ],
-        output  => qr/deleted alias 'pull -a = pull --local'/,
+        output  => qr//,
         comment => q{deleted alias 'pull -a = pull --local'},
     },
     {
         cmd     => [ 'delete', 'pull -a' ],
-        output  => qr/didn't find alias 'pull -a'/,
+        output  => qr//,
         comment => q{delete an alias that doesn't exist any more},
     },
     {
         cmd => [ 'add', 'pull -a=pull --all' ],
-        output  => qr/added alias 'pull -a = pull --all/,
-        comment => 'read a new alias',
+        output  => qr//,
+        comment => 'add a new alias',
+    },
+    {
+        cmd => [ 'pull -a' ],
+        output  => qr/pull --all/,
+        comment => 'alias is set correctly',
     },
     {
         cmd => [ 'add', 'pull -l=pull --local' ],
-        output  => qr/added alias 'pull -l = pull --local/,
+        output  => qr//,
         comment => 'add a new alias',
+    },
+    {
+        cmd => [ 'pull -l' ],
+        output  => qr/pull --local/,
+        comment => 'alias is set correctly',
     },
     {
         cmd => [ 'show' ],
@@ -72,46 +87,69 @@ my @cmds = (
     },
     {
         cmd => [ 'add', 'foo', 'bar', '=', 'bar',  'baz' ],
-        output  => qr/added alias 'foo bar = bar baz'/,
+        output  => qr//,
         comment => 'added alias foo bar',
     },
     {
-        cmd => [ 'foo', 'bar', '=', 'bar',  'baz' ],
-        output  => qr/alias 'foo bar = bar baz' isn't changed, won't update/,
+        cmd => [ 'foo bar' ],
+        output  => qr/bar baz/,
+        comment => 'alias is set correctly',
+    },
+    {
+        cmd => [ 'foo', 'bar', '=bar',  'baz' ],
+        output  => qr//,
         comment => 'read alias foo bar',
     },
     {
+        cmd => [ 'foo bar' ],
+        output  => qr/bar baz/,
+        comment => 'alias foo bar still the same',
+    },
+    {
         cmd => [ 'delete', 'foo', 'bar' ],
-        output  => qr/deleted alias 'foo bar = bar baz'/,
+        output  => qr//,
         comment => 'deleted alias foo bar',
     },
     {
+        cmd => [ 'foo', 'bar' ],
+        output  => qr//,
+        comment => 'deleted alias no longer exists',
+    },
+    {
         cmd => [ 'set', 'foo', 'bar', '=', 'bar baz'],
-        output => qr/added alias 'foo bar = bar baz'/,
-        comment => 'read alias foo bar = bar baz',
+        output => qr//,
+        comment => 'set alias again with different syntax',
     },
     # tests for alternate syntax
     {
         cmd => [ 'foo bar', 'bar baz'],
-        output  => qr/alias 'foo bar = bar baz' isn't changed, won't update/,
-        comment => 'read alias foo bar = bar baz',
+        output  => qr//,
+        comment => 'alias foo bar = bar baz didn\'t change',
     },
     {
         cmd => [ 'foo', 'bar baz'],
-        output  => qr/added alias 'foo = bar baz'/,
+        output  => qr//,
         comment => 'added alias foo',
     },
     {
+        cmd => [ 'foo' ],
+        output  => qr/bar baz/,
+        comment => 'alias foo set correctly',
+    },
+    {
         cmd => [ 'foo bar', 'bar'],
-        output =>
-          qr/changed alias 'foo bar' from 'bar baz' to 'bar'/,
+        output => qr//,
         comment => 'changed alias foo bar',
     },
     {
         cmd => [ 'pull --from http://www.example.com/', 'pfe'],
-        output =>
-          qr|added alias 'pull --from http://www.example.com/ = pfe'|,
+        output => qr//,
         comment => 'added alias with weird characters',
+    },
+    {
+        cmd => [ 'pull --from http://www.example.com/'],
+        output => qr/pfe/,
+        comment => 'alias with weird chars is correct',
     },
 ,
 );
@@ -150,8 +188,8 @@ is( $content, <<EOF, 'content in config' );
 [alias]
 	pull -a = pull --all
 	pull -l = pull --local
-	foo bar = bar
 	foo = bar baz
+	foo bar = bar
 	pull --from http://www.example.com/ = pfe
 EOF
 

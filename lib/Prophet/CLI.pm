@@ -103,7 +103,8 @@ sub run_one_command {
     $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
     my $dispatcher = $self->dispatcher_class->new( cli => $self );
-    my $dispatch_command_string = join(' ', map { /\s/ ? qq{"$_"} : $_ }
+    # XXX this means you can't have a literal " in CLI commands...
+    my $dispatch_command_string = join(' ', map { s/"/'/g; /\s/ ? qq{"$_"} : $_ }
         @{ $self->context->primary_commands });
     my $dispatch = $dispatcher->dispatch( $dispatch_command_string );
     $self->start_pager();
