@@ -52,7 +52,17 @@ sub eval {
 
     eval {
         local $SIG{__DIE__} = 'DEFAULT';
-        $self->cli->run_one_command(split ' ', $line);
+        my @args;
+        while ($line) {
+            $line =~ s/^\s*//;
+            if ( $line =~ s/^["'](.+)["']// ) {
+                push @args, $1;
+            }
+            else {
+                push @args, $1 if $line =~ s/(\S+)//;
+            }
+        }
+        $self->cli->run_one_command(@args);
     };
     warn $@ if $@;
 }
