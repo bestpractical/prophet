@@ -68,6 +68,9 @@ sub run {
     elsif ( $self->has_arg('edit') ) {
         my $done = 0;
 
+        die "You don't have write permissions on "
+            .$self->config_filename.", can't edit!\n"
+            if ! -w $self->config_filename;
         my $template = $self->make_template;
 
         while ( !$done ) {
