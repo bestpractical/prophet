@@ -44,7 +44,7 @@ sub run {
     $target->initialize(%init_args);
 
     $self->app_handle->config->set(
-        key => 'source.'.$self->arg('from'),
+        key => 'replica.'.$self->arg('from').'.url',
         value => $self->arg('from'),
         filename => $self->app_handle->config->replica_config_file,
     );

@@ -44,7 +44,8 @@ override global_file => sub {
     return exists $ENV{PROPHET_APP_CONFIG} ? '' : $self->SUPER::global_file(@_);
 };
 
-# grab all values in the 'alias' section and strip away the section name
+# grab all values in the 'alias' section (of the file, if given) and strip
+# away the section name
 sub aliases {
     my $self = shift;
     my $file = shift;
@@ -88,16 +89,20 @@ sub aliases {
     return wantarray ? %new_aliases : \%new_aliases;
 }
 
-# grab all values in the 'source' section and strip away the section name
+# grab all the replicas we know of and return a hash of
+# name => url, or url => name if $args{by_url} is true
 sub sources {
     my $self = shift;
+    my %args = (
+        by_url => undef,
+        @_,
+    );
 
-    my %sources = $self->get_regexp( key => '^source\.' );
+    my %sources = $self->get_regexp( key => '^replica\..*\.url$' );
 
     my %new_sources = map {
-        my $source = $_;
-        $source =~ s/^source\.//;
-        ( $source => $sources{$_} );
+        $_ =~ /^replica\.(.*)\.url$/;
+        $args{by_url} ? ( $sources{$_} => $1 ) : ( $1 => $sources{$_} );
     } keys %sources;
 
     return wantarray ? %new_sources : \%new_sources;
@@ -112,13 +117,20 @@ sub replica_config_file {
     );
 }
 
-# friendly replica names go in the [display] section
+# friendly names are replica subsections
 sub display_name_for_uuid {
     my $self = shift;
     my $uuid = shift;
 
-    my $friendly = $self->get( key => "display.$uuid" );
-    return defined($friendly) ? $friendly : $uuid;
+    my %possibilities = $self->get_regexp( key => '^replica\..*\.uuid$' );
+    # form a hash of uuid -> name
+    my %sources_by_uuid = map {
+        my $uuid = $possibilities{$_};
+        $_ =~ /^replica\.(.*)\.uuid$/;
+        my $name = $1;
+        ( $uuid => $name );
+    } keys %possibilities;
+    return exists $sources_by_uuid{$uuid} ? $sources_by_uuid{$uuid} : $uuid;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -184,14 +196,12 @@ are defined in that particular config file.
 
 A convenience method that gets you a hash (or a hashref, depending on context)
 of all currently defined source replicas, in the format { 'name' =>
-{ url => 'URL', uuid => 'UUID } }. (Basically, every entry in the 'replica'
-section of the config file.)
+'URL' }, or { 'URL' => 'name' } if the argument C<by_url> is passed in.
 
 =head2 display_name_for_uuid UUID
 
-Returns a "friendly" id for the given uuid.
-
-TODO: regexp search for 'replica.(.*).UUID' and extract the section
+Returns a "friendly" id for the given uuid. UUIDs are for computers, friendly
+names are for people.
 
 =head1 CONFIG VARIABLES
 

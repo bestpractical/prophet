@@ -10,19 +10,21 @@ sub run {
 
     Prophet::CLI->end_pager();
 
-    my $previous_sources = $self->app_handle->config->sources;
+    my %previous_sources_by_name = $self->app_handle->config->sources;
 
     my $explicit_from = '';
 
     if ($self->has_arg('from')) {
-        $explicit_from = $self->arg('from') ;
+        # substitute friendly name -> replica url if we can
+        $explicit_from
+            = exists $previous_sources_by_name{$self->arg('from')}
+            ? $previous_sources_by_name{$self->arg('from')}
+            : $self->arg('from');
         push @from, $explicit_from;
     }
     elsif ($self->has_arg('all')){
-        for my $source (values %$previous_sources) {
-            my ($url, $uuid ) = split(qr/ \| /,$source,2);
+        for my $url (values %previous_sources_by_name) {
             push @from, $url;
-
         }
     }
 
@@ -49,17 +51,12 @@ sub record_pull_from_source {
     my $source = shift;
     my $from_uuid = shift;
 
-    my %previous_sources
-        = $self->app_handle->config->get_regexp( key => "^replica\..+\.url" );
+    my %previous_sources_by_url
+        = $self->app_handle->config->sources( by_url => 1 );
 
-    my $found_prev_replica;
-    for my $key (keys %previous_sources) {
-        $found_prev_replica = $previous_sources{$key}
-            if $previous_sources{$key} eq $source;
-    }
+    my $found_prev_replica = $previous_sources_by_url{$source};
 
     if ( !$found_prev_replica ) {
-        warn "setting new replica";
         $self->app_handle->config->group_set(
             $self->app_handle->config->replica_config_file,
             [

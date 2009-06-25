@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 11;
+use Prophet::Test tests => 13;
 use File::Copy;
 use File::Temp qw'tempdir';
 
@@ -49,14 +49,28 @@ is( scalar @keys, 0, 'no config options are set' );
     is( $conf->aliases->{tlist}, 'ticket list', 'Got correct alias' );
     # test automatic reload after setting
     $conf->set(
-        key => 'source.sd',
+        key => 'replica.sd.url',
         value => 'http://fsck.com/sd/',
         filename => File::Spec->catfile($repo, 'test_app.conf'),
     );
-    is( $conf->get( key => 'source.sd' ), 'http://fsck.com/sd/',
+    is( $conf->get( key => 'replica.sd.url' ), 'http://fsck.com/sd/',
         'automatic reload after set' );
     # test the sources sub
     is( $conf->sources->{sd}, 'http://fsck.com/sd/', 'Got correct alias' );
+    is( $conf->sources( by_url => 1)->{'http://fsck.com/sd/'},
+        'sd',
+        'Got correct alias',
+    );
+    # test the display_name_for_uuid sub
+    $conf->set(
+        key => 'replica.sd.uuid',
+        value => '32b13934-910a-4792-b5ed-c9977b212245',
+        filename => File::Spec->catfile($repo, 'test_app.conf'),
+    );
+    is( $conf->display_name_for_uuid('32b13934-910a-4792-b5ed-c9977b212245'),
+        'sd',
+        'Got correct display name'
+    );
 
     # run the cli "config" command
     # make sure it matches with our file
@@ -71,7 +85,8 @@ $repo/test_app.conf
 Your configuration:
 
 alias.tlist=ticket list
-source.sd=http://fsck.com/sd/
+replica.sd.url=http://fsck.com/sd/
+replica.sd.uuid=32b13934-910a-4792-b5ed-c9977b212245
 test.foo=bar
 test.re=rawr
 EOF
