@@ -116,7 +116,7 @@ my @cmds = (
         comment => 'deleted alias no longer exists',
     },
     {
-        cmd => [ 'set', 'foo', 'bar', '=', 'bar baz'],
+        cmd => [ 'set', 'foo bar', '=', 'bar baz'],
         output => qr//,
         comment => 'set alias again with different syntax',
     },
