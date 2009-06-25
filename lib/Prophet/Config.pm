@@ -54,7 +54,7 @@ sub aliases {
     if ( $file ) {
         # parse the given config file with parse_content and use the
         # callbacks to add to an array
-        my $content = Prophet::Util->slurp( $file );
+        my $content = -f $file ? Prophet::Util->slurp( $file ) : '';
         $self->parse_content(
             content => $content,
             callback => sub {

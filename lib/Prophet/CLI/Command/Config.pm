@@ -96,7 +96,8 @@ sub run {
 sub make_template {
     my $self = shift;
 
-    return Prophet::Util->slurp($self->config_filename);
+    return -f $self->config_filename
+            ? Prophet::Util->slurp( $self->config_filename ) : '';
 }
 
 sub process_template {
