@@ -143,7 +143,7 @@ The regex to use for matching the id argument (luid / uuid).
 
 =cut
 
-our $ID_REGEX = '^(?:\d+|[A-Za-z0-9\-\_]{22}|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})$';
+our $ID_REGEX = '(?:\d+|[A-Za-z0-9\-\_]{22}|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})';
 
 =head2 setup_from_args
 
@@ -172,13 +172,9 @@ sub require_uuid {
     my $self    = shift;
 
     if (!$self->has_uuid) {
-        my $type = $self->type;
         die "This command requires a luid or uuid (use --id to specify).\n";
     }
 }
-
-
-
 
 =head2 parse_args @args
 
@@ -200,10 +196,6 @@ sub parse_args {
     my @args = (@_);
     my @primary;
     push @primary, shift @args while ( $args[0] && $args[0] !~ /^-/ );
-
-    # "ticket show 4" should DWIM and "ticket show --id=4"
-    my $id_re = $ID_REGEX;
-    $self->set_arg( id => pop @primary ) if @primary && $primary[-1] =~ /$id_re/i;
 
     my $collecting_props = 0;
 
@@ -274,26 +266,56 @@ on the command-line, if possible. Being unable to figure out a uuid is fatal.
 sub set_type_and_uuid {
     my $self = shift;
 
+    $self->set_uuid;
+    $self->set_type;
+}
+
+sub set_uuid {
+    my $self = shift;
+
     if ( my $id = $self->delete_arg('id') ) {
         if ( $id =~ /^(\d+)$/ ) {
             $self->set_arg( luid => $id );
-        } else {
+        }
+        else {
             $self->set_arg( uuid => $id );
         }
     }
 
     if ( my $uuid = $self->delete_arg('uuid') ) {
         $self->uuid($uuid);
-    } elsif ( my $luid = $self->delete_arg('luid') ) {
+    }
+    elsif ( my $luid = $self->delete_arg('luid') ) {
         my $uuid = $self->handle->find_uuid_by_luid( luid => $luid );
         die "I have no UUID mapped to the local id '$luid'\n"
             if !defined($uuid);
         $self->uuid($uuid);
     }
+}
+
+sub set_type {
+    my $self = shift;
+
     if ( my $type = $self->delete_arg('type') ) {
         $self->type($type);
-    } elsif ( $self->primary_commands->[-2] ) {
+    }
+    # allowance for things like ticket show 77, where 'ticket' is the type
+    elsif (
+        $self->primary_commands->[-1] =~ qr/^$Prophet::CLIContext::ID_REGEX$/
+            && $self->primary_commands->[-3] ) {
+        $self->type( $self->primary_commands->[-3] );
+    }
+    elsif ( $self->primary_commands->[-2] ) {
         $self->type( $self->primary_commands->[-2] );
+    }
+}
+
+sub set_id_from_primary_commands {
+    my $self = shift;
+
+    if ( (my $id = pop @{$self->primary_commands}) =~ $ID_REGEX ) {
+        $self->set_arg( id => $id );
+        $self->set_uuid;
     }
 }
 

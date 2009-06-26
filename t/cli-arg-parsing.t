@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Prophet::Test tests => 47;
+use Prophet::Test tests => 44;
 use Test::Exception;
 
 use File::Temp qw'tempdir';
@@ -77,13 +77,6 @@ diag('primary commands only');
 $context->parse_args(qw(search));
 is_deeply($context->primary_commands, [ 'search' ], 'primary commands are correct');
 is($context->arg_names, 0, 'no args were set');
-is($context->prop_names, 0, 'no props were set');
-reset_context($context);
-
-diag('primary commands only, grabbing uuid from the CLI');
-$context->parse_args(qw(show 10));
-is_deeply($context->primary_commands, [ 'show' ], 'primary commands are correct');
-is($context->arg('id'), '10', 'id was grabbed from primary commands');
 is($context->prop_names, 0, 'no props were set');
 reset_context($context);
 
@@ -166,7 +159,7 @@ reset_context($context);
 # XXX other errors?
 
 diag('put it all together with setup_from_args');
-$context->setup_from_args( 'bug', 'show', $luid );
+$context->setup_from_args( 'bug', 'show', '--id', $luid );
 is_deeply($context->primary_commands, [ 'bug', 'show' ],
     'primary commands are correct');
 is($context->uuid, $uuid, 'uuid is correct');

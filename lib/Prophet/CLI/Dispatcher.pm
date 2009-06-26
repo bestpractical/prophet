@@ -1,18 +1,12 @@
 package Prophet::CLI::Dispatcher;
 use Path::Dispatcher::Declarative -base;
 use Any::Moose;
+require Prophet::CLIContext;
 
 with 'Prophet::CLI::Parameters';
 
 our @PREFIXES = qw(Prophet::CLI::Command);
 sub add_command_prefix { unshift @PREFIXES, @_ }
-
-# "ticket display $ID" -> "ticket display --id=$ID"
-on qr{^ (.*) \s+ ( \d+ | [0-9a-zA-Z\-\_]{22} | [A-Z0-9]{36} ) $ }x => sub {
-    my $self = shift;
-    $self->context->set_arg(id => $2);
-    run($1, $self, @_);
-};
 
 on '' => sub {
     my $self = shift;
@@ -36,16 +30,27 @@ on qr{^(clone|pull) (\S+)$} => sub {
 };
 
 # log range => log --range range
-on qr{log\s*([0-9LATEST.~]+)} => sub {
+on qr{log\s+([0-9LATEST.~]+)} => sub {
     my $self = shift;
     $self->context->set_arg(range => $1);
     run('log', $self);
 };
 
+on [ qr/^(update|edit|show|display|delete|del|rm|history)$/,
+     qr/^$Prophet::CLIContext::ID_REGEX$/ ] => sub {
+    my $self = shift;
+    $self->context->set_id_from_primary_commands;
+    run($1, $self, @_);
+};
+
+on [ [ 'update', 'edit' ] ]      => run_command("Update");
+on [ [ 'show', 'display' ] ]     => run_command("Show");
+on [ [ 'delete', 'del', 'rm' ] ] => run_command("Delete");
+on history                       => run_command("History");
+
 on [ ['create', 'new'] ]         => run_command("Create");
-on [ ['show', 'display'] ]       => run_command("Show");
-on [ ['update', 'edit'] ]        => run_command("Update");
-on [ ['delete', 'del', 'rm'] ]   => run_command("Delete");
+on [ ['search', 'list', 'ls' ] ] => run_command("Search");
+on [ ['aliases', 'alias'] ]      => run_command('Aliases');
 on [ ['search', 'list', 'ls' ] ] => run_command("Search");
 on [ ['aliases', 'alias'] ]      => run_command('Aliases');
 
@@ -63,7 +68,6 @@ on log      => run_command("Log");
 on shell    => run_command("Shell");
 on export   => run_command('Export');
 on info     => run_command('Info');
-on history  => run_command('History');
 
 on push => sub {
     my $self = shift;
@@ -108,7 +112,7 @@ on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
     # alternate syntax (preferred):
     # prophet alias "foo bar" "bar baz", prophet alias foo "bar baz",
     # prophet alias foo bar, etc.
-    elsif ( $arg =~ /^(?:"([^"]+)"|([^"\s]+))(?:\s+(?:"([^"]+)"|([^"\s]+)))?/ ) {
+    elsif ( $arg =~ /^(?:add |set )?\s*(?:"([^"]+)"|([^"\s]+))(?:\s+(?:"([^"]+)"|([^"\s]+)))?/ ) {
         my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
         $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
         if ( $new ) {
