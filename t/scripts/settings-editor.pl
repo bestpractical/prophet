@@ -10,9 +10,7 @@ my %tmpl_files = ( '--first' => 'settings-first.tmpl',
 );
 
 Prophet::Test::Editor::edit(
-    tmpl_files => { '--first' => 'settings-first.tmpl',
-                   '--second' => 'settings-second.tmpl',
-               },
+    tmpl_files => \%tmpl_files,
     edit_callback => sub {
         my %args = @_;
         my $option = $args{option};

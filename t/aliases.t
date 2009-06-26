@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 30;
+use Prophet::Test tests => 32;
 use File::Temp qw/tempfile/;
 
 $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
@@ -193,4 +193,26 @@ is( $content, <<EOF, 'content in config' );
 	pull --from http://www.example.com/ = pfe
 EOF
 
-# TODO: need tests for interactive alias editing
+# tests for interactive alias editing
+my $filename = File::Temp->new(
+    TEMPLATE => File::Spec->catfile(File::Spec->tmpdir(), '/statusXXXXX') )->filename;
+diag ("interactive template status will be found in $filename");
+Prophet::Test->set_editor_script("aliases-editor.pl --first $filename");
+
+run_output_matches( 'prophet', [ 'aliases', 'edit' ],
+    [
+        "Added alias 'something different' = 'pull --local'",
+        "Changed alias 'foo' from 'bar baz'to 'sigh'",
+        "Deleted alias 'pull -l'",
+    ], [], 'aliases edit went ok',
+);
+
+# check with alias show
+my @valid_settings_output = Prophet::Util->slurp('t/data/aliases.tmpl');
+chomp (@valid_settings_output);
+
+run_output_matches(
+    'prophet',
+    [ qw/alias show/ ],
+    [ @valid_settings_output ], [], "changed alias output matches"
+);
