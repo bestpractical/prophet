@@ -71,7 +71,7 @@ sub run {
         die "You don't have write permissions on "
             .$self->config_filename.", can't edit!\n"
             if (-e $self->config_filename && ! -w $self->config_filename)
-                || ! -W (File::Spec->splitpath($self->config_filename))[1];
+                || ! -w (File::Spec->splitpath($self->config_filename))[1];
         my $template = $self->make_template;
 
         while ( !$done ) {
