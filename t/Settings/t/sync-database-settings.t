@@ -37,6 +37,3 @@ as_alice {
     like($stdout, qr/default_status: \["stalled"\]/, "the original milestone list is there");
 
 };
-exit;
-
-
