@@ -11,14 +11,30 @@ has app_handle => (
     required => 1
 );
 
+use constant FORMAT_VERSION => 0;
+
 # reload config after setting values
 override group_set => sub  {
     my $self = shift;
     my ($filename, $args_ref, $override) = @_;
 
+    # Set a config format version on this config file if
+    # it doesn't have one already.
+    push @$args_ref, {
+        key => 'core.config-format-version',
+        value => FORMAT_VERSION,
+    } unless _file_has_config_format_version( $filename );
+
     $self->SUPER::group_set($filename, $args_ref);
     $self->load unless $override;
 };
+
+sub _file_has_config_format_version {
+    my $filename = shift;
+    my $content = -f  $filename ? Prophet::Util->slurp($filename) : '';
+
+    return $content =~ 'core.config-format-version';
+}
 
 # per-replica config filename
 override dir_file => sub { 'config' };
@@ -178,7 +194,7 @@ override load => sub  {
             # new configuration will include a config format version #
             my @config_to_set = ( {
                     key => 'core.config-format-version',
-                    value => '0',
+                    value => FORMAT_VERSION,
             } );
 
             # convert its keys to new-style keys by comparing to a conversion

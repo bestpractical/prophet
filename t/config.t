@@ -87,6 +87,7 @@ $repo/test_app.conf
 Your configuration:
 
 alias.tlist=ticket list
+core.config-format-version=0
 replica.sd.url=http://fsck.com/sd/
 replica.sd.uuid=32b13934-910a-4792-b5ed-c9977b212245
 test.foo=bar
