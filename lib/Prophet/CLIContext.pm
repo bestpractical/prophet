@@ -300,7 +300,7 @@ sub set_type {
         $self->type($type);
     }
     # allowance for things like ticket show 77, where 'ticket' is the type
-    elsif (
+    elsif ( $self->primary_commands->[-1] &&
         $self->primary_commands->[-1] =~ qr/^$Prophet::CLIContext::ID_REGEX$/i
             && $self->primary_commands->[-3] ) {
         $self->type( $self->primary_commands->[-3] );
