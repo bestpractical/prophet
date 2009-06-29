@@ -95,8 +95,10 @@ lib/Prophet/Server/ViewHelpers/ParamFromFunction.pm
 lib/Prophet/Server/ViewHelpers/Widget.pm
 lib/Prophet/Test.pm
 lib/Prophet/Test/Arena.pm
+lib/Prophet/Test/Editor.pm
 lib/Prophet/Test/Participant.pm
 lib/Prophet/Util.pm
+lib/Prophet/UUIDGenerator.pm
 lib/Prophet/Web/Field.pm
 lib/Prophet/Web/FunctionResult.pm
 lib/Prophet/Web/Menu.pm
@@ -139,10 +141,13 @@ t/real-conflicting-merge.t
 t/references.t
 t/res-conflict-3.t
 t/resty-server.t
+t/scripts/aliases-editor.pl
+t/scripts/settings-editor.pl
 t/search.t
 t/Settings/lib/App/Settings.pm
 t/Settings/lib/App/Settings/Bug.pm
 t/Settings/lib/App/Settings/CLI.pm
+t/Settings/t/database-settings-editor.t
 t/Settings/t/sync-database-settings.t
 t/simple-conflicting-merge.t
 t/simple-push.t
