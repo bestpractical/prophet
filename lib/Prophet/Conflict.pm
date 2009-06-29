@@ -201,10 +201,18 @@ sub _generate_prop_change_conflicts {
             source_new_value => $prop_change->new_value
         };
 
-        my $old_exists = defined $prop_change->old_value && $prop_change->old_value ne '';
+        my $old_exists =
+          ( defined $prop_change->old_value && $prop_change->old_value ne '' )
+          ? 1
+          : 0;
+        my $current_exists =
+          exists $current_state->{ $prop_change->name }
+          ? 1
+          : 0;
 
+        no warnings 'uninitialized';
         if ( 
-               ((exists $current_state->{ $prop_change->name }) != $old_exists)
+               (  $current_exists != $old_exists)
             || ( $current_state->{ $prop_change->name } ne $prop_change->old_value ) )
         {
             push @prop_conflicts, Prophet::ConflictingPropChange->new($s);
