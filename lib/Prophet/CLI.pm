@@ -199,6 +199,9 @@ sub end_pager {
     $ORIGINAL_STDOUT = undef;
 }
 
+END {
+   *STDOUT = $ORIGINAL_STDOUT if $ORIGINAL_STDOUT;
+}
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
