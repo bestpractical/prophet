@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 32;
+use Prophet::Test tests => 33;
 use File::Temp qw/tempfile/;
 
 $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
@@ -13,9 +13,11 @@ diag("Using config file $ENV{PROPHET_APP_CONFIG}");
 mkdir $ENV{PROPHET_REPO};
 
 use_ok('Prophet::CLI');
-use_ok('Prophet::Config');
 
-my $config = Prophet::CLI->new()->config;
+my $a = Prophet::CLI->new();
+can_ok($a, 'app_handle');
+can_ok($a->app_handle, 'config');
+my $config = $a->config;
 $config->load;
 
 is_deeply( scalar $config->aliases, {}, 'initial alias is empty' );
@@ -184,7 +186,8 @@ open my $fh, '<', $ENV{'PROPHET_APP_CONFIG'}
   or die "failed to open $ENV{'PROPHET_APP_CONFIG'}: $!";
 { local $/; $content = <$fh>; }
 is( $content, <<EOF, 'content in config' );
-
+[core]
+	config-format-version = 0
 [alias]
 	pull -a = pull --all
 	pull -l = pull --local

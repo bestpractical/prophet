@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Prophet::Test tests => 7;
+use Prophet::Test tests => 9;
 use File::Temp qw'tempdir';
 
 # test coverage for Prophet::CLI::Command arg translation
@@ -9,6 +9,8 @@ use_ok('Prophet::CLI');
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 
 my $cli = Prophet::CLI->new();
+can_ok($cli, 'app_handle');
+can_ok($cli, 'handle');
 my $cxn = $cli->handle;
 isa_ok( $cxn, 'Prophet::Replica', "Got the cxn" );
 

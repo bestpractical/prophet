@@ -34,8 +34,10 @@ is( scalar @keys, 0, 'no config options are set' );
     local $ENV{'PROPHET_APP_CONFIG'}
         = File::Spec->catfile($repo,'test_app.conf');
 
+    my $app_handle = Prophet::CLI->new->app_handle;
     my $conf = Prophet::Config->new(
-        app_handle => Prophet::CLI->new->app_handle,
+        app_handle => $app_handle,
+        handle => $app_handle->handle,
         confname => 'testrc',
     );
     $conf->load;
