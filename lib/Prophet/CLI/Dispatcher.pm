@@ -37,7 +37,7 @@ on qr{log\s+([0-9LATEST.~]+)} => sub {
 };
 
 on [ qr/^(update|edit|show|display|delete|del|rm|history)$/,
-     qr/^$Prophet::CLIContext::ID_REGEX$/ ] => sub {
+     qr/^$Prophet::CLIContext::ID_REGEX$/i ] => sub {
     my $self = shift;
     $self->context->set_id_from_primary_commands;
     run($1, $self, @_);
