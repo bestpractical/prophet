@@ -84,48 +84,17 @@ on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
     my $cmd = $1;
     my $arg = $2;
 
-    if ( $arg =~ /^show\b/ ) {
-        $self->context->set_arg(show => 1);
+    my @classes = $self->class_names('Aliases');
+    for my $class (@classes) {
+        Prophet::App->try_to_require($class) or next;
+        my $aliases_cmd = $class->new(
+            context => $self->context,
+        );
+        $aliases_cmd->parse_cli_arg($cmd, $arg);
+        return run( $cmd, $self, @_ );
     }
-    elsif ( $arg =~ /^edit\b/ ) {
-        $self->context->set_arg(edit => 1);
-    }
-    # arg *might* be quoted
-    elsif ( $arg =~ /^delete\s+"?([^"]+)"?/ ) {
-        $self->context->set_arg(delete => $1);
-    }
-    # prophet alias "foo bar" = "foo baz"
-    # prophet alias foo = bar
-    # prophet alias add foo bar = "bar baz"
-    # prophet alias add foo bar = bar baz
-    elsif ( $arg =~ 
-        /^(?:add |set )?\s*(?:(?:"([^"]+)"|([^"]+))\s+=\s+(?:"([^"]+)"|([^"]+)))$/ ) {
-        my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
-        $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
-        $self->context->set_arg(set => "$orig=$new");
-    }
-    # prophet alias "foo = bar"
-    # prophet alias "foo bar = foo baz"
-    elsif ( $arg =~ /^(?:add |set )?\s*"([^"]+=[^"]+)"$/ ) {
-        $self->context->set_arg(set => $1);
-    }
-    # alternate syntax (preferred):
-    # prophet alias "foo bar" "bar baz", prophet alias foo "bar baz",
-    # prophet alias foo bar, etc.
-    elsif ( $arg =~ /^(?:add |set )?\s*(?:"([^"]+)"|([^"\s]+))(?:\s+(?:"([^"]+)"|([^"\s]+)))?/ ) {
-        my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
-        $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
-        if ( $new ) {
-            $self->context->set_arg(set => "$orig=$new");
-        }
-        else {
-            $self->context->set_arg(set => $orig);
-        }
-    }
-    else {
-        die 'no idea what you mean, sorry';
-    }
-    run( $cmd, $self, @_ );
+
+    die "Could not find 'Aliases' command class";
 };
 
 sub run_command {
