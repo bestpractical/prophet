@@ -182,6 +182,22 @@ override load => sub  {
         # does happen, we get the positive benefit of writing the
         # config format to it.
         if ( $content !~ /\[/ ) {
+
+            $self->convert_ancient_config_file($file);
+        }
+
+    }
+
+    Prophet::CLI->start_pager();
+
+    # Do a regular load.
+    $self->SUPER::load;
+};
+
+
+sub convert_ancient_config_file {
+            my $self = shift;
+            my $file = shift;
             print "Detected old format config file $file. Converting to ".
                   "new format... ";
 
@@ -246,20 +262,13 @@ override load => sub  {
             print "done.\nOld config can be found at $backup_file; "
                   ,"new config is $file.\n\n";
 
-            Prophet::CLI->start_pager();
-        }
+}
 
-    }
-
-    # Do a regular load.
-    $self->SUPER::load;
-};
 
 sub _deprecated_repo_config_names {
     my $self = shift;
 
-    my %filenames = ( File::Spec->catfile( $self->app_handle->handle->fs_root =>
-            'prophetrc' ) => 1 );
+    my %filenames = ( File::Spec->catfile( $self->app_handle->handle->fs_root => 'prophetrc' ) => 1 );
 
     return wantarray ? %filenames : \%filenames;
 };
