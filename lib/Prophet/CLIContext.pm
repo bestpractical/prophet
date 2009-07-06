@@ -143,7 +143,7 @@ The regex to use for matching the id argument (luid / uuid).
 
 =cut
 
-our $ID_REGEX = '(?:\d+|[A-Za-z0-9\-\_]{22}|[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12})';
+our $ID_REGEX = qr'(?:\d+|[A-Za-z0-9\-\_]{22}|[0-9a-fA-F\-]{32,36})';
 
 =head2 setup_from_args
 
@@ -312,12 +312,20 @@ sub set_type {
 
 sub set_id_from_primary_commands {
     my $self = shift;
-
+    
     if ( (my $id = pop @{$self->primary_commands}) =~ $ID_REGEX ) {
-        $self->set_arg( id => $id );
-        $self->set_uuid;
+        $self->set_id($id);
     }
+
 }
+sub set_id {
+    my $self = shift;
+    my $id = shift;
+    $self->set_arg( id => $id );
+    $self->set_uuid;
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
