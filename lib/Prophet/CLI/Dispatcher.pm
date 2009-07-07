@@ -51,8 +51,6 @@ on history                       => run_command("History");
 on [ ['create', 'new'] ]         => run_command("Create");
 on [ ['search', 'list', 'ls' ] ] => run_command("Search");
 on [ ['aliases', 'alias'] ]      => run_command('Aliases');
-on [ ['search', 'list', 'ls' ] ] => run_command("Search");
-on [ ['aliases', 'alias'] ]      => run_command('Aliases');
 
 on version  => run_command("Version");
 on init     => run_command("Init");
