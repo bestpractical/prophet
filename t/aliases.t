@@ -5,12 +5,10 @@ use strict;
 use Prophet::Test tests => 33;
 use File::Temp qw/tempfile/;
 
-$ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
 $ENV{'PROPHET_APP_CONFIG'} = (tempfile(UNLINK => !$ENV{PROPHET_DEBUG}))[1];
 diag("Using config file $ENV{PROPHET_APP_CONFIG}");
 
 # since we don't initialize the db for these tests, make the repo dir
-mkdir $ENV{PROPHET_REPO};
 
 use_ok('Prophet::CLI');
 
@@ -182,10 +180,10 @@ is_deeply(
 
 # check content in config
 my $content;
-open my $fh, '<', $ENV{'PROPHET_APP_CONFIG'}
-  or die "failed to open $ENV{'PROPHET_APP_CONFIG'}: $!";
+open my $fh, '<', $ENV{'PROPHET_APP_CONFIG'} or die "failed to open $ENV{'PROPHET_APP_CONFIG'}: $!";
 { local $/; $content = <$fh>; }
 is( $content, <<EOF, 'content in config' );
+
 [core]
 	config-format-version = 0
 [alias]
