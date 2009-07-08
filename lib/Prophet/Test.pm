@@ -147,7 +147,7 @@ sub repo_uri_for {
     my $path = repo_path_for($username);
     $path =~ s{^|\\}{/}g if IS_WIN32;
 
-    return Prophet::App->default_replica_type . ':file://' . $path;
+    return  'file://' . $path;
 }
 
 =head2 replica_uuid
