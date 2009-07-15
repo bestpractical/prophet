@@ -108,19 +108,20 @@ sub aliases {
 }
 
 # grab all the replicas we know of and return a hash of
-# name => url, or url => name if $args{by_url} is true
+# name => variable, or variable => name if $args{by_variable} is true
 sub sources {
     my $self = shift;
     my %args = (
         by_url => undef,
+        variable => 'url',
         @_,
     );
 
-    my %sources = $self->get_regexp( key => '^replica\..*\.url$' );
+    my %sources = $self->get_regexp( key => "^replica\..*\.$args{variable}\$" );
 
     my %new_sources = map {
-        $_ =~ /^replica\.(.*)\.url$/;
-        $args{by_url} ? ( $sources{$_} => $1 ) : ( $1 => $sources{$_} );
+        $_ =~ /^replica\.(.*)\.$args{variable}$/;
+        $args{by_variable} ? ( $sources{$_} => $1 ) : ( $1 => $sources{$_} );
     } keys %sources;
 
     return wantarray ? %new_sources : \%new_sources;
@@ -134,24 +135,6 @@ sub replica_config_file {
                     $self->app_handle->handle->fs_root, $self->dir_file
     );
 }
-
-# friendly names are replica subsections
-sub display_name_for_uuid {
-    my $self = shift;
-    my $uuid = shift;
-
-    my %possibilities = $self->get_regexp( key => '^replica\..*\.uuid$' );
-    # form a hash of uuid -> name
-    my %sources_by_uuid = map {
-        my $uuid = $possibilities{$_};
-        $_ =~ /^replica\.(.*)\.uuid$/;
-        my $name = $1;
-        ( $uuid => $name );
-    } keys %possibilities;
-    return exists $sources_by_uuid{$uuid} ? $sources_by_uuid{$uuid} : $uuid;
-}
-
-
 
 sub _file_if_exists {
     my $self = shift;
@@ -224,11 +207,6 @@ are defined in that particular config file.
 A convenience method that gets you a hash (or a hashref, depending on context)
 of all currently defined source replicas, in the format { 'name' =>
 'URL' }, or { 'URL' => 'name' } if the argument C<by_url> is passed in.
-
-=head2 display_name_for_uuid UUID
-
-Returns a "friendly" id for the given uuid. UUIDs are for computers, friendly
-names are for people.
 
 =head1 CONFIG VARIABLES
 
