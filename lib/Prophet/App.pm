@@ -46,32 +46,10 @@ has uuid_generator => (
 
 use constant DEFAULT_REPLICA_TYPE => 'prophet';
 
-=head1 NAME
-
-Prophet::App
-
-=head1 SYNOPSIS
-
-=head1 METHODS
-
-=head2 BUILD
-
-=cut
-
-=head2 default_replica_type
-
-Returns a string of the the default replica type for this application.
-
-=cut
-
 sub default_replica_type {
     my $self = shift;
     return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
 }
-
-=head2 require
-
-=cut
 
 sub require {
     my $self = shift;
@@ -79,19 +57,11 @@ sub require {
     $self->_require(module => $class);
 }
 
-=head2 try_to_require
-
-=cut
-
 sub try_to_require {
     my $self = shift;
     my $class = shift;
     $self->_require(module => $class, quiet => 1);
 }
-
-=head2 _require
-
-=cut
 
 sub _require {
     my $self = shift;
@@ -135,12 +105,6 @@ sub _require {
 
     return 1;
 }
-
-=head2 already_required class
-
-Helper function to test whether a given class has already been require'd.
-
-=cut
 
 sub already_required {
     my ($self, $class) = @_;
@@ -191,14 +155,6 @@ sub setting {
 
 sub database_settings {} # XXX wants a better name
 
-
-=head3 log $MSG
-
-Logs the given message to C<STDERR> (but only if the C<PROPHET_DEBUG>
-environmental variable is set).
-
-=cut
-
 sub log_debug {
     my $self = shift;
     return unless ($ENV{'PROPHET_DEBUG'});
@@ -210,12 +166,6 @@ sub log {
     my ($msg) = validate_pos(@_, 1);
     print STDERR $msg."\n";# if ($ENV{'PROPHET_DEBUG'});
 }
-
-=head2 log_fatal $MSG
-
-Logs the given message and dies with a stack trace.
-
-=cut
 
 sub log_fatal {
     my $self = shift;
@@ -234,6 +184,62 @@ sub current_user_email {
 
 }
 
+# friendly names are replica subsections in the config file
+sub display_name_for_replica {
+    my $self = shift;
+    my $uuid = shift;
+
+    my %possibilities = $self->config->get_regexp( key => '^replica\..*\.uuid$' );
+    # form a hash of uuid -> name
+    my %sources_by_uuid = map {
+        my $uuid = $possibilities{$_};
+        $_ =~ /^replica\.(.*)\.uuid$/;
+        my $name = $1;
+        ( $uuid => $name );
+    } keys %possibilities;
+    return exists $sources_by_uuid{$uuid} ? $sources_by_uuid{$uuid} : $uuid;
+}
+
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
+
 1;
+
+__END__
+
+=head1 NAME
+
+Prophet::App
+
+=head1 SYNOPSIS
+
+=head1 METHODS
+
+=head2 BUILD
+
+=head2 default_replica_type
+
+Returns a string of the the default replica type for this application.
+
+=head2 require
+
+=head2 try_to_require
+
+=head2 already_required class
+
+Helper function to test whether a given class has already been require'd.
+
+=head3 log $MSG
+
+Logs the given message to C<STDERR> (but only if the C<PROPHET_DEBUG>
+environmental variable is set).
+
+=head2 log_fatal $MSG
+
+Logs the given message and dies with a stack trace.
+
+=head2 display_name_for_replica UUID
+
+Returns a "friendly" id for the replica with the given uuid. UUIDs are for
+computers, friendly names are for people. If no name is found, the friendly
+name is just the UUID.
