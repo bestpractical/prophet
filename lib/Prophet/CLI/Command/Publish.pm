@@ -11,6 +11,14 @@ sub run {
     my $self = shift;
     die "Please specify a --to.\n" unless $self->has_arg('to');
 
+    # substitute publish-url config variable for to arg if possible
+    my %previous_sources_by_name
+        = $self->app_handle->config->sources( variable => 'publish-url' );
+
+    my $to = exists $previous_sources_by_name{$self->arg('to')}
+        ? $previous_sources_by_name{$self->arg('to')}
+        : $self->arg('to');
+
     # set the temp directory where we will do all of our work, which will be
     # published via rsync
     $self->set_arg(path => $self->tempdir);
@@ -34,7 +42,6 @@ sub run {
     } 
 
     my $from = $self->arg('path');
-    my $to   = $self->arg('to');
 
     print "Publishing the exported clone of the replica to $to with rsync\n";
     $self->publish_dir(
@@ -43,6 +50,11 @@ sub run {
     );
 
     print "Publication complete.\n";
+
+    # create new config section for where to publish this replica
+    # if we're using a url rather than a name
+    $self->record_replica_in_config($to, $self->handle->uuid, 'publish-url')
+        if $to eq $self->arg('to');
 }
 
 sub export_html {

@@ -66,16 +66,7 @@ on log      => run_command("Log");
 on shell    => run_command("Shell");
 on export   => run_command('Export');
 on info     => run_command('Info');
-
-on push => sub {
-    my $self = shift;
-
-    die "Please specify a --to.\n" if !$self->context->has_arg('to');
-
-    $self->context->set_arg(from => $self->cli->handle->url);
-    $self->context->set_arg(db_uuid => $self->cli->handle->db_uuid);
-    run('merge', $self, @_);
-};
+on push     => run_command('Push');
 
 on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
     my ( $self ) = @_;

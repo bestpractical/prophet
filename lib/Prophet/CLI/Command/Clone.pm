@@ -43,10 +43,17 @@ sub run {
 
     $target->initialize(%init_args);
 
-    $self->app_handle->config->set(
-        key => 'replica.'.$self->arg('from').'.url',
-        value => $self->arg('from'),
-        filename => $self->app_handle->config->replica_config_file,
+    # create new config section for this replica
+    $self->app_handle->config->group_set(
+        $self->app_handle->config->replica_config_file,
+        [ {
+            key => 'replica.'.$self->arg('from').'.url',
+            value => $self->arg('from'),
+        },
+        {   key => 'replica.'.$self->arg('from').'.uuid',
+            value => $target->uuid,
+        },
+        ]
     );
 
     if ( $source->can('database_settings') ) {

@@ -117,8 +117,7 @@ sub sources {
         @_,
     );
 
-    my %sources = $self->get_regexp( key => "^replica\..*\.$args{variable}\$" );
-
+    my %sources = $self->get_regexp( key => "^replica[.].*[.]$args{variable}\$" );
     my %new_sources = map {
         $_ =~ /^replica\.(.*)\.$args{variable}$/;
         $args{by_variable} ? ( $sources{$_} => $1 ) : ( $1 => $sources{$_} );

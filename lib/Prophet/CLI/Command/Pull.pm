@@ -10,20 +10,31 @@ sub run {
 
     Prophet::CLI->end_pager();
 
-    my %previous_sources_by_name = $self->app_handle->config->sources;
+    # prefer replica.name.pull-url if it exists, otherwise use
+    # replica.name.url
+    my %previous_sources_by_name_pull_url
+        = $self->app_handle->config->sources( variable => 'pull-url' );
+    my %previous_sources_by_name_url = $self->app_handle->config->sources;
 
     my $explicit_from = '';
 
     if ($self->has_arg('from')) {
         # substitute friendly name -> replica url if we can
-        $explicit_from
-            = exists $previous_sources_by_name{$self->arg('from')}
-            ? $previous_sources_by_name{$self->arg('from')}
+        my $url_from_name = exists $previous_sources_by_name_pull_url{$self->arg('from')}
+            ? $previous_sources_by_name_pull_url{$self->arg('from')}
+            : exists $previous_sources_by_name_url{$self->arg('from')}
+            ? $previous_sources_by_name_url{$self->arg('from')}
             : $self->arg('from');
+
+        $explicit_from = $url_from_name;
         push @from, $explicit_from;
     }
     elsif ($self->has_arg('all')){
-        for my $url (values %previous_sources_by_name) {
+        # if a source exists in both hashes, the pull-url version will
+        # override the url version
+        my %sources
+            = (%previous_sources_by_name_url, %previous_sources_by_name_pull_url);
+        for my $url (values %sources) {
             push @from, $url;
         }
     }
@@ -37,39 +48,9 @@ sub run {
         $self->set_arg( from => $from );
         $self->SUPER::run();
         if ($self->source->uuid and ($from eq $explicit_from)) {
-            $self->record_pull_from_source($explicit_from, $self->source->uuid);
+            $self->record_replica_in_config($explicit_from, $self->source->uuid);
         }
         print "\n";
-    }
-
-}
-
-# Create a new [replica] config file section for this replica if we haven't
-# pulled from it before.
-sub record_pull_from_source {
-    my $self = shift;
-    my $source = shift;
-    my $from_uuid = shift;
-
-    my %previous_sources_by_url
-        = $self->app_handle->config->sources( by_url => 1 );
-
-    my $found_prev_replica = $previous_sources_by_url{$source};
-
-    if ( !$found_prev_replica ) {
-        $self->app_handle->config->group_set(
-            $self->app_handle->config->replica_config_file,
-            [
-            {
-                key => "replica.$source.url",
-                value => $source,
-            },
-            {
-                key => "replica.$source.uuid",
-                value => $from_uuid,
-            },
-            ],
-        );
     }
 }
 
@@ -125,7 +106,4 @@ sub find_bonjour_sources {
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
 
-
-
 1;
-

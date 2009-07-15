@@ -4,15 +4,18 @@ extends 'Prophet::CLI::Command';
 with 'Prophet::CLI::ProgressBar';
 with 'Prophet::CLI::MirrorCommand';
 
-has source => ( isa => 'Prophet::Replica', is => 'rw');
-has target => ( isa => 'Prophet::Replica', is => 'rw');
+has source => ( isa => 'Prophet::Replica', is => 'rw' );
+has target => ( isa => 'Prophet::Replica', is => 'rw' );
 
-sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  f => 'force' , n => 'dry-run' };
+sub ARG_TRANSLATIONS {
+    shift->SUPER::ARG_TRANSLATIONS(),  f => 'force' , n => 'dry-run',
+};
 
 sub run {
     my $self = shift;
 
     Prophet::CLI->end_pager();
+
     $self->source( Prophet::Replica->get_handle(
         url       => $self->arg('from'),
         app_handle => $self->app_handle,
@@ -23,21 +26,23 @@ sub run {
         app_handle => $self->app_handle,
     ));
 
-    
-    return  unless $self->validate_merge_replicas($self->source => $self->target);
-    if ( $self->source->can('read_changeset_index') && $self->target->url eq $self->app_handle->handle->url) {
+    $self->validate_merge_replicas($self->source => $self->target);
+
+    if ( $self->source->can('read_changeset_index')
+            && $self->target->url eq $self->app_handle->handle->url) {
         #   my $original_source = $self->source;
         #   $self->source($self->get_cache_for_source($original_source));
         #   $self->sync_cache_from_source( target=> $self->source, source => $original_source);
     }
+
     $self->target->import_resolutions_from_remote_replica(
         from  => $self->source,
         force => $self->has_arg('force'),
     ) if ($self->source->resolution_db_handle);
-   
+
     my $changesets = $self->_do_merge();
     #Prophet::CLI->start_pager();
-    $self->print_report($changesets) 
+    $self->print_report($changesets);
 }
 
 sub print_report {
@@ -46,12 +51,15 @@ sub print_report {
     if ( $self->has_arg('verbose') ) {
         if ( $changesets == 0 ) {
             print "No new changesets.\n";
-        } elsif ( $changesets == 1 ) {
+        }
+        elsif ( $changesets == 1 ) {
             print "Merged one changeset.\n";
-        } else {
+        }
+        else {
             print "Merged $changesets changesets.\n";
         }
-    } else {
+    }
+    else {
         print "\nDone.\n";
     }
 }
@@ -141,25 +149,22 @@ sub validate_merge_replicas {
     my $target = shift;
 
     if ( ! $target->replica_exists ) {
-       $self->handle->log("The target (".$self->arg('to').") replica doesn't exist"); 
-        return 0;
+       $self->handle->log_fatal("The target (".$self->arg('to').") replica doesn't exist"); 
     }
 
     if ( ! $source->replica_exists ) {
-       $self->handle->log("The source (".$self->arg('from').") replica doesn't exist"); 
-        return 0;
+       $self->handle->log_fatal("The source (".$self->arg('from').") replica doesn't exist"); 
     }
 
 
     if ( $target->uuid eq $source->uuid ) {
-        $self->handle->log( "You appear to be trying to merge two identical replicas. Skipping.");
-        return 0;
+        $self->handle->log_fatal( "You appear to be trying to merge two identical replicas. Skipping.");
     }
 
     if ( !$target->can_write_changesets ) {
-        $self->handle->log( $target->url . " does not accept changesets. Perhaps it's unwritable.");
-        return 0;
+        $self->handle->log_fatal( $target->url . " does not accept changesets. Perhaps it's unwritable.");
     }
+
     return 1;
 }
 
@@ -174,7 +179,6 @@ sub merge_resolver {
         :                     ();
     return $resolver;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

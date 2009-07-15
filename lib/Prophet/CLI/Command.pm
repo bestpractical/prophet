@@ -239,6 +239,50 @@ sub prompt_Yn {
     return 0;
 }
 
+# Create a new [replica] config file section for the given replica if
+# it hasn't been seen before (config section doesn't already exist)
+sub record_replica_in_config {
+    my $self = shift;
+    my $replica_url = shift;
+    my $replica_uuid = shift;
+    my $url_variable = shift || 'url';
+
+    my %previous_sources_by_uuid
+        = $self->app_handle->config->sources(
+            by_variable => 1,
+            variable => 'uuid',
+        );
+
+    my $found_prev_replica = $previous_sources_by_uuid{$replica_uuid};
+
+    if ( !$found_prev_replica ) {
+        # replica section doesn't exist at all; create a new one
+        $self->app_handle->config->group_set(
+            $self->app_handle->config->replica_config_file,
+            [
+            {
+                key => "replica.$replica_url.$url_variable",
+                value => $replica_url,
+            },
+            {
+                key => "replica.$replica_url.uuid",
+                value => $replica_uuid,
+            },
+            ],
+        );
+    }
+    elsif ( $found_prev_replica ne $replica_url ) {
+        # We're publishing to a different place than where it was published
+        # to previously--we don't want to end up with a multivalue in the
+        # config file, so just replace the old value.
+        my $name = $self->app_handle->display_name_for_replica($replica_uuid);
+        $self->app_handle->config->set(
+            filename => $self->app_handle->config->replica_config_file,
+            key => "replica.$name.$url_variable",
+            value => $replica_url,
+        );
+    }
+}
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
