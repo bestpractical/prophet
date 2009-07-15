@@ -59,17 +59,17 @@ is( scalar @keys, 0, 'no config options are set' );
         'automatic reload after set' );
     # test the sources sub
     is( $conf->sources->{sd}, 'http://fsck.com/sd/', 'Got correct alias' );
-    is( $conf->sources( by_url => 1)->{'http://fsck.com/sd/'},
+    is( $conf->sources( by_variable => 1)->{'http://fsck.com/sd/'},
         'sd',
         'Got correct alias',
     );
-    # test the display_name_for_uuid sub
+    # test the display_name_for_replica sub
     $conf->set(
         key => 'replica.sd.uuid',
         value => '32b13934-910a-4792-b5ed-c9977b212245',
         filename => File::Spec->catfile($repo, 'test_app.conf'),
     );
-    is( $conf->display_name_for_uuid('32b13934-910a-4792-b5ed-c9977b212245'),
+    is( $app_handle->display_name_for_replica('32b13934-910a-4792-b5ed-c9977b212245'),
         'sd',
         'Got correct display name'
     );
