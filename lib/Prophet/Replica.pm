@@ -287,7 +287,7 @@ sub integrate_changeset {
 
 
     $self->log_debug("Considering changeset ".$changeset->original_sequence_no .
-        " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
+        " from " . $self->display_name_for_replica($changeset->original_source_uuid));
 
     # when we start to integrate a changeset, we need to do a bit of housekeeping
     # We never want to merge in:
@@ -312,7 +312,7 @@ sub integrate_changeset {
         $self->log_debug( "Integrating conflicting changeset "
                 . $changeset->original_sequence_no
                 . " from "
-                . $self->display_name_for_uuid( $changeset->original_source_uuid ) );
+                . $self->display_name_for_replica( $changeset->original_source_uuid ) );
         $args{conflict_callback}->($conflict) if $args{'conflict_callback'};
         $conflict->resolvers( [ sub { $args{resolver}->(@_) } ] ) if $args{resolver};
         if ( $args{resolver_class} ) {
@@ -347,7 +347,7 @@ sub integrate_changeset {
         return 1;
     } else {
         $self->log_debug("Integrating changeset ".$changeset->original_sequence_no .
-            " from " . $self->display_name_for_uuid($changeset->original_source_uuid));
+            " from " . $self->display_name_for_replica($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
         $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
         return 1;
@@ -408,7 +408,7 @@ sub has_seen_changeset {
     my %args = validate( @_, {source_uuid => 1, sequence_no => 1});
     $self->log_debug("Checking to see if we've ever seen changeset " .
         $args{sequence_no} . " from " .
-        $self->display_name_for_uuid($args{source_uuid}));
+        $self->display_name_for_replica($args{source_uuid}));
 
     # If the changeset originated locally, we never want it
     if ($args{source_uuid} eq $self->uuid ) {
@@ -499,7 +499,7 @@ sub should_accept_changeset {
 
 
     $self->log_debug("Should I accept " .$changeset->original_sequence_no .
-        " from ".$self->display_name_for_uuid($changeset->original_source_uuid));
+        " from ".$self->display_name_for_replica($changeset->original_source_uuid));
     return undef if (! $changeset->has_changes);
     return undef if ( $changeset->is_nullification || $changeset->is_resolution );
     return undef if $self->has_seen_changeset( sequence_no => $changeset->original_sequence_no,  source_uuid => $changeset->original_source_uuid );
@@ -1033,7 +1033,7 @@ sub log {
 sub log_debug { 
     my $self = shift;
     my $msg = shift;
-    $self->app_handle->log_debug($self->display_name_for_uuid.": " .$msg);
+    $self->app_handle->log_debug($self->display_name_for_replica.": " .$msg);
 }
 
 =head2 log_fatal $MSG
@@ -1065,7 +1065,7 @@ sub changeset_creator {
     return $self->app_handle->current_user_email;
 }
 
-=head2 display_name_for_uuid [uuid]
+=head2 display_name_for_replica [uuid]
 
 If the user has a "friendly" name for this replica, then use it. Otherwise,
 display the replica's uuid.
@@ -1074,13 +1074,13 @@ If you pass in a uuid, it will be used instead of the replica's uuid.
 
 =cut
 
-sub display_name_for_uuid {
+sub display_name_for_replica {
     my $self = shift;
     my $uuid = shift || $self->uuid;
 
     return $uuid if !$self->app_handle;
 
-    return $self->app_handle->config->display_name_for_uuid($uuid);
+    return $self->app_handle->display_name_for_replica($uuid);
 }
 
 __PACKAGE__->meta->make_immutable();
