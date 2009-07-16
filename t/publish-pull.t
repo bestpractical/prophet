@@ -1,17 +1,35 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 24;
+use Prophet::Test tests => 33;
 use Test::Exception;
-use File::Temp 'tempdir';
+use File::Temp qw(tempdir tempfile);
 use Params::Validate;
+use Prophet::Util;
+# require Prophet::CLIContext;
 
 my ($bug_uuid, $pullall_uuid);
 
 my $alice_published = tempdir(CLEANUP => ! $ENV{PROPHET_DEBUG});
 
+(undef, my $alice_config) = tempfile( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+(undef, my $bob_config) = tempfile( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+diag "Alice's config file is located at $alice_config";
+diag "Bob's config file is located at $bob_config";
+
 as_alice {
+    $ENV{PROPHET_APP_CONFIG} = $alice_config;
     run_ok('prophet', [qw(init)]);
+
+    # check that new config section has been created with uuid variable
+    my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    like($config_contents, qr/
+\[core\]
+	config-format-version = \d+
+\[replica ".*?"\]
+	uuid = $Prophet::CLIContext::ID_REGEX
+/, 'replica section created in config file after init');
+
     run_output_matches( 'prophet',
         [qw(create --type Bug -- --status new --from alice )],
         [qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/],
@@ -19,15 +37,81 @@ as_alice {
     ok($bug_uuid, "got a uuid for the Bug record");
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
     run_ok( 'prophet', [qw(publish --to), $alice_published] );
+
+    # check that publish-url config key has been created correctly
+    $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    like($config_contents, qr/
+\[core\]
+	config-format-version = \d+
+\[replica "(.*?)"\]
+	uuid = $Prophet::CLIContext::ID_REGEX
+	publish-url = $alice_published
+/, 'publish-url variable created correctly in config');
+    $config_contents =~ /\[replica "(.*?)"\]/;
+    my $replica_name = $1;
+
+    # change name in config
+    my $new_config_contents = $config_contents;
+    $new_config_contents =~ s/$replica_name/new-name/;
+    Prophet::Util->write_file(
+        file => $ENV{PROPHET_APP_CONFIG},
+        content => $new_config_contents,
+    );
+
+    # publish again to a different location
+    my $new_published = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+    run_ok( 'prophet', [qw(publish --to), $new_published ] );
+    # make sure the subsection name was changed and the publish-url
+    # was updated, rather than a new section being created
+    $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    like($config_contents, qr/
+\[core\]
+	config-format-version = \d+
+\[replica "new-name"\]
+	uuid = $Prophet::CLIContext::ID_REGEX
+	publish-url = $new_published
+/, 'publish-url variable created correctly in config');
+
+    # check to make sure that publish doesn't fall back to using
+    # url, since that would never make sense
+    $new_config_contents =~ /uuid = ($Prophet::CLIContext::ID_REGEX)/;
+    my $uuid = $1;
+    $new_published = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+    my $bogus_name = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+    Prophet::Util->write_file(
+        file => $ENV{PROPHET_APP_CONFIG},
+        content => <<EOF,
+[replica "$bogus_name"]
+	uuid = $uuid
+	url = $new_published
+EOF
+    );
+    # diag "publishing to $new_published";
+    # diag "bogus name is $bogus_name";
+    run_ok( 'prophet', [qw(publish --to), $bogus_name ] );
+    ok( ! -f File::Spec->catfile( $new_published, 'config' )
+        && -f File::Spec->catfile( $bogus_name, 'replica-uuid' ),
+        'did not fall back to url variable' );
 };
 
 my $path =$alice_published;
 
 as_bob {
+    $ENV{PROPHET_APP_CONFIG} = $bob_config;
     run_ok( 'prophet', ['clone', '--from', "file://$path"] );
+    my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    like($config_contents, qr|
+\[core\]
+	config-format-version = \d+
+\[replica "file://$path"\]
+	url = file://$path
+	uuid = $Prophet::CLIContext::ID_REGEX
+|, 'replica section created in config file after clone');
+
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
 };
 as_alice {
+    $ENV{PROPHET_APP_CONFIG} = $alice_config;
     run_output_matches( 'prophet',
         [qw(create --type Pullall -- --status new --from alice )],
         [qr/Created Pullall \d+ \((\S+)\)(?{ $pullall_uuid = $1 })/],
@@ -39,12 +123,41 @@ as_alice {
 };
 
 as_bob {
-    run_ok( 'prophet', ['pull', '--all'] );
+    $ENV{PROPHET_APP_CONFIG} = $bob_config;
+
+    # change name in config
+    my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    $config_contents =~ /\[replica "(.*?)"\]/;
+    my $replica_name = $1;
+    my $new_config_contents = $config_contents;
+    $new_config_contents =~ s/$replica_name/new-name/;
+    Prophet::Util->write_file(
+        file => $ENV{PROPHET_APP_CONFIG},
+        content => $new_config_contents,
+    );
+    run_ok( 'prophet', ['pull', '--from', 'new-name'], 'pull from name works');
     run_output_matches( 'prophet', [qw(search --type Pullall --regex .)], [qr/new/], [], " Found our record" );
+
+    $new_config_contents =~ s/url/pull-url/;
+    Prophet::Util->write_file(
+        file => $ENV{PROPHET_APP_CONFIG},
+        content => $new_config_contents,
+    );
+    run_ok( 'prophet', ['pull', '--from', 'new-name'],
+        'pull from name works with pull-url var');
+
+    $new_config_contents .= "\turl = don't-use-this";
+    Prophet::Util->write_file(
+        file => $ENV{PROPHET_APP_CONFIG},
+        content => $new_config_contents,
+    );
+    run_ok( 'prophet', ['pull', '--from', 'new-name'],
+        'pull-url is preferred over url');
 };
 
 
 as_charlie {
+    (undef, $ENV{PROPHET_APP_CONFIG}) = tempfile( CLEANUP => ! $ENV{PROPHET_DEBUG} );
     run_ok( 'prophet', ['clone', '--from', "file://$path"] );
 };
 
