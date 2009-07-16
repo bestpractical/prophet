@@ -1,6 +1,8 @@
 package Prophet::CLI::Dispatcher;
 use Path::Dispatcher::Declarative -base;
 use Any::Moose;
+extends 'Path::Dispatcher::Declarative', any_moose('Object');
+
 require Prophet::CLIContext;
 
 with 'Prophet::CLI::Parameters';
