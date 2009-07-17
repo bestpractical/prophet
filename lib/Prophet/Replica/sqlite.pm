@@ -15,7 +15,12 @@ has dbh => (
     lazy => 1,
     default => sub {
         my $self = shift;
-        DBI->connect( "dbi:SQLite:" . $self->db_file , undef, undef, {RaiseError =>1, AutoCommit => 1 });
+        eval {
+            DBI->connect( "dbi:SQLite:" . $self->db_file , undef, undef, {RaiseError =>1, AutoCommit => 1 });
+        };
+        if ($@) {
+            die "Unable to open the database file '".$self->db_file."'. Is this a readable SQLite replica?\n";
+        }
      }
 
 
