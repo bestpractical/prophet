@@ -22,6 +22,27 @@ sub run {
         : $self->arg('to')
     );
 
+    # don't let users push to foreign replicas they haven't pulled from yet
+    # without --force
+    my %seen_replicas_by_url = $self->config->sources( by_variable => 1 );
+    my %seen_replicas_by_pull_url = $self->config->sources(
+        by_variable => 1,
+        variable => 'pull-url',
+    );
+
+    (my $class, undef, undef) = Prophet::Replica->_url_to_replica_class(
+        url       => $self->arg('to'),
+        app_handle => $self->app_handle,
+    );
+
+    die "Can't push to foreign replica that's never been pulled from! (Override with --force.)\n"
+        unless
+            $class->isa('Prophet::ForeignReplica') &&
+            ! $self->has_arg('force') &&
+            ( exists $seen_replicas_by_url{$self->arg('to')} ||
+              exists $seen_replicas_by_pull_url{$self->arg('to')} );
+
+    # prepare to run merge command (superclass)
     $self->set_arg( from =>  $self->handle->url );
     $self->set_arg( db_uuid => $self->handle->db_uuid );
 
