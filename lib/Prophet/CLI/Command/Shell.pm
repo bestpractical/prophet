@@ -4,6 +4,7 @@ use Any::Moose;
 extends 'Prophet::CLI::Command';
 use File::Spec;
 use Prophet::Util;
+use Text::ParseWords qw(shellwords);
 
 has name => (
     is => 'ro',
@@ -52,16 +53,7 @@ sub eval {
 
     eval {
         local $SIG{__DIE__} = 'DEFAULT';
-        my @args;
-        while ($line) {
-            $line =~ s/^\s*//;
-            if ( $line =~ s/^["'](.+)["']// ) {
-                push @args, $1;
-            }
-            else {
-                push @args, $1 if $line =~ s/(\S+)//;
-            }
-        }
+        my @args = shellwords($line);
         $self->cli->run_one_command(@args);
     };
     warn $@ if $@;
