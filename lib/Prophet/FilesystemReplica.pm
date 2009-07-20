@@ -293,7 +293,7 @@ sub lwp_get {
             return $response->content;
         }
     }
-    warn "Could not fetch " . $url . " - " . $response->status_line;
+    warn "Could not fetch " . $url . " - " . $response->status_line . "\n";
     return undef;
 }
           

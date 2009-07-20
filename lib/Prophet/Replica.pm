@@ -79,7 +79,8 @@ sub get_handle {
 
     if ( !$new_class ) {
         $class->log_fatal(
-            "I don't know how to handle the replica URL you provided - '@{[ $args{url}]}'"
+            "I don't know how to handle the replica URL you provided - '@{[ $args{url}]}'."
+            ."\nIs your syntax correct?"
         );
     }
 

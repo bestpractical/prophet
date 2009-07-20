@@ -15,18 +15,31 @@ has dbh => (
     lazy => 1,
     default => sub {
         my $self = shift;
+        my $dbh;
+        die "I couldn't determine a filesystem root from the given URL.\n"
+        ."Correct syntax is (sqlite:)file:///replica/root .\n"
+            unless $self->db_file;
         eval {
-            DBI->connect( "dbi:SQLite:" . $self->db_file , undef, undef, {RaiseError =>1, AutoCommit => 1 });
+            $dbh = DBI->connect(
+                "dbi:SQLite:" . $self->db_file,
+                undef, undef,
+                { RaiseError => 1, AutoCommit => 1 },
+            );
         };
         if ($@) {
-            die "Unable to open the database file '".$self->db_file."'. Is this a readable SQLite replica?\n";
+            die "Unable to open the database file '".$self->db_file
+                ."'. Is this a readable SQLite replica?\n";
         }
+        return $dbh;
      }
+);
 
+sub db_file {
+    my $self = shift;
+    my $fs_root = $self->fs_root;
 
-    );
-
-sub db_file { shift->fs_root ."/db.sqlite"}
+    return defined $fs_root ? "$fs_root/db.sqlite" : undef;
+}
 
 has '+db_uuid' => (
     lazy    => 1,
@@ -162,7 +175,7 @@ Returns false otherwise.
 
 sub replica_exists {
     my $self = shift;
-    return -f $self->db_file ? 1 : 0;
+    return defined $self->db_file && -f $self->db_file ? 1 : 0;
 }
 
 =head2 replica_version

@@ -5,7 +5,7 @@ sub scheme { 'file' }
 
 sub replica_exists {
     my $self = shift;
-    return 0 unless -d $self->fs_root;
+    return 0 unless defined $self->fs_root && -d $self->fs_root;
     return 0 unless -e File::Spec->catfile( $self->fs_root => 'database-uuid' );
     return 1;
 }
@@ -31,7 +31,9 @@ sub new {
     if (my $default_type =  $possible{$args{app_handle}->default_replica_type} ) { 
         return $default_type;
     } else {
-        $class->log_fatal("I don't know what to do with the Prophet replica type you specified: ".$args{app_handle}->default_replica_type);
+        $class->log_fatal("I don't know what to do with the Prophet replica ".
+            "type you specified: ".$args{app_handle}->default_replica_type.
+            "\nIs your URL syntax correct?");
     }
 }
 
