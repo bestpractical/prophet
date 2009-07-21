@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 use File::Temp qw(tempdir);
 use Test::Script::Run qw(run_script);
 
@@ -24,16 +24,6 @@ I couldn't determine a filesystem root from the given URL.
 Correct syntax is (sqlite:)file:///replica/root .
 EOM
 , 'sqlite:foo errors out' );
-
-# sqlite is default replica type
-$ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
-(undef, undef, $error)
-    = run_script( 'prophet', ['clone', '--from', 'file:foo'] );
-is( $error, <<EOM
-I couldn't determine a filesystem root from the given URL.
-Correct syntax is (sqlite:)file:///replica/root .
-EOM
-, 'file:foo errors out' );
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 (undef, undef, $error)
