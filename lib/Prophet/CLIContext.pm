@@ -203,7 +203,7 @@ sub parse_args {
     my $cmp_re = $self->cmp_regex;
 
     while ( my $name = shift @args ) {
-        die "$name doesn't look like --argument"
+        die "$name doesn't look like --argument\n"
             if !$collecting_props && $name !~ /^-/;
 
         if ( $name eq '--' || $name eq '--props' ) {
