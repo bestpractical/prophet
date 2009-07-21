@@ -90,22 +90,26 @@ sub run_one_command {
     my $ori_cmd = join ' ', @args;
     my $aliases = $self->app_handle->config->aliases;
     for my $alias ( keys %$aliases ) {
-   
-            my $command = $self->_command_matches_alias($ori_cmd, $alias, $aliases->{$alias}) || next; 
-        
-            # we don't want to recursively call if people stupidly write
-            # alias pull --local = pull --local
-            next if ( $command eq $ori_cmd );
-            return $self->run_one_command( split /\s+/, $command );
+        my $command = $self->_command_matches_alias($ori_cmd, $alias, $aliases->{$alias}) || next;
+
+        # we don't want to recursively call if people stupidly write
+        # alias pull --local = pull --local
+        next if ( $command eq $ori_cmd );
+        return $self->run_one_command( split /\s+/, $command );
     }
 
     #  really, we shouldn't be doing this stuff from the command dispatcher
     $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
     my $dispatcher = $self->dispatcher_class->new( cli => $self );
-    # XXX this means you can't have a literal " in CLI commands...
-    my $dispatch_command_string = join(' ', map { s/"/'/g; /\s/ ? qq{"$_"} : $_ }
-        @{ $self->context->primary_commands });
+
+    # Path::Dispatcher is string-based, so we need to join the args
+    # hash with spaces before passing off (args with whitespace in
+    # them are quoted, double quotes are escaped)
+    my $dispatch_command_string = join(' ', map {
+            s/"/\\"/g;  # escape double quotes
+            /\s/ ? qq{"$_"} : $_;
+        } @{ $self->context->primary_commands });
     my $dispatch = $dispatcher->dispatch( $dispatch_command_string );
     $self->start_pager();
     $dispatch->run($dispatcher);
