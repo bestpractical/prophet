@@ -75,7 +75,9 @@ on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
     my $cmd = $1;
     my $arg = $2;
 
-    my @classes = $self->class_names('Aliases');
+    # Load Config command class so we can run
+    # its arg-parsing sub (the syntax is complex)
+    my @classes = $self->class_names('Config');
     for my $class (@classes) {
         Prophet::App->try_to_require($class) or next;
         my $aliases_cmd = $class->new(
@@ -85,7 +87,8 @@ on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
         return run( $cmd, $self, @_ );
     }
 
-    die "Could not find 'Aliases' command class";
+    # Something is wrong with the app layout...
+    die "Could not find 'Config' command class";
 };
 
 sub run_command {
