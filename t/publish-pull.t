@@ -45,14 +45,14 @@ as_alice {
 	config-format-version = \d+
 \[replica "(.*?)"\]
 	uuid = $Prophet::CLIContext::ID_REGEX
-	publish-url = $alice_published
+	publish-url = \Q$alice_published\E
 /, 'publish-url variable created correctly in config');
     $config_contents =~ /\[replica "(.*?)"\]/;
     my $replica_name = $1;
 
     # change name in config
     my $new_config_contents = $config_contents;
-    $new_config_contents =~ s/$replica_name/new-name/;
+    $new_config_contents =~ s/\Q$replica_name\E/new-name/;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
@@ -69,7 +69,7 @@ as_alice {
 	config-format-version = \d+
 \[replica "new-name"\]
 	uuid = $Prophet::CLIContext::ID_REGEX
-	publish-url = $new_published
+	publish-url = \Q$new_published\E
 /, 'publish-url variable created correctly in config');
 
     # check to make sure that publish doesn't fall back to using
@@ -103,8 +103,8 @@ as_bob {
     like($config_contents, qr|
 \[core\]
 	config-format-version = \d+
-\[replica "file://$path"\]
-	url = file://$path
+\[replica "file://\Q$path\E"\]
+	url = file://\Q$path\E
 	uuid = $Prophet::CLIContext::ID_REGEX
 |, 'replica section created in config file after clone');
 
@@ -130,7 +130,7 @@ as_bob {
     $config_contents =~ /\[replica "(.*?)"\]/;
     my $replica_name = $1;
     my $new_config_contents = $config_contents;
-    $new_config_contents =~ s/$replica_name/new-name/;
+    $new_config_contents =~ s/\Q$replica_name\E/new-name/;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
