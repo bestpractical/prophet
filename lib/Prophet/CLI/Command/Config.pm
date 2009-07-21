@@ -183,36 +183,119 @@ sub parse_cli_arg {
     my $self = shift;
     my ($cmd, $arg) = @_;
 
-    if ( $arg =~ /^show\b/ ) {
+    use Text::ParseWords qw(shellwords);
+    my @args = shellwords($arg);
+
+    if ( $args[0] eq 'show' ) {
         $self->context->set_arg(show => 1);
     }
-    elsif ( $arg =~ /^edit\b/ ) {
+    elsif ( $args[0] eq 'edit' ) {
         $self->context->set_arg(edit => 1);
     }
-    # arg *might* be quoted
-    elsif ( $arg =~ /^delete\s+"?([^"]+)"?/ ) {
-        $self->context->set_arg(delete => $1);
+    elsif ( $args[0] eq 'delete' ) {
+        $self->_run_delete_subcmd( $cmd, @args[1..$#args] );
     }
+    # all of these may also contain add|set after alias
     # prophet alias "foo bar" = "foo baz"
     # prophet alias foo = bar
-    # prophet alias add foo bar = "bar baz"
-    # prophet alias add foo bar = bar baz
-    elsif ( $arg =~
-        /^(?:add |set )?\s*(?:(?:"([^"]+)"|([^"]+))\s+=\s+(?:"([^"]+)"|([^"]+)))$/ ) {
-        my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
-        $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
-        $self->context->set_arg(set => "$orig=$new");
-    }
-    # prophet alias "foo = bar"
-    # prophet alias "foo bar = foo baz"
-    elsif ( $arg =~ /^(?:add |set )?\s*"([^"]+=[^"]+)"$/ ) {
-        $self->context->set_arg(set => $1);
+    # prophet alias foo bar = bar baz
+    # prophet alias foo bar = "bar baz"
+    elsif ( $args[0] =~ /^(add|set)$/
+        || (@args >= 3 && grep { m/(^=|=$)/ } @args)
+        || (@args == 2 && $args[1] =~ /=/) ) {
+        my $subcmd = $1;
+        shift @args if $args[0] =~ /^(?:add|set)$/;
+
+        $self->_run_old_syntax_add_subcmd( $cmd, $subcmd, @args );
     }
     # alternate syntax (preferred):
     # prophet alias "foo bar" "bar baz", prophet alias foo "bar baz",
     # prophet alias foo bar, etc.
-    elsif ( $arg =~ /^(?:add |set )?\s*(?:"([^"]+)"|([^"\s]+))(?:\s+(?:"([^"]+)"|([^"\s]+)))?/ ) {
-        my ($orig, $new) = grep { defined } ($1, $2, $3, $4);
+    # (can still have add|set at the beginning)
+    else {
+        my $subcmd = q{};
+        if ( $args[0] =~ /^(add|set)$/ ) {
+            shift @args;
+            $subcmd = $1;
+        }
+
+        $self->_run_new_syntax_add_subcmd( $cmd, $subcmd, @args );
+    }
+}
+
+sub _run_delete_subcmd {
+    my $self = shift;
+    my $cmd = shift;
+    my @args = @_;
+
+    if ( @args ) {
+        my $remainder = join(' ', @args);
+        $self->context->set_arg(delete => $remainder);
+    }
+    else {
+        $self->_prompt_delete_usage( $cmd );
+        if ( $cmd =~ /^alias/ ) {
+            die qq{usage: $cmd delete "alias text"\n};
+        }
+    }
+}
+
+sub _run_old_syntax_add_subcmd {
+    my $self = shift;
+    my $cmd = shift;
+    my $subcmd = shift;
+    my @args = @_;
+
+    if ( @args > 1 ) {
+        # divide words up into two groups split on =
+        my (@orig_words, @new_words);
+        my $seen_equals = 0;
+        for my $word (@args) {
+            if ( $seen_equals ) {
+                push @new_words, $word;
+            }
+            else {
+                if ( $word =~ s/=$// ) {
+                    $seen_equals = 1;
+                    # allows syntax like alias add foo bar= bar baz
+                    push @orig_words, $word if $word;
+                    next;
+                }
+                elsif ( $word =~ s/^=// ) {
+                    $seen_equals = 1;
+                    # allows syntax like alias add foo bar =bar baz
+                    push @new_words, $word if $word;
+                    next;
+                }
+                push @orig_words, $word;
+            }
+        }
+        # join each group together to get what we're setting
+        my $orig = join( q{ }, @orig_words );
+        my $new  = join( q{ }, @new_words );
+
+        $orig = "'$orig'" if $cmd =~ /^alias/ && $orig =~ /\./;
+        $self->context->set_arg(set => "$orig=$new");
+    }
+    # all of these may also contain add|set after alias
+    # prophet alias "foo = bar"
+    # prophet alias "foo bar = foo baz"
+    elsif ( defined $args[0] && $args[0] =~ /=/ ) {
+        $self->context->set_arg(set => $args[0]);
+    }
+    else {
+        $self->_prompt_add_usage( $cmd, $subcmd );
+    }
+}
+
+sub _run_new_syntax_add_subcmd {
+    my $self = shift;
+    my $cmd = shift;
+    my $subcmd = shift;
+    my @args = @_;
+
+    if ( @args <= 2 ) {
+        my ($orig, $new) = ($args[0], $args[1]);
         $orig = "'$orig'" if $cmd =~ /alias/ && $orig =~ /\./;
         if ( $new ) {
             $self->context->set_arg(set => "$orig=$new");
@@ -222,8 +305,34 @@ sub parse_cli_arg {
         }
     }
     else {
-        die 'no idea what you mean, sorry';
+        $self->_prompt_add_usage( $cmd, $subcmd );
     }
+}
+
+sub _prompt_delete_usage {
+    my $self = shift;
+    my $cmd = shift;
+
+    die $self->delete_usage_msg( $cmd );
+}
+
+sub delete_usage_msg {
+    die qq{usage: $_[1] delete section.subsection.var\n};
+}
+
+sub _prompt_add_usage {
+    my $self = shift;
+    my $cmd = shift;
+    my $subcmd = shift || '';
+
+    $subcmd .= q{ } if $subcmd;
+
+    # prompt user with the preferred syntax
+    die $self->add_usage_msg( $cmd, $subcmd );
+}
+
+sub add_usage_msg {
+    qq{usage: $_[1] $_[2]section.subsection.var ["key value"]\n};
 }
 
 __PACKAGE__->meta->make_immutable;

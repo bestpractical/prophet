@@ -144,6 +144,16 @@ sub process_template {
     }
 }
 
+# override the messages from Config module with messages w/better context for
+# Aliases
+override delete_usage_msg => sub {
+    qq{usage: $_[1] delete "alias text"\n};
+};
+
+override add_usage_msg => sub {
+    qq{usage: $_[1] $_[2]"alias text" "cmd to translate to"\n};
+};
+
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
 
