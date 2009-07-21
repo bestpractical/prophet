@@ -35,7 +35,7 @@ sub run {
     }
 
     # add is the same as set
-    if ( $self->context->has_arg('add') ) {
+    if ( $self->context->has_arg('add') && !$self->has_arg('set') ) {
         $self->context->set_arg('set', $self->arg('add') )
     }
 
@@ -44,19 +44,30 @@ sub run {
         if ( $self->has_arg('set') ) {
             my $value = $self->arg('set');
             if ( $value =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/ ) {
+                my ($key, $value) = ($1, $2);
+                $self->_warn_unknown_args( $key, $value );
                 $config->set(
-                    key => $1,
-                    value => $2,
+                    key => $key,
+                    value => $value,
                     filename => $self->config_filename,
                 );
             }
             # no value given, just print the current value
             else {
-                print $config->get( key => $self->arg('set') ) . "\n";
+                $self->_warn_unknown_args( $self->arg('set') );
+                my $value = $config->get( key => $self->arg('set') );
+                if ( defined $value ) {
+                    print $config->get( key => $self->arg('set') ) . "\n";
+                }
+                else {
+                    print "Key " . $self->arg('set') . " is not set.\n";
+                }
             }
         }
         elsif ( $self->has_arg('delete') ) {
             my $key = $self->arg('delete');
+
+            $self->_warn_unknown_args( $key );
 
             $config->set(
                 key => $key,
@@ -91,6 +102,28 @@ sub run {
         }
         print "\nYour configuration:\n\n";
         $config->dump;
+    }
+}
+
+sub _warn_unknown_args {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    # help users avoid frustration if they accidentally do something
+    # like config add aliases.foo = push --to foo@bar.com
+    my %args = %{$self->args};
+    for my $arg ( qw(show edit add delete set) ) {
+        delete $args{$arg};
+    }
+    if ( keys %args != 0 ) {
+        my $args_str = join(q{ }, keys %args);
+        print "W: You have args set that aren't used by this command! Quote your\n"
+            . "W: key/value if this was accidental.\n"
+            . "W: - offending args: ${args_str}\n"
+            . "W: - running command with key '$key'";
+        print ", value '$value'" if defined $value;
+        print "\n";
     }
 }
 

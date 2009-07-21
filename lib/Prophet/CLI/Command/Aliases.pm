@@ -15,7 +15,7 @@ sub run {
 
     # alias.pull --from http://foo-bar.com/
     # add is the same as set
-    if ( $self->context->has_arg('add') ) {
+    if ( $self->context->has_arg('add') && !$self->has_arg('set') ) {
         $self->context->set_arg('set', $self->arg('add') )
     }
 
