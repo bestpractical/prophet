@@ -2,13 +2,12 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 33;
+use Prophet::Test tests => 38;
 use File::Temp qw/tempfile/;
+use Test::Script::Run;
 
 $ENV{'PROPHET_APP_CONFIG'} = (tempfile(UNLINK => !$ENV{PROPHET_DEBUG}))[1];
 diag("Using config file $ENV{PROPHET_APP_CONFIG}");
-
-# since we don't initialize the db for these tests, make the repo dir
 
 use_ok('Prophet::CLI');
 
@@ -23,142 +22,163 @@ is_deeply( scalar $config->aliases, {}, 'initial alias is empty' );
 # no news is good news
 my @cmds = (
     {
-        cmd => [ 'show' ],
-        output  => qr/^No aliases for the current repository.\n$/,
+        cmd     => [ 'show' ],
+        output  => [qr/^No aliases for the current repository.$/, ''],
         comment => 'show empty aliases',
     },
-
     {
-        cmd => [ 'add', 'pull -a=pull --all' ],
-        output  => qr//,
+        cmd     => [ 'add', 'pull -a=pull --all' ],
         comment => 'add a new alias',
+        # no output specified = no output expected
     },
     {
-        cmd => [ 'pull -a' ],
-        output  => qr/pull --all/,
+        cmd     => [ 'pull -a' ],
+        output  => [qr/pull --all/],
         comment => 'new alias set correctly',
     },
     {
         # this alias is bad, please don't use it in real life
-        cmd => [ 'set', 'pull -a=pull --local' ],
-        output => qr//,
+        cmd     => [ 'set', 'pull -a=pull --local' ],
         comment =>
           q{changed alias 'pull -a' from 'pull --all' to 'pull --local'},
     },
     {
-        cmd => [ 'pull -a' ],
-        output  => qr/pull --local/,
+        cmd     => [ 'pull -a' ],
+        output  => [qr/pull --local/],
         comment => 'alias changed correctly',
     },
     {
         cmd     => [ 'delete', 'pull -a' ],
-        output  => qr//,
         comment => q{deleted alias 'pull -a = pull --local'},
     },
     {
         cmd     => [ 'delete', 'pull -a' ],
-        output  => qr//,
+        error   => [ qr/No occurrence of alias.pull -a found to unset/ ],
         comment => q{delete an alias that doesn't exist any more},
     },
     {
-        cmd => [ 'add', 'pull -a=pull --all' ],
-        output  => qr//,
+        cmd     => [ 'add', 'pull -a=pull --all' ],
         comment => 'add a new alias',
     },
     {
-        cmd => [ 'pull -a' ],
-        output  => qr/pull --all/,
+        cmd     => [ 'pull -a' ],
+        output  => [qr/pull --all/],
         comment => 'alias is set correctly',
     },
     {
-        cmd => [ 'add', 'pull -l=pull --local' ],
-        output  => qr//,
+        cmd     => [ 'add', 'pull -l=pull --local' ],
         comment => 'add a new alias',
     },
     {
-        cmd => [ 'pull -l' ],
-        output  => qr/pull --local/,
+        cmd     => [ 'pull -l' ],
+        output  => [qr/pull --local/],
         comment => 'alias is set correctly',
     },
     {
-        cmd => [ 'show' ],
-        output  => qr/Active aliases for the current repository \(including user-wide and global\naliases if not overridden\):\n\npull -l = pull --local\npull -a = pull --all/s,
+        cmd     => [ 'show' ],
+        output  => [
+            qr/Active aliases for the current repository \(including user-wide and global/,
+            qr/aliases if not overridden\):/, '',
+            'pull -l = pull --local', 'pull -a = pull --all', '',
+            ],
         comment => 'show',
     },
     {
-        cmd => [ 'add', 'foo', 'bar', '=', 'bar',  'baz' ],
-        output  => qr//,
+        cmd     => [ 'add', 'foo', 'bar', '=', 'bar',  'baz' ],
         comment => 'added alias foo bar',
     },
     {
-        cmd => [ 'foo bar' ],
-        output  => qr/bar baz/,
+        cmd     => [ 'foo bar' ],
+        output  => [qr/bar baz/],
         comment => 'alias is set correctly',
     },
     {
-        cmd => [ 'foo', 'bar', '=bar',  'baz' ],
-        output  => qr//,
-        comment => 'read alias foo bar',
+        cmd     => [ 'foo', 'bar', '=bar',  'baz' ],
+        comment => 'set alias foo bar again',
+    },
+    {
+        cmd     => [ 'foo', 'bar=', 'bar',  'baz' ],
+        comment => 'set alias with tail =',
     },
     {
         cmd => [ 'foo bar' ],
-        output  => qr/bar baz/,
+        output  => [qr/bar baz/],
         comment => 'alias foo bar still the same',
     },
     {
-        cmd => [ 'delete', 'foo', 'bar' ],
-        output  => qr//,
+        cmd     => [ 'delete', 'foo', 'bar' ],
         comment => 'deleted alias foo bar',
     },
     {
-        cmd => [ 'foo', 'bar' ],
-        output  => qr//,
+        cmd     => [ 'foo', 'bar' ],
         comment => 'deleted alias no longer exists',
     },
     {
-        cmd => [ 'set', 'foo bar', '=', 'bar baz'],
-        output => qr//,
+        cmd     => [ 'set', 'foo bar', '=', 'bar baz'],
         comment => 'set alias again with different syntax',
     },
     # tests for alternate syntax
     {
-        cmd => [ 'foo bar', 'bar baz'],
-        output  => qr//,
+        cmd     => [ 'foo bar', 'bar baz'],
         comment => 'alias foo bar = bar baz didn\'t change',
     },
     {
-        cmd => [ 'foo', 'bar baz'],
-        output  => qr//,
+        cmd     => [ 'foo', 'bar baz'],
         comment => 'added alias foo',
     },
     {
-        cmd => [ 'foo' ],
-        output  => qr/bar baz/,
+        cmd     => [ 'foo' ],
+        output  => [qr/bar baz/],
         comment => 'alias foo set correctly',
     },
     {
-        cmd => [ 'foo bar', 'bar'],
-        output => qr//,
+        cmd     => [ 'foo bar', 'bar'],
         comment => 'changed alias foo bar',
     },
     {
-        cmd => [ 'pull --from http://www.example.com/', 'pfe'],
-        output => qr//,
+        cmd     => [ 'pull --from http://www.example.com/', 'pfe'],
         comment => 'added alias with weird characters',
     },
     {
-        cmd => [ 'pull --from http://www.example.com/'],
-        output => qr/pfe/,
+        cmd     => [ 'pull --from http://www.example.com/'],
+        output  => [qr/pfe/],
         comment => 'alias with weird chars is correct',
     },
-,
+    # test cases for syntax error messages
+    {
+        cmd     => [ 'add' ],
+        error   => [qr/^usage: aliases add "alias text" "cmd to translate to"$/],
+        comment => 'add usage msg is correct',
+    },
+    {
+        cmd     => [ 'delete' ],
+        error   => [qr/^usage: aliases delete "alias text"$/],
+        comment => 'delete usage msg is correct',
+    },
+    # test warning when accidentally setting args
+    {
+        cmd     => [ 'pt', '=', 'push', '--to', 'foo@example.com' ],
+        output  => [
+            q{W: You have args set that aren't used by this command! Quote your},
+            q{W: key/value if this was accidental.},
+            q{W: - offending args: to},
+            q{W: - running command with key 'alias.pt', value 'push'},
+            ],
+        comment => 'warning when setting accidental arg',
+    },
+    {
+        cmd     => [ 'delete', 'pt' ],
+        comment => 'delete previous bad alias',
+    },
 );
 
 for my $item ( @cmds ) {
-    my $out = run_command( 'aliases', @{$item->{cmd}} );
-    like( $out, $item->{output}, $item->{comment} );
+    my $output = defined $item->{output} ? $item->{output} : [undef];
+    my $error = defined $item->{error} ? $item->{error} : [undef];
+    is_script_output( 'prophet', ['aliases', @{$item->{cmd}} ],
+        $output, $error, $item->{comment},
+    );
 }
-
 
 # check aliases in config
 my $aliases = Prophet::Config->new(
