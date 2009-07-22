@@ -22,8 +22,21 @@ has old_errors => (
 
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'delete', s => 'show' };
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}config [show]
+       ${cmd}config edit [--global|--user]
+       ${cmd}config <section.subsection.var> [<value>]
+END_USAGE
+}
+
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     my $config = $self->config;
 
@@ -40,15 +53,14 @@ sub run {
     }
 
     if ( $self->has_arg('set') || $self->has_arg('delete') ) {
-
         if ( $self->has_arg('set') ) {
             my $value = $self->arg('set');
             if ( $value =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/ ) {
                 my ($key, $value) = ($1, $2);
                 $self->_warn_unknown_args( $key, $value );
                 $config->set(
-                    key => $key,
-                    value => $value,
+                    key      => $key,
+                    value    => $value,
                     filename => $self->config_filename,
                 );
             }
@@ -90,6 +102,8 @@ sub run {
         }
     }
     else {
+        # if no args are given, print out the contents of the currently loaded
+        # config files
         print "Configuration:\n\n";
         my @files =@{$config->config_files};
         if (!scalar @files) {
@@ -193,7 +207,7 @@ sub parse_cli_arg {
         $self->context->set_arg(edit => 1);
     }
     elsif ( $args[0] eq 'delete' ) {
-        $self->_run_delete_subcmd( $cmd, @args[1..$#args] );
+        $self->_setup_delete_subcmd( "$cmd delete", @args[1..$#args] );
     }
     # all of these may also contain add|set after alias
     # prophet alias "foo bar" = "foo baz"
@@ -206,7 +220,7 @@ sub parse_cli_arg {
         my $subcmd = $1;
         shift @args if $args[0] =~ /^(?:add|set)$/;
 
-        $self->_run_old_syntax_add_subcmd( $cmd, $subcmd, @args );
+        $self->_setup_old_syntax_add_subcmd( $cmd, $subcmd, @args );
     }
     # alternate syntax (preferred):
     # prophet alias "foo bar" "bar baz", prophet alias foo "bar baz",
@@ -219,28 +233,34 @@ sub parse_cli_arg {
             $subcmd = $1;
         }
 
-        $self->_run_new_syntax_add_subcmd( $cmd, $subcmd, @args );
+        $self->_setup_new_syntax_add_subcmd( $cmd, $subcmd, @args );
     }
 }
 
-sub _run_delete_subcmd {
+sub _setup_delete_subcmd {
     my $self = shift;
     my $cmd = shift;
     my @args = @_;
 
     if ( @args ) {
-        my $remainder = join(' ', @args);
+        my $remainder = join(q{ }, @args);
         $self->context->set_arg(delete => $remainder);
     }
     else {
-        $self->_prompt_delete_usage( $cmd );
-        if ( $cmd =~ /^alias/ ) {
-            die qq{usage: $cmd delete "alias text"\n};
+        if ( $cmd =~ /delete/ ) {
+            $self->print_usage(
+                usage_method => sub {
+                    $self->delete_usage_msg( $cmd );
+                },
+            );
+        }
+        else {
+            $self->print_usage;
         }
     }
 }
 
-sub _run_old_syntax_add_subcmd {
+sub _setup_old_syntax_add_subcmd {
     my $self = shift;
     my $cmd = shift;
     my $subcmd = shift;
@@ -284,15 +304,19 @@ sub _run_old_syntax_add_subcmd {
         $self->context->set_arg(set => $args[0]);
     }
     else {
-        $self->_prompt_add_usage( $cmd, $subcmd );
+        $self->print_usage(
+            usage_method      => sub {
+                $self->add_usage_msg($cmd, $subcmd);
+            },
+        );
     }
 }
 
-sub _run_new_syntax_add_subcmd {
-    my $self = shift;
-    my $cmd = shift;
+sub _setup_new_syntax_add_subcmd {
+    my $self   = shift;
+    my $cmd    = shift;
     my $subcmd = shift;
-    my @args = @_;
+    my @args   = @_;
 
     if ( @args <= 2 ) {
         my ($orig, $new) = ($args[0], $args[1]);
@@ -305,34 +329,28 @@ sub _run_new_syntax_add_subcmd {
         }
     }
     else {
-        $self->_prompt_add_usage( $cmd, $subcmd );
+        $self->print_usage(
+            usage_method      => sub {
+                $self->add_usage_msg($cmd, $subcmd);
+            },
+        );
     }
 }
 
-sub _prompt_delete_usage {
-    my $self = shift;
-    my $cmd = shift;
-
-    die $self->delete_usage_msg( $cmd );
-}
-
 sub delete_usage_msg {
-    die qq{usage: $_[1] delete section.subsection.var\n};
-}
-
-sub _prompt_add_usage {
     my $self = shift;
+    my $app_cmd = $self->get_cmd_name;
     my $cmd = shift;
-    my $subcmd = shift || '';
 
-    $subcmd .= q{ } if $subcmd;
-
-    # prompt user with the preferred syntax
-    die $self->add_usage_msg( $cmd, $subcmd );
+    qq{usage: ${app_cmd}${cmd} section.subsection.var\n};
 }
 
 sub add_usage_msg {
-    qq{usage: $_[1] $_[2]section.subsection.var ["key value"]\n};
+    my $self = shift;
+    my $app_cmd = $self->get_cmd_name;
+    my ($cmd, $subcmd) = @_;
+
+    qq{usage: ${app_cmd}${cmd} ${subcmd} section.subsection.var ["key value"]\n};
 }
 
 __PACKAGE__->meta->make_immutable;

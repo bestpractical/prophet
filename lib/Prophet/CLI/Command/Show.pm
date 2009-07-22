@@ -6,8 +6,19 @@ with 'Prophet::CLI::RecordCommand';
 
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  'b' => 'batch' };
 
+sub usage_msg {
+    my $self = shift;
+    my ($cmd, $type_and_subcmd) = $self->get_cmd_and_subcmd_names;
+
+    return <<"END_USAGE";
+usage: ${cmd}$type_and_subcmd <record-id> [--batch] [--verbose]
+END_USAGE
+}
+
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     $self->context->require_uuid;
     my $record = $self->_load_record;

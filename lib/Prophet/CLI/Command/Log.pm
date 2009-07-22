@@ -2,6 +2,18 @@ package Prophet::CLI::Command::Log;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}log --all              Show all entries
+       ${cmd}log 0..LATEST~5        Show first entry up until the latest
+       ${cmd}log LATEST~10          Show last ten entries
+       ${cmd}log LATEST             Show last entry
+END_USAGE
+}
+
 # Default: last 20 entries.
 # sd log --all                    # show it all (overrides everything else)
 # sd log --range 0..LATEST~5      # shows the first until 5 from the latest
@@ -15,6 +27,8 @@ extends 'Prophet::CLI::Command';
 sub run {
     my $self   = shift;
     my $handle = $self->handle;
+
+    $self->print_usage if $self->has_arg('h');
 
     # --all overrides any other args
     if ($self->has_arg('all')) {

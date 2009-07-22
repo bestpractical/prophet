@@ -28,7 +28,14 @@ has term => (
     our $LEN = $ENV{PROPHET_HISTLEN} || 500;
 
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
 
+    return <<"END_USAGE";
+usage: ${cmd}\[shell]
+END_USAGE
+}
 
 sub prompt {
     my $self = shift;
@@ -82,6 +89,9 @@ sub _run {
 # make the REPL history persistent
 sub run{
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
+
     $self->_read_repl_history();
     $self->_run(@_);
     $self->_write_repl_history();

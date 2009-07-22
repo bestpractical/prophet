@@ -284,6 +284,69 @@ sub record_replica_in_config {
     }
 }
 
+=head2 print_usage
+
+Print the command's usage message to STDERR and die. Commands should
+implement C<usage_msg>, which returns the usage message.
+
+If the usage message method needs arguments passed in, use a closure.
+
+=cut
+
+sub print_usage {
+    my $self = shift;
+    my %args = (
+        usage_method      => sub { $self->usage_msg },
+        @_,
+    );
+
+    die $args{usage_method}();
+}
+
+=head2 get_cmd_name
+
+Return the name of the script that was run. This is the empty string
+if we're in a shell, otherwise the script name concatenated with
+a space character. This is so you can just use this for e.g.
+printing usage messages or help docs that might be run from either
+a shell or the command line.
+
+=cut
+
+sub get_cmd_name {
+    my $self = shift;
+    return '' if $self->cli->interactive_shell;
+    my ${cmd}= $0;
+    ${cmd}=~ s{^(.*)/}{}g;
+    return $cmd.' ';
+}
+
+=head2 get_cmd_and_subcmd_names [no_type => 1]
+
+Gets the name of the script that was run and the primary commands that were
+specified on the command-line. If a true boolean is passed in as C<no_type>,
+won't add '<record-type>' to the subcmd if no type was passed in via the
+primary commands.
+
+=cut
+
+sub get_cmd_and_subcmd_names {
+    my $self = shift;
+    my %args = @_;
+
+    my $cmd = $self->get_cmd_name;
+    my @primary_commands = @{ $self->context->primary_commands };
+
+    # if primary commands was only length 1, the type was not specified
+    # and we should indicate that a type is expected
+    push @primary_commands, '<record-type>'
+        if @primary_commands <= 1 && !$args{no_type};
+
+    my $type_and_subcmd = join( q{ }, @primary_commands );
+
+    return ($cmd, $type_and_subcmd);
+}
+
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
 

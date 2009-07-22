@@ -35,6 +35,15 @@ has group_routine => (
         'A subroutine which takes an arrayref to a list of records and returns an array of hashrefs  { label => $label, records => \@array}'
 );
 
+sub usage_msg {
+    my $self = shift;
+    my ($cmd, $type_and_subcmd) = $self->get_cmd_and_subcmd_names;
+
+    return <<"END_USAGE";
+usage: ${cmd}${type_and_subcmd}
+       ${cmd}${type_and_subcmd} -- prop1=~foo prop2!~bar|baz
+END_USAGE
+}
 
 sub default_match { 1 }
 
@@ -111,6 +120,8 @@ sub _compare {
 
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     my $records = $self->get_collection_object();
     my $search_cb = $self->get_search_callback();

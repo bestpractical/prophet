@@ -7,9 +7,24 @@ with 'Prophet::CLI::CollectionCommand';
 use File::Path;
 use File::Spec;
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}publish --to <location|name> [--html] [--replica]
+END_USAGE
+}
+
 sub run {
     my $self = shift;
-    die "Please specify a --to.\n" unless $self->has_arg('to');
+
+    $self->print_usage if $self->has_arg('h');
+
+    unless ($self->has_arg('to')) {
+        warn "No --to specified!\n";
+        $self->print_usage;
+    }
 
     # substitute publish-url config variable for to arg if possible
     my %previous_sources_by_name

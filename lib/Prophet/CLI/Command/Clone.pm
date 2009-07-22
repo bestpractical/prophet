@@ -2,8 +2,19 @@ package Prophet::CLI::Command::Clone;
 use Any::Moose;
 extends 'Prophet::CLI::Command::Merge';
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}clone --from <url>
+END_USAGE
+}
+
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     $self->validate_args();
 
@@ -72,8 +83,11 @@ sub run {
 
 sub validate_args {
     my $self = shift;
-    die "Please specify a --from.\n"
-        unless $self->has_arg('from');
+
+    unless ( $self->has_arg('from') ) {
+        warn "No --from specified!\n";
+        die $self->print_usage;
+    }
 }
 
 # When we clone from another replica, we ALWAYS want to take their way forward,

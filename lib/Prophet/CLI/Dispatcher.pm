@@ -82,10 +82,11 @@ on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
     my @classes = $self->class_names($class);
     for my $class (@classes) {
         Prophet::App->try_to_require($class) or next;
-        my $aliases_cmd = $class->new(
+        my $cmd_obj = $class->new(
             context => $self->context,
+            cli     => $self->cli,
         );
-        $aliases_cmd->parse_cli_arg($cmd, $arg);
+        $cmd_obj->parse_cli_arg($cmd, $arg);
         return run( $cmd, $self, @_ );
     }
 

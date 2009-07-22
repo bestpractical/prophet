@@ -11,8 +11,24 @@ sub ARG_TRANSLATIONS {
     shift->SUPER::ARG_TRANSLATIONS(),  f => 'force' , n => 'dry-run',
 };
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}merge --from <replica> --to <replica> [options]
+
+Options are:
+    -v|--verbose            Be verbose
+    -f|--force              Do merge even if replica UUIDs differ
+    -n|--dry-run            Don't actually import changesets
+END_USAGE
+}
+
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     Prophet::CLI->end_pager();
 

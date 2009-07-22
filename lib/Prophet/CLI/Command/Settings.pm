@@ -8,8 +8,22 @@ with 'Prophet::CLI::TextEditorCommand';
 
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  s => 'show' };
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}settings [--show]
+       ${cmd}settings [--edit]
+       ${cmd}settings --set -- setting "new value"
+END_USAGE
+}
+
 sub run {
     my $self     = shift;
+
+    $self->print_usage if $self->has_arg('h');
+
     my $template = $self->make_template;
 
     if ( $self->context->has_arg('show') ) {

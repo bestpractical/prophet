@@ -147,12 +147,12 @@ my @cmds = (
     # test cases for syntax error messages
     {
         cmd     => [ 'add' ],
-        error   => [qr/^usage: aliases add "alias text" "cmd to translate to"$/],
+        error   => [qr/^usage: prophet aliases add "alias text" "cmd to translate to"$/],
         comment => 'add usage msg is correct',
     },
     {
         cmd     => [ 'delete' ],
-        error   => [qr/^usage: aliases delete "alias text"$/],
+        error   => [qr/^usage: prophet aliases delete "alias text"$/],
         comment => 'delete usage msg is correct',
     },
     # test warning when accidentally setting args

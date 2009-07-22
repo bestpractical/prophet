@@ -2,10 +2,21 @@ package Prophet::CLI::Command::Push;
 use Any::Moose;
 extends 'Prophet::CLI::Command::Merge';
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}push --to <url|name> [--force]
+END_USAGE
+}
+
 sub run {
     my $self = shift;
 
     Prophet::CLI->end_pager();
+
+    $self->print_usage if $self->has_arg('h');
 
     $self->validate_args;
 
@@ -57,8 +68,12 @@ sub run {
 sub validate_args {
     my $self = shift;
 
-    die "Please specify a --to.\n" unless $self->context->has_arg('to');
+    unless ( $self->context->has_arg('to') ) {
+       warn "No --to specified!\n";
+       $self->print_usage;
+    }
 }
+
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;

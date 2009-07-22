@@ -2,8 +2,21 @@ package Prophet::CLI::Command::Init;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+    my $env_var = uc $cmd . '_REPO';
+    $env_var =~ s/ //;
+
+    return <<"END_USAGE";
+usage: [${env_var}=/path/to/new/repo] ${cmd}init
+END_USAGE
+}
+
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     if ($self->app_handle->handle->replica_exists) {
         print "Your Prophet database already exists.\n";

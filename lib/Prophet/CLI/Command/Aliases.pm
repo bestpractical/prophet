@@ -6,8 +6,21 @@ extends 'Prophet::CLI::Command::Config';
 
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(), s => 'show' };
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}aliases [show]
+       ${cmd}aliases edit [--global|--user]
+       ${cmd}alias <alias text> [<text to translate to>]
+END_USAGE
+}
+
 sub run {
     my $self     = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     my $config = $self->config;
 
@@ -147,11 +160,19 @@ sub process_template {
 # override the messages from Config module with messages w/better context for
 # Aliases
 override delete_usage_msg => sub {
-    qq{usage: $_[1] delete "alias text"\n};
+    my $self = shift;
+    my $app_cmd = $self->get_cmd_name;
+    my $cmd = shift;
+
+    qq{usage: ${app_cmd}${cmd} "alias text"\n};
 };
 
 override add_usage_msg => sub {
-    qq{usage: $_[1] $_[2]"alias text" "cmd to translate to"\n};
+    my $self = shift;
+    my $app_cmd = $self->get_cmd_name;
+    my ($cmd, $subcmd) = @_;
+
+    qq{usage: ${app_cmd}$cmd $subcmd "alias text" "cmd to translate to"\n};
 };
 
 __PACKAGE__->meta->make_immutable;

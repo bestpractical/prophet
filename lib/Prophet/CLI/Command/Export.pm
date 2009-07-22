@@ -2,18 +2,30 @@ package Prophet::CLI::Command::Export;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}export --path <path> [--format feed]
+END_USAGE
+}
+
 sub run {
     my $self = shift;
     my $class;
 
+    $self->print_usage if $self->has_arg('h');
+
     unless ($self->context->has_arg('path')) {
-        die "You need to specify a --path argument to the 'export' command"."\n";
+        warn "No --path argument specified!\n";
+        $self->print_usage;
     }
 
-    
     if ($self->context->has_arg('format') && ($self->context->arg('format') eq 'feed') ){
         $class = 'Prophet::ReplicaFeedExporter';
-    } else {
+    }
+    else {
         $class = 'Prophet::ReplicaExporter';
     }
 

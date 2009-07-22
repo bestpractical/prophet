@@ -5,6 +5,16 @@ with 'Prophet::CLI::RecordCommand';
 
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(), e => 'edit' };
 
+sub usage_msg {
+    my $self = shift;
+    my ($cmd, $type_and_subcmd) = $self->get_cmd_and_subcmd_names;
+
+    return <<"END_USAGE";
+usage: ${cmd}${type_and_subcmd} <record-id> --edit
+       ${cmd}${type_and_subcmd} <record-id> -- prop1="new value"
+END_USAGE
+}
+
 sub edit_record {
     my $self   = shift;
     my $record = shift;
@@ -27,6 +37,8 @@ sub edit_record {
 
 sub run {
     my $self = shift;
+
+    $self->print_usage if $self->has_arg('h');
 
     $self->context->require_uuid;
     my $record = $self->_load_record;

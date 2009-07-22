@@ -4,9 +4,22 @@ extends 'Prophet::CLI::Command::Merge';
 
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  l => 'local' };
 
+sub usage_msg {
+    my $self = shift;
+    my $cmd = $self->get_cmd_name;
+
+    return <<"END_USAGE";
+usage: ${cmd}pull --from <url|name>
+       ${cmd}pull --all
+       ${cmd}pull --local
+END_USAGE
+}
+
 sub run {
     my $self = shift;
     my @from;
+
+    $self->print_usage if $self->has_arg('h');
 
     Prophet::CLI->end_pager();
 
@@ -56,10 +69,12 @@ sub run {
 
 sub validate_args {
     my $self = shift;
-    die "Please specify a --from, --local or --all.\n"
-        unless ( $self->has_arg('from')
-        || $self->has_arg('local')
-        || $self->has_arg('all') );
+
+    unless ( $self->has_arg('from') || $self->has_arg('local') ||
+        $self->has_arg('all') ) {
+        warn "No --from, --local, or --all specified!\n";
+        $self->print_usage;
+    }
 }
 
 =head2 find_bonjour_sources
