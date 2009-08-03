@@ -160,22 +160,6 @@ sub setup_from_args {
 
 }
 
-
-=head2 require_uuid
-
-Checks to make sure the uuid attribute is set. Prints an error and dies
-if it is not set.
-
-=cut
-
-sub require_uuid {
-    my $self    = shift;
-
-    if (!$self->has_uuid) {
-        die "This command requires a luid or uuid (use --id to specify).\n";
-    }
-}
-
 =head2 parse_args @args
 
 This routine pulls arguments (specified by --key=value or --key

@@ -40,7 +40,7 @@ sub run {
 
     $self->print_usage if $self->has_arg('h');
 
-    $self->context->require_uuid;
+    $self->require_uuid;
     my $record = $self->_load_record;
 
     my $new_props = $self->edit_record($record);
