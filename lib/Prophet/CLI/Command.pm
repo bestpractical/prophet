@@ -81,7 +81,7 @@ sub fatal_error {
 =head2 require_uuid
 
 Checks to make sure the uuid attribute is set. Prints an error and dies
-if it is not set.
+with the command's usage string if it is not set.
 
 =cut
 
@@ -91,7 +91,8 @@ sub require_uuid {
     if (!$self->has_uuid) {
         my $type = $self->type;
         my $name = (split /::/, $self->meta->name)[-1];
-        die "\u$type \l$name requires a luid or uuid (use --id to specify).\n";
+        warn "No UUID or LUID given!\n";
+        $self->print_usage;
     }
 }
 
