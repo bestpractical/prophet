@@ -15,14 +15,14 @@ END_USAGE
 }
 
 # Default: last 20 entries.
-# sd log --all                    # show it all (overrides everything else)
-# sd log --range 0..LATEST~5      # shows the first until 5 from the latest
-# sd log --range LATEST~10        # shows last 10 entries
-# sd log --range LATEST           # shows the latest entry
+# prophet log --all                    # show it all (overrides everything else)
+# prophet log --range 0..LATEST~5      # shows the first until 5 from the latest
+# prophet log --range LATEST~10        # shows last 10 entries
+# prophet log --range LATEST           # shows the latest entry
 
 # syntactic sugar in dispatcher:
-#  sd log 0..LATEST~5 => sd log --range 0..LATEST~5
-#  sd log LATEST~10   => sd log --range LATEST~10
+#  prophet log 0..LATEST~5 => prophet log --range 0..LATEST~5
+#  prophet log LATEST~10   => prophet log --range LATEST~10
 
 sub run {
     my $self   = shift;
