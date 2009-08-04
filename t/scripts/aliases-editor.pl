@@ -5,8 +5,7 @@ use Prophet::Test::Editor;
 
 # perl script to trick Proc::InvokeEditor with for the settings command
 
-my %tmpl_files = ( '--first' => 'aliases.tmpl',
-);
+my %tmpl_files = ( '--first' => 'aliases.tmpl' );
 
 Prophet::Test::Editor::edit(
     tmpl_files => \%tmpl_files,
