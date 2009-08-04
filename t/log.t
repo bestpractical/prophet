@@ -97,9 +97,10 @@ $out = run_command('log', 'LATEST~2');
 like($out, qr{$third\n\n$second\n\n}, "syntactic sugar doesn't change output");
 
 # error -- invalid input
-run_output_matches('prophet', [ 'log', 'invalid' ],
-    [], [ "Invalid range specified.\n" ], "invalid input caught correctly" );
+(undef, my $error) = run_command( 'log', '--range', 'invalid' );
+is( $error, "Invalid range specified.\n", "invalid input caught correctly" );
 
 # error -- end is before start
-run_output_matches('prophet', [ 'log', '10..5' ],
-    [], [ "START must be before END in START..END." ], "caught START before END correctly" );
+(undef, $error) = run_command( 'log', '10..5' );
+is( $error, "START must be before END in START..END.\n",
+    "caught START before END correctly" );

@@ -1,74 +1,85 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Prophet::Test tests => 16;
+use Prophet::Test tests => 17;
+
+use_ok('Prophet::CLI::Command::Search');
 
 as_alice {
-    run_ok('prophet', [qw(init)], "created a db as alice");
-    run_ok('prophet', [qw(create --type=Bug --), 'summary=first ticket summary', 'status=new'], "created a record as alice");
-    run_ok('prophet', [qw(create --type=Bug --), 'summary=other ticket summary', 'status=open'], "created a record as alice");
-    run_ok('prophet', [qw(create --type=Bug --), 'summary=bad ticket summary', 'status=stalled', 'cmp=ne'], "created a record as alice");
+    ok( run_command( 'init' ), 'created a db as alice' );
+    ok( run_command(
+            qw(create --type=Bug --),
+            'summary=first ticket summary',
+            'status=new',
+        ), 'created a record as alice');
+    ok( run_command(
+            qw(create --type=Bug --),
+            'summary=other ticket summary',
+            'status=open'),
+        'created a record as alice' );
+    ok( run_command(
+            qw(create --type=Bug --), 'summary=bad ticket summary',
+            'status=stalled', 'cmp=ne',
+        ), 'created a record as alice');
 
-    run_output_matches('prophet', [qw(search --type Bug --regex .)],
-        [qr/first ticket summary/,
-         qr/other ticket summary/,
-         qr/bad ticket summary/], [],
-        "Found our records",
-    );
+    my $out = run_command( qw(search --type Bug --regex .));
+    my $expected = qr/.*first ticket summary.*
+.*other ticket summary.*
+.*bad ticket summary.*
+/;
+    like( $out, $expected, 'Found our records' );
 
-    run_output_matches('prophet', [qw(ls --type Bug -- status=new)],
-        [qr/first ticket summary/], [],
-        "found the only ticket with status=new",
-    );
+    $out = run_command( qw(ls --type Bug -- status=new));
+    $expected = qr/.*first ticket summary.*/;
+    like( $out, $expected, 'found the only ticket with status=new' );
+    $out = run_command(qw(search --type Bug -- status=open));
+    $expected = qr/.*other ticket summary.*/;
+    like( $out, $expected, 'found the only ticket with status=open' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status=open)],
-        [qr/other ticket summary/], [],
-        "found the only ticket with status=open",
-    );
+    $out = run_command( qw(search --type Bug -- status=closed));
+    $expected = '';
+    is( $out, $expected, 'found no tickets with status=closed' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status=closed)],
-        [], [],
-        "found no tickets with status=closed",
-    );
+    $out = run_command(qw(search --type Bug -- status=new status=open));
+    $expected = qr/.*first ticket summary.*
+.*other ticket summary.*
+/;
+    like( $out, $expected, 'found two tickets with status=new OR status=open' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status=new status=open)],
-        [qr/first ticket summary/, qr/other ticket summary/], [],
-        "found two tickets with status=new OR status=open",
-    );
+    $out = run_command(qw(search --type Bug -- status!=new));
+    $expected = qr/.*other ticket summary.*
+.*bad ticket summary.*
+/;
+    like( $out, $expected, 'found two tickets with status!=new' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status!=new)],
-        [qr/other ticket summary/, qr/bad ticket summary/], [],
-        "found two tickets with status!=new",
-    );
+    $out = run_command(qw(search --type Bug -- status=~n));
+    $expected = qr/.*first ticket summary.*
+.*other ticket summary.*
+/;
+    like( $out, $expected, 'found two tickets with status=~n' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status=~n)],
-        [qr/first ticket summary/, qr/other ticket summary/], [],
-        "found two tickets with status=~n",
-    );
+    $out = run_command(qw(search --type Bug -- summary=~first|bad));
+    $expected = qr/.*first ticket summary.*
+.*bad ticket summary.*
+/;
+    like( $out, $expected, 'found two tickets with status=~first|stalled' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- summary=~first|bad)],
-        [qr/first ticket summary/, qr/bad ticket summary/], [],
-        "found two tickets with status=~first|stalled",
-    );
+    $out = run_command(qw(search --type Bug -- status !=new summary=~first|bad));
+    $expected = qr/bad ticket summary/;
+    like( $out, $expected, 'found two tickets with status=~first|bad' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status !=new summary=~first|bad)],
-        [qr/bad ticket summary/], [],
-        "found two tickets with status=~first|bad",
-    );
+    $out = run_command(qw(search --type Bug -- status ne new summary =~ first|bad));
+    $expected = qr/bad ticket summary/;
+    like( $out, $expected, 'found two tickets with status=~first|bad' );
 
-    run_output_matches('prophet', [qw(search --type Bug -- status ne new summary =~ first|bad)],
-        [qr/bad ticket summary/], [],
-        "found two tickets with status=~first|bad",
-    );
-
-    run_output_matches('prophet', [qw(search --type Bug -- cmp ne)],
-        [qr/bad ticket summary/], [],
+    $out = run_command(qw(search --type Bug -- cmp ne));
+    $expected = qr/bad ticket summary/;
+    like( $out, $expected,
         "found the ticket with cmp=ne (which didn't treat 'ne' as a comparator)",
     );
 
-    run_output_matches('prophet', [qw(search --type Bug --regex=new -- status=~n)],
-        [qr/first ticket summary/], [],
-        "found a ticket with regex and props working together",
-    );
+    $out = run_command(qw(search --type Bug --regex=new -- status=~n));
+    $expected = qr/first ticket summary/;
+    like( $out, $expected, 'found a ticket with regex and props working together' );
 };
 

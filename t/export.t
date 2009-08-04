@@ -5,10 +5,13 @@ use strict;
 
 use Prophet::Test tests => 17;
 use Test::Exception;
+
 as_alice {
-    run_ok('prophet', [qw(init)]);
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
+    ok( run_command( qw(init) ), 'alice replica init' );
+    ok( run_command( qw(create --type Bug -- --status new --from alice )),
+        'Created a record as alice' );
+    my $out = run_command( qw(search --type Bug --regex .));
+    like( $out, qr/new/, 'Found our record' );
 };
 
 diag('Bob syncs from alice');
@@ -18,39 +21,43 @@ my $record_id;
 use File::Temp 'tempdir';
 
 as_bob {
-
-
     diag repo_uri_for('bob');
     diag repo_uri_for('alice');
 
-    run_ok( 'prophet', [ 'clone', '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
-    run_ok( 'prophet', [qw(create --type Dummy -- --ignore yes)], "Created a dummy record" );
+    ok( run_command( 'clone', '--from', repo_uri_for('alice'), '--force' ),
+        'Sync ran ok!' );
+    ok( run_command(qw(create --type Dummy -- --ignore yes)),
+        'Created a dummy record' );
 
     # check our local replicas
-    my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
-    like( $out, qr/new/, "We have the one record from alice" );
+    my $out = run_command( qw(search --type Bug --regex .) );
+    like( $out, qr/new/, 'We have the one record from alice' );
     if ( $out =~ /'uuid': '(.*?)'\s./ ) {
         $record_id = $1;
     }
     diag($record_id);
 
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
-    run_output_matches(
-        'prophet',
-        ['show', '--type', 'Bug', '--uuid', $record_id, '--batch'],
-        [
-            qr/id: (\d+) \($record_id\)/,
-              'creator: alice@example.com',
-              'from: alice',
-              'original_replica: ' . replica_uuid_for('alice'),
-              'status: stalled',
-        ], [],
-        'content is correct'
+    ok( run_command(
+            'update', '--type', 'Bug', '--uuid', $record_id,
+            '--', '--status' => 'stalled'),
+        'update record'
     );
+    $out = run_command(
+        'show', '--type', 'Bug', '--uuid', $record_id, '--batch'
+    );
+    my $alice_uuid = replica_uuid_for('alice');
+    my $expected = qr/id: (\d+) \($record_id\)
+creator: alice\@example.com
+from: alice
+original_replica: $alice_uuid
+status: stalled
+/;
+    like( $out, $expected, 'content is correct' );
 
     my $path = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} ) ;
 
-    run_ok( 'prophet', [ 'export', '--path', $path ] );
+    ok( run_command( 'export', '--path', $path ), 'export ok' );
+
     my $cli = Prophet::CLI->new;
     ok( -d $path,                       'found db-uuid root ' . $path );
     ok( -e File::Spec->catdir($path => 'replica-uuid'), 'found replica uuid file' );
