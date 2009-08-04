@@ -309,7 +309,8 @@ sub serialize_changeset {
 
 Run the given command with (optionally) the given args using a new
 L<Prophet::CLI> object. Returns the standard output of that command
-in scalar form.
+in scalar form or, in array context, the STDOUT in scalar form
+*and* the STDERR in scalar form.
 
 Examples:
 
@@ -319,9 +320,12 @@ Examples:
 
 sub run_command {
     my $output = '';
-    open my $handle, '>', \$output;
-    Prophet::CLI->new->invoke($handle, @_);
-    return $output;
+    my $error  = '';
+    open my $out_handle, '>', \$output;
+
+    Prophet::CLI->new->invoke($out_handle, \$error, @_);
+
+    return wantarray ? ($output, $error) : $output;
 }
 
 {
