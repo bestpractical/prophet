@@ -112,7 +112,7 @@ sub _parse_delimiter {
         my $offset;
         $offset = 0 if $delim eq 'LATEST';
         (undef, $offset) = split(/~/, $delim, 2) if $delim =~ m/^LATEST~/;
-        return undef unless $offset =~ m/^\d+$/;
+        return undef unless defined $offset && $offset =~ m/^\d+$/;
 
         return $self->handle->latest_sequence_no - $offset;
     }
