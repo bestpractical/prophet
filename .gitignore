@@ -6,3 +6,4 @@ Makefile.old
 .prove
 MANIFEST*
 META.yml
+cover_db
