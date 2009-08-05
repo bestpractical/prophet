@@ -3,11 +3,10 @@ use strict;
 use Prophet::Test tests => 2;
 
 as_alice {
-    run_output_matches('prophet', [qw(init)],
-        [qr/Initialized your new Prophet database/]);
-    run_output_matches('prophet', [qw(init)],
-        [qr/Your Prophet database already exists/]);
+    my $output = run_command( qw(init) );
+    like( $output, qr/Initialized your new Prophet database/, 'init' );
+    $output = run_command( qw(init) );
+    like( $output, qr/Your Prophet database already exists/,
+        'init w/existing replica');
 };
-
-1;
 

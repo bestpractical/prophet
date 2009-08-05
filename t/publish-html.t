@@ -2,26 +2,33 @@
 use warnings;
 use strict;
 use Prophet::Test tests => 13;
-use Test::Exception;
 use File::Temp 'tempdir';
 use File::Spec;
-use Params::Validate;
 
 my ($bug_uuid, $pullall_uuid);
 
 my $alice_published = tempdir(CLEANUP => ! $ENV{PROPHET_DEBUG});
 
 as_alice {
-    run_ok('prophet', [qw(init)]);
-    run_output_matches( 'prophet',
-        [qw(create --type Bug -- --status new --from alice --summary), 'this is a template test'],
-        [qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/],
-        [],
-        "Created a Bug record as alice");
-    ok($bug_uuid, "got a uuid for the Bug record");
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
+    ok( run_command( qw(init) ), 'replica init' );
+    my $out = run_command(
+        qw(create --type Bug -- --status new --from alice --summary),
+        'this is a template test',
+    );
+    my $expected = qr/Created Bug \d+ \((\S+)\)(?{ $bug_uuid = $1 })/;
+    like( $out, $expected, 'Created a Bug record as alice');
 
-    run_ok( 'prophet', [qw(publish --html --to), $alice_published] );
+    ok($bug_uuid, "got a uuid for the Bug record");
+
+    $out = run_command(
+        qw(search --type Bug --regex .)
+    );
+    $expected = qr/new/;
+    like( $out, $expected, 'Found our record' );
+
+    ok( run_command( qw(publish --html --to), $alice_published ),
+        'alice publish html',
+    );
 };
 
 my $dir = $alice_published;

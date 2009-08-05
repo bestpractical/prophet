@@ -6,16 +6,12 @@ use strict;
 use Prophet::Test tests => 17;
 
 as_alice {
-    run_ok( 'prophet', [qw(init)] );
-    run_ok(
-        'prophet',
-        [qw(create --type Bug -- --status new-alice --from alice )],
-        "Created a record as alice"
+    ok( run_command( qw(init) ), 'replica init' );
+    ok( run_command( qw(create --type Bug -- --status new-alice --from alice )),
+        'Created a record as alice'
     );
-    run_output_matches(
-        'prophet', [qw(search --type Bug --regex .)],
-        [qr/new/], [], "Found our record"
-    );
+    my $output = run_command( qw(search --type Bug --regex .) );
+    like( $output, qr/new/, 'Found our record' );
 
     # update the record
     # show the record history
@@ -24,25 +20,19 @@ as_alice {
 
 diag( repo_uri_for('alice') );
 as_bob {
-    run_ok( 'prophet', [ qw(clone --from), repo_uri_for('alice') ] );
-    run_ok(
-        'prophet',
-        [qw(create --type Bug -- --status open-bob --from bob )],
-        "Created a record as bob"
-    );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex new-alice)],
-        [ qr/new-alice/ ], [], "Found our record"
-    );
+    ok( run_command( qw(clone --from), repo_uri_for('alice') ),
+        'clone from alice' );
+    ok( run_command( qw(create --type Bug -- --status open-bob --from bob ) ),
+        'Created a record as bob' );
+    my $output = run_command( qw(search --type Bug --regex new-alice) );
+    like( $output, qr/new-alice/, 'Found our record' );
 
-    run_output_matches( 'prophet', [qw(search --type Bug --regex open-bob)],
-        [ qr/open-bob/ ], [], "Found our record"
-    );
-
+    $output = run_command( qw(search --type Bug --regex open-bob) );
+    like( $output, qr/open-bob/, 'Found our record' );
 
     # update the record
     # show the record history
     # show the record
-
 };
 
 my ($alice, $alice_app);
@@ -57,8 +47,7 @@ is( $bob->db_uuid, $alice->db_uuid,
 
 my $openbug = '';
 as_bob {
-    my ( $ret, $stdout, $stderr )
-        = run_script( 'prophet', [qw(search --type Bug --regex open-bob)] );
+    my $stdout = run_command( qw(search --type Bug --regex open-bob) );
     if ( $stdout =~ /^'uuid': '(.*?)'\s/ ) {
         $openbug = $1;
     }
@@ -133,8 +122,8 @@ as_alice {
     # sync from bob
     diag('Alice syncs from bob');
     is( $alice->last_changeset_from_source( $bob->uuid ) => -1 );
-    run_ok( 'prophet', [ 'pull', '--from', repo_uri_for('bob') ],
-        "Sync ran ok!" );
+    ok( run_command( 'pull', '--from', repo_uri_for('bob') ),
+        'Sync ran ok!' );
     is( $alice->last_changeset_from_source( $bob->uuid ) =>
             $bob->latest_sequence_no );
 };
@@ -142,13 +131,9 @@ as_alice {
 my $last_id;
 
 as_bob {
-    run_ok(
-        'prophet',
-        [qw(create --type Bug -- --status new2-bob --from bob )],
-        "Created a record as bob"
-    );
-    my ( $ret, $stdout, $stderr )
-        = run_script( 'prophet', [qw(search --type Bug --regex new2)] );
+    ok( run_command( qw(create --type Bug -- --status new2-bob --from bob ) ),
+        'Created a record as bob');
+    my $stdout = run_command( qw(search --type Bug --regex new2) );
     if ( $stdout =~ /^'uuid': '(.*?)'\s/ ) {
         $last_id = $1;
     }

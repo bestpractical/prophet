@@ -6,9 +6,11 @@ use strict;
 use Prophet::Test tests => 24;
 
 as_alice {
-    run_ok( 'prophet', ['init']);
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], "Found our record" );
+    ok( run_command( 'init' ), 'alice replica init' );
+    ok( run_command( qw(create --type Bug -- --status new --from alice )),
+        'Created a record as alice' );
+    my $output = run_command( qw(search --type Bug --regex .) );
+    like( $output, qr/new/, 'Found our record' );
 
     # update the record
     # show the record history
@@ -16,24 +18,27 @@ as_alice {
 };
 
 as_bob {
-    run_ok( 'prophet', [qw(init)]);
-    run_ok( 'prophet', [qw(create --type Bug -- --status open --from bob )], "Created a record as bob" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/open/], [], "Found our record" );
+    ok( run_command( qw(init) ), 'bob replica init' );
+    ok( run_command( qw(create --type Bug -- --status open --from bob ) ),
+        'Created a record as bob' );
+    my $output = run_command( qw(search --type Bug --regex .) );
+    like( $output, qr/open/, 'Found our record' );
 
     # update the record
     # show the record history
     # show the record
-
 };
 
 as_alice {
-
     # sync from bob
     diag('Alice syncs from bob');
-    run_ok( 'prophet', [ 'merge',  '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    ok( run_command(
+            'merge',  '--from', repo_uri_for('bob'),
+            '--to', repo_uri_for('alice'), '--force',
+        ), 'Sync ran ok!' );
 
     # check our local replicas
-    my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
+    my $out = run_command( qw(search --type Bug --regex .) );
     like( $out, qr/open/ );
     like( $out, qr/new/ );
     my @out = split( /\n/, $out );
@@ -44,10 +49,13 @@ as_alice {
     diag('Alice syncs from bob again. There will be no new changes from bob');
 
     # sync from bob
-    run_ok( 'prophet', [ 'merge',  '--from', repo_uri_for('bob'), '--to', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    ok( run_command(
+            'merge',  '--from', repo_uri_for('bob'),
+            '--to', repo_uri_for('alice'), '--force',
+        ), 'Sync ran ok!' );
 
     # check our local replicas
-    ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
+    $out = run_command(  qw(search --type Bug --regex .) );
     like( $out, qr/open/ );
     like( $out, qr/new/ );
     @out = split( /\n/, $out );
@@ -62,15 +70,17 @@ diag('Bob syncs from alice');
 as_bob {
     my $last_rev = replica_last_rev();
 
-    my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
+    my $out = run_command( qw(search --type Bug --regex .) );
     unlike( $out, qr/new/, "bob doesn't have alice's yet" );
 
     # sync from alice
-
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    ok( run_command(
+            'merge',  '--to', repo_uri_for('bob'),
+            '--from', repo_uri_for('alice'), '--force',
+        ), 'Sync ran ok!' );
 
     # check our local replicas
-    ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
+    $out = run_command( qw(search --type Bug --regex .) );
     like( $out, qr/open/ );
     like( $out, qr/new/ );
     is( replica_last_rev, $last_rev + 1, "only one rev from alice is sycned" );
@@ -79,7 +89,10 @@ as_bob {
     $last_rev = replica_last_rev();
 
     diag('Sync from alice to bob again');
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('bob'), '--from', repo_uri_for('alice'), '--force' ], "Sync ran ok!" );
+    ok( run_command(
+            'merge',  '--to', repo_uri_for('bob'),
+            '--from', repo_uri_for('alice'), '--force',
+        ), 'Sync ran ok!' );
 
     is( replica_last_rev(), $last_rev, "We have not recorded another transaction after a second sync" );
 
@@ -87,10 +100,13 @@ as_bob {
 
 as_alice {
     my $last_rev = replica_last_rev();
-    run_ok( 'prophet', [ 'merge',  '--to', repo_uri_for('alice'), '--from', repo_uri_for('bob'), '--force' ], "Sync ran ok!" );
+    ok( run_command(
+            'merge',  '--to', repo_uri_for('alice'),
+            '--from', repo_uri_for('bob'), '--force',
+        ), 'Sync ran ok!' );
+
     is( replica_last_rev(), $last_rev,
         "We have not recorded another transaction after bob had fully synced from alice" );
-
 }
 
 # create 1 record
