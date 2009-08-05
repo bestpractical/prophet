@@ -1,22 +1,14 @@
-#!/usr/bin/perl 
-#
+#!/usr/bin/perl
 use warnings;
 use strict;
-use Prophet::Test tests => 38;
-use File::Temp qw/tempdir/;
-use Test::Script::Run;
+
+use Prophet::Test tests => 36;
+use File::Temp qw(tempdir);
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
+diag "Replica is in $ENV{PROPHET_REPO}";
 
 # command usage messages
-
-use_ok('Prophet::CLI');
-
-my $cli = Prophet::CLI->new();
-my $cxn = $cli->handle;
-isa_ok($cxn, 'Prophet::Replica');
-
-$cxn->initialize;
 
 my @cmds = (
     {
