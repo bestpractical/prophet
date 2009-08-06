@@ -38,8 +38,7 @@ sub run {
             $done = $self->try_to_edit( template => \$template );
         }
     }
-
-    if ( $self->context->has_arg('set') ) {
+    elsif ( $self->context->has_arg('set') ) {
         for my $name ( $self->context->prop_names ) {
             my $uuid;
             if ($settings->{$name}) {
@@ -62,9 +61,10 @@ sub run {
         }
         return;
     }
-
-    print $template. "\n";
-    return;
+    else {
+        print $template. "\n";
+        return;
+    }
 }
 
 sub make_template {

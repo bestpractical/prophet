@@ -23,7 +23,7 @@ run_ok( 'settings', [ 'init' ] );
 my $replica_uuid = replica_uuid;
 
 # test noninteractive set
-run_output_matches( 'settings', [ 'settings', '--set', '--', 'statuses',
+run_output_matches( 'settings', [ 'settings', 'set', '--', 'statuses',
     '["new","open","stalled"]' ],
     [
         'Trying to change statuses from ["new","open","stalled","closed"] to ["new","open","stalled"].',
@@ -37,7 +37,7 @@ chomp (@valid_settings_output);
 
 run_output_matches(
     'settings',
-    [ qw/settings --show/ ],
+    [ qw/settings show/ ],
     [ @valid_settings_output ], [], "changed settings output matches"
 );
 
@@ -50,7 +50,7 @@ diag ("interactive template status will be found in $filename");
 Prophet::Test->set_editor_script("settings-editor.pl --first $filename");
 
 # then edit the settings
-run_output_matches( 'settings', [ 'settings' ],
+run_output_matches( 'settings', [ 'settings', 'edit' ],
     [
         'Changed default_status from ["new"] to ["open"].',
         'Setting with uuid "6FBD84A1-4568-48E7-B90C-F1A5B7BD8ECD" does not exist.',
@@ -66,7 +66,7 @@ chomp (@valid_settings_output);
 
 run_output_matches(
     'settings',
-    [ qw/settings --show/ ],
+    [ qw/settings show/ ],
     [ @valid_settings_output ], [], "changed settings output matches"
 );
 
@@ -75,7 +75,7 @@ my $second_filename = File::Temp->new(
     TEMPLATE => File::Spec->catfile(File::Spec->tmpdir(), '/statusXXXXX') )->filename;
 diag ("interactive template status will be found in $second_filename");
 Prophet::Test->set_editor_script("settings-editor.pl --second $second_filename");
-run_output_matches( 'settings', [ 'settings' ],
+run_output_matches( 'settings', [ 'settings', 'edit' ],
     [
         qr/^An error occured setting default_milestone to \["alpha":/,
         'Changed default_component from ["core"] to ["ui"].',
