@@ -9,7 +9,7 @@ sub usage_msg {
     $env_var =~ s/ //;
 
     return <<"END_USAGE";
-usage: [${env_var}=/path/to/new/repo] ${cmd}init
+usage: ${cmd}init
 END_USAGE
 }
 

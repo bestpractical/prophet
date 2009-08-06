@@ -104,7 +104,7 @@ my @cmds = (
     },
     {
         cmd     => [ 'init', '-h' ],
-        error   => [ 'usage: [USAGE.T_REPO=/path/to/new/repo] usage.t init' ],
+        error   => [ 'usage: usage.t init' ],
         comment => 'init usage',
     },
     {
