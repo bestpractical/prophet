@@ -228,7 +228,11 @@ sub _create_record {
 
 =head2 load { uuid => $UUID } or { luid => $UUID }
 
-Loads a Prophet record off disk by its uuid or luid.
+Given a UUID or LUID, look up the LUID or UUID (the opposite of what was
+given) in the database. Set this record's LUID and UUID attributes, and return
+the LUID or UUID (whichever wasn't given in the method call).
+
+Returns undef if the record doesn't exist in the database.
 
 =cut
 
