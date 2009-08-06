@@ -1,45 +1,40 @@
 #!/usr/bin/perl -w
-
+use warnings;
 use strict;
 
-use Prophet::Test tests => 9;
-use Prophet::Util;
-use File::Temp qw(tempdir);
-use File::Spec;
-no warnings 'once';
+use lib 't/Settings/lib';
 
-$ENV{'PERL5LIB'} .=  ':t/Settings/lib';
+use App::Settings::Test tests => 9;
+use Prophet::Util;
+use File::Spec;
+use Test::Script::Run;
+no warnings 'once';
 
 # test the CLI and interactive UIs for showing and updating settings
 
 BEGIN {
-    require File::Temp;
-    $ENV{'PROPHET_REPO'} = File::Temp::tempdir( CLEANUP => 1 ) . '/_svb';
+    $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/_svb';
     diag $ENV{'PROPHET_REPO'};
 }
 
-run_ok( 'settings', [ 'init' ] );
-
-my $replica_uuid = replica_uuid;
+my $out = run_settings_command( 'init' );
+is( $out, "Initialized your new Prophet database.\n", 'replica init' );
 
 # test noninteractive set
-run_output_matches( 'settings', [ 'settings', 'set', '--', 'statuses',
-    '["new","open","stalled"]' ],
-    [
-        'Trying to change statuses from ["new","open","stalled","closed"] to ["new","open","stalled"].',
-        ' -> Changed.',
-    ], [], "settings --set went ok",
+$out = run_settings_command(
+    'settings', 'set', '--', 'statuses', '["new","open","stalled"]',
 );
+my $expected = <<'END_OUTPUT';
+Trying to change statuses from ["new","open","stalled","closed"] to ["new","open","stalled"].
+ -> Changed.
+END_OUTPUT
+is( $out, $expected, "settings set went ok" );
 
-# check with settings --show
-my @valid_settings_output = Prophet::Util->slurp('t/data/settings-first.tmpl');
-chomp (@valid_settings_output);
+# check with settings show
+my $valid_settings_output = Prophet::Util->slurp('t/data/settings-first.tmpl');
 
-run_output_matches(
-    'settings',
-    [ qw/settings show/ ],
-    [ @valid_settings_output ], [], "changed settings output matches"
-);
+$out = run_settings_command( qw/settings/ );
+is( $out, $valid_settings_output, "changed settings output matches" );
 
 # test settings (interactive editing)
 
@@ -50,25 +45,26 @@ diag ("interactive template status will be found in $filename");
 Prophet::Test->set_editor_script("settings-editor.pl --first $filename");
 
 # then edit the settings
+# (can't use run_settings_command with editor scripts because they don't play nicely
+# with output redirection)
 run_output_matches( 'settings', [ 'settings', 'edit' ],
     [
         'Changed default_status from ["new"] to ["open"].',
         'Setting with uuid "6FBD84A1-4568-48E7-B90C-F1A5B7BD8ECD" does not exist.',
     ], [], "interactive settings set went ok",);
 
+
 # check the tempfile to see if the template presented to the editor was correct
 chomp(my $template_ok = Prophet::Util->slurp($filename));
 is($template_ok, 'ok!', "interactive template was correct");
 
 # check the settings with settings --show
-@valid_settings_output = Prophet::Util->slurp('t/data/settings-second.tmpl');
-chomp (@valid_settings_output);
+$valid_settings_output = Prophet::Util->slurp('t/data/settings-second.tmpl');
 
-run_output_matches(
-    'settings',
-    [ qw/settings show/ ],
-    [ @valid_settings_output ], [], "changed settings output matches"
-);
+($out, my $error) = run_settings_command( qw/settings show/ );
+is( $out, $valid_settings_output, "changed settings output matches" );
+warn "going to print error of settings show";
+diag $error;
 
 # test setting to invalid json
 my $second_filename = File::Temp->new(
@@ -86,12 +82,9 @@ run_output_matches( 'settings', [ 'settings', 'edit' ],
 chomp($template_ok = Prophet::Util->slurp($filename));
 is($template_ok, 'ok!', "interactive template was correct");
 
-# check the settings with settings --show
-@valid_settings_output = Prophet::Util->slurp('t/data/settings-third.tmpl');
-chomp (@valid_settings_output);
+# check the settings with settings show
+$valid_settings_output = Prophet::Util->slurp('t/data/settings-third.tmpl');
 
-run_output_matches(
-    'settings',
-    [ qw/settings --show/ ],
-    [ @valid_settings_output ], [], "changed settings output matches"
-);
+# run_settings_command( 'settings' );
+$out = run_settings_command( qw/settings show/ );
+is( $out, $valid_settings_output, 'changed settings output matches' );
