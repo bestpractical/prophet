@@ -72,7 +72,9 @@ sub make_template {
 
     my $content = '';
 
-    # get all settings records
+    # get all settings records (the defaults, not the
+    # ones in the DB) -- current values from the DB are retrieved in
+    # _make_template_entry)
     my $settings = $self->app_handle->database_settings;
     for my $name ( keys %$settings ) {
         my @metadata = @{ $settings->{$name} };
@@ -103,6 +105,8 @@ sub _make_template_entry {
         "# uuid: " 
       . $setting->uuid . "\n" 
       . $setting->label . ": "
+        # this is what does the actual loading of settings
+        # in the database to override the defaults
       . to_json( $setting->get,
         { canonical => 1, pretty => 0, utf8 => 1, allow_nonref => 0 } );
 
