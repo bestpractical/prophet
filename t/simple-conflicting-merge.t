@@ -9,9 +9,11 @@ use Test::Exception;
 use_ok('Prophet::Replica');
 
 as_alice {
-    run_ok( 'prophet' , ['init']);
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
-    run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], "Found our record" );
+    ok( run_command( 'init' ), 'replica init' );
+    ok( run_command( qw(create --type Bug -- --status new --from alice ) ),
+        'Created a record as alice' );
+    my $output = run_command( qw(search --type Bug --regex .) );
+    like( $output, qr/new/, 'Found our record' );
 };
 
 diag('Bob syncs from alice');
@@ -19,28 +21,31 @@ diag('Bob syncs from alice');
 my $record_id;
 
 as_bob {
-    run_ok( 'prophet', [ 'clone', '--from', repo_uri_for('alice')], "Sync ran ok!" );
+    ok( run_command( 'clone', '--from', repo_uri_for('alice') ),
+        'Sync ran ok!' );
 
     # check our local replicas
-    my ( $ret, $out, $err ) = run_script( 'prophet', [qw(search --type Bug --regex .)] );
+    my $out = run_command( qw(search --type Bug --regex .) );
     like( $out, qr/new/, "We have the one record from alice" );
     if ( $out =~ /'uuid': '(.*?)'/ ) {
         $record_id = $1;
     }
 
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
-    run_output_matches(
-        'prophet',
-        [ 'show', '--batch', '--type', 'Bug', '--uuid', $record_id ],
-        [
-            qr/id: (\d+) \($record_id\)/,
-              'creator: alice@example.com',
-              'from: alice',
-              'original_replica: ' . replica_uuid_for('alice'),
-              'status: stalled',
-        ], [],
-        'content is correct'
+    ok( run_command(
+            'update', '--type', 'Bug', '--uuid', $record_id,
+            '--', '--status' => 'stalled',
+        ),
+        'update record',
     );
+    $out = run_command(
+        'show', '--batch', '--type', 'Bug', '--uuid', $record_id );
+    my $alice_uuid = replica_uuid_for('alice');
+    my $expected = qr/id: (\d+) \($record_id\)
+creator: alice\@example.com
+from: alice
+original_replica: $alice_uuid
+status: stalled/;
+    like( $out, $expected, 'content is correct' );
 };
 
 
@@ -51,21 +56,22 @@ as_alice { $alice_app = Prophet::CLI->new()->app_handle; $alice = $alice_app->ha
 
 
 as_alice {
-    run_ok( 'prophet', [ 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled' ] );
-    run_output_matches(
-        'prophet',
-        ['show', '--type', 'Bug', '--uuid', $record_id, '--batch', ],
-        [
-            qr/id: (\d+) \($record_id\)/,
-              'creator: alice@example.com',
-              'from: alice',
-              'original_replica: ' . replica_uuid_for('alice'),
-              'status: stalled',
-        ], [],
-        'content is correct'
+    ok( run_command(
+            'update', '--type', 'Bug', '--uuid',
+            $record_id, '--', '--status' => 'stalled',
+        ),
+        'update record as alice',
     );
-
-
+    my $output = run_command(
+        'show', '--type', 'Bug', '--uuid', $record_id, '--batch',
+    );
+    my $alice_uuid = replica_uuid_for('alice');
+    my $expected = qr/id: (\d+) \($record_id\)
+creator: alice\@example.com
+from: alice
+original_replica: $alice_uuid
+status: stalled/;
+    like( $output, $expected, 'content is correct' );
 };
 
 # This conflict, we can autoresolve

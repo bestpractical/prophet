@@ -31,36 +31,29 @@ as_bob {
 
     like(run_command( 'update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'stalled'), qr/Bug .* updated/);
 
-    run_output_matches(
-        'prophet',
-        [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
-        [
-        qr/id: (\d+) \($record_id\)/,
-          'creator: alice@example.com',
-          'from: alice',
-          'original_replica: ' . replica_uuid_for('alice'),
-          'status: stalled',
-        ], [],
-        'content is correct'
-    );
+    my $alice_uuid = replica_uuid_for('alice');
+    my $expected = qr/id: (\d+) \($record_id\)
+creator: alice\@example.com
+from: alice
+original_replica: $alice_uuid
+status: stalled/;
+    like( run_command(
+            'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ),
+        $expected, 'content is correct' );
 };
 
 as_alice {
     like(run_command('update', '--type', 'Bug', '--uuid', $record_id, '--', '--status' => 'open' ), qr/Bug .* updated/);
 
-    run_output_matches(
-        'prophet',
-        [ 'show', '--type', 'Bug', '--uuid', $record_id, '--batch' ],
-        [
-            qr/id: (\d+) \($record_id\)/,
-              'creator: alice@example.com',
-              'from: alice',
-              'original_replica: ' . replica_uuid_for('alice'),
-              'status: open',
-        ], [],
-        'content is correct'
-    );
-
+    my $alice_uuid = replica_uuid_for('alice');
+    my $expected = qr/id: (\d+) \($record_id\)
+creator: alice\@example.com
+from: alice
+original_replica: $alice_uuid
+status: open/;
+    like( run_command(
+            'show', '--type', 'Bug', '--uuid', $record_id, '--batch'  ),
+        $expected, 'content is correct' );
 };
 
 my ($alice, $bob, $alice_app, $bob_app);
