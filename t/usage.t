@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 36;
+use Prophet::Test tests => 72;
 use File::Temp qw(tempdir);
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
@@ -206,9 +206,11 @@ my @cmds = (
     {
         cmd     => [ 'settings', '-h' ],
         error   => [
-            'usage: usage.t settings [--show]',
-            '       usage.t settings [--edit]',
-            '       usage.t settings --set -- setting "new value"',
+            'usage: usage.t settings [show]',
+            '       usage.t settings edit',
+            '       usage.t settings set -- setting "new value"',
+            '',
+            'Note that setting values must be valid JSON.',
         ],
         comment => 'settings usage',
     },
@@ -257,6 +259,8 @@ my @cmds = (
     },
 );
 
+my $in_interactive_shell = 0;
+
 for my $item ( @cmds ) {
     my $exp_error
         = defined $item->{error}
@@ -265,3 +269,23 @@ for my $item ( @cmds ) {
     my ($got_output, $got_error) = run_command( @{$item->{cmd}} );
     is( $got_error, $exp_error, $item->{comment} );
 }
+
+$in_interactive_shell = 1;
+
+for my $item ( @cmds ) {
+    my $exp_error
+        = defined $item->{error}
+        ? (join "\n", @{$item->{error}}) . "\n"
+        : '';
+    # in an interactive shell, usage messages shouldn't be printing a command
+    # name
+    $exp_error =~ s/usage.t //g;
+    my ($got_output, $got_error) = run_command( @{$item->{cmd}} );
+    is( $got_error, $exp_error, $item->{comment} );
+}
+
+no warnings 'redefine';
+sub Prophet::CLI::interactive_shell {
+    return $in_interactive_shell;
+}
+
