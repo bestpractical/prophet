@@ -38,6 +38,25 @@ on qr{log\s+([0-9LATEST.~]+)} => sub {
     run('log', $self);
 };
 
+under settings => sub {
+    my $self = shift;
+    on edit => sub {
+        my $self = shift;
+        $self->context->set_arg( 'edit' );
+        run('settings', $self);
+    };
+    on show => sub {
+        my $self = shift;
+        $self->context->set_arg( 'show' );
+        run('settings', $self);
+    };
+    on set => sub {
+        my $self = shift;
+        $self->context->set_arg( 'set' );
+        run('settings', $self);
+    };
+};
+
 on [ qr/^(update|edit|show|display|delete|del|rm|history)$/,
      qr/^$Prophet::CLIContext::ID_REGEX$/i ] => sub {
     my $self = shift;

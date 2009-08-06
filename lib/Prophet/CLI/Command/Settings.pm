@@ -13,9 +13,11 @@ sub usage_msg {
     my $cmd = $self->get_cmd_name;
 
     return <<"END_USAGE";
-usage: ${cmd}settings [--show]
-       ${cmd}settings [--edit]
-       ${cmd}settings --set -- setting "new value"
+usage: ${cmd}settings [show]
+       ${cmd}settings edit
+       ${cmd}settings set -- setting "new value"
+
+Note that setting values must be valid JSON.
 END_USAGE
 }
 
@@ -24,14 +26,18 @@ sub run {
 
     $self->print_usage if $self->has_arg('h');
 
+    my $settings = $self->app_handle->database_settings;
+
     my $template = $self->make_template;
 
-    if ( $self->context->has_arg('show') ) {
-        print $template. "\n";
-        return;
-    }
+    if ( $self->has_arg( 'edit' ) ) {
+        my $done = 0;
 
-    my $settings = $self->app_handle->database_settings;
+        while ( !$done ) {
+            Prophet::CLI->end_pager();
+            $done = $self->try_to_edit( template => \$template );
+        }
+    }
 
     if ( $self->context->has_arg('set') ) {
         for my $name ( $self->context->prop_names ) {
@@ -57,13 +63,8 @@ sub run {
         return;
     }
 
-    my $done = 0;
-
-    while ( !$done ) {
-        Prophet::CLI->end_pager();
-        $done = $self->try_to_edit( template => \$template );
-    }
-
+    print $template. "\n";
+    return;
 }
 
 sub make_template {
