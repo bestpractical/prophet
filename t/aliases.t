@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use Prophet::Test tests => 68;
 use File::Temp qw/tempfile/;
+use Test::Script::Run;
 
 $ENV{'PROPHET_APP_CONFIG'} = (tempfile(UNLINK => !$ENV{PROPHET_DEBUG}))[1];
 diag("Using config file $ENV{PROPHET_APP_CONFIG}");

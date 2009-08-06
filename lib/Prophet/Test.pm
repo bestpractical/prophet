@@ -1,20 +1,19 @@
+package Prophet::Test;
 use strict;
 use warnings;
 
-package Prophet::Test;
 use base qw/Test::More Exporter/;
-use Test::Script::Run ':all';
-our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user run_ok repo_uri_for run_script run_output_matches run_output_matches_unordered replica_last_rev replica_uuid_for ok_added_revisions replica_uuid database_uuid database_uuid_for
-    serialize_conflict serialize_changeset in_gladiator diag is_script_output
-    run_command set_editor set_editor_script load_record last_script_stdout last_script_stderr
-    last_script_exit_code
+our @EXPORT = qw/as_alice as_bob as_charlie as_david as_user
+    repo_uri_for replica_last_rev replica_uuid_for ok_added_revisions replica_uuid
+    database_uuid database_uuid_for serialize_conflict serialize_changeset
+    in_gladiator diag run_command set_editor set_editor_script load_record
+    last_script_stdout last_script_stderr last_script_exit_code
     /;
 
 use Cwd qw/getcwd/;
 use File::Path 'rmtree';
 use File::Spec;
 use File::Temp qw/tempdir tempfile/;
-use Test::Exception;
 use Params::Validate ':all';
 use Prophet::Util;
 

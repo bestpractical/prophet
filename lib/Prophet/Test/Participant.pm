@@ -1,6 +1,7 @@
 package Prophet::Test::Participant;
 use Any::Moose;
 use Prophet::Test;
+use Test::Exception;
 
 has name => (
     is  => 'rw',
