@@ -20,7 +20,7 @@ sub run {
 
     print "Working on prophet database: ".$self->handle->url." (@{[ref($self->handle)]})".$/;
     print "DB UUID: ".$self->handle->db_uuid.$/;
-    print "Changets: ".$self->handle->latest_sequence_no.$/;
+    print "Changesets: ".$self->handle->latest_sequence_no.$/;
 
     print "Known types: ".join(',', @{$self->handle->list_types} ).$/;
 
