@@ -18,10 +18,18 @@ sub publish_dir {
     push @args, '--chmod=Da+rx,a+r';
 
     push @args, '--verbose' if $self->context->has_arg('verbose');
+
+    # avoid edge cases when exporting replicas! still update files even
+    # if they have the same size and time.
+    # (latest-sequence-no is a file that can fall into this trap, since it's
+    # ~easy for it to have the same size as it was previously and in test
+    # cases we sometimes export to the same directory in quick succession)
+    push @args, '--ignore-times';
     
     push @args, '--recursive', '--' , $args{from}, $args{to};
 
     my $rsync = $ENV{RSYNC} || "rsync";
+
     my $ret = system($rsync, @args);
 
     if ($ret == -1) {
