@@ -40,9 +40,7 @@ as_alice {
     $expected = qr/new/;
     like( $output, $expected, 'Found our record' );
 
-    ok( run_command( qw(publish --to), $alice_published ),
-        'publish --to'
-    );
+    ok( run_command( qw(publish --to), $alice_published ), 'publish --to' );
 
     # check that publish-url config key has been created correctly
     $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
@@ -53,12 +51,11 @@ as_alice {
 	uuid = $Prophet::CLIContext::ID_REGEX
 	publish-url = \Q$alice_published\E
 /, 'publish-url variable created correctly in config');
-    $config_contents =~ /\[replica "(.*?)"\]/;
-    my $replica_name = $1;
+    my ($replica_name) = ($config_contents =~ /\[replica "(.*?)"\]/);
 
     # change name in config
     my $new_config_contents = $config_contents;
-    $new_config_contents =~ s/\Q$replica_name\E/new-name/;
+    $new_config_contents =~ s/\Q$replica_name\E/alice/;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
@@ -75,15 +72,15 @@ as_alice {
     like($config_contents, qr/
 \[core\]
 	config-format-version = \d+
-\[replica "new-name"\]
+\[replica "alice"\]
 	uuid = $Prophet::CLIContext::ID_REGEX
 	publish-url = \Q$new_published\E
-/, 'publish-url variable created correctly in config');
+/, 'publish-url variable changed correctly in config');
 
     # check to make sure that publish doesn't fall back to using
     # url, since that would never make sense
-    $new_config_contents =~ /uuid = ($Prophet::CLIContext::ID_REGEX)/;
-    my $uuid = $1;
+    my ($uuid)
+        = ($new_config_contents =~ /uuid = ($Prophet::CLIContext::ID_REGEX)/);
     $new_published = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
     my $bogus_name = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
     Prophet::Util->write_file(
@@ -94,8 +91,6 @@ as_alice {
 	url = $new_published
 EOF
     );
-    # diag "publishing to $new_published";
-    # diag "bogus name is $bogus_name";
     ok( run_command( qw(publish --to), $bogus_name ),
         'publish to bogus name',
     );
@@ -104,7 +99,7 @@ EOF
         'did not fall back to url variable' );
 };
 
-my $path =$alice_published;
+my $path = $alice_published;
 
 as_bob {
     $ENV{PROPHET_APP_CONFIG} = $bob_config;
@@ -135,8 +130,7 @@ as_alice {
     ok($pullall_uuid, "got a uuid $pullall_uuid for the Pullall record");
 
     ok( run_command( qw(publish --to), $alice_published ),
-        'publish as alice',
-    );
+        "publish as alice to $alice_published" );
 };
 
 as_bob {
@@ -144,26 +138,24 @@ as_bob {
 
     # change name in config
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
-    $config_contents =~ /\[replica "(.*?)"\]/;
-    my $replica_name = $1;
+    my ($replica_name) = ( $config_contents =~ /\[replica "(.*?)"\]/ );
     my $new_config_contents = $config_contents;
-    $new_config_contents =~ s/\Q$replica_name\E/new-name/;
+    $new_config_contents =~ s/\Q$replica_name\E/alice/;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
     );
-    ok( run_command( 'pull', '--from', 'new-name' ), 'pull from name works');
-    my $output
-        = run_command( qw(search --type Pullall --regex .));
-    my $expected = qr/new/;
-    like( $output, $expected, 'Found our record' );
+
+    ok( run_command( 'pull', '--from', 'alice' ), 'pull from name');
+    my $output = run_command( qw(search --type Pullall --regex .));
+    like( $output, qr/new/, 'Found our record' );
 
     $new_config_contents =~ s/url/pull-url/;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
     );
-    ok( run_command( 'pull', '--from', 'new-name' ),
+    ok( run_command( 'pull', '--from', 'alice' ),
         'pull from name works with pull-url var',
     );
 
@@ -172,7 +164,7 @@ as_bob {
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
     );
-    ok( run_command( 'pull', '--from', 'new-name' ),
+    ok( run_command( 'pull', '--from', 'alice' ),
         'pull-url is preferred over url',
     );
 };
