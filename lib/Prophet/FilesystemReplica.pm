@@ -165,7 +165,7 @@ sub traverse_changesets {
     );
 
     my $first_rev = ( $args{'after'} + 1 ) || 1;
-    my $latest = $self->latest_sequence_no;
+    my $latest = $self->latest_sequence_no || 0;
 
     if ( defined $args{until} && $args{until} < $latest ) {
         $latest = $args{until};
