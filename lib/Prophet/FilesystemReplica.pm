@@ -98,7 +98,8 @@ sub _write_file {
 
 sub read_changeset_index {
     my $self = shift;
-    $self->log_debug("Reading changeset index file" .$self->changeset_index);
+    $self->log_debug(
+        "Reading changeset index file '" .$self->changeset_index . "'" );
     my $chgidx = $self->_read_file( $self->changeset_index );
     return \$chgidx;
 }
