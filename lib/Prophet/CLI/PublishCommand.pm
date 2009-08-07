@@ -33,9 +33,12 @@ sub publish_dir {
     my $ret = system($rsync, @args);
 
     if ($ret == -1) {
-        die "You must have 'rsync' installed to use this command.
+        die <<'END_DIE_MSG';
+You must have 'rsync' installed to use this command.
 
-If you have rsync but it's not in your path, set environment variable \$RSYNC to the absolute path of your rsync executable.\n";
+If you have rsync but it's not in your path, set environment variable \$RSYNC
+to the absolute path of your rsync executable.
+END_DIE_MSG
     }
 
     return $ret;
