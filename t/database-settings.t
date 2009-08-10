@@ -78,7 +78,8 @@ exit;
   
    
     # just for good measure, create a ticket
-    run_ok( 'prophet', [qw(create --type Bug -- --status new --from alice )], "Created a record as alice" );
+    ok( run_command( qw(create --type Bug -- --status new --from alice ) ),
+        'Created a record as alice' );
     run_output_matches( 'prophet', [qw(search --type Bug --regex .)], [qr/new/], [], " Found our record" );
 
 

@@ -96,11 +96,40 @@ has '+resolution_db_handle' => (
     },
 );
 
-has 'prop_cache' => (
-    is      => 'rw',
-    isa     => 'HashRef',
-    default => sub { {} },
-);
+our $PROP_CACHE = {};
+
+sub has_cached_prop {
+    my $self = shift;
+    my $prop = shift;
+
+    return exists $PROP_CACHE->{$self->db_uuid}->{$prop};
+}
+
+sub fetch_cached_prop {
+    my $self = shift;
+    my $prop = shift;
+
+    return $PROP_CACHE->{$self->db_uuid}->{$prop};
+}
+
+sub set_cached_prop {
+    my $self = shift;
+    my ($prop, $value) = @_;
+
+    $PROP_CACHE->{$self->db_uuid}->{$prop} = $value;
+}
+
+sub delete_cached_prop {
+    my $self = shift;
+    my $prop = shift;
+
+    delete $PROP_CACHE->{$self->db_uuid}->{$prop};
+}
+
+sub clear_prop_cache {
+    my $db_uuid = shift;
+    delete $PROP_CACHE->{$db_uuid};
+}
 
 use constant scheme   => 'sqlite';
 use constant userdata_dir    => 'userdata';
@@ -409,8 +438,7 @@ sub _delete_record_props_from_db {
     my %args = validate( @_, { uuid => 1 } );
 
     $self->dbh->do("DELETE FROM record_props where uuid = ?", {}, $args{uuid});
-    delete $self->prop_cache->{$args{uuid}};
-
+    $self->delete_cached_prop( $args{uuid} );
 }
 
 =head2 traverse_changesets { after => SEQUENCE_NO, UNTIL => SEQUENCE_NO, callback => sub { } } 
@@ -761,10 +789,10 @@ sub set_record_props {
 
     my $inside_edit = $self->current_edit ? 1 : 0;
     $self->begin_edit() unless ($inside_edit);
-   
+
     # clear the cache  before computing the diffs. this is probably paranoid
-    delete $self->prop_cache->{$args{uuid}};
-    
+    $self->delete_cached_prop( $args{uuid} );
+
     my $old_props = $self->get_record_props( uuid => $args{'uuid'}, type => $args{'type'});
     my %new_props = %$old_props;
 
@@ -779,7 +807,7 @@ sub set_record_props {
     $self->_write_record_to_db( type  => $args{'type'}, uuid  => $args{'uuid'}, props => \%new_props);
 
     # Clear the cache now that we've actually written out changed props
-    delete $self->prop_cache->{$args{uuid}};
+    $self->delete_cached_prop( $args{uuid} );
 
     my $change = Prophet::Change->new( {   record_type => $args{'type'}, record_uuid => $args{'uuid'}, change_type => 'update_file' });
     $change->add_prop_change( name => $_, old  => $old_props->{$_}, new  => $args{props}->{$_}) for (keys %{$args{props}});
@@ -793,13 +821,13 @@ sub get_record_props {
     my $self = shift;
     my %args = ( uuid => undef, type => undef, @_ )
         ;    # validate is slooow validate( @_, { uuid => 1, type => 1 } );
-    unless ( exists $self->prop_cache->{ $args{uuid} } ) {
+    unless ( $self->has_cached_prop( $args{uuid} ) ) {
         my $sth = $self->dbh->prepare("SELECT prop, value from record_props WHERE uuid = ?");
         $sth->execute( $args{uuid} );
         my $items = $sth->fetchall_arrayref;
-        $self->prop_cache->{ $args{uuid} } = {map {@$_} @$items};
+        $self->set_cached_prop( $args{uuid}, { map {@$_} @$items } );
     }
-    return $self->prop_cache->{ $args{uuid} };
+    return $self->fetch_cached_prop( $args{uuid} );
 }
 
 sub record_exists {

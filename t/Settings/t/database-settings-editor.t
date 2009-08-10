@@ -61,6 +61,11 @@ is($template_ok, 'ok!', "interactive template was correct");
 # check the settings with settings --show
 $valid_settings_output = Prophet::Util->slurp('t/data/settings-second.tmpl');
 
+# look up db uuid and clear the prop cache, since we've modified the
+# on-disk props via another process
+my ($db_uuid) = (run_settings_command( 'info' ) =~ /DB UUID: (.*)\n/);
+Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
+
 ($out, my $error) = run_settings_command( qw/settings show/ );
 is( $out, $valid_settings_output, "changed settings output matches" );
 warn "going to print error of settings show";
@@ -77,6 +82,8 @@ run_output_matches( 'settings', [ 'settings', 'edit' ],
         'Changed default_component from ["core"] to ["ui"].',
     ], [], "interactive settings set with JSON error went ok",
 );
+
+Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
 
 # check the tempfile to see if the template presented to the editor was correct
 chomp($template_ok = Prophet::Util->slurp($filename));

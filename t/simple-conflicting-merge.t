@@ -56,6 +56,10 @@ as_alice { $alice_app = Prophet::CLI->new()->app_handle; $alice = $alice_app->ha
 
 
 as_alice {
+    # XXX I am not entirely sure why we need to clear the cache here,
+    # but we do
+    my ($db_uuid) = (run_command( 'info' ) =~ /DB UUID: (.*)\n/);
+    Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
     ok( run_command(
             'update', '--type', 'Bug', '--uuid',
             $record_id, '--', '--status' => 'stalled',
