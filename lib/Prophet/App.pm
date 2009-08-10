@@ -12,14 +12,14 @@ has handle => (
     default => sub {
         my $self = shift;
 
-        if ( defined $ENV{'PROPHET_REPO'}
-                && $ENV{'PROPHET_REPO'} !~ /^[\w\+]+\:/ ) {
-            my $path = $ENV{PROPHET_REPO};
+        if ( defined $self->local_replica_url
+                && $self->local_replica_url !~ /^[\w\+]+\:/ ) {
+            my $path = $self->local_replica_url;
             $path = File::Spec->rel2abs(glob($path)) unless File::Spec->file_name_is_absolute($path);
-            $ENV{PROPHET_REPO} = "file://$path";
+            $self->local_replica_url("file://$path");
         }
 
-        return Prophet::Replica->get_handle( url =>  $ENV{'PROPHET_REPO'}, app_handle => $self, );
+        return Prophet::Replica->get_handle( url =>  $self->local_replica_url, app_handle => $self, );
     },
 );
 
@@ -67,6 +67,23 @@ Returns a string of the the default replica type for this application.
 sub default_replica_type {
     my $self = shift;
     return $ENV{'PROPHET_REPLICA_TYPE'} || DEFAULT_REPLICA_TYPE;
+}
+
+
+=head2 local_replica_url
+
+Returns the URL of the current local replica. If no URL has been
+provided (usually via C<$ENV{PROPHET_REPO}>), returns undef.
+
+=cut
+
+sub local_replica_url {
+	my $self = shift;
+	if (@_) {
+		$ENV{'PROPHET_REPO'} = shift;
+	}
+
+	return $ENV{'PROPHET_REPO'} || undef;
 }
 
 =head2 require

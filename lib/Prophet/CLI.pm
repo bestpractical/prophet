@@ -88,6 +88,8 @@ sub run_one_command {
     # we need to substitute $1, $2 ... in the value if there's any
 
     my $ori_cmd = join ' ', @args;
+
+	if ($self->app_handle->local_replica_url) {
     my $aliases = $self->app_handle->config->aliases;
     for my $alias ( keys %$aliases ) {
         my $command = $self->_command_matches_alias($ori_cmd, $alias, $aliases->{$alias}) || next;
@@ -97,7 +99,7 @@ sub run_one_command {
         next if ( $command eq $ori_cmd );
         return $self->run_one_command( split /\s+/, $command );
     }
-
+	}
     #  really, we shouldn't be doing this stuff from the command dispatcher
     $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
