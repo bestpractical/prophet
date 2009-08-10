@@ -1,7 +1,6 @@
 package Prophet::ForeignReplica;
 use Any::Moose;
 use Params::Validate qw(:all);
-use Data::UUID 'NameSpace_DNS';
 extends 'Prophet::Replica';
 
 =head1 NAME

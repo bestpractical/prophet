@@ -40,7 +40,7 @@ has config => (
 has uuid_generator => (
     is => 'rw',
     isa => 'Prophet::UUIDGenerator',
-    default => sub { Prophet::UUIDGenerator->new}
+    default => sub { Prophet::UUIDGenerator->new( uuid_scheme => 1) }
 );
 
 
