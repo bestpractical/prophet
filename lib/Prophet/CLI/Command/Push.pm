@@ -49,9 +49,9 @@ sub run {
     die "Can't push to foreign replica that's never been pulled from! (Override with --force.)\n"
         unless
             $class->isa('Prophet::ForeignReplica') &&
-            ! $self->has_arg('force') &&
+            ( $self->has_arg('force')  ||
             ( exists $seen_replicas_by_url{$self->arg('to')} ||
-              exists $seen_replicas_by_pull_url{$self->arg('to')} );
+              exists $seen_replicas_by_pull_url{$self->arg('to')} ));
 
     # prepare to run merge command (superclass)
     $self->set_arg( from =>  $self->handle->url );
