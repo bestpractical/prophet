@@ -143,50 +143,6 @@ sub tokenize {
     return @tokens;
 }
 
-
-=head2 invoke outhandle, error_variable_ref, ARGV_COMPATIBLE_ARRAY
-
-Run the given command. If outhandle is true, select that as the file handle
-for the duration of the command. If error_variable_ref is true, STDERR
-will be redirected to that scalar for the duration of the command.
-
-=cut
-
-sub invoke {
-    my ($self, $output, $error, @args) = @_;
-
-    # save old STDOUT for later restoration and select $output as the
-    # new default filehandle
-    my $original_stdout;
-    $original_stdout = select $output if $output;
-
-    my $original_stderr;
-    # save STDERR away for later restoration
-    if ( ref $error ) {
-        open $original_stderr, '>&', \*STDERR;
-        close STDERR;
-        open STDERR, ">", $error or die "Couldn't open STDERR for redirection: $!";
-    }
-
-    my $ret = eval {
-        local $SIG{__DIE__} = 'DEFAULT';
-        $self->run_one_command(@args);
-    };
-    warn $@ if $@;
-
-    if ( ref $error ) {
-        # restore STDERR
-        close STDERR;
-        open STDERR, ">", $original_stderr;
-    }
-
-    # restore STDOUT
-    select $original_stdout if $original_stdout;
-
-    return $ret;
-}
-
-
 sub is_interactive {
   return -t STDIN && -t STDOUT;
 }

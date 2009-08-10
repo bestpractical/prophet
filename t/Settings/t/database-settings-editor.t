@@ -17,11 +17,11 @@ BEGIN {
     diag $ENV{'PROPHET_REPO'};
 }
 
-my $out = run_settings_command( 'init' );
+my $out = run_command( 'init' );
 is( $out, "Initialized your new Prophet database.\n", 'replica init' );
 
 # test noninteractive set
-$out = run_settings_command(
+$out = run_command(
     'settings', 'set', '--', 'statuses', '["new","open","stalled"]',
 );
 my $expected = <<'END_OUTPUT';
@@ -33,7 +33,7 @@ is( $out, $expected, "settings set went ok" );
 # check with settings show
 my $valid_settings_output = Prophet::Util->slurp('t/data/settings-first.tmpl');
 
-$out = run_settings_command( qw/settings/ );
+$out = run_command( qw/settings/ );
 is( $out, $valid_settings_output, "changed settings output matches" );
 
 # test settings (interactive editing)
@@ -45,7 +45,7 @@ diag ("interactive template status will be found in $filename");
 Prophet::Test->set_editor_script("settings-editor.pl --first $filename");
 
 # then edit the settings
-# (can't use run_settings_command with editor scripts because they don't play nicely
+# (can't use run_command with editor scripts because they don't play nicely
 # with output redirection)
 run_output_matches( 'settings', [ 'settings', 'edit' ],
     [
@@ -63,10 +63,10 @@ $valid_settings_output = Prophet::Util->slurp('t/data/settings-second.tmpl');
 
 # look up db uuid and clear the prop cache, since we've modified the
 # on-disk props via another process
-my ($db_uuid) = (run_settings_command( 'info' ) =~ /DB UUID: (.*)\n/);
+my ($db_uuid) = (run_command( 'info' ) =~ /DB UUID: (.*)\n/);
 Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
 
-($out, my $error) = run_settings_command( qw/settings show/ );
+($out, my $error) = run_command( qw/settings show/ );
 is( $out, $valid_settings_output, "changed settings output matches" );
 warn "going to print error of settings show";
 diag $error;
@@ -92,6 +92,6 @@ is($template_ok, 'ok!', "interactive template was correct");
 # check the settings with settings show
 $valid_settings_output = Prophet::Util->slurp('t/data/settings-third.tmpl');
 
-# run_settings_command( 'settings' );
-$out = run_settings_command( qw/settings show/ );
+# run_command( 'settings' );
+$out = run_command( qw/settings show/ );
 is( $out, $valid_settings_output, 'changed settings output matches' );

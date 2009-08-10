@@ -317,12 +317,29 @@ Examples:
 
 =cut
 
+our $CLI_CLASS = 'Prophet::CLI';
+
 sub run_command {
     my $output = '';
     my $error  = '';
-    open my $out_handle, '>', \$output;
 
-    Prophet::CLI->new->invoke($out_handle, \$error, @_);
+    my $original_stdout = *STDOUT;
+    my $original_stderr = *STDERR;
+    open( my $out_handle, '>', \$output );
+    open( my $err_handle, '>', \$error );
+    *STDOUT = $out_handle;
+    *STDERR = $err_handle;
+    $|++; # autoflush
+
+    my $ret = eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+        $CLI_CLASS->new->run_one_command(@_);
+    };
+    warn $@ if $@;
+
+    # restore to originals
+    *STDOUT = $original_stdout;
+    *STDERR = $original_stderr;
 
     return wantarray ? ($output, $error) : $output;
 }
