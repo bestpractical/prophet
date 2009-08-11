@@ -317,9 +317,9 @@ a shell or the command line.
 sub get_cmd_name {
     my $self = shift;
     return '' if $self->cli->interactive_shell;
-    my ${cmd}= $0;
-    ${cmd}=~ s{^(.*)/}{}g;
-    return $cmd.' ';
+    require File::Spec;
+    my ($cmd) = ( File::Spec->splitpath($0) )[2];
+    return $cmd . ' ';
 }
 
 =head2 get_cmd_and_subcmd_names [no_type => 1]
