@@ -102,33 +102,34 @@ sub has_cached_prop {
     my $self = shift;
     my $prop = shift;
 
-    return exists $PROP_CACHE->{$self->db_uuid}->{$prop};
+    # $self->uuid is the replica's uuid
+    return exists $PROP_CACHE->{$self->uuid}->{$prop};
 }
 
 sub fetch_cached_prop {
     my $self = shift;
     my $prop = shift;
 
-    return $PROP_CACHE->{$self->db_uuid}->{$prop};
+    return $PROP_CACHE->{$self->uuid}->{$prop};
 }
 
 sub set_cached_prop {
     my $self = shift;
     my ($prop, $value) = @_;
 
-    $PROP_CACHE->{$self->db_uuid}->{$prop} = $value;
+    $PROP_CACHE->{$self->uuid}->{$prop} = $value;
 }
 
 sub delete_cached_prop {
     my $self = shift;
     my $prop = shift;
 
-    delete $PROP_CACHE->{$self->db_uuid}->{$prop};
+    delete $PROP_CACHE->{$self->uuid}->{$prop};
 }
 
 sub clear_prop_cache {
-    my $db_uuid = shift;
-    delete $PROP_CACHE->{$db_uuid};
+    my $replica_uuid = shift;
+    delete $PROP_CACHE->{$replica_uuid};
 }
 
 use constant scheme   => 'sqlite';
