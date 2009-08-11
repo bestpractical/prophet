@@ -131,6 +131,12 @@ sub repo_path_for {
     return File::Spec->catdir($REPO_BASE => $username);
 }
 
+sub config_file_for {
+    my $username = shift;
+
+    return File::Spec->catdir($REPO_BASE, $username, 'config');
+}
+
 =head2 repo_uri_for($username)
 
 Returns a file:// URI for $USERNAME'S replica (with the correct replica
@@ -199,6 +205,7 @@ sub as_user {
     my $coderef  = shift;
     local $ENV{'PROPHET_REPO'} = repo_path_for($username);
     local $ENV{'PROPHET_EMAIL'}        = $username . '@example.com';
+    local $ENV{'PROPHET_APP_CONFIG'} = config_file_for($username);
 
     my $ret = $coderef->();
 

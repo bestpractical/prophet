@@ -10,22 +10,16 @@ my ($bug_uuid, $pullall_uuid);
 
 my $alice_published = tempdir(CLEANUP => ! $ENV{PROPHET_DEBUG});
 
-(undef, my $alice_config) = tempfile( CLEANUP => ! $ENV{PROPHET_DEBUG} );
-(undef, my $bob_config) = tempfile( CLEANUP => ! $ENV{PROPHET_DEBUG} );
-diag "Alice's config file is located at $alice_config";
-diag "Bob's config file is located at $bob_config";
-
 as_alice {
-    $ENV{PROPHET_APP_CONFIG} = $alice_config;
     ok( run_command( qw(init) ), 'replica init' );
 
     # check that new config section has been created with uuid variable
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
-    like($config_contents, qr/
-\[core\]
+    my $replica_uuid = replica_uuid();
+    like($config_contents, qr/\[core\]
 	config-format-version = \d+
 \[replica ".*?"\]
-	uuid = $Prophet::CLIContext::ID_REGEX
+	uuid = \Q$replica_uuid\E
 /, 'replica section created in config file after init');
 
     my $output
@@ -44,11 +38,10 @@ as_alice {
 
     # check that publish-url config key has been created correctly
     $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
-    like($config_contents, qr/
-\[core\]
+    like($config_contents, qr/\[core\]
 	config-format-version = \d+
 \[replica "(.*?)"\]
-	uuid = $Prophet::CLIContext::ID_REGEX
+	uuid = \Q$replica_uuid\E
 	publish-url = \Q$alice_published\E
 /, 'publish-url variable created correctly in config');
     my ($replica_name) = ($config_contents =~ /\[replica "(.*?)"\]/);
@@ -69,11 +62,10 @@ as_alice {
     # make sure the subsection name was changed and the publish-url
     # was updated, rather than a new section being created
     $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
-    like($config_contents, qr/
-\[core\]
+    like($config_contents, qr/\[core\]
 	config-format-version = \d+
 \[replica "alice"\]
-	uuid = $Prophet::CLIContext::ID_REGEX
+	uuid = \Q$replica_uuid\E
 	publish-url = \Q$new_published\E
 /, 'publish-url variable changed correctly in config');
 
@@ -102,17 +94,16 @@ EOF
 my $path = $alice_published;
 
 as_bob {
-    $ENV{PROPHET_APP_CONFIG} = $bob_config;
     ok( run_command( 'clone', '--from', "file://$path" ),
         'clone as bob',
     );
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
-    like($config_contents, qr|
-\[core\]
+    my $replica_uuid = replica_uuid();
+    like($config_contents, qr|\[core\]
 	config-format-version = \d+
 \[replica "file://\Q$path\E"\]
 	url = file://\Q$path\E
-	uuid = $Prophet::CLIContext::ID_REGEX
+	uuid = \Q$replica_uuid\E
 |, 'replica section created in config file after clone');
 
     my $output = run_command( qw(search --type Bug --regex .));
@@ -121,7 +112,6 @@ as_bob {
 };
 
 as_alice {
-    $ENV{PROPHET_APP_CONFIG} = $alice_config;
     my $output
         = run_command( qw(create --type Pullall -- --status new --from alice ));
     my $expected = qr/Created Pullall \d+ \((\S+)\)(?{ $pullall_uuid = $1 })/;
@@ -134,8 +124,6 @@ as_alice {
 };
 
 as_bob {
-    $ENV{PROPHET_APP_CONFIG} = $bob_config;
-
     # change name in config
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
     my ($replica_name) = ( $config_contents =~ /\[replica "(.*?)"\]/ );
@@ -171,7 +159,6 @@ as_bob {
 
 
 as_charlie {
-    (undef, $ENV{PROPHET_APP_CONFIG}) = tempfile( CLEANUP => ! $ENV{PROPHET_DEBUG} );
     ok( run_command( 'clone', '--from', "file://$path" ),
         'clone as charlie',
     );
