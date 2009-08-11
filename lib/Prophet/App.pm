@@ -13,7 +13,8 @@ has handle => (
         my $self = shift;
 
         if ( defined $self->local_replica_url
-                && $self->local_replica_url !~ /^[\w\+]+\:/ ) {
+                && $self->local_replica_url !~ /^[\w\+]{2,}\:/ ) {
+# the reason why we need {2,} is to not match name on windows, e.g. C:\foo
             my $path = $self->local_replica_url;
             $path = File::Spec->rel2abs(glob($path)) unless File::Spec->file_name_is_absolute($path);
             $self->local_replica_url("file://$path");

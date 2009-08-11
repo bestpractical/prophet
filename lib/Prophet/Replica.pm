@@ -130,7 +130,7 @@ sub _url_to_replica_class {
     my $self = shift;
     my %args = (@_);
     my $url = $args{'url'};
-    my ( $scheme, $real_url ) = $url =~ /^([^:]*):(.*)$/;
+    my ( $scheme, $real_url ) = $url =~ /^([^:]*?):(.*)$/;
 
     return undef unless $scheme;
 
