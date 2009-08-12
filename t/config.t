@@ -5,8 +5,10 @@ use strict;
 use Prophet::Test tests => 13;
 use File::Copy;
 use File::Temp qw'tempdir';
+use File::Spec;
 
-my $repo = $ENV{'PROPHET_REPO'} = $Prophet::Test::REPO_BASE . '/repo-' . $$;
+my $repo = $ENV{'PROPHET_REPO'} =
+  File::Spec->catdir( $Prophet::Test::REPO_BASE, "repo-$$" );
 
 # since we don't initialize the db for these tests, make the repo dir
 mkdir $ENV{PROPHET_REPO};
@@ -77,12 +79,14 @@ is( scalar @keys, 0, 'no config options are set' );
     # run the cli "config" command
     # make sure it matches with our file
     my $got = run_command('config');
-    my $expect = <<EOF
+    my $expect = <<EOF;
 Configuration:
 
 Config files:
 
-$repo/test_app.conf
+EOF
+    $expect .= File::Spec->catfile( $repo, 'test_app.conf' ) . "\n";
+    $expect .= <<EOF;
 
 Your configuration:
 
@@ -93,6 +97,5 @@ replica.sd.uuid=32b13934-910a-4792-b5ed-c9977b212245
 test.foo=bar
 test.re=rawr
 EOF
-    ;
     is($got, $expect, 'output of config command');
 }
