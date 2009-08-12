@@ -60,7 +60,7 @@ sub db_uuid { return undef }
 
 sub uuid_for_url {
     my ( $self, $url ) = @_;
-    return $self->app_handle->uuid_generator->create_string_from_url( $url );
+    return $self->uuid_generator->create_string_from_url( $url );
 }
 
 sub prompt_for_login {

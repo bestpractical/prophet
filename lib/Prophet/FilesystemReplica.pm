@@ -121,7 +121,7 @@ sub _write_changeset {
 
     my $changeset_index_line = pack( 'Na16NH40',
         $seqno,
-        $self->app_handle->uuid_generator->from_string( $changeset->original_source_uuid ),
+        $self->uuid_generator->from_string( $changeset->original_source_uuid ),
         $changeset->original_sequence_no,
         $cas_key );
 
@@ -220,7 +220,7 @@ sub _changeset_index_entry {
     my $index_record = substr( $$chgidx, ( $rev - 1 ) * CHG_RECORD_SIZE, CHG_RECORD_SIZE );
     my ( $seq, $orig_uuid, $orig_seq, $key ) = unpack( 'Na16NH40', $index_record );
 
-    $orig_uuid = $self->app_handle->uuid_generator->to_string($orig_uuid);
+    $orig_uuid = $self->uuid_generator->to_string($orig_uuid);
     $self->log_debug( "REV: $rev - seq $seq - originally $orig_seq from "
             . substr( $orig_uuid, 0, 6 )
             . " data key $key" );

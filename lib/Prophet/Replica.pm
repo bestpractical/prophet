@@ -52,6 +52,15 @@ has after_initialize => (
     default => sub { sub {1} } # default returns a coderef
     );
 
+
+has uuid_generator => (
+    is => 'rw',
+    isa => 'Prophet::UUIDGenerator',
+    default => sub { Prophet::UUIDGenerator->new( uuid_scheme => 1) }
+);
+
+
+
 our $MERGETICKET_METATYPE = '_merge_tickets';
 
 =head1 NAME

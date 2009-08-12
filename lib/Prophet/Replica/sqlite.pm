@@ -349,8 +349,8 @@ CREATE TABLE userdata (
         $self->dbh->do($_) || warn $self->dbh->errstr;
     }
 
-    $self->set_db_uuid( $args{'db_uuid'} || $self->app_handle->uuid_generator->create_str );
-    $self->set_replica_uuid( $self->app_handle->uuid_generator->create_str );
+    $self->set_db_uuid( $args{'db_uuid'} || $self->uuid_generator->create_str );
+    $self->set_replica_uuid( $self->uuid_generator->create_str );
     $self->set_replica_version(3);
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} )
       if !$self->is_resdb;
@@ -524,7 +524,7 @@ sub read_changeset_index {
                     my $data            = $args{changeset_metadata};
                     my $changeset_index_line = pack( 'Na16NH40',
                         $data->[0],
-                        $self->app_handle->uuid_generator->from_string( $data->[1]),
+                        $self->uuid_generator->from_string( $data->[1]),
                         $data->[2],
                         $data->[3]);
                     $index .= $changeset_index_line;

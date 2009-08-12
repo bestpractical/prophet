@@ -192,7 +192,7 @@ In case of failure, returns undef.
 sub create {
     my $self = shift;
     my %args = validate( @_, { props => 1 } );
-    my $uuid = $self->handle->app_handle->uuid_generator->create_str;
+    my $uuid = $self->handle->uuid_generator->create_str;
 
     my $props = $args{props};
 

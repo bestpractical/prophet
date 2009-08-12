@@ -38,12 +38,6 @@ has config => (
 );
 
 
-has uuid_generator => (
-    is => 'rw',
-    isa => 'Prophet::UUIDGenerator',
-    default => sub { Prophet::UUIDGenerator->new( uuid_scheme => 1) }
-);
-
 
 use constant DEFAULT_REPLICA_TYPE => 'prophet';
 
