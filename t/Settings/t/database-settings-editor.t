@@ -63,13 +63,11 @@ $valid_settings_output = Prophet::Util->slurp('t/data/settings-second.tmpl');
 
 # look up db uuid and clear the prop cache, since we've modified the
 # on-disk props via another process
-my ($db_uuid) = (run_command( 'info' ) =~ /DB UUID: (.*)\n/);
-Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
+my ($replica_uuid) = replica_uuid();
+Prophet::Replica::sqlite::clear_prop_cache( $replica_uuid );
 
-($out, my $error) = run_command( qw/settings show/ );
+$out = run_command( qw/settings show/ );
 is( $out, $valid_settings_output, "changed settings output matches" );
-warn "going to print error of settings show";
-diag $error;
 
 # test setting to invalid json
 my $second_filename = File::Temp->new(
@@ -83,7 +81,7 @@ run_output_matches( 'settings', [ 'settings', 'edit' ],
     ], [], "interactive settings set with JSON error went ok",
 );
 
-Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
+Prophet::Replica::sqlite::clear_prop_cache( $replica_uuid );
 
 # check the tempfile to see if the template presented to the editor was correct
 chomp($template_ok = Prophet::Util->slurp($filename));

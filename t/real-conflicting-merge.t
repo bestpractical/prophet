@@ -69,11 +69,6 @@ as_bob {
 
     my $conflict_obj;
 
-    # XXX I am not entirely sure why we need to clear the cache here,
-    # but we do
-    my ($db_uuid) = (run_command( 'info' ) =~ /DB UUID: (.*)\n/);
-    Prophet::Replica::sqlite::clear_prop_cache( $db_uuid );
-
     throws_ok {
         $target->import_changesets( from => $source, force => 1);
     }
