@@ -25,7 +25,9 @@ has fs_root_parent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->fs_root =~ m{^(.*)/.+/?$} ? $1 : undef;
+        my $path = $self->fs_root;
+        return File::Spec->catdir(
+                ( File::Spec->splitpath($path) )[ 0, -2 ] );
     },
 );
 
@@ -82,7 +84,9 @@ has fs_root => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->app_handle->handle->url =~ m{^file://(.*)$} ? $1.'/remote-replica-cache/' : undef;
+        return $self->app_handle->handle->url =~ m{^file://(.*)$}
+          ? File::Spec->catdir( $1, 'remote-replica-cache' )
+          : undef;
     },
 );
 

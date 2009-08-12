@@ -60,7 +60,11 @@ has fs_root_parent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return $self->url =~ m{^(?:sqlite\:)?file://(.*)/.*?$} ? $1 : undef;
+        if ( $self->url =~ m{^(?:sqlite:)?file://(.*)} ) {
+            my $path = $1;
+            return File::Spec->catdir(
+                ( File::Spec->splitpath($path) )[ 0, -2 ] );
+        }
     }
 );
 
