@@ -42,6 +42,7 @@ lib/Prophet/CLI/Command/Merge.pm
 lib/Prophet/CLI/Command/Mirror.pm
 lib/Prophet/CLI/Command/Publish.pm
 lib/Prophet/CLI/Command/Pull.pm
+lib/Prophet/CLI/Command/Push.pm
 lib/Prophet/CLI/Command/Search.pm
 lib/Prophet/CLI/Command/Server.pm
 lib/Prophet/CLI/Command/Settings.pm
@@ -135,6 +136,7 @@ t/lib/TestApp/Bugs.pm
 t/lib/TestApp/ButterflyNet.pm
 t/log.t
 t/luid.t
+t/malformed-url.t
 t/non-conflicting-merge.t
 t/publish-pull.t
 t/real-conflicting-merge.t
@@ -147,6 +149,7 @@ t/search.t
 t/Settings/lib/App/Settings.pm
 t/Settings/lib/App/Settings/Bug.pm
 t/Settings/lib/App/Settings/CLI.pm
+t/Settings/lib/App/Settings/Test.pm
 t/Settings/t/database-settings-editor.t
 t/Settings/t/sync-database-settings.t
 t/simple-conflicting-merge.t
@@ -157,6 +160,7 @@ t/sync-ticket.t
 t/sync_3party.t
 t/test_app.conf
 t/testing.conf
+t/usage.t
 t/use.t
 t/validate.t
 t/validation.t
