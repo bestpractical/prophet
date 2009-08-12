@@ -1,4 +1,5 @@
 package App::Settings::Test;
+use Prophet::Util;
 use warnings;
 use strict;
 

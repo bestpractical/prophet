@@ -4,7 +4,6 @@ use warnings;
 use strict;
 use Prophet::Test tests => 68;
 use File::Temp qw/tempfile/;
-use Test::Script::Run;
 
 ( my $_fh, $ENV{'PROPHET_APP_CONFIG'} ) = tempfile(UNLINK => !$ENV{PROPHET_DEBUG});
 close $_fh; # or windows will cry :/
@@ -196,9 +195,7 @@ is_deeply(
 );
 
 # check content in config
-my $content;
-open my $fh, '<', $ENV{'PROPHET_APP_CONFIG'} or die "failed to open $ENV{'PROPHET_APP_CONFIG'}: $!";
-{ local $/; $content = <$fh>; }
+my $content = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
 is( $content, <<EOF, 'content in config' );
 
 [core]
@@ -211,21 +208,24 @@ is( $content, <<EOF, 'content in config' );
 	pull --from http://www.example.com/ = pfe
 EOF
 
-# tests for interactive alias editing
-my $filename = File::Temp->new(
-    TEMPLATE => File::Spec->catfile(File::Spec->tmpdir(), '/statusXXXXX') )->filename;
-diag ("interactive template status will be found in $filename");
-Prophet::Test->set_editor_script("aliases-editor.pl --first $filename");
+my $template;
+Prophet::Test::set_editor( sub {
+    my $content = shift;
 
-# can't run this with run_command because STDOUT redirection will
-# screw up piping to the script
-run_output_matches( 'prophet', [ 'aliases', 'edit' ],
-    [
-        "Added alias 'something different' = 'pull --local'",
-        "Changed alias 'foo' from 'bar baz'to 'sigh'",
-        "Deleted alias 'pull -l'",
-    ], [], 'aliases edit went ok',
-);
+    $template = $content;
+
+    $content =~ s/^pull -l/something different/m; # both an add and a delete
+    $content =~ s/(?<=foo = )bar baz/sigh/m; # just change a value
+
+    return $content;
+} );
+
+my $output = run_command( 'aliases', 'edit' );
+is( $output, <<'END_OUTPUT', 'aliases edit' );
+Added alias 'something different' = 'pull --local'
+Changed alias 'foo' from 'bar baz'to 'sigh'
+Deleted alias 'pull -l'
+END_OUTPUT
 
 # check with alias show
 my $valid_settings_output = Prophet::Util->slurp('t/data/aliases.tmpl');
