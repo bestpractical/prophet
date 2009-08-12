@@ -48,8 +48,7 @@ sub run {
     }
 
     unless ($source->replica_exists) {
-        print "The source replica '@{[$source->url]}' doesn't exist or is unreadable.";
-        exit 1;
+        die "The source replica '@{[$source->url]}' doesn't exist or is unreadable.\n";
     }
 
     $target->initialize(%init_args);
