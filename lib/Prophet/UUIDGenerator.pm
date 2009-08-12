@@ -5,34 +5,34 @@ use MIME::Base64::URLSafe;
 use UUID::Tiny;
 
 # uuid_scheme: 1 - v1 and v3 uuids.
-#			   2 - v4 and v5 uuids.
+#              2 - v4 and v5 uuids.
 
 has uuid_scheme => (
-	isa => 'Int',
-	is  => 'rw'
+    isa => 'Int',
+    is  => 'rw'
 );
 
 
 sub create_str {
     my $self = shift;
-	if ($self->uuid_scheme == 1 ){
-		return create_UUID_as_string(UUID_V1);
-	} elsif ($self->uuid_scheme == 2) {
-		return create_UUID_as_string(UUID_V4);
-	}
+    if ($self->uuid_scheme == 1 ){
+        return create_UUID_as_string(UUID_V1);
+    } elsif ($self->uuid_scheme == 2) {
+        return create_UUID_as_string(UUID_V4);
+    }
 }
 
 sub create_string_from_url {
     my $self = shift;
     my $url = shift;
     local $!;
-	if ($self->uuid_scheme == 1 ){
-		# Yes, DNS, not URL. We screwed up when we first defined it
-		# and it can't be safely changed once defined.
-		create_UUID_as_string(UUID_V3, UUID_NS_DNS, $url);
-	} elsif ($self->uuid_scheme == 2) {
-		create_UUID_as_string(UUID_V5, UUID_NS_URL, $url);
-	}
+    if ($self->uuid_scheme == 1 ){
+        # Yes, DNS, not URL. We screwed up when we first defined it
+        # and it can't be safely changed once defined.
+        create_UUID_as_string(UUID_V3, UUID_NS_DNS, $url);
+    } elsif ($self->uuid_scheme == 2) {
+        create_UUID_as_string(UUID_V5, UUID_NS_URL, $url);
+    }
 }
 
 sub from_string {
