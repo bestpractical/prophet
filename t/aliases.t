@@ -6,7 +6,8 @@ use Prophet::Test tests => 68;
 use File::Temp qw/tempfile/;
 use Test::Script::Run;
 
-$ENV{'PROPHET_APP_CONFIG'} = (tempfile(UNLINK => !$ENV{PROPHET_DEBUG}))[1];
+( my $_fh, $ENV{'PROPHET_APP_CONFIG'} ) = tempfile(UNLINK => !$ENV{PROPHET_DEBUG});
+close $_fh; # or windows will cry :/
 diag("Using config file $ENV{PROPHET_APP_CONFIG}");
 
 use_ok('Prophet::CLI');
