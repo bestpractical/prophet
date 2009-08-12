@@ -5,9 +5,24 @@ package Prophet::Server::View;
 use base 'Template::Declare';
 
 use Template::Declare::Tags;
+
+# Prophet::Server::ViewHelpers overwrites the form {} function provided by
+# Template::Declare::Tags. ViewHelpers uses Exporter::Lite which does not "use
+# warnings". When prove -w or make test is run, $^W is set which turns on
+# warnings in Exporter::Lite (most importantly, redefinition warnings). We
+# don't want to warn about this specific redefinition, so we swap out
+# $SIG{__WARN__} to shut up about it.
+
 BEGIN {
-    no warnings 'redefine'; # we stomp on form{}
-    use Prophet::Server::ViewHelpers;
+    no warnings 'redefine';
+    my $old_warn = $SIG{__WARN__} || sub { warn $_[0] };
+    local $SIG{__WARN__} = sub {
+        my $warning = shift;
+        $old_warn->($warning)
+            unless $warning =~ /Subroutine Prophet::Server::View::form redefined /;
+    };
+    require Prophet::Server::ViewHelpers;
+    Prophet::Server::ViewHelpers->import;
 }
 use Params::Validate;
 use Prophet::Web::Menu;
