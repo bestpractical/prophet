@@ -144,13 +144,10 @@ type prefix).
 
 =cut
 
-use constant IS_WIN32 => ( $^O eq 'MSWin32' );
-
 sub repo_uri_for {
     my $username = shift;
 
     my $path = repo_path_for($username);
-    $path =~ s{^|\\}{/}g if IS_WIN32;
 
     return  'file://' . $path;
 }
