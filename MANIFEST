@@ -107,6 +107,7 @@ lib/Prophet/Web/Result.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+META.yml
 share/web/static/jquery/css/indicator.gif
 share/web/static/jquery/css/tablesorter/asc.gif
 share/web/static/jquery/css/tablesorter/bg.gif
@@ -122,6 +123,10 @@ t/cli.t
 t/config.t
 t/create-conflict.t
 t/create.t
+t/data/aliases.tmpl
+t/data/settings-first.tmpl
+t/data/settings-second.tmpl
+t/data/settings-third.tmpl
 t/database-settings.t
 t/default.t
 t/delete-delete-conflict.t
@@ -138,13 +143,12 @@ t/log.t
 t/luid.t
 t/malformed-url.t
 t/non-conflicting-merge.t
+t/publish-html.t
 t/publish-pull.t
 t/real-conflicting-merge.t
 t/references.t
 t/res-conflict-3.t
 t/resty-server.t
-t/scripts/aliases-editor.pl
-t/scripts/settings-editor.pl
 t/search.t
 t/Settings/lib/App/Settings.pm
 t/Settings/lib/App/Settings/Bug.pm
@@ -159,7 +163,6 @@ t/sync-delete-conflict.t
 t/sync-ticket.t
 t/sync_3party.t
 t/test_app.conf
-t/testing.conf
 t/usage.t
 t/use.t
 t/validate.t
