@@ -1,5 +1,5 @@
 ~$
-.tmp*
+.tmp$
 .sw?$
 .svn$
 .git/*
