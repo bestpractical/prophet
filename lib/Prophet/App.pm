@@ -265,6 +265,7 @@ sub display_name_for_replica {
         my $uuid = $possibilities{$_};
         $_ =~ /^replica\.(.*)\.uuid$/;
         my $name = $1;
+        $name =~ s!\\\\!\\!; # revert back since we escape \ before
         ( $uuid => $name );
     } keys %possibilities;
     return exists $sources_by_uuid{$uuid} ? $sources_by_uuid{$uuid} : $uuid;
