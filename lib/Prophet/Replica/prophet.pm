@@ -483,11 +483,37 @@ sub _read_file_range {
 
     if ($self->fs_root) {
         my $f = File::Spec->catfile( $self->fs_root => $args{path} );
-        open( my $index, "<:bytes", $f) || return undef;
-        seek($index, $args{position}, $args{whence}) || return undef;
-        my $record;
-        read( $index, $record, $args{length}) || return undef;
-        return $record;
+        return unless -e $f;
+        if ( $^O =~ /MSWin/ ) {
+            # XXX by sunnavy
+# the the open, seek and read below doesn't work on windows, at least with
+# strawberry perl 5.10.0.6 on windows xp
+#
+# the differences:
+# with substr, I got:
+# 0000000: 0000 0004 ecaa d794 a5fe 8c6f 6e85 0d0a  ...........on...
+# 0000010: 7087 f0cf 1e92 b50d f9                   p........
+# 
+# the read, I got
+# 0000000: 0000 04ec aad7 94a5 fe8c 6f6e 850d 0d0a  ..........on....
+# 0000010: 7087 f0cf 1e92 b50d f9                   p........
+# 
+# seems with read, we got an extra 0d, I dont' know why yet :/
+            my $content = Prophet::Util->slurp( $f );
+            if ($args{whence} == 2) {
+                return substr($content, $args{position}, $args{length});
+            }
+            else {
+                die "unsupprted";
+            }
+        }
+        else {
+            open( my $index, "<:bytes", $f ) or return;
+            seek( $index, $args{position}, $args{whence} ) or return;
+            my $record;
+            read( $index, $record, $args{length} ) or return;
+            return $record;
+        }
     }
     else {
         # XXX: do range get if possible
