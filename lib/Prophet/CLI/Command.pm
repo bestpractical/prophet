@@ -258,15 +258,17 @@ sub record_replica_in_config {
 
     if ( !$found_prev_replica ) {
         # replica section doesn't exist at all; create a new one
+	    my $url = $replica_url;
+	    $url =~ s!\\!\\\\!g; # subsection can't contain unescaped \
         $self->app_handle->config->group_set(
             $self->app_handle->config->replica_config_file,
             [
             {
-                key => "replica.$replica_url.$url_variable",
+                key => "replica.$url.$url_variable",
                 value => $replica_url,
             },
             {
-                key => "replica.$replica_url.uuid",
+                key => "replica.$url.uuid",
                 value => $replica_uuid,
             },
             ],

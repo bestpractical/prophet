@@ -54,13 +54,15 @@ sub run {
     $target->initialize(%init_args);
 
     # create new config section for this replica
+    my $from = $self->arg('from');
+	$from =~ s!\\!\\\\!g; # subsection can't contain unescaped \
     $self->app_handle->config->group_set(
         $self->app_handle->config->replica_config_file,
         [ {
-            key => 'replica.'.$self->arg('from').'.url',
+            key => 'replica.'.$from.'.url',
             value => $self->arg('from'),
         },
-        {   key => 'replica.'.$self->arg('from').'.uuid',
+        {   key => 'replica.'.$from.'.uuid',
             value => $target->uuid,
         },
         ]

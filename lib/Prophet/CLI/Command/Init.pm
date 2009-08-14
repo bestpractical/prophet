@@ -28,8 +28,10 @@ sub run {
     print "Initialized your new Prophet database.\n";
 
     # create new config section for this replica
+    my $url = $self->app_handle->handle->url;
+	$url =~ s!\\!\\\\!g; # subsection can't contain unescaped \
     $self->app_handle->config->set(
-        key => 'replica.'.$self->app_handle->handle->url.'.uuid',
+        key => 'replica.'.$url.'.uuid',
         value => $self->app_handle->handle->uuid,
         filename => $self->app_handle->config->replica_config_file,
     );
