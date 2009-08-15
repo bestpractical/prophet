@@ -2,6 +2,16 @@ package Prophet::CLI::Command::Server;
 use Any::Moose;
 extends 'Prophet::CLI::Command';
 
+has server => (
+    is      => 'rw',
+    isa     => 'Maybe[Prophet::Server]',
+    default => sub {
+        my $self = shift;
+        return $self->setup_server();
+    },
+    lazy    => 1,
+);
+
 sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  p => 'port', w => 'writable' };
 
 use Prophet::Server;
@@ -21,7 +31,7 @@ sub run {
     $self->print_usage if $self->has_arg('h');
 
     Prophet::CLI->end_pager();
-    $server->run;
+    $self->server->run;
 }
 
 sub setup_server {
