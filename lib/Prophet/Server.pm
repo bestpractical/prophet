@@ -52,6 +52,7 @@ sub run {
             . "Net::Rendezvous::Publish::Backend modules from CPAN.");
     }
     $self->setup_template_roots();
+    print ref($self) . ": Starting up local server. You can stop the server with Ctrl-c.\n";
     $self->SUPER::run(@_);
 }
 
