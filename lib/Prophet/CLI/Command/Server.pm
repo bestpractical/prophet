@@ -17,15 +17,15 @@ END_USAGE
 
 sub run {
     my $self = shift;
-    my $server = $self->setup_server();
+
+    $self->print_usage if $self->has_arg('h');
+
     Prophet::CLI->end_pager();
     $server->run;
 }
 
 sub setup_server {
     my $self = shift;
-
-    $self->print_usage if $self->has_arg('h');
 
     my $server_class = ref($self->app_handle) . "::Server";
     if (!$self->app_handle->try_to_require($server_class)) {
