@@ -1,7 +1,6 @@
 package Prophet::Replica::prophet;
 use Any::Moose;
-extends 'Prophet::Replica';
-with 'Prophet::FilesystemReplica';
+extends 'Prophet::FilesystemReplica';
 
 use Params::Validate qw(:all);
 use LWP::UserAgent;

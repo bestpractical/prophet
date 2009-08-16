@@ -1,5 +1,6 @@
 package Prophet::FilesystemReplica;
-use Any::Moose 'Role';
+use Any::Moose;
+extends 'Prophet::Replica';
 use File::Spec;use Params::Validate qw(:all);
 use LWP::UserAgent;
 use JSON;

@@ -1,8 +1,7 @@
 package Prophet::Replica::prophet_cache;
 use Any::Moose;
 
-extends 'Prophet::Replica';
-with 'Prophet::FilesystemReplica';
+extends 'Prophet::FilesystemReplica';
 use Params::Validate ':all';
 use File::Path qw/mkpath/;
 
