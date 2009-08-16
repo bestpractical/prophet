@@ -59,6 +59,12 @@ sub to_safe_b64 {
     return urlsafe_b64encode($self->from_string($uuid));
 }
 
+sub version {
+	my $self = shift;
+	my $uuid = shift;
+	return version_of_UUID($uuid);
+}
+
 
 =head1 NAME
 
