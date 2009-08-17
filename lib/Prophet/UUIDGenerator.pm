@@ -65,6 +65,17 @@ sub version {
 	return version_of_UUID($uuid);
 }
 
+sub set_uuid_scheme {
+	my $self = shift;
+	my $uuid = shift;
+
+		if ($self->version($uuid) <= 3) {
+			$self->uuid_scheme(1);
+		} else {
+			$self->uuid_scheme(2);
+		}
+
+	}
 
 =head1 NAME
 
