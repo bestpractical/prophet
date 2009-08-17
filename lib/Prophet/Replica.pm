@@ -55,9 +55,15 @@ has after_initialize => (
 
 
 has uuid_generator => (
-    is => 'rw',
-    isa => 'Prophet::UUIDGenerator',
-    default => sub { Prophet::UUIDGenerator->new( uuid_scheme => 1) }
+    is      => 'rw',
+    isa     => 'Prophet::UUIDGenerator',
+	lazy    => 1,
+    default => sub {
+        my $self = shift;
+        my $ug = Prophet::UUIDGenerator->new( uuid_scheme => 1 );
+        return $ug;
+
+    }
 );
 
 
@@ -95,8 +101,15 @@ sub get_handle {
     }
 
     Prophet::App->require($new_class);
-    $new_class->new(%args);
+	my $handle = $new_class->new(%args);
+   
+	if ($handle->replica_exists && $handle->db_uuid) {
+		$handle->uuid_generator->set_uuid_scheme($handle->db_uuid);
+	}	
+
+   return $handle;	
 }
+
 
 
 sub initialize {
@@ -124,6 +137,8 @@ sub initialize {
     }
 
     return undef if $self->replica_exists;
+
+	$self->uuid_generator->set_uuid_scheme($args{'db_uuid'}) if ($args{db_uuid});
 
     for ( $self->_on_initialize_create_paths ) {
         mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
