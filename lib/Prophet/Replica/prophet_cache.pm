@@ -147,18 +147,15 @@ sub initialize {
     my $self = shift;
     my %args = validate(
         @_,
-        {
-            db_uuid    => 1,
-            replica_uuid => 1,
-            resdb_uuid    => 0,
+        {   db_uuid            => 1,
+            replica_uuid       => 1,
+            resdb_uuid         => 0,
             resdb_replica_uuid => 0,
         }
     );
     if ( !$self->fs_root_parent ) {
         if ( $self->can_write_changesets ) {
-            die
-                "We can only create local prophet replicas. It looks like you're trying to create "
-                . $self->url;
+            die "We can only create local prophet replicas. It looks like you're trying to create " . $self->url;
         } else {
             die "Prophet couldn't find a replica at \""
                 . $self->fs_root_parent
@@ -169,21 +166,19 @@ sub initialize {
     }
 
     return if $self->replica_exists;
-    for (
-        $self->cas_root,
-        $self->changeset_cas_dir,
-        $self->replica_dir,
-        File::Spec->catdir($self->replica_dir, $args{'replica_uuid'}),
-        $self->userdata_dir
-        )
+    for ( $self->cas_root, $self->changeset_cas_dir, $self->replica_dir,
+        File::Spec->catdir( $self->replica_dir, $args{'replica_uuid'} ),
+        $self->userdata_dir )
     {
         mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
     }
 
-    $self->set_db_uuid( $args{db_uuid});
-    $self->set_resdb_replica_uuid($args{resdb_replica_uuid}) unless ($self->is_resdb);
-    $self->resolution_db_handle->initialize(db_uuid => $args{resdb_uuid}, replica_uuid => $args{resdb_replica_uuid})  unless ($self->is_resdb);
-    $self->after_initialize->($self);
+    $self->set_db_uuid( $args{db_uuid} );
+    $self->set_resdb_replica_uuid( $args{resdb_replica_uuid} ) unless ( $self->is_resdb );
+    $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid}, replica_uuid => $args{resdb_replica_uuid} )
+        unless ( $self->is_resdb );
+
+	$self->after_initialize->($self);
 }
 
 sub set_resdb_replica_uuid {
