@@ -3,7 +3,6 @@ use Any::Moose;
 
 extends 'Prophet::FilesystemReplica';
 use Params::Validate ':all';
-use File::Path qw/mkpath/;
 
 has '+db_uuid' => (
     lazy    => 1,
@@ -143,7 +142,14 @@ sub initialize_from_source {
     $self->initialize(%init_args);    # XXX only do this when we need to
 }
 
-sub initialize {
+sub _on_initialize_create_paths {
+	my $self = shift;
+	return ( $self->cas_root, $self->changeset_cas_dir, $self->replica_dir,
+        File::Spec->catdir( $self->replica_dir, $args{'replica_uuid'} ),
+        $self->userdata_dir );
+}
+
+sub initialize_backend {
     my $self = shift;
     my %args = validate(
         @_,
@@ -154,22 +160,11 @@ sub initialize {
         }
     );
 
-
-	$self->before_initialize(%args)  || return undef;
-
-	for ( $self->cas_root, $self->changeset_cas_dir, $self->replica_dir,
-        File::Spec->catdir( $self->replica_dir, $args{'replica_uuid'} ),
-        $self->userdata_dir )
-    {
-        mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
-    }
-
     $self->set_db_uuid( $args{db_uuid} );
     $self->set_resdb_replica_uuid( $args{resdb_replica_uuid} ) unless ( $self->is_resdb );
+
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid}, replica_uuid => $args{resdb_replica_uuid} )
         unless ( $self->is_resdb );
-
-	$self->after_initialize->($self);
 }
 
 sub set_resdb_replica_uuid {

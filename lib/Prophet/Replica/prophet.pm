@@ -291,7 +291,15 @@ use constant can_read_changesets => 1;
 sub can_write_changesets { return ( shift->fs_root ? 1 : 0 ) }
 sub can_write_records    { return ( shift->fs_root ? 1 : 0 ) }
 
-sub initialize {
+
+sub _on_initialize_create_paths {
+		my $self = shift;
+		return ( $self->record_dir, $self->cas_root, $self->record_cas_dir,
+			$self->changeset_cas_dir, $self->userdata_dir );
+
+}
+
+sub initialize_backend {
     my $self = shift;
     my %args = validate(
         @_,
@@ -299,13 +307,6 @@ sub initialize {
             resdb_uuid => 0,
         }
     );
-
-
-	$self->before_initialize(%args)  || return undef;
-
-    for ( $self->record_dir, $self->cas_root, $self->record_cas_dir, $self->changeset_cas_dir, $self->userdata_dir ) {
-        mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
-    }
 
     $self->set_db_uuid( $args{'db_uuid'} || $self->uuid_generator->create_str );
     $self->set_latest_sequence_no("0");
@@ -315,8 +316,6 @@ sub initialize {
 
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} )
         if !$self->is_resdb;
-
-    $self->after_initialize->($self);
 }
 
 sub latest_sequence_no {

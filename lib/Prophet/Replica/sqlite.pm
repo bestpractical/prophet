@@ -255,21 +255,23 @@ use constant can_read_changesets => 1;
 sub can_write_changesets {1}
 sub can_write_records    {1}
 
-sub initialize {
+
+sub _on_initialize_create_paths {
+		my $self = shift;
+		# We initialize the root, so we just insert '' here
+		return ('');
+	}
+
+
+sub initialize_backend {
     my $self = shift;
     my %args = validate(
         @_,
-        {
-            db_uuid    => 0,
+        {   db_uuid    => 0,
             resdb_uuid => 0,
         }
     );
 
-	$self->before_initialize(%args) || return undef;
-
-    mkpath( [ $self->fs_root ] );
-
-    #$self->dbh->begin_work;
     for ($self->schema) {
         $self->dbh->do($_) || warn $self->dbh->errstr;
     }
@@ -279,7 +281,6 @@ sub initialize {
     $self->set_replica_version(3);
     $self->resolution_db_handle->initialize( db_uuid => $args{resdb_uuid} )
       if !$self->is_resdb;
-    $self->after_initialize->($self);
 }
 
 sub latest_sequence_no {

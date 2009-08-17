@@ -2,6 +2,7 @@ package Prophet::Replica;
 use Any::Moose;
 use Params::Validate qw(:all);
 use File::Spec ();
+use File::Path qw/mkpath/;
 
 use constant state_db_uuid => 'state';
 
@@ -98,12 +99,14 @@ sub get_handle {
 }
 
 
-sub before_initialize {
+sub initialize {
     my $self = shift;
     my %args = validate(
         @_,
-        {   db_uuid    => 0,
-            resdb_uuid => 0,
+        {   db_uuid            => 0,
+            replica_uuid       => 0,
+            resdb_uuid         => 0,
+            resdb_replica_uuid => 0,
         }
     );
 
@@ -121,8 +124,13 @@ sub before_initialize {
     }
 
     return undef if $self->replica_exists;
-	return 1;
 
+    for ( $self->_on_initialize_create_paths ) {
+        mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
+    }
+
+	$self->initialize_backend(%args);
+	$self->after_initialize->($self);
 }
 
 
