@@ -25,7 +25,7 @@ Returns false otherwise.
 
 sub replica_exists {
     my $self = shift;
-    return $self->_replica_version ? 1 : 0;
+    return ( $self->_file_exists('replica-version')) ? 1 : 0;
 }
 
 sub can_initialize {
