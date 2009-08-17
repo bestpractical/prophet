@@ -24,7 +24,7 @@ sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  a => 'add', d => 'dele
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->get_cmd_name;
+    my $cmd = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}config [show]
@@ -339,7 +339,7 @@ sub _setup_new_syntax_add_subcmd {
 
 sub delete_usage_msg {
     my $self = shift;
-    my $app_cmd = $self->get_cmd_name;
+    my $app_cmd = $self->cli->get_script_name;
     my $cmd = shift;
 
     qq{usage: ${app_cmd}${cmd} section.subsection.var\n};
@@ -347,7 +347,7 @@ sub delete_usage_msg {
 
 sub add_usage_msg {
     my $self = shift;
-    my $app_cmd = $self->get_cmd_name;
+    my $app_cmd = $self->cli->get_script_name;
     my ($cmd, $subcmd) = @_;
 
     qq{usage: ${app_cmd}${cmd} ${subcmd} section.subsection.var ["key value"]\n};

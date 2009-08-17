@@ -186,6 +186,24 @@ sub end_pager {
     $ORIGINAL_STDOUT = undef;
 }
 
+=head2 get_script_name
+
+Return the name of the script that was run. This is the empty string
+if we're in a shell, otherwise the script name concatenated with
+a space character. This is so you can just use this for e.g.
+printing usage messages or help docs that might be run from either
+a shell or the command line.
+
+=cut
+
+sub get_script_name {
+    my $self = shift;
+    return '' if $self->interactive_shell;
+    require File::Spec;
+    my ($cmd) = ( File::Spec->splitpath($0) )[2];
+    return $cmd . ' ';
+}
+
 END {
    *STDOUT = $ORIGINAL_STDOUT if $ORIGINAL_STDOUT;
 }

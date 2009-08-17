@@ -10,7 +10,7 @@ sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(),  s => 'show' };
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->get_cmd_name;
+    my $cmd = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}settings [show]

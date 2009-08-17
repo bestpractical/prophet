@@ -8,7 +8,7 @@ sub ARG_TRANSLATIONS { shift->SUPER::ARG_TRANSLATIONS(), s => 'show' };
 
 sub usage_msg {
     my $self = shift;
-    my $cmd = $self->get_cmd_name;
+    my $cmd = $self->cli->get_script_name;
 
     return <<"END_USAGE";
 usage: ${cmd}aliases [show]
@@ -161,7 +161,7 @@ sub process_template {
 # Aliases
 override delete_usage_msg => sub {
     my $self = shift;
-    my $app_cmd = $self->get_cmd_name;
+    my $app_cmd = $self->cli->get_script_name;
     my $cmd = shift;
 
     qq{usage: ${app_cmd}${cmd} "alias text"\n};
@@ -169,7 +169,7 @@ override delete_usage_msg => sub {
 
 override add_usage_msg => sub {
     my $self = shift;
-    my $app_cmd = $self->get_cmd_name;
+    my $app_cmd = $self->cli->get_script_name;
     my ($cmd, $subcmd) = @_;
 
     qq{usage: ${app_cmd}$cmd $subcmd "alias text" "cmd to translate to"\n};

@@ -306,24 +306,6 @@ sub print_usage {
     die $args{usage_method}();
 }
 
-=head2 get_cmd_name
-
-Return the name of the script that was run. This is the empty string
-if we're in a shell, otherwise the script name concatenated with
-a space character. This is so you can just use this for e.g.
-printing usage messages or help docs that might be run from either
-a shell or the command line.
-
-=cut
-
-sub get_cmd_name {
-    my $self = shift;
-    return '' if $self->cli->interactive_shell;
-    require File::Spec;
-    my ($cmd) = ( File::Spec->splitpath($0) )[2];
-    return $cmd . ' ';
-}
-
 =head2 get_cmd_and_subcmd_names [no_type => 1]
 
 Gets the name of the script that was run and the primary commands that were
@@ -337,7 +319,7 @@ sub get_cmd_and_subcmd_names {
     my $self = shift;
     my %args = @_;
 
-    my $cmd = $self->get_cmd_name;
+    my $cmd = $self->cli->get_script_name;
     my @primary_commands = @{ $self->context->primary_commands };
 
     # if primary commands was only length 1, the type was not specified
