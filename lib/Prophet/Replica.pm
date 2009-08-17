@@ -98,6 +98,35 @@ sub get_handle {
 }
 
 
+sub before_initialize {
+    my $self = shift;
+    my %args = validate(
+        @_,
+        {   db_uuid    => 0,
+            resdb_uuid => 0,
+        }
+    );
+
+    if ( !$self->fs_root_parent ) {
+
+        if ( $self->can_write_changesets ) {
+            die "We can only create local prophet replicas. It looks like you're trying to create " . $self->url;
+        } else {
+            die "Prophet couldn't find a replica at \""
+                . $self->url
+                . "\"\n\n"
+                . "Please check the URL and try again.\n";
+
+        }
+    }
+
+    return undef if $self->replica_exists;
+	return 1;
+
+}
+
+
+
 =head2 store_local_metadata KEY => VALUE
 
 Takes a key and a value.

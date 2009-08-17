@@ -153,20 +153,11 @@ sub initialize {
             resdb_replica_uuid => 0,
         }
     );
-    if ( !$self->fs_root_parent ) {
-        if ( $self->can_write_changesets ) {
-            die "We can only create local prophet replicas. It looks like you're trying to create " . $self->url;
-        } else {
-            die "Prophet couldn't find a replica at \""
-                . $self->fs_root_parent
-                . "\"\n\n"
-                . "Please check the URL and try again.\n";
 
-        }
-    }
 
-    return if $self->replica_exists;
-    for ( $self->cas_root, $self->changeset_cas_dir, $self->replica_dir,
+	$self->before_initialize(%args)  || return undef;
+
+	for ( $self->cas_root, $self->changeset_cas_dir, $self->replica_dir,
         File::Spec->catdir( $self->replica_dir, $args{'replica_uuid'} ),
         $self->userdata_dir )
     {

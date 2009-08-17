@@ -300,20 +300,8 @@ sub initialize {
         }
     );
 
-    if ( !$self->fs_root_parent ) {
 
-        if ( $self->can_write_changesets ) {
-            die "We can only create local prophet replicas. It looks like you're trying to create " . $self->url;
-        } else {
-            die "Prophet couldn't find a replica at \""
-                . $self->url
-                . "\"\n\n"
-                . "Please check the URL and try again.\n";
-
-        }
-    }
-
-    return if $self->replica_exists;
+	$self->before_initialize(%args)  || return undef;
 
     for ( $self->record_dir, $self->cas_root, $self->record_cas_dir, $self->changeset_cas_dir, $self->userdata_dir ) {
         mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
