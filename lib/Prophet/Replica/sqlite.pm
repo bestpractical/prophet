@@ -284,68 +284,7 @@ sub initialize {
     mkpath( [ $self->fs_root ] );
 
     #$self->dbh->begin_work;
-    for (
-
-        q{
-CREATE TABLE records (
-    luid INTEGER PRIMARY KEY AUTOINCREMENT,
-    uuid text,
-    type text
-)
-},
-        q{
-CREATE TABLE record_props (
-    uuid text,
-    prop text,
-    value text 
-)
-
-}, q{
-CREATE TABLE changesets (
-    sequence_no INTEGER PRIMARY KEY AUTOINCREMENT,
-    creator text,
-    created text,
-    is_nullification boolean,
-    is_resolution boolean,
-
-    original_source_uuid text,
-    original_sequence_no INTEGER,
-    sha1 TEXT
-)
-}, q{
-CREATE TABLE changes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    record text,
-    changeset integer, 
-    change_type text,
-    record_type text
-)
-}, q{
-CREATE TABLE prop_changes (
-    change integer,
-    name text,
-    old_value text,
-    new_value text
-)
-}, q{
-CREATE TABLE local_metadata (
-    key text,
-    value text
-
-)
-}, q{
-CREATE TABLE userdata (
-    key text,
-    value text
-)
-},
-
-        q{create index uuid_idx on record_props(uuid)},
-        q{create index typeuuuid on records(type, uuid)},
-        q{create index keyidx on userdata(key)}
-
-      )
-    {
+    for (@$self->schema) {
         $self->dbh->do($_) || warn $self->dbh->errstr;
     }
 
@@ -958,6 +897,73 @@ sub find_uuid_by_luid {
     $sth->execute( $args{luid});
     return $sth->fetchrow_array;
 }
+
+
+sub schema {
+	my $self = shift;
+	return (
+
+        q{
+CREATE TABLE records (
+    luid INTEGER PRIMARY KEY AUTOINCREMENT,
+    uuid text,
+    type text
+)
+},
+        q{
+CREATE TABLE record_props (
+    uuid text,
+    prop text,
+    value text
+)
+
+}, q{
+CREATE TABLE changesets (
+    sequence_no INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator text,
+    created text,
+    is_nullification boolean,
+    is_resolution boolean,
+
+    original_source_uuid text,
+    original_sequence_no INTEGER,
+    sha1 TEXT
+)
+}, q{
+CREATE TABLE changes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    record text,
+    changeset integer,
+    change_type text,
+    record_type text
+)
+}, q{
+CREATE TABLE prop_changes (
+    change integer,
+    name text,
+    old_value text,
+    new_value text
+)
+}, q{
+CREATE TABLE local_metadata (
+    key text,
+    value text
+
+)
+}, q{
+CREATE TABLE userdata (
+    key text,
+    value text
+)
+},
+
+        q{create index uuid_idx on record_props(uuid)},
+        q{create index typeuuuid on records(type, uuid)},
+        q{create index keyidx on userdata(key)}
+
+      );
+}
+
 
 sub _upgrade_replica_to_v2 {
     my $self = shift;
