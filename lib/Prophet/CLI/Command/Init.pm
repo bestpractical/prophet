@@ -19,8 +19,7 @@ sub run {
     $self->print_usage if $self->has_arg('h');
 
     if ($self->app_handle->handle->replica_exists) {
-        print "Your Prophet database already exists.\n";
-        return;
+        die "Your Prophet database already exists.\n";
     }
 
     $self->app_handle->handle->after_initialize( sub { shift->app_handle->set_db_defaults } );
