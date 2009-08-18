@@ -217,6 +217,30 @@ sub edit_props {
     return \%props;
 }
 
+=head2 prompt_choices question
+
+Asks user the question and returns 0 if answer was the second choice,
+1 otherwise. (First choice is the default.)
+
+=cut
+
+sub prompt_choices {
+    my $self = shift;
+    my ($choice1, $choice2, $question) = @_;
+
+    $choice1 = uc $choice1;     # default is capsed
+    $choice2 = lc $choice2;     # non-default is lowercased
+
+    Prophet::CLI->end_pager();
+    print "$question [$choice1/$choice2]: ";
+
+    chomp( my $answer = <STDIN> );
+
+    Prophet::CLI->start_pager();
+
+    return $answer !~ /^$choice2$/i;
+}
+
 =head2 prompt_Yn question
 
 Asks user the question and returns true if answer was positive or false
@@ -228,16 +252,7 @@ sub prompt_Yn {
     my $self = shift;
     my $msg = shift;
 
-    Prophet::CLI->end_pager();
-    print "$msg [Y/n]: ";
-
-    my $a = <STDIN>;
-    chomp $a;
-    print "\n";
-    Prophet::CLI->start_pager();
-
-    return 1 if $a =~ /^(|y|yes)$/i;
-    return 0;
+    return $self->prompt_choices( 'y', 'n', $msg );
 }
 
 # Create a new [replica] config file section for the given replica if
