@@ -18,18 +18,14 @@ sub run {
 
     $self->print_usage if $self->has_arg('h');
 
-    print "Working on prophet database: ".$self->handle->url." (@{[ref($self->handle)]})".$/;
-    print "DB UUID: ".$self->handle->db_uuid.$/;
-    print "Changesets: ".$self->handle->latest_sequence_no.$/;
-
-    print "Known types: ".join(',', @{$self->handle->list_types} ).$/;
-
+    print "Prophet database: ".$self->handle->url." (@{[ref($self->handle)]})".$/;
+    print "Database UUID:    ".$self->handle->db_uuid.$/;
+    print "Replica UUID:     ".$self->handle->uuid.$/;
+    print "Changesets:       ".$self->handle->latest_sequence_no.$/;
+    print "Known types:      ".join(',', @{$self->handle->list_types} ).$/;
 }
 
 __PACKAGE__->meta->make_immutable;
 no Any::Moose;
 
-
-
 1;
-
