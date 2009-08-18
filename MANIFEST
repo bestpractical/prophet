@@ -94,6 +94,7 @@ lib/Prophet/Server/ViewHelpers/Function.pm
 lib/Prophet/Server/ViewHelpers/HiddenParam.pm
 lib/Prophet/Server/ViewHelpers/ParamFromFunction.pm
 lib/Prophet/Server/ViewHelpers/Widget.pm
+lib/Prophet/TempUUIDTiny.pm
 lib/Prophet/Test.pm
 lib/Prophet/Test/Arena.pm
 lib/Prophet/Test/Editor.pm
