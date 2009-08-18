@@ -567,7 +567,12 @@ sub _read_serialized_record {
     return from_json( $self->_read_file($casfile), { utf8 => 1 } );
 }
 
-memoize '_record_index_filename';
+# XXX TODO: memoize doesn't work on win:
+# t\resty-server will issue the following error:
+# Anonymous function called in forbidden list context; faulting
+memoize '_record_index_filename' unless $^O =~ /MSWin/;
+
+
 sub _record_index_filename {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
