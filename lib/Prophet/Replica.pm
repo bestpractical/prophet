@@ -60,7 +60,7 @@ has uuid_generator => (
 	lazy    => 1,
     default => sub {
         my $self = shift;
-        my $ug = Prophet::UUIDGenerator->new( uuid_scheme => 1 );
+        my $ug = Prophet::UUIDGenerator->new( uuid_scheme => 2 );
         return $ug;
 
     }

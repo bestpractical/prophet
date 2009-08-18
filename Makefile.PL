@@ -32,7 +32,7 @@ feature 'Faster JSON Parsing' => -default => 1,
     'JSON::XS',               => '2.2222';
 feature 'Web server' => -default => 1,
     'File::ShareDir' => '1.00',
-    'HTTP::Server::Simple',                  # HTTP::Server::Simple::CGI
+    'HTTP::Server::Simple' => '0.40',                  # HTTP::Server::Simple::CGI
     ;
 feature 'HTML display'  => -default => 1,
     'Template::Declare' => '0.35',  # Template::Declare::Tags
