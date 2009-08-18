@@ -15,6 +15,7 @@ as_alice {
 
     # check that new config section has been created with uuid variable
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    $config_contents =~ s!\\\\!\\!g;
     my $replica_uuid = replica_uuid();
     like($config_contents, qr/\[core\]
 	config-format-version = \d+
@@ -38,6 +39,7 @@ as_alice {
 
     # check that publish-url config key has been created correctly
     $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    $config_contents =~ s!\\\\!\\!g;
     like($config_contents, qr/\[core\]
 	config-format-version = \d+
 \[replica "(.*?)"\]
@@ -49,6 +51,7 @@ as_alice {
     # change name in config
     my $new_config_contents = $config_contents;
     $new_config_contents =~ s/\Q$replica_name\E/alice/;
+    $new_config_contents =~ s!\\!\\\\!g;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
@@ -62,6 +65,7 @@ as_alice {
     # make sure the subsection name was changed and the publish-url
     # was updated, rather than a new section being created
     $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    $config_contents =~ s!\\\\!\\!g;
     like($config_contents, qr/\[core\]
 	config-format-version = \d+
 \[replica "alice"\]
@@ -74,7 +78,9 @@ as_alice {
     my ($uuid)
         = ($new_config_contents =~ /uuid = ($Prophet::CLIContext::ID_REGEX)/);
     $new_published = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+    $new_published =~ s!\\!\\\\!g;
     my $bogus_name = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG} );
+    $bogus_name =~ s!\\!\\\\!g;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => <<EOF,
@@ -98,6 +104,7 @@ as_bob {
         'clone as bob',
     );
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    $config_contents =~ s!\\\\!\\!g;
     my $replica_uuid = replica_uuid();
     like($config_contents, qr|\[core\]
 	config-format-version = \d+
@@ -126,9 +133,11 @@ as_alice {
 as_bob {
     # change name in config
     my $config_contents = Prophet::Util->slurp($ENV{PROPHET_APP_CONFIG});
+    $config_contents =~ s!\\\\!\\!g;
     my ($replica_name) = ( $config_contents =~ /\[replica "(.*?)"\]/ );
     my $new_config_contents = $config_contents;
     $new_config_contents =~ s/\Q$replica_name\E/alice/;
+    $new_config_contents =~ s!\\!\\\\!g;
     Prophet::Util->write_file(
         file => $ENV{PROPHET_APP_CONFIG},
         content => $new_config_contents,
