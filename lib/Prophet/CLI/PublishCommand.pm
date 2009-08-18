@@ -26,6 +26,17 @@ sub publish_dir {
     # cases we sometimes export to the same directory in quick succession)
     push @args, '--ignore-times';
     
+    if ( $^O =~ /MSWin/ ) {
+        for (qw/from to/) {
+            $args{$_} =~ s!^([A-Z]):!'/cygdrive/' . lc $1!eg;
+            $args{$_} =~ s!\\!/!g;
+            $args{$_} =~ s!/DOCUME~1!/Documents And Settings!g;
+            $args{$_} =~ s!/ADMINI~1!/Administrator!g;
+            $args{$_} =~ s!/LOCALS~1!/Local Settings!g;
+            $args{$_} = q{"} . $args{$_} . q{"};
+        }
+    }
+    
     push @args, '--recursive', '--' , $args{from}, $args{to};
 
     my $rsync = $ENV{RSYNC} || "rsync";
