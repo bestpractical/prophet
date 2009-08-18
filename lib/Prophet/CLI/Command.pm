@@ -279,6 +279,7 @@ sub record_replica_in_config {
         # to previously--we don't want to end up with a multivalue in the
         # config file, so just replace the old value.
         my $name = $self->app_handle->display_name_for_replica($replica_uuid);
+        $name =~ s!\\!\\\\!g;
         $self->app_handle->config->set(
             filename => $self->app_handle->config->replica_config_file,
             key => "replica.$name.$url_variable",
