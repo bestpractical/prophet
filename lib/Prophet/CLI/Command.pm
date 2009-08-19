@@ -259,7 +259,6 @@ sub record_replica_in_config {
     if ( !$found_prev_replica ) {
         # replica section doesn't exist at all; create a new one
 	    my $url = $replica_url;
-	    $url =~ s!\\!\\\\!g; # subsection can't contain unescaped \
         $self->app_handle->config->group_set(
             $self->app_handle->config->replica_config_file,
             [
@@ -279,7 +278,6 @@ sub record_replica_in_config {
         # to previously--we don't want to end up with a multivalue in the
         # config file, so just replace the old value.
         my $name = $self->app_handle->display_name_for_replica($replica_uuid);
-        $name =~ s!\\!\\\\!g;
         $self->app_handle->config->set(
             filename => $self->app_handle->config->replica_config_file,
             key => "replica.$name.$url_variable",

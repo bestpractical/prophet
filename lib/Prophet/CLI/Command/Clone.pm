@@ -55,7 +55,6 @@ sub run {
 
     # create new config section for this replica
     my $from = $self->arg('from');
-	$from =~ s!\\!\\\\!g; # subsection can't contain unescaped \
     $self->app_handle->config->group_set(
         $self->app_handle->config->replica_config_file,
         [ {

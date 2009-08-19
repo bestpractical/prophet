@@ -29,7 +29,6 @@ sub run {
 
     # create new config section for this replica
     my $url = $self->app_handle->handle->url;
-	$url =~ s!\\!\\\\!g; # subsection can't contain unescaped \
     $self->app_handle->config->set(
         key => 'replica.'.$url.'.uuid',
         value => $self->app_handle->handle->uuid,
