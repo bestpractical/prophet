@@ -127,7 +127,7 @@ sub _warn_unknown_args {
     # help users avoid frustration if they accidentally do something
     # like config add aliases.foo = push --to foo@bar.com
     my %args = %{$self->args};
-    for my $arg ( qw(show edit add delete set) ) {
+    for my $arg ( qw(show edit add delete set user global) ) {
         delete $args{$arg};
     }
     if ( keys %args != 0 ) {
