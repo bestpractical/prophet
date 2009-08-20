@@ -27,12 +27,13 @@ sub publish_dir {
     push @args, '--ignore-times';
     
     if ( $^O =~ /MSWin/ ) {
+        require Win32;
         for (qw/from to/) {
+            # convert old 8.3 name
+            $args{$_} = Win32::GetLongPathName($args{$_});
+            # cwrsync uses cygwin
             $args{$_} =~ s!^([A-Z]):!'/cygdrive/' . lc $1!eg;
             $args{$_} =~ s!\\!/!g;
-            $args{$_} =~ s!/DOCUME~1!/Documents And Settings!g;
-            $args{$_} =~ s!/ADMINI~1!/Administrator!g;
-            $args{$_} =~ s!/LOCALS~1!/Local Settings!g;
             $args{$_} = q{"} . $args{$_} . q{"};
         }
     }
