@@ -135,6 +135,7 @@ t/edit.t
 t/export.t
 t/generalized_sync_n_merge.t
 t/history.t
+t/info.t
 t/init.t
 t/lib/TestApp/Bug.pm
 t/lib/TestApp/BugCatcher.pm
