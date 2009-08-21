@@ -236,8 +236,8 @@ sub import_changesets {
     );
 
     my $source = $args{'from'};
-    
-    $source->_check_db_uuids_on_merge(for => $self, force => $args{'force'});
+
+    $self->_check_db_uuids_on_merge(for => $source, force => $args{'force'});
 
     warn "The source (@{[$source->url]}) does not exist" unless ($source->replica_exists);
 
