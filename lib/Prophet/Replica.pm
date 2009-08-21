@@ -101,13 +101,13 @@ sub get_handle {
     }
 
     Prophet::App->require($new_class);
-	my $handle = $new_class->new(%args);
-   
-	if ($handle->replica_exists && $handle->db_uuid) {
-		$handle->uuid_generator->set_uuid_scheme($handle->db_uuid);
-	}	
+    my $handle = $new_class->new(%args);
 
-   return $handle;	
+    if ($handle->replica_exists && $handle->db_uuid) {
+        $handle->uuid_generator->set_uuid_scheme($handle->db_uuid);
+    }
+
+    return $handle;
 }
 
 
@@ -138,14 +138,14 @@ sub initialize {
 
     return undef if $self->replica_exists;
 
-	$self->uuid_generator->set_uuid_scheme($args{'db_uuid'}) if ($args{db_uuid});
+    $self->uuid_generator->set_uuid_scheme($args{'db_uuid'}) if ($args{db_uuid});
 
     for ( $self->_on_initialize_create_paths ) {
         mkpath( [ File::Spec->catdir( $self->fs_root => $_ ) ] );
     }
 
-	$self->initialize_backend(%args);
-	$self->after_initialize->($self);
+    $self->initialize_backend(%args);
+    $self->after_initialize->($self);
 }
 
 
