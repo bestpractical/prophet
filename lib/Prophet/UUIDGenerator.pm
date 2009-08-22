@@ -81,7 +81,7 @@ sub set_uuid_scheme {
 
 =head1 NAME
 
-Foo::Bar
+Prophet::UUIDGenerator
 
 =head1 METHODS
 
