@@ -5,8 +5,6 @@ extends 'Prophet::CLI::Command';
 sub usage_msg {
     my $self = shift;
     my $cmd = $self->cli->get_script_name;
-    my $env_var = uc $cmd . '_REPO';
-    $env_var =~ s/ //;
 
     return <<"END_USAGE";
 usage: ${cmd}init
