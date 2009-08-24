@@ -390,6 +390,7 @@ sub send_content {
 sub _send_401 {
     my $self = shift;
     print "HTTP/1.0 401 READONLY_SERVER\r\n";
+    # TODO give an actual error page?
     return '401';
 }
 
