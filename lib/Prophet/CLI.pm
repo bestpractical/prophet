@@ -49,6 +49,8 @@ has interactive_shell => (
     default => 0,
 );
 
+# default line length for CLI-related things that ought to wrap
+use constant LINE_LENGTH => 80;
 
 =head2 _record_cmd
 

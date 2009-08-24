@@ -743,11 +743,8 @@ array context, returns a list of
 sub format_summary {
     my $self = shift;
 
-    my @out = $self->_summary_format ?
-    $self->_parse_format_summary
-    : 
-    $self->_format_all_props_raw 
-    ;
+    my @out = $self->_summary_format ?  $self->_parse_format_summary
+                                     : $self->_format_all_props_raw;
     return @out if wantarray;
     return join ' ', map { $_->{formatted} } @out;
 }
@@ -814,6 +811,7 @@ sub atom_value {
 =head2 format_atom $string => $value
 
 Takes a format string / value pair and returns a formatted string for printing.
+Dies with a message if there's an error in the format string that sprintf warn()s on.
 
 =cut
 
@@ -821,7 +819,22 @@ sub format_atom {
     my $self = shift;
     my $string = shift;
     my $value = shift;
-    return sprintf($string, $self->atom_value($value));
+
+    my $formatted_atom;
+    eval {
+        use warnings FATAL => 'all';    # sprintf only warns on errors
+        $formatted_atom = sprintf($string, $self->atom_value($value));
+    };
+    if ( $@ ) {
+        chomp $@;
+        die "Error: cannot format value '".$self->atom_value($value)
+            ."' using atom '".$string."' in '".$self->type."' summary format\n\n"
+            ."Check that the ".$self->type.".summary-format config variable in your config\n"
+            ."file is valid. If this variable is not set, this is a bug in the default\n"
+            ."summary format for this ticket type.\n\n"
+            ."The error encountered was:\n\n'" . $@ . "'\n";
+    }
+    return $formatted_atom;
 }
 
 =head2 find_or_create_luid
