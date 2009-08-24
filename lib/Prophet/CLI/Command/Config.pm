@@ -210,14 +210,15 @@ sub parse_cli_arg {
         $self->_setup_delete_subcmd( "$cmd delete", @args[1..$#args] );
     }
     # all of these may also contain add|set after alias
-    # prophet alias "foo bar" = "foo baz"
-    # prophet alias foo = bar
-    # prophet alias foo bar = bar baz
-    # prophet alias foo bar = "bar baz"
+    # prophet alias "foo bar" = "foo baz" (1)
+    # prophet alias foo = bar (1)
+    # prophet alias foo =bar (2)
+    # prophet alias foo bar = bar baz (1)
+    # prophet alias foo bar = "bar baz" (1)
     elsif ( $args[0] =~ /^(add|set)$/
-        || (@args >= 3 && grep { m/(^=|=$)/ } @args)
-        || (@args == 2 && $args[1] =~ /=/) ) {
-        my $subcmd = $1;
+        || (@args >= 3 && grep { m/^=|=$/ } @args)  # ex 1
+        || (@args == 2 && $args[1] =~ /^=|=$/) ) {  # ex 2
+        my $subcmd = defined $1 ? $1 : q{};
         shift @args if $args[0] =~ /^(?:add|set)$/;
 
         $self->_setup_old_syntax_add_subcmd( $cmd, $subcmd, @args );
@@ -304,6 +305,8 @@ sub _setup_old_syntax_add_subcmd {
         $self->context->set_arg(set => $args[0]);
     }
     else {
+        # the only way this will be triggered is if the user types
+        # "config add" or "config set"
         $self->print_usage(
             usage_method      => sub {
                 $self->add_usage_msg($cmd, $subcmd);
