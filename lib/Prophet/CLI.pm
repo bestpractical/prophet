@@ -86,20 +86,21 @@ sub run_one_command {
     # find the first alias that matches, rerun the aliased cmd
     # note: keys of aliases are treated as regex, 
     # we need to substitute $1, $2 ... in the value if there's any
-
     my $ori_cmd = join ' ', @args;
 
-	if ($self->app_handle->local_replica_url) {
-    my $aliases = $self->app_handle->config->aliases;
-    for my $alias ( keys %$aliases ) {
-        my $command = $self->_command_matches_alias($ori_cmd, $alias, $aliases->{$alias}) || next;
+    if ($self->app_handle->local_replica_url) {
+        my $aliases = $self->app_handle->config->aliases;
+        for my $alias ( keys %$aliases ) {
+            my $command = $self->_command_matches_alias(
+                $ori_cmd, $alias, $aliases->{$alias},
+            ) || next;
 
-        # we don't want to recursively call if people stupidly write
-        # alias pull --local = pull --local
-        next if ( $command eq $ori_cmd );
-        return $self->run_one_command( split /\s+/, $command );
+            # we don't want to recursively call if people stupidly write
+            # alias pull --local = pull --local
+            next if ( $command eq $ori_cmd );
+            return $self->run_one_command( split /\s+/, $command );
+        }
     }
-	}
     #  really, we shouldn't be doing this stuff from the command dispatcher
     $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
