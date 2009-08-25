@@ -253,7 +253,7 @@ sub import_changesets {
                     # If we've seen the changeset, yet we still got here, it means we saw it by original 
                     # replica/sequence pair, but not # the direct upstream's uuid/sequence pair.
                     # recording that can help performance a whole bunch for next sync
-                    if ($source->uuid && $seq > $self->last_changeset_from_source($source->uuid)) {
+                    if ($source->uuid && $seq && $seq > $self->last_changeset_from_source($source->uuid)) {
                           $self->record_last_changeset_from_replica( $source->uuid => $seq);
                     }
                     return undef;
