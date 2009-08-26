@@ -100,7 +100,6 @@ Returns the number of changesets merged.
 sub _do_merge {
     my ($self) = @_;
 
-    my $source_latest = $self->source->latest_sequence_no() || 0;
     my $last_seen_from_source = $self->target->last_changeset_from_source( $self->source->uuid );
     my %import_args = (
         from  => $self->source,
@@ -140,7 +139,7 @@ sub _do_merge {
         );
 
     } else {
-
+		my $source_latest = $self->source->latest_sequence_no() || 0;
         if ( $self->has_arg('verbose') ) {
             print "Integrating changes from " . $last_seen_from_source . " to " . $source_latest . "\n";
             $import_args{reporting_callback} = sub {

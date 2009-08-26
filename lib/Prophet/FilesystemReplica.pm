@@ -25,7 +25,7 @@ Returns false otherwise.
 
 sub replica_exists {
     my $self = shift;
-    return ( $self->_file_exists('replica-version')) ? 1 : 0;
+    return $self->uuid ? 1 : 0;
 }
 
 sub can_initialize {
@@ -173,10 +173,18 @@ sub traverse_changesets {
         $latest = $args{until};
     }
 
-    my $chgidx = $self->read_changeset_index;
+
+	#there's no need to iterate if we know there's nothing to read
+	return if ( $first_rev > $latest); 
+	
     $self->log_debug("Traversing changesets between $first_rev and $latest");
     my @range = ( $first_rev .. $latest );
     @range = reverse @range if $args{reverse};
+    
+	
+	my $chgidx = $self->read_changeset_index;
+
+
     for my $rev (@range) {
         $self->log_debug("Fetching changeset $rev");
 
