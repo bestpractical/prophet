@@ -57,7 +57,7 @@ has after_initialize => (
 has uuid_generator => (
     is      => 'rw',
     isa     => 'Prophet::UUIDGenerator',
-	lazy    => 1,
+    lazy    => 1,
     default => sub {
         my $self = shift;
         my $ug = Prophet::UUIDGenerator->new( uuid_scheme => 2 );
@@ -225,13 +225,13 @@ sub import_changesets {
     my $self = shift;
     my %args = validate(
         @_,
-        {   from                           => { isa      => 'Prophet::Replica' },
-            resdb                          => { optional => 1 },
-            resolver                       => { optional => 1 },
-            resolver_class                 => { optional => 1 },
-            conflict_callback              => { type => CODEREF, optional => 1 },
-            reporting_callback             => { type => CODEREF, optional => 1 },
-            force                          => { optional => 1 },
+        {   from                      => { isa      => 'Prophet::Replica' },
+            resdb                     => { optional => 1 },
+            resolver                  => { optional => 1 },
+            resolver_class            => { optional => 1 },
+            conflict_callback         => { type => CODEREF, optional => 1 },
+            reporting_callback        => { type => CODEREF, optional => 1 },
+            force                     => { optional => 1 },
         }
     );
 
@@ -239,22 +239,33 @@ sub import_changesets {
 
     $self->_check_db_uuids_on_merge(for => $source, force => $args{'force'});
 
-    warn "The source (@{[$source->url]}) does not exist" unless ($source->replica_exists);
+    warn "The source (@{[$source->url]}) does not exist"
+        unless ($source->replica_exists);
 
-    $self->log_debug("Integrating changesets from ".$source->uuid. " after ". $self->last_changeset_from_source( $self->uuid ));
+    $self->log_debug("Integrating changesets from ".$source->uuid.
+        " after ". $self->last_changeset_from_source( $self->uuid ));
 
     $source->traverse_changesets(
-        after                          => $self->last_changeset_from_source( $source->uuid ),
-        before_load_changeset_callback  => sub { 
+        after                          =>
+            $self->last_changeset_from_source( $source->uuid ),
+        before_load_changeset_callback => sub {
                 my %args = (@_);
-                my ($seq, $orig_uuid, $orig_seq, $key) = @{$args{changeset_metadata}};
+                my ($seq, $orig_uuid, $orig_seq, $key)
+                    = @{$args{changeset_metadata}};
                 # skip changesets we've seen before
-                if ( $self->has_seen_changeset( source_uuid => $orig_uuid, sequence_no => $orig_seq) ){
-                    # If we've seen the changeset, yet we still got here, it means we saw it by original 
-                    # replica/sequence pair, but not # the direct upstream's uuid/sequence pair.
-                    # recording that can help performance a whole bunch for next sync
-                    if ($source->uuid && $seq && $seq > $self->last_changeset_from_source($source->uuid)) {
-                          $self->record_last_changeset_from_replica( $source->uuid => $seq);
+                if ( $self->has_seen_changeset( source_uuid => $orig_uuid,
+                        sequence_no => $orig_seq) ){
+                    # If we've seen the changeset, yet we still got here, it
+                    # means we saw it by original
+
+                    # replica/sequence pair, but not # the direct upstream's
+                    # uuid/sequence pair.
+                    # recording that can help performance a whole bunch for
+                    # next sync
+                    if ($source->uuid && $seq && $seq
+                        > $self->last_changeset_from_source($source->uuid)) {
+                          $self->record_last_changeset_from_replica(
+                              $source->uuid => $seq);
                     }
                     return undef;
                 } else {
@@ -274,7 +285,8 @@ sub import_changesets {
             );
 
             if ( ref( $callback_args{'after_integrate_changeset'} ) ) {
-                $callback_args{'after_integrate_changeset'}->( changeset => $callback_args{'changeset'} );
+                $callback_args{'after_integrate_changeset'}->(
+                    changeset => $callback_args{'changeset'} );
             }
 
         }
