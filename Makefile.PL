@@ -2,8 +2,10 @@
 
 use inc::Module::Install;
 name('Prophet');    #  App::Settings App::Settings::CLI App::WebToy App::WebToy::CLI
+
 author('clkao and jesse');
-license('Perl');
+
+license('mit');
 requires('Exporter::Lite');
 requires('Params::Validate');
 requires('IPC::Run3');
@@ -58,7 +60,6 @@ feature 'Bonjour support' => -default => 0,
 
 tests('t/*.t t/*/t/*.t');
 all_from('lib/Prophet.pm');
-install_script('bin/prophet');
 install_share 'share';
 auto_install;
 WriteAll();
