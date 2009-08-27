@@ -20,38 +20,39 @@ sub run {
 
     $self->set_arg( 'to' => $self->app_handle->handle->url() );
 
-    my $source = Prophet::Replica->get_handle(
-        url        => $self->arg('from'),
+    $self->source( Prophet::Replica->get_handle(
+        url       => $self->arg('from'),
         app_handle => $self->app_handle,
-    );
-    my $target = Prophet::Replica->get_handle(
-        url        => $self->arg('to'),
-        app_handle => $self->app_handle,
-    );
+    ));
 
-    if ( $target->replica_exists ) {
+    $self->target( Prophet::Replica->get_handle(
+        url       => $self->arg('to'),
+        app_handle => $self->app_handle,
+    ));
+
+    if ( $self->target->replica_exists ) {
         die "The target replica already exists.\n";
     }
 
-    if ( !$target->can_initialize ) {
+    if ( !$self->target->can_initialize ) {
         die "The target replica path you specified can't be created.\n";
     }
 
     my %init_args;
-    if ( $source->isa('Prophet::ForeignReplica') ) {
-        $target->after_initialize( sub { shift->app_handle->set_db_defaults } );
+    if ( $self->source->isa('Prophet::ForeignReplica') ) {
+        $self->target->after_initialize( sub { shift->app_handle->set_db_defaults } );
     } else {
         %init_args = (
-            db_uuid    => $source->db_uuid,
-            resdb_uuid => $source->resolution_db_handle->db_uuid,
+            db_uuid    => $self->source->db_uuid,
+            resdb_uuid => $self->source->resolution_db_handle->db_uuid,
         );
     }
 
-    unless ($source->replica_exists) {
-        die "The source replica '@{[$source->url]}' doesn't exist or is unreadable.\n";
+    unless ($self->source->replica_exists) {
+        die "The source replica '@{[$self->source->url]}' doesn't exist or is unreadable.\n";
     }
 
-    $target->initialize(%init_args);
+    $self->target->initialize(%init_args);
 
     # create new config section for this replica
     my $from = $self->arg('from');
@@ -62,13 +63,13 @@ sub run {
             value => $self->arg('from'),
         },
         {   key => 'replica.'.$from.'.uuid',
-            value => $target->uuid,
+            value => $self->target->uuid,
         },
         ]
     );
 
-    if ( $source->can('database_settings') ) {
-        my $remote_db_settings = $source->database_settings;
+    if ( $self->source->can('database_settings') ) {
+        my $remote_db_settings = $self->source->database_settings;
         my $default_settings   = $self->app_handle->database_settings;
         for my $name ( keys %$remote_db_settings ) {
             my $uuid = $default_settings->{$name}[0];

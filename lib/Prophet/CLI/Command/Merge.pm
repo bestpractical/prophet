@@ -33,14 +33,14 @@ sub run {
     Prophet::CLI->end_pager();
 
     $self->source( Prophet::Replica->get_handle(
-        url       => $self->arg('from'),
+        url        => $self->arg('from'),
         app_handle => $self->app_handle,
-    ));
+    )) unless $self->source;    # subclass may already have set source
 
     $self->target( Prophet::Replica->get_handle(
-        url       => $self->arg('to'),
+        url        => $self->arg('to'),
         app_handle => $self->app_handle,
-    ));
+    )) unless $self->target;    # subclass may already have set target
 
     $self->validate_merge_replicas($self->source => $self->target);
 
@@ -54,6 +54,7 @@ sub run {
     $self->target->import_resolutions_from_remote_replica(
         from  => $self->source,
         force => $self->has_arg('force'),
+        resolver_class => 'Prophet::Resolver::Prompt',
     ) if ($self->source->resolution_db_handle);
 
     my $changesets = $self->_do_merge();
