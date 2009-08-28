@@ -101,7 +101,8 @@ sub find_bonjour_sources {
             my $res = Net::Bonjour->new('prophet');
             $res->discover;
             for my $entry ( $res->entries ) {
-                if ( $entry->name eq $db_uuid ) {
+                my $name = $entry->name;
+                if ( $name eq $db_uuid || $name =~ m/[(]$db_uuid[)]$/ ) {
                     print "Found a database replica on " . $entry->hostname."\n";
                     require URI;
                     my $uri = URI->new();
