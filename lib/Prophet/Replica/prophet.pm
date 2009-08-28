@@ -100,6 +100,23 @@ has '+resolution_db_handle' => (
     },
 );
 
+has backend => (
+	lazy => 1,
+	is => 'rw',
+	default => sub {
+		my $self = shift;
+		my $be;
+		if ($self->url =~ /^http/i) {
+			$be = 'Prophet::Replica::FS::Backend::LWP';
+		} else {
+			$be = 'Prophet::Replica::FS::Backend::File';
+		};
+
+		Prophet::App->require($be);
+		return $be->new(url => $self->url, fs_root => $self->fs_root);
+	}
+
+);
 
 use constant scheme   => 'prophet';
 use constant cas_root => 'cas';
@@ -458,52 +475,10 @@ sub _write_record_index_entry {
 
 sub _read_file_range {
     my $self = shift;
-    my %args = validate( @_, { path => 1, position => 1, whence => 1, length => 1 } );
+    my %args = validate( @_, { path => 1, position => 1, length => 1 } );
 
-    if ($self->fs_root) {
-        my $f = File::Spec->catfile( $self->fs_root => $args{path} );
-        return unless -e $f;
-        if ( $^O =~ /MSWin/ ) {
-            # XXX by sunnavy
-# the the open, seek and read below doesn't work on windows, at least with
-# strawberry perl 5.10.0.6 on windows xp
-#
-# the differences:
-# with substr, I got:
-# 0000000: 0000 0004 ecaa d794 a5fe 8c6f 6e85 0d0a  ...........on...
-# 0000010: 7087 f0cf 1e92 b50d f9                   p........
-# 
-# the read, I got
-# 0000000: 0000 04ec aad7 94a5 fe8c 6f6e 850d 0d0a  ..........on....
-# 0000010: 7087 f0cf 1e92 b50d f9                   p........
-# 
-# seems with read, we got an extra 0d, I dont' know why yet :/
-            my $content = Prophet::Util->slurp( $f );
-            if ($args{whence} == 2) {
-                return substr($content, $args{position}, $args{length});
-            }
-            else {
-                die "unsupprted";
-            }
-        }
-        else {
-            open( my $index, "<:bytes", $f ) or return;
-            seek( $index, $args{position}, $args{whence} ) or return;
-            my $record;
-            read( $index, $record, $args{length} ) or return;
-            return $record;
-        }
-    }
-    else {
-        # XXX: do range get if possible
-        my $content = $self->lwp_get( $self->url . "/" . $args{path} );
-        if ($args{whence} == 2) {
-            return substr($content, $args{position}, $args{length});
-        }
-        else {
-            die "unsupprted";
-        }
-    }
+	return $self->backend->read_file_range(%args);
+
 }
 
 sub _last_record_index_entry {
@@ -513,7 +488,7 @@ sub _last_record_index_entry {
     my $idx_filename;
     my $record = $self->_read_file_range(
         path => $self->_record_index_filename( uuid => $args{uuid}, type => $args{type}),
-        position => (0 - RECORD_INDEX_SIZE), whence => 2,
+        position => (0 - RECORD_INDEX_SIZE), 
         length => RECORD_INDEX_SIZE ) || return undef;
 
     my ( $seq, $key ) = unpack( "NH40", $record ) ;
@@ -529,7 +504,7 @@ sub _read_record_index {
         type => $args{type}
     );
 
-    my $index = $self->_read_file($idx_filename);
+    my $index = $self->backend->read_file($idx_filename);
     return undef unless $index;
 
     my $count = length($index) / RECORD_INDEX_SIZE;
@@ -694,9 +669,7 @@ sub commit_edit {
 sub _write_changeset_to_index {
     my $self      = shift;
     my $changeset = shift;
-    my $handle    = $self->_get_changeset_index_handle;
-    $self->_write_changeset( index_handle => $handle, changeset => $changeset );
-    close($handle) || die "Failed to close changeset handle: " . $handle;
+    $self->_write_changeset( changeset => $changeset );
     $self->current_edit(undef);
 }
 

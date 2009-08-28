@@ -2,19 +2,9 @@ package Prophet::FilesystemReplica;
 use Any::Moose;
 extends 'Prophet::Replica';
 use File::Spec;use Params::Validate qw(:all);
-use LWP::UserAgent;
 use JSON;
 use Prophet::Util;
       
-has lwp_useragent => (
-    isa => 'LWP::UserAgent',
-    is => 'ro',
-    lazy => 1,
-    default => sub {
-        my $ua = LWP::UserAgent->new( timeout => 60, keep_alive => 4, agent => "Prophet/".$Prophet::VERSION);
-        return $ua;
-    }
-);
 
 =head2 replica_exists
 
@@ -47,16 +37,7 @@ sub _file_exists {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
 
-    if ( !$self->fs_root ) {
-
-        # HTTP Replica
-        return $self->_read_file($file) ? 1 : 0;
-    }
-
-    my $path = File::Spec->catfile( $self->fs_root, $file );
-    if    ( -f $path ) { return 1 }
-    elsif ( -d $path ) { return 2 }
-    else               { return 0 }
+	return $self->backend->file_exists($file);
 }
 
 sub read_file {
@@ -77,30 +58,19 @@ sub read_file {
 sub _read_file {
     my $self = shift;
     my ($file) = validate_pos( @_, 1 );
-    if ( $self->fs_root ) {
-        return eval {
-            local $SIG{__DIE__} = 'DEFAULT';
-            Prophet::Util->slurp(
-                File::Spec->catfile( $self->fs_root => $file ) );
-        };
-    } else {    # http replica
-        return $self->lwp_get( $self->url . "/" . $file );
-    }
-
+	$self->backend->read_file($file);
 }
 
 sub _write_file {
     my $self = shift;
     my %args = validate( @_, { path => 1, content => 1 } );
 
-    my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
-    Prophet::Util->write_file( file => $file, content => $args{content});
+	$self->backend->write_file(%args);
 }
 
 sub read_changeset_index {
-    my $self = shift;
-    $self->log_debug(
-        "Reading changeset index file '" .$self->changeset_index . "'" );
+    my $self= shift;
+    $self->log_debug( "Reading changeset index file '" .$self->changeset_index . "'" );
     my $chgidx = $self->_read_file( $self->changeset_index );
     return \$chgidx;
 }
@@ -108,10 +78,9 @@ sub read_changeset_index {
 sub _write_changeset {
     my $self = shift;
     my %args = validate( @_,
-        { index_handle => 1, changeset => { isa => 'Prophet::ChangeSet' } } );
+        {  changeset => { isa => 'Prophet::ChangeSet' } } );
 
     my $changeset = $args{'changeset'};
-    my $fh        = $args{'index_handle'};
 
     my $hash_changeset = $changeset->as_hash;
     # These two things should never actually get stored
@@ -126,7 +95,7 @@ sub _write_changeset {
         $changeset->original_sequence_no,
         $cas_key );
 
-    print $fh $changeset_index_line || die $!;
+	$self->backend->append_to_file($self->changeset_index => $changeset_index_line);
 
 }
 
@@ -282,31 +251,8 @@ sub fetch_serialized_changeset {
     return $self->_read_file($casfile);
 }
 
-sub _get_changeset_index_handle {
-    my $self = shift;
 
-    open(
-        my $cs_file,
-        ">>" . File::Spec->catfile( $self->fs_root => $self->changeset_index )
-    ) || die $!;
-    return $cs_file;
-}
 
-sub lwp_get {
-    my $self = shift;
-    my $url  = shift;
-
-    my $response;
-    for ( 1 .. 4 ) {
-        $response = $self->lwp_useragent->get($url);
-        if ( $response->is_success ) {
-            return $response->content;
-        }
-    }
-    warn "Could not fetch " . $url . " - " . $response->status_line . "\n";
-    return undef;
-}
-          
       
 =head2 read_userdata_file
 
@@ -319,8 +265,7 @@ sub read_userdata {
     my $self = shift;
     my %args = validate( @_, { path => 1 } );
 
-    $self->_read_file(
-        File::Spec->catfile( $self->userdata_dir, $args{path} ) );
+    $self->_read_file( File::Spec->catfile( $self->userdata_dir, $args{path} ) );
 }
 
 =head2 write_userdata

@@ -124,17 +124,14 @@ sub export_records {
 sub export_changesets {
     my $self = shift;
 
-    my $cs_file = $self->target_replica->_get_changeset_index_handle();
     for my $changeset (
         @{ $self->source_replica->fetch_changesets( after => 0 ) } )
     {
         $self->target_replica->_write_changeset(
-            index_handle => $cs_file,
             changeset    => $changeset
         );
 
     }
-    close($cs_file);
 }
 
 __PACKAGE__->meta->make_immutable;
