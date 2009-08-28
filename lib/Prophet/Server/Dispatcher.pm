@@ -52,7 +52,8 @@ under { method => 'GET' } => sub {
         on 'changesets.idx' => sub {
             my $self  = shift;
             my $index = '';
-            $_->metadata->{replica_handle}->traverse_changesets(
+            my $repl = $_->metadata->{replica_handle};
+            $repl->traverse_changesets(
                 after=> 0,
                 load_changesets => 0,
                 callback => sub {
@@ -60,7 +61,7 @@ under { method => 'GET' } => sub {
                     my $data            = $args{changeset_metadata};
                     my $changeset_index_line = pack( 'Na16NH40',
                         $data->[0],
-                        $self->server->uuid_generator->from_string( $data->[1]),
+                        $repl->uuid_generator->from_string( $data->[1]),
                         $data->[2],
                         $data->[3]);
                     $index .= $changeset_index_line;
