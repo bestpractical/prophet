@@ -41,8 +41,10 @@ sub run {
     eval { require File::ShareDir }  || return "Without File::ShareDir installed, Prophet's Web UI won't work";
 
     if ($publisher) {
+        my $name = $self->app_handle->setting( label => 'project_name' )->get->[0];
+        my $uuid = $self->handle->db_uuid;
         $publisher->publish(
-            name   => $self->handle->db_uuid,
+            name   => "$name ($uuid)",
             type   => '_prophet._tcp',
             port   => $self->port,
             domain => 'local',
