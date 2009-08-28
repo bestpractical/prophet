@@ -7,7 +7,7 @@ sub usage_msg {
     my $cmd = $self->cli->get_script_name;
 
     return <<"END_USAGE";
-usage: ${cmd}clone --from <url>
+usage: ${cmd}clone --from <url> | --local
 END_USAGE
 }
 
@@ -15,6 +15,11 @@ sub run {
     my $self = shift;
 
     $self->print_usage if $self->has_arg('h');
+
+    if ($self->has_arg('local')) {
+        $self->list_bonjour_sources;
+        return;
+    }
 
     $self->validate_args();
 
@@ -96,6 +101,45 @@ sub validate_args {
 #
 sub merge_resolver { 'Prophet::Resolver::AlwaysTarget'}
 
+
+=head2 list_bonjour_sources
+
+Probes the local network for bonjour replicas if the local arg is specified.
+
+Prints a list of all sources found.
+
+=cut
+sub list_bonjour_sources {
+    my $self = shift;
+    my @bonjour_sources;
+
+    Prophet::App->try_to_require('Net::Bonjour');
+    if ( Prophet::App->already_required('Net::Bonjour') ) {
+        print "Probing for local sources with Bonjour\n\n";
+        my $res = Net::Bonjour->new('prophet');
+        $res->discover;
+        my $count = 0;
+        for my $entry ( $res->entries ) {
+                require URI;
+                my $uri = URI->new();
+                $uri->scheme( 'http' );
+                $uri->host($entry->hostname);
+                $uri->port( $entry->port );
+                $uri->path('replica/');
+                print '  * '.$uri->canonical.' - '.$entry->name."\n";
+                $count++;
+        }
+
+        if ($count) {
+            print "\nFound $count source".($count==1? '' : 's')."\n";
+        }
+        else {
+            print "No local sources found.\n";
+        }
+    }
+
+    return;
+}
 
 
 __PACKAGE__->meta->make_immutable;
