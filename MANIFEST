@@ -71,6 +71,9 @@ lib/Prophet/PropChange.pm
 lib/Prophet/Record.pm
 lib/Prophet/Replica.pm
 lib/Prophet/Replica/file.pm
+lib/Prophet/Replica/FS/Backend/File.pm
+lib/Prophet/Replica/FS/Backend/LWP.pm
+lib/Prophet/Replica/FS/Backend/SSH.pm
 lib/Prophet/Replica/http.pm
 lib/Prophet/Replica/prophet.pm
 lib/Prophet/Replica/prophet_cache.pm
