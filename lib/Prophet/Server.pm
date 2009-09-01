@@ -304,7 +304,7 @@ sub show_template {
     my $self = shift;
     my $p    = shift;
     my $content = $self->render_template($p,@_);
-    if ($content) { return $self->send_content( content_type => 'text/html', content      => $content,);}
+    if ($content) { return $self->send_content( content_type => 'text/html; charset=UTF-8', content      => $content,);}
     return undef;
 }
 
