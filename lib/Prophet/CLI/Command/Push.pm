@@ -46,6 +46,8 @@ sub run {
         app_handle => $self->app_handle,
     );
 
+    die "No replica found at '".$self->arg('to')."'.\n" unless $class;
+
     die "Can't push to foreign replica that's never been pulled from! (Override with --force.)\n"
         unless
             $class->isa('Prophet::ForeignReplica') &&
