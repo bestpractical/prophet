@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 68;
+use Prophet::Test tests => 69;
 use File::Temp qw/tempfile/;
 
 ( my $_fh, $ENV{'PROPHET_APP_CONFIG'} ) = tempfile(UNLINK => !$ENV{PROPHET_DEBUG});
@@ -226,6 +226,9 @@ Added alias 'something different' = 'pull --local'
 Changed alias 'foo' from 'bar baz'to 'sigh'
 Deleted alias 'pull -l'
 END_OUTPUT
+
+is( run_command( 'alias', 'foo' ), "sigh\n",
+    'Reloaded config after edit' );
 
 # check with alias show
 my $valid_settings_output = Prophet::Util->slurp('t/data/aliases.tmpl');

@@ -99,6 +99,7 @@ sub run {
 
         while ( !$done ) {
             $done = $self->try_to_edit( template => \$template );
+            $config->load;
         }
     }
     else {
