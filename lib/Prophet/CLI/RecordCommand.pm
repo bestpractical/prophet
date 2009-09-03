@@ -70,8 +70,11 @@ record can be found.
 sub _load_record {
     my $self = shift;
     my $record = $self->_get_record_object;
-    $record->load( uuid => $self->uuid )
-        || $self->fatal_error("I couldn't find the " . $self->type . ' ' . $self->uuid);
+    $record->load( uuid => $self->uuid );
+
+	if (! $record->exists) {
+         $self->fatal_error("I couldn't find a " . $self->type . ' with that id.');
+	}	
     return $record;
 }
 
