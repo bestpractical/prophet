@@ -128,9 +128,8 @@ sub _command_matches_alias {
     my $dispatch_to = shift;;
     if ( $cmd =~ /^\Q$alias\E\b\s*(.*)$/ ) {
         my $rest = $1;
-        # we want to start at index 1
-        my @captures = (undef, $self->tokenize($rest));
-        $dispatch_to =~ s/\$$_\b/$captures[$_]/g for 1 .. 20;
+        my @captures = $self->tokenize($rest);
+        $dispatch_to =~ s/\$(\d+)\b/$captures[$1 - 1]||""/ge;
         return $dispatch_to;
     }
     return undef;
