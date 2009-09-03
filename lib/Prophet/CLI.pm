@@ -128,8 +128,12 @@ sub _command_matches_alias {
     my $dispatch_to = shift;;
     if ( $cmd =~ /^\Q$alias\E\b\s*(.*)$/ ) {
         my $rest = $1;
-        my @captures = $self->tokenize($rest);
-        $dispatch_to =~ s/\$(\d+)\b/$captures[$1 - 1]||""/ge;
+        if ($dispatch_to =~ m{\$\d+\b}) {
+            my @captures = $self->tokenize($rest);
+            $dispatch_to =~ s/\$(\d+)\b/$captures[$1 - 1]||""/ge;
+        } else {
+            $dispatch_to .= " " . $rest;
+        }
         return $dispatch_to;
     }
     return undef;
