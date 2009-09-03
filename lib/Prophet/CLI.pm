@@ -103,6 +103,14 @@ sub run_one_command {
             my @args;
 
             # parse command string to @args
+            # e.g. "ticket search --regex='foo bar'" should be parsed to
+            # ['ticket', 'search', '--regex=foo bar']
+            # "ticket search --regex 'foo bar'" should be parsed to
+            # ['ticket', 'search', '--regex', 'foo bar']
+
+            # TODO the following parse stuff is ugly, 
+            # but I haven't found a better way.
+            # may the force be with you
             {
                 my $text = $command;
                 $text =~ s/^\s+//g;
@@ -123,6 +131,7 @@ sub run_one_command {
                     $need_balance{single}++ while $extracted =~ /(?<!\\)'/g;
                     $need_balance{double}++ while $extracted =~ /(?<!\\)"/g;
 
+                    # search $reminder to make $extracted balanced.
                     while ($need_balance{single} % 2
                         || $need_balance{double} % 2 )
                     {
