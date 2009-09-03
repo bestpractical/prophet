@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 18;
+use Prophet::Test tests => 13;
 
 as_alice {
     run_command('init');
@@ -31,17 +31,6 @@ as_alice {
             comment => 'show empty aliases',
         },
         {
-            cmd     => [ 'add', 'unbalanced = one"double' ],
-            comment => 'add a new alias',
-
-            # no output specified = no output expected
-        },
-        {
-            cmd     => ['unbalanced'],
-            output  => qr/one"double/,
-            comment => 'new alias set correctly',
-        },
-        {
 
             # this alias is bad, please don't use it in real life
             cmd => [ 'add', 'balanced_1=search --type Bug -- summary="foo bar"' ],
@@ -66,8 +55,6 @@ as_alice {
         like( $got_error,  $exp_error,  $item->{comment} . ' (STDERR)' );
     }
 
-    ( $output, $error ) = run_command('unbalanced');
-    like( $error, qr/unbalanced quote/, 'unbalanced quote got error' );
     ($output, $error) = run_command(qw/search --type Bug -- summary/, 'foo bar' );
     ($output) = run_command('balanced_1');
     like( $output, qr/$bug_id/, 'quote in aliase like --summary="foo bar"' );
