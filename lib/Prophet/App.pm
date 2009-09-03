@@ -259,6 +259,7 @@ sub display_name_for_replica {
     my $self = shift;
     my $uuid = shift;
 
+    return 'Unknown replica!' unless $uuid;
     my %possibilities = $self->config->get_regexp( key => '^replica\..*\.uuid$' );
     # form a hash of uuid -> name
     my %sources_by_uuid = map {
