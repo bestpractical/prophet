@@ -1045,7 +1045,7 @@ previous version of a record might look like:
         root => $self->repo_handle->fs->revision_root( $self->repo_handle->fs->youngest_rev - 1 )
     );
 
-=head3 record_exists {uuid => $UUID, type => $TYPE, root => $ROOT }
+=head3 record_exists {uuid => $UUID, type => $TYPE }
 
 Returns true if the record in question exists and false otherwise.
 
