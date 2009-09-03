@@ -101,7 +101,6 @@ sub run_one_command {
             # alias pull --local = pull --local
             next if ( $command eq $ori_cmd );
             require Text::ParseWords;
-            my @args = Text::ParseWords::shellwords( $command );
             return $self->run_one_command(
                 Text::ParseWords::shellwords($command) );
         }
