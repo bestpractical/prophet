@@ -126,7 +126,7 @@ sub _command_matches_alias {
     my $cmd   = shift;
     my $alias = shift;
     my $dispatch_to = shift;;
-    if ( $cmd =~ /^\Q$alias\E\s*(.*)$/ ) {
+    if ( $cmd =~ /^\Q$alias\E\b\s*(.*)$/ ) {
         my $rest = $1;
         # we want to start at index 1
         my @captures = (undef, $self->tokenize($rest));
