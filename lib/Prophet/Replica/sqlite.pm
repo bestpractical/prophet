@@ -155,6 +155,7 @@ sub _check_for_upgrades {
     my $self = shift;
    if  ( $self->replica_version && $self->replica_version < 2) { $self->_upgrade_replica_to_v2(); } 
    if  ( $self->replica_version && $self->replica_version < 3) { $self->_upgrade_replica_to_v3(); } 
+   if  ( $self->replica_version && $self->replica_version < 4) { $self->_upgrade_replica_to_v4(); }
 
 }
 
@@ -166,6 +167,7 @@ sub __fetch_data {
     my $table = shift;
     my $key = shift;
 
+	$key = lc($key);
     my $sth = $self->dbh->prepare("SELECT value FROM $table WHERE key = ?");
     $sth->execute($key);
        
@@ -175,10 +177,11 @@ sub __fetch_data {
 
 sub __store_data {
     my $self = shift;
-    my %args = ( key => undef, value => undef, table => undef, @_);
-    $self->dbh->do("DELETE FROM $args{table} WHERE key = ?", {},$args{key});
-    $self->dbh->do("INSERT INTO $args{table} (key,value) VALUES(?,?)", {}, $args{key}, $args{value});
-    
+    my %args = validate(@_, { key => 1, value => 1, table => 1});
+	$args{key} = lc($args{key});
+    $self->dbh->do( "DELETE FROM $args{table} WHERE key = ?", {}, $args{key} );
+    $self->dbh->do( "INSERT INTO $args{table} (key,value) VALUES(?,?)", {}, $args{key}, $args{value} );
+
 }
 
 sub fetch_local_metadata {
@@ -975,8 +978,20 @@ sub _upgrade_replica_to_v3 {
         ],
         version => 3
     );
-
 }
+
+
+sub _upgrade_replica_to_v4 {
+    my $self = shift;
+
+    $self->_do_db_upgrades(
+        statements => [
+            q{UPDATE userdata SET key = lower(key)}
+        ],
+        version => 4
+    );
+}
+
 
 
 sub _do_db_upgrades {
