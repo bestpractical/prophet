@@ -349,6 +349,17 @@ sub get_props {
 
 }
 
+=head2 exists
+
+When called on a loaded record, returns true if the record exists and false if it does not.
+
+=cut
+
+sub exists {
+    my $self = shift;
+    return $self->handle->record_exists( uuid => $self->uuid, type => $self->type);
+}
+
 =head2 prop $name
 
 Returns the current value of the property C<$name> for this record.
