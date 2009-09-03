@@ -1,0 +1,10 @@
+use Prophet::CLI;
+use Prophet::FilesystemReplica;
+
+my $cli = Prophet::CLI->new();
+
+my $type = shift;
+my $uuid = shift;
+
+my @result = $cli->handle->_read_record_index(type => $type, uuid => $uuid);
+warn YAML::Dump(\@result); use YAML;

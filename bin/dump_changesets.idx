@@ -1,0 +1,16 @@
+use Prophet::CLI;
+use Prophet::FilesystemReplica;
+
+my $cli = Prophet::CLI->new();
+
+my $file = Prophet::Util->slurp(shift);
+my $fsr = Prophet::FilesystemReplica->new(app_handle => $cli->app_handle);
+
+
+for (1..(length($file)/Prophet::FilesystemReplica::CHG_RECORD_SIZE)) {
+
+my $result =	$fsr->_changeset_index_entry(sequence_no => $_, index_file => \$file);
+
+print join("\t",@$result)."\n";
+
+}
