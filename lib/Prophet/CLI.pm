@@ -100,7 +100,65 @@ sub run_one_command {
             # we don't want to recursively call if people stupidly write
             # alias pull --local = pull --local
             next if ( $command eq $ori_cmd );
-            return $self->run_one_command( split /\s+/, $command );
+            my @args;
+
+            # parse command string to @args
+            {
+                my $text = $command;
+                $text =~ s/^\s+//g;
+
+                # \\\\ is too ambiguous, let's substitute it
+                $text =~ s/\\\\/LLLUUUPPPIIINNNIII/g;
+
+                # we only handle ' and "
+                my %need_balance = ( single => 0, double => 0 );
+                my $deep;
+                while ($text) {
+                    $deep++;
+                    my ( $extracted, $remainder );
+                    if ( $text =~ /^(\S+)(.*)/ ) {
+                        $extracted = $1;
+                        $remainder = $2;
+                    }
+                    $need_balance{single}++ while $extracted =~ /(?<!\\)'/g;
+                    $need_balance{double}++ while $extracted =~ /(?<!\\)"/g;
+
+                    while ($need_balance{single} % 2
+                        || $need_balance{double} % 2 )
+                    {
+                        $deep++;
+                        die "parse $command error: unbalanced quotes"
+                          unless $remainder =~ /\S/;
+                        my ( $e, $r );
+                        if ( $remainder =~ /^(\s*\S+)(.*)/ ) {
+                            $e = $1;
+                            $r = $2;
+                        }
+                        $need_balance{single}++ while $e =~ /(?<!\\)'/g;
+                        $need_balance{double}++ while $e =~ /(?<!\\)"/g;
+                        $extracted .= $e;
+                        $remainder = $r;
+                        die "too deep to parse $command" if $deep > 100;
+                    }
+                    $text = $remainder;
+                    $text =~ s/^\s+//g;
+                    push @args, $extracted;
+                    die "too deep to parse $command" if $deep > 100;
+                }
+
+                for (@args) {
+
+                    # e.g. remove ' in --regex='foo bar'
+                    s{=(['"])(.*)\1$}{=$2};
+
+                    # e.g. remove ' in --regex 'foo bar'
+                    s{^(['"])(.*)\1$}{$2};
+
+                    # substitute back
+                    s/LLLUUUPPPIIINNNIII/\\\\/g;
+                }
+            }
+            return $self->run_one_command( @args );
         }
     }
     #  really, we shouldn't be doing this stuff from the command dispatcher
