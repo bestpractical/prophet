@@ -290,7 +290,7 @@ sub store_local_metadata {
     my $key = shift;
     my $value = shift;
     $self->_write_file(
-        path    =>File::Spec->catfile( $self->local_metadata_dir,  $key),
+        path    =>File::Spec->catfile( $self->local_metadata_dir,  lc($key)),
         content => $value,
     );
 
@@ -300,7 +300,15 @@ sub store_local_metadata {
 sub fetch_local_metadata {
     my $self = shift;
     my $key = shift;
-    $self->_read_file(File::Spec->catfile($self->local_metadata_dir, $key));
+	# local metadata files used to (incorrectly) be treated as case sensitive.
+	# The code below tries to make sure that we don't lose historical data as we fix this
+	# If there's a new-style all-lowercase file,  read that first. If there isn't,
+	# try to read an old-style sensitive file
+
+	my $insensitive_file = File::Spec->catfile($self->local_metadata_dir, lc($key));
+	my $sensitive_file = File::Spec->catfile($self->local_metadata_dir, $key);
+
+	return	$self->_read_file($insensitive_file) || $self->_read_file($sensitive_file);
 
 }
 
