@@ -100,7 +100,7 @@ sub run_one_command {
             # we don't want to recursively call if people stupidly write
             # alias pull --local = pull --local
             next if ( $command eq $ori_cmd );
-            require Text::ParseWords; qw(shellwords);
+            require Text::ParseWords;
             my @args = Text::ParseWords::shellwords( $command );
             return $self->run_one_command(
                 Text::ParseWords::shellwords($command) );
