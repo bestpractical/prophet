@@ -9,7 +9,7 @@ license('mit');
 requires('Exporter::Lite');
 requires('Params::Validate');
 requires('IPC::Run3');
-requires('UUID::Tiny');
+requires('UUID::Tiny' => '1.02');
 requires('Digest::SHA');
 requires('LWP::UserAgent');     #  LWP::ConnCache too
 requires('URI');

@@ -2,8 +2,7 @@ package Prophet::UUIDGenerator;
 use Any::Moose;
 use MIME::Base64::URLSafe;
 
-#use UUID::Tiny;
-use Prophet::TempUUIDTiny ':std';
+use UUID::Tiny ':std';
 
 
 # uuid_scheme: 1 - v1 and v3 uuids.
