@@ -485,10 +485,11 @@ sub has_seen_changeset {
         $self->display_name_for_replica($args{source_uuid}));
 
     # If the changeset originated locally, we never want it
-    if ($args{source_uuid} eq $self->uuid ) {
+    if (lc($args{source_uuid}) eq lc($self->uuid) ) {
         $self->log_debug("\t  - We have. (It originated locally.)");
         return 1 
     }
+
     # Otherwise, if the we have a merge ticket from the source, we don't want
     # the changeset if the source's sequence # is >= the changeset's sequence
     # #, we can safely skip it
