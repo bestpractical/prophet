@@ -1,3 +1,5 @@
+bin/dump_changesets.idx
+bin/dump_record.idx
 bin/prophet
 bin/run_test_yml.pl
 bin/taste_recipe
@@ -118,6 +120,7 @@ share/web/static/jquery/images/arrows-cccccc.png
 share/web/static/jquery/images/arrows-ffffff.png
 share/web/static/jquery/images/shadow.png
 t/aliases.t
+t/aliases_with_quotes.t
 t/canonicalize.t
 t/cli-arg-parsing.t
 t/cli-arg-translation.t
@@ -133,6 +136,7 @@ t/database-settings.t
 t/default.t
 t/delete-delete-conflict.t
 t/edit.t
+t/error.t
 t/export.t
 t/generalized_sync_n_merge.t
 t/history.t
@@ -142,6 +146,7 @@ t/lib/TestApp/Bug.pm
 t/lib/TestApp/BugCatcher.pm
 t/lib/TestApp/Bugs.pm
 t/lib/TestApp/ButterflyNet.pm
+t/local_metadata.t
 t/log.t
 t/luid.t
 t/malformed-url.t
@@ -149,6 +154,7 @@ t/non-conflicting-merge.t
 t/publish-html.t
 t/publish-pull.t
 t/real-conflicting-merge.t
+t/record-types.t
 t/references.t
 t/res-conflict-3.t
 t/resty-server.t
