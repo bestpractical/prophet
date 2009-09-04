@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Prophet::Test tests => 3;
+use Prophet::Test tests => 4;
 
 BEGIN {
     require File::Temp;
@@ -31,5 +31,9 @@ my ($output, $error)
     = (run_command( qw(update --type ticket --id), $comment_id,
             qw(-- status=closed) ) );
 
-like( $error, qr/couldn't find/,
+like( $error, qr/couldn't find a ticket with that id/,
     "Couldn't update comment record as ticket type" );
+
+($output, $error) = run_command( qw(show --type ticket --id), $comment_uuid );
+like( $error, qr/couldn't find a ticket with that id/,
+    "Couldn't show ticket with comment's uuid" );
