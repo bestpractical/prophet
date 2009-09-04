@@ -647,7 +647,10 @@ sub _write_changeset_to_db {
 
     my $local_id = $self->dbh->last_insert_id(undef, undef, 'changesets', 'sequence_no');
 
-    $self->dbh->do("UPDATE changesets set original_sequence_no = sequence_no WHERE sequence_no = ?", {}, $local_id) unless ($changeset->original_sequence_no);
+    $self->dbh->do(
+        "UPDATE changesets set original_sequence_no = sequence_no
+            WHERE sequence_no = ?", {}, $local_id
+    ) unless defined $changeset->original_sequence_no;
 
     for my $change (@{$changeset->changes}) {
         $self->_write_change_to_db($change, $local_id);
