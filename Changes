@@ -1,3 +1,28 @@
+0.72 Fri Sep  4 13:20:16 EDT 2009
+
+ * fix sqlite replica: original_sequence_no can be 0 - sunnavy
+ * add inc/ back, we should keep it in repo - sunnavy
+ * Added a couple debugging tools - dump_changesets.idx dump_record.idx - Jesse Vincent
+ * Prophet::CLI::RecordCommand now checks to make sure you've asked it to operate on a record that actually exists. - Jesse Vincent
+ * Added a Prophet::Record API for "does this exist?" - Jesse Vincent
+ * fixing old docs that were out of date - Jesse Vincent
+ * Made sure that sqlite replicas userdata keys are always lowercase - Jesse Vincent
+ * Made an "is this replica me?" query case insensitive. - Jesse Vincent
+ * Prophet::App now has a friendly name for "was asked to characterize an undef replica" - Jesse Vincent
+ * Prophet::FilesystemReplia's local metadata is now case insensitive - Jesse Vincent
+ * Failing tests proving that local metadata isn't case insensitive - Jesse Vincent
+ * more notes to the long and ugly alias value stuff parser - sunnavy
+ * better alias value parse: to handle ' and " - sunnavy
+ * add aliases test with quotes - sunnavy
+ * Support var-args aliases. - Nelson Elhage
+ * Improve argument expansion in aliases. - Nelson Elhage
+ * Only expand aliases on word boundaries. - Nelson Elhage
+ * Remove an unnecessary 'no strict "refs"'. - Nelson Elhage
+ * Switch to UUID::Tiny 1.02 and remove our temporary fork - Christine Spang
+ * Reload config after editing (needed in shell) - Christine Spang
+ * Better error message when pushing to non-existant replica - Christine Spang
+ * Web templates now default to utf8 - Jesse Vincent
+
 0.71 Sat Aug 29 23:30:09 EDT 2009
 
     Added --local to prophet clone: list local Bonjour sources - Pedro Melo
