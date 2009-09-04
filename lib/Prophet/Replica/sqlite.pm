@@ -155,7 +155,7 @@ sub _check_for_upgrades {
     my $self = shift;
    if  ( $self->replica_version && $self->replica_version < 2) { $self->_upgrade_replica_to_v2(); } 
    if  ( $self->replica_version && $self->replica_version < 3) { $self->_upgrade_replica_to_v3(); } 
-   if  ( $self->replica_version && $self->replica_version < 4) { $self->_upgrade_replica_to_v4(); }
+   if  ( $self->replica_version && $self->replica_version < 5) { $self->_upgrade_replica_to_v5(); }
 
 }
 
@@ -981,14 +981,14 @@ sub _upgrade_replica_to_v3 {
 }
 
 
-sub _upgrade_replica_to_v4 {
+sub _upgrade_replica_to_v5 {
     my $self = shift;
 
     $self->_do_db_upgrades(
         statements => [
-            q{UPDATE userdata SET key = lower(key)}
+            q{UPDATE local_metadata SET key = lower(key)}
         ],
-        version => 4
+        version => 5
     );
 }
 
