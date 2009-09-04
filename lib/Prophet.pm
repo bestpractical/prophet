@@ -3,7 +3,7 @@ use strict;
 
 package Prophet;
 
-our $VERSION = '0.71';
+our $VERSION = '0.72';
 
 =head1 NAME
 
