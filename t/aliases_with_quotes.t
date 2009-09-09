@@ -2,13 +2,13 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 13;
+use Prophet::Test tests => 15;
 
 as_alice {
     run_command('init');
     my ( $output, $error ) =
       run_command( qw/create --type Bug --/, 'summary=foo bar' );
-    my $bug_id;
+    our $bug_id;
     like(
         $output,
         qr/Created Bug \d+ \((\S+)\)(?{ $bug_id = $1 })/,
