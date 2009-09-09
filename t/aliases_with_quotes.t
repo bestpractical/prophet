@@ -2,7 +2,7 @@
 #
 use warnings;
 use strict;
-use Prophet::Test tests => 15;
+use Prophet::Test tests => 16;
 
 as_alice {
     run_command('init');
@@ -42,6 +42,10 @@ as_alice {
             cmd => [ 'add', 'balanced_2=search --type Bug -- summary "foo bar"' ],
             comment => 'add a new alias',
         },
+        {
+            cmd => [ 'add', 's=search' ],
+            comment => 'add a new alias',
+        }
     );
 
     for my $item (@cmds) {
@@ -60,4 +64,8 @@ as_alice {
     like( $output, qr/$bug_id/, 'quote in aliase like --summary="foo bar"' );
     ($output) = run_command('balanced_2');
     like( $output, qr/$bug_id/, 'quote in aliase like --summary "foo bar"' );
+
+    ($output, $error) = run_command(qw(s --type Bug), "--summary=foo bar");
+    like( $output, qr/$bug_id/, 'Arguments to aliases with spaces are preserved' );
+    diag($error) if $error;
 };
