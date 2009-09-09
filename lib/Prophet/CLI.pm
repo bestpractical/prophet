@@ -8,6 +8,7 @@ use Prophet::CLI::Dispatcher;
 use Prophet::CLIContext;
 
 use List::Util 'first';
+use Text::ParseWords qw(shellwords);
 
 has app_class => (
     is      => 'rw',
@@ -92,17 +93,15 @@ sub run_one_command {
 
     if ($self->app_handle->local_replica_url) {
         my $aliases = $self->app_handle->config->aliases;
-        for my $alias ( keys %$aliases ) {
+        while (my ($alias, $replacement) = each %$aliases ) {
             my $command = $self->_command_matches_alias(
-                $ori_cmd, $alias, $aliases->{$alias},
-            ) || next;
+                \@args, $alias, $replacement,
+               ) || next;
 
             # we don't want to recursively call if people stupidly write
             # alias pull --local = pull --local
-            next if ( $command eq $ori_cmd );
-            require Text::ParseWords;
-            return $self->run_one_command(
-                Text::ParseWords::shellwords($command) );
+            next if ( join(' ', @$command) eq $ori_cmd );
+            return $self->run_one_command(@$command);
         }
     }
     #  really, we shouldn't be doing this stuff from the command dispatcher
@@ -125,28 +124,32 @@ sub run_one_command {
 
 sub _command_matches_alias {
     my $self  = shift;
-    my $cmd   = shift;
-    my $alias = shift;
-    my $dispatch_to = shift;;
-    if ( $cmd =~ /^\Q$alias\E\b\s*(.*)$/ ) {
-        my $rest = $1;
-        if ($dispatch_to =~ m{\$\d+\b}) {
-            my @captures = $self->tokenize($rest);
-            $dispatch_to =~ s/\$(\d+)\b/$captures[$1 - 1]||""/ge;
-        } else {
-            $dispatch_to .= " " . $rest;
+    my @words = @{+shift};
+    my @alias = shellwords(shift);
+    my @expansion = shellwords(shift);
+
+    # Compare @words against @alias
+    return if(scalar(@words) < scalar(@alias));
+
+    while(@alias) {
+        if(shift @words ne shift @alias) {
+            return;
         }
-        return $dispatch_to;
     }
-    return undef;
-}
 
+    # @words now contains the remaining words given on the
+    # command-line, and @expansion contains the words in the
+    # expansion.
 
-sub tokenize {
-    my $self = shift;
-    my $string = shift;
-    my @tokens = split(/\s+/,$string); # XXX TODO deal with quoted tokens
-    return @tokens;
+    if (first sub {m{\$\d+\b}}, @expansion) {
+        # Expand $n placeholders
+        for (@expansion) {
+            s/\$(\d+)\b/$words[$1 - 1]||""/ge;
+        }
+        return [@expansion];
+    } else {
+        return [@expansion, @words];
+    }
 }
 
 sub is_interactive {
