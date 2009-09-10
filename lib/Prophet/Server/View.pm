@@ -105,6 +105,8 @@ template head => sub {
     my $self = shift;
     my @args = shift;
     head {
+        meta { attr { content => "text/html; charset=utf-8",
+                      'http-equiv' => "Content-Type" }};
         title { shift @args };
         for ( $self->server->css ) {
             link { { rel is 'stylesheet', href is $_, type is "text/css", media is 'screen'} };
