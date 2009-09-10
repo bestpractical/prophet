@@ -71,8 +71,12 @@ If you have rsync but it's not in your path, set the environment variable
 $RSYNC to the absolute path of your rsync executable.
 END_DIE_MSG
     }
-
-    return $ret;
+    elsif ($ret != 0) {
+        die "Publish NOT completed! (rsync failed with return value $ret)\n";
+    }
+    else {
+        return $ret;
+    }
 }
 
 no Any::Moose;
