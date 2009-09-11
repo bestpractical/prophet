@@ -1,3 +1,8 @@
+0.73
+
+ * Reimplement alias expansion in terms of lists of argument words. - Nelson Elhage
+ * First pass at improving UTF8 output in static web views - Jesse Vincent
+
 0.72 Fri Sep  4 13:20:16 EDT 2009
 
  * fix sqlite replica: original_sequence_no can be 0 - sunnavy
