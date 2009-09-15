@@ -109,6 +109,7 @@ Probes the local network for bonjour replicas if the local arg is specified.
 Prints a list of all sources found.
 
 =cut
+
 sub list_bonjour_sources {
     my $self = shift;
     my @bonjour_sources;

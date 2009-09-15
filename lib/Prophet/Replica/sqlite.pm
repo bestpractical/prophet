@@ -9,6 +9,10 @@ use JSON;
 use Digest::SHA qw/sha1_hex/;
 use DBI;
 
+=head1 METHODS
+
+=cut
+
 has dbh => (
     is => 'rw',
     isa     => 'DBI::db',

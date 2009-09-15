@@ -6,6 +6,8 @@ use Prophet::Util;
 use Params::Validate;
 use File::Spec;
 
+=head1 METHODS
+
 =head2 edit( tmpl_files => $tmpl_files, edit_callback => sub {}, verify_callback => sub {} )
 
 Expects @ARGV to contain at least an option and a file to be edited. It

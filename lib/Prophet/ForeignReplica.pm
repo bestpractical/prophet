@@ -5,9 +5,16 @@ extends 'Prophet::Replica';
 
 =head1 NAME
 
+Prophet::ForeignReplica
+
 =head1 DESCRIPTION
 
-This abstract baseclass implements the helpers you need to be able to easily sync a prophet replica with a "second class citizen" replica which can't exactly reconstruct changesets, doesn't use uuids to track records and so on.
+This abstract baseclass implements the helpers you need to be able to
+easily sync a prophet replica with a "second class citizen" replica
+which can't exactly reconstruct changesets, doesn't use uuids to track
+records and so on.
+
+=head1 METHODS
 
 =cut
 
@@ -37,7 +44,7 @@ sub import_resolutions_from_remote_source {
     return
 }
 
-=head3 record_changes L<Prophet::ChangeSet>
+=head2 record_changes L<Prophet::ChangeSet>
 
 Integrate all changes in this changeset.
 

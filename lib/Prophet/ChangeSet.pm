@@ -133,7 +133,7 @@ Returns true if this changeset has any changes.
 
 =head2 add_change { change => L<Prophet::Change> }
 
-Adds a new change, L<$args{'change'}> to this changeset.
+Adds a new change to this changeset.
 
 =cut
 

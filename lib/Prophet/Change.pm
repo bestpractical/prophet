@@ -71,12 +71,12 @@ resolution or not.
 
 =head2 prop_changes [\@PROPCHANGES]
 
-Returns a list of L<Prophet::PropChange/> associated with this Change. Takes an
+Returns a list of L<Prophet::PropChange>s associated with this Change. Takes an
 optional arrayref to fully replace the set of propchanges.
 
 =head2 has_prop_changes
 
-Returns true if this change contains any L</Prophet::PropChange>s and false
+Returns true if this change contains any L<Prophet::PropChange>s and false
 if it doesn't.
 
 =head2 new_from_conflict $conflict

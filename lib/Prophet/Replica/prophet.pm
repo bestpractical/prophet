@@ -132,7 +132,7 @@ use constant local_metadata_dir => 'local_metadata';
 =head1 Replica Format
 
 =head4 overview
- 
+
  $URL
     /<db-uuid>/
         /replica-uuid
@@ -164,7 +164,6 @@ use constant local_metadata_dir => 'local_metadata';
                 index which has records:
                     each record is : local-replica-seq-no : original-uuid : original-seq-no : cas key
                 ...
-
 
 Inside the top level directory for the mirror, you'll find a directory named as B<a hex-encoded UUID>.
 This directory is the root of the published replica. The uuid uniquely identifes the database being replicated.

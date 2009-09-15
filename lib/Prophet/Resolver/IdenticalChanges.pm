@@ -4,6 +4,8 @@ use Params::Validate qw(:all);
 use Prophet::Change;
 extends 'Prophet::Resolver';
 
+=head1 METHODS
+
 =head2 attempt_automatic_conflict_resolution
 
 Given a L<Prophet::Conflict> which can not be cleanly applied to a
@@ -12,24 +14,24 @@ resolution to the conflict.
 
 =over
 
-=item When the new-state of the conflicting change matches the
+=item *
+
+When the new-state of the conflicting change matches the
 previous head of the replica.
 
-=item When someone else has previously done the resolution and we
-have a copy of that hanging aroun
+=item *
 
-** This bit seems hard
+When someone else has previously done the resolution and we
+have a copy of that hanging around.
 
 =back
 
+In those cases, this routine will generate a L<Prophet::ChangeSet>
+which resolves as many conflicts as possible.
 
-In those cases, this routine will generate a L<Prophet::ChangeSet> which resolves 
-as many conflicts as possible.
-
-It will then update $self->conflicting_changes to mark which
+It will then update the conclicting changes to mark which
 L<Prophet::ConflictingChange>s and L<Prophet::ConflictingPropChanges>
 have been automatically resolved.
-
 
 =cut
 

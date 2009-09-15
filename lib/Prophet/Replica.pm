@@ -519,7 +519,7 @@ sub changeset_will_conflict {
 
 =head3 conflicts_from_changeset L<Prophet::ChangeSet>
 
-Returns a L<Prophet::Conflict/> object if the supplied L<Prophet::ChangeSet/>
+Returns a L<Prophet::Conflict> object if the supplied L<Prophet::ChangeSet>
 will generate conflicts if applied to the current replica.
 
 Returns undef if the current changeset wouldn't generate a conflict.
@@ -587,7 +587,7 @@ sub should_accept_changeset {
 
 Fetch all changesets from this replica after the local sequence number SEQUENCE_NO.
 
-Returns a reference to an array of L<Prophet::ChangeSet/> objects.
+Returns a reference to an array of L<Prophet::ChangeSet> objects.
 
 See also L<traverse_changesets> for replica implementations to provide
 streamly interface.

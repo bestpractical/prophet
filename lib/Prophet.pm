@@ -15,26 +15,35 @@ Prophet is a distributed database system designed for small to medium
 scale social database applications.  Our early targets include things
 such as bug tracking.
 
+
 =head2 Design goals
 
-=head3 Arbitrary record schema
+=over
 
-=head3 Replication
+=item Arbitrary record schema
 
-=head3 Disconnected operation
+=item Replication
 
-=head3 Peer to peer synchronization
+=item Disconnected operation
+
+=item Peer to peer synchronization
+
+=back
 
 
 
 =head2 Design constraints
 
-=head3 Scaling
+=over
+
+=item Scaling
 
 We don't currently intend for the first implementation of Prophet to
 scale to databases with millions of rows or hundreds of concurrent
 users. There's nothing that makes the design infeasible, but the
 infrastructure necessary for such a system will...needlessly hamstring it.
+
+=back
 
 =cut
 

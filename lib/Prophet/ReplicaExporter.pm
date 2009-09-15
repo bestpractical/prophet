@@ -51,9 +51,8 @@ has app_handle => (
 Prophet::ReplicaExporter
 
 =head1 DESCRIPTION
-                        
-A utility class which exports a replica to a serialized on-disk format
 
+A utility class which exports a replica to a serialized on-disk format
 
 =cut
 
@@ -67,9 +66,10 @@ Instantiates a new replica exporter object
 
 =head2 export
 
-This routine will export a copy of this prophet database replica to a flat file on disk suitable for 
-publishing via HTTP or over a local filesystem for other Prophet replicas to clone or incorporate changes from.
-
+This routine will export a copy of this prophet database replica to a
+flat file on disk suitable for publishing via HTTP or over a local
+filesystem for other Prophet replicas to clone or incorporate changes
+from.
 
 =cut
 

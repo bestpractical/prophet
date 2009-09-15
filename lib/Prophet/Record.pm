@@ -56,7 +56,7 @@ sub PROPERTIES { $PROPERTIES }
 
 =head2 new  { handle => Prophet::Replica, type => $type }
 
-Instantiates a new, empty L<Prophet::Record/> of type $type.
+Instantiates a new, empty L<Prophet::Record> of type $type.
 
 =head2 declared_props
 
