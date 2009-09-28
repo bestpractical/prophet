@@ -25,11 +25,6 @@ sub run {
 
     $self->set_arg( 'to' => $self->app_handle->handle->url() );
 
-    $self->source( Prophet::Replica->get_handle(
-        url       => $self->arg('from'),
-        app_handle => $self->app_handle,
-    ));
-
     $self->target( Prophet::Replica->get_handle(
         url       => $self->arg('to'),
         app_handle => $self->app_handle,
@@ -42,6 +37,11 @@ sub run {
     if ( !$self->target->can_initialize ) {
         die "The target replica path you specified can't be created.\n";
     }
+
+    $self->source( Prophet::Replica->get_handle(
+        url       => $self->arg('from'),
+        app_handle => $self->app_handle,
+    ));
 
     my %init_args;
     if ( $self->source->isa('Prophet::ForeignReplica') ) {
