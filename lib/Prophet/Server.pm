@@ -1,7 +1,6 @@
 package Prophet::Server;
 use Any::Moose;
 extends qw'HTTP::Server::Simple::CGI';
-use Any::Moose 'Util::TypeConstraints';
 
 use Prophet::Server::Controller;
 use Prophet::Server::View;
@@ -16,7 +15,7 @@ use Cwd ();
 use JSON;
 use HTTP::Date;
 
-class_type 'CGI';
+
 
 has app_handle => (
     isa     => 'Prophet::App',
