@@ -41,10 +41,8 @@ sub run {
     eval { require File::ShareDir }  || return "Without File::ShareDir installed, Prophet's Web UI won't work";
 
     if ($publisher) {
-        my $name = $self->app_handle->setting( label => 'project_name' )->get->[0];
-        my $uuid = $self->handle->db_uuid;
         $publisher->publish(
-            name   => "$name ($uuid)",
+            name   => $self->database_bonjour_name,
             type   => '_prophet._tcp',
             port   => $self->port,
             domain => 'local',
@@ -56,6 +54,17 @@ sub run {
     $self->setup_template_roots();
     print ref($self) . ": Starting up local server. You can stop the server with Ctrl-c.\n";
     $self->SUPER::run(@_);
+}
+
+=head2 database_bonjour_name
+
+Returns the name this database should use to announce itself via bonjour
+
+=cut
+
+sub database_bonjour_name {
+	my $self = shift;
+	return $self->handle->db_uuid;
 }
 
 sub setup_template_roots {
