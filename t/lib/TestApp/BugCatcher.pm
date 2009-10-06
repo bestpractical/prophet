@@ -2,7 +2,10 @@ package TestApp::BugCatcher;
 use Any::Moose;
 extends 'Prophet::Record';
 
-has type => ( default => 'bugcatcher' );
+has type => (
+    is      => 'bare',
+    default => 'bugcatcher',
+);
 
 __PACKAGE__->register_reference( bugs => 'TestApp::Bugs', by => 'bugcatcher');
 __PACKAGE__->register_reference( net => 'TestApp::ButterflyNet' );

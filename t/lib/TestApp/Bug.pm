@@ -2,7 +2,10 @@ package TestApp::Bug;
 use Any::Moose;
 extends 'Prophet::Record';
 
-has type => ( default => 'bug' );
+has type => (
+    is      => 'bare',
+    default => 'bug',
+);
 
 use constant collection_class => 'TestApp::Bugs';
 
