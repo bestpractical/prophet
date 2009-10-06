@@ -201,7 +201,7 @@ sub setting {
 
 }
 
-sub database_settings {} # XXX wants a better name
+sub database_settings { {} } # XXX wants a better name
 
 
 =head3 log $MSG
