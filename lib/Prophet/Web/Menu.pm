@@ -8,7 +8,7 @@ has label => ( isa => 'Str', is => 'rw');
 has parent => ( isa => 'Prophet::Web::Menu|Undef', is => 'rw', weak_ref => 1);
 has sort_order => ( isa => 'Str', is => 'rw');
 has render_children_inline => ( isa => 'Bool', is => 'rw', default => 0);
-has url => ( isa => 'Str', is => 'rw');
+has url => ( isa => 'Str', is => 'bare');
 has target => ( isa => 'Str', is => 'rw');
 has class => ( isa => 'Str', is => 'rw');
 has escape_label => ( isa => 'Bool', is => 'rw');
