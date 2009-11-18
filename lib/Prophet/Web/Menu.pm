@@ -12,7 +12,11 @@ has url => ( isa => 'Str', is => 'bare');
 has target => ( isa => 'Str', is => 'rw');
 has class => ( isa => 'Str', is => 'rw');
 has escape_label => ( isa => 'Bool', is => 'rw');
-has server => (isa => 'Prophet::Server', is => 'ro', weak_ref => 1);
+has server => (isa => 'Prophet::Server', 
+			   is => 'ro', 
+			   weak_ref => 1,
+			   
+			   );
 
 
 =head1 NAME
@@ -145,6 +149,7 @@ sub child {
                                                           || scalar values %{$self->{children}}),
                                                label => $key,
                                                escape_label => 1,
+											   server => $self->server,
                                                @_
                                              });
         
