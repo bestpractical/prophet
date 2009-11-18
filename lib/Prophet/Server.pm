@@ -159,7 +159,7 @@ sub handle_request {
     my ( $self, $cgi ) = validate_pos( @_, { isa => 'Prophet::Server' }, { isa => 'CGI' } );
     $self->cgi($cgi);
     $self->log_request();
-    $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi ) );
+    $self->nav( Prophet::Web::Menu->new( cgi => $self->cgi, server => $self) );
     $self->result( Prophet::Web::Result->new() );
     if ( $ENV{'PROPHET_DEVEL'} ) {
         require Module::Refresh;
@@ -417,6 +417,19 @@ sub _send_redirect {
     print "HTTP/1.0 302 Go over there\r\n";
     print "Location: " . $args{'to'} . "\r\n";
     return '302';
+}
+
+=head2 make_link_relative PATH
+
+This method does its best to convert a URI path from absolute ( starts
+at / ) to relative. (Starts at .).
+
+=cut
+
+sub make_link_relative {
+	my $self = shift;
+    my $link = shift;
+    return URI::file->new($link)->rel("file://".$self->cgi->path_info());
 }
 
 1;

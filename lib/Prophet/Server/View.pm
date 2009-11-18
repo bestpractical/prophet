@@ -5,7 +5,7 @@ package Prophet::Server::View;
 use base 'Template::Declare';
 
 use Template::Declare::Tags;
-
+use URI::file;
 # Prophet::Server::ViewHelpers overwrites the form {} function provided by
 # Template::Declare::Tags. ViewHelpers uses Exporter::Lite which does not "use
 # warnings". When prove -w or make test is run, $^W is set which turns on
@@ -109,10 +109,10 @@ template head => sub {
                       'http-equiv' => "Content-Type" }};
         title { shift @args };
         for ( $self->server->css ) {
-            link { { rel is 'stylesheet', href is $_, type is "text/css", media is 'screen'} };
+            link { { rel is 'stylesheet', href is link_to($_), type is "text/css", media is 'screen'} };
         }
         for ( $self->server->js ) {
-            script { { src is $_, type is "text/javascript" } };
+            script { { src is link_to($_), type is "text/javascript" } };
         }
     }
 
@@ -175,7 +175,7 @@ sub record_table {
                         if ($i == 0) {
                             a {
                                 attr {
-                                    href => "$prefix$uuid.html",
+                                    href => link_to("$prefix$uuid.html"),
                                 };
                                 outs $atom->{value};
                             }
@@ -205,7 +205,7 @@ template record => page {
             p {
                 a {
                     attr {
-                        href => "index.html",
+                        href => link_to("index.html"),
                     };
                     outs "index";
                 }
@@ -312,5 +312,9 @@ sub generate_changeset_feed {
     return $feed;
 }
 
+sub link_to ($) {
+	my $link = shift;
+    return URI::file->new($link)->rel("file://".$ENV{REQUEST_URI});
+}
 1;
 
