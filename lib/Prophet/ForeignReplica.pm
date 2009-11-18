@@ -115,6 +115,16 @@ sub prompt_for_login {
         @_,
     );
 
+    # check if username is in config
+    my $replica_username     = 'replica.' . $self->{url} . '.username';
+    my $replica_secret_token = 'replica.' . $self->{url} . '.secret_token';
+
+    if ( !$args{username} ) {
+        my $check_username
+            = $self->app_handle->config->get( key => $replica_username );
+        $args{username} = $check_username if $check_username;
+    }
+    
     my $secret;
 
     my $was_in_pager = Prophet::CLI->in_pager();
@@ -129,12 +139,38 @@ sub prompt_for_login {
         chomp( $args{username} = ReadLine 0 );
     }
 
-    print $args{secret_prompt}($args{uri}, $args{username});
-    ReadMode 2;
-    chomp( $secret = ReadLine 0 );
-    ReadMode 1;
-    print "\n";
+    if ( my $check_password
+        = $self->app_handle->config->get( key => $replica_secret_token ) )
+    {
+        $secret = $check_password;
+    }
+    else {
+        print $args{secret_prompt}( $args{uri}, $args{username} );
+        ReadMode 2;
+        chomp( $secret = ReadLine 0 );
+        ReadMode 1;
+        print "\n";
+    }
     Prophet::CLI->start_pager() if ($was_in_pager);
+
+    # store username and secret token in config file
+    if ( !$self->app_handle->config->get( key => $replica_username ) ) {
+        print "Setting replica's username in the config file";
+        $self->app_handle->config->set(
+            key      => $replica_username,
+            value    => $args{username},
+            filename => $self->app_handle->config->origins->{
+                'core.config-format-version'},
+        );
+        print "Setting replica's secret_token in the config file";
+        $self->app_handle->config->set(
+            key      => $replica_secret_token,
+            value    => $secret,
+            filename => $self->app_handle->config->origins->{
+                'core.config-format-version'},
+        );
+    }
+
     return ( $args{username}, $secret );
 }
 
