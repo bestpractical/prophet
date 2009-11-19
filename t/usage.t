@@ -56,7 +56,7 @@ my @cmds = (
     },
     {
         cmd     => [ 'clone', '-h' ],
-        error   => [ 'usage: usage.t clone --from <url> | --local' ],
+        error   => [ 'usage: usage.t clone --from <url> [--as <alias>]| --local' ],
         comment => 'clone usage',
     },
     {

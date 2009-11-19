@@ -91,7 +91,7 @@ as_bob {
     isa_ok( $cxn, 'Prophet::Replica', "Got the cxn " . $cxn->fs_root );
 
     # pull from alice
-    run_ok( 'prophet', ['clone', '--from', "file://".$alice_cli->app_handle->handle->fs_root] );
+    run_ok( 'prophet', ['clone', '--from', "file://".$alice_cli->app_handle->handle->fs_root, '--as', 'alice'] );
     run_ok( 'prophet', [qw(create --type Bug -- --status open --from bob )], "Created a record as bob" );
     run_output_matches( 'prophet', [qw(search --type Bug --regex open)], [qr/open/], [], "Found our record" );
 
@@ -138,7 +138,8 @@ as_bob {
 as_bob {
 
     #   pull from alice
-    run_ok( 'prophet', ['pull', '--from', "file://".$alice_cli->app_handle->handle->fs_root, '--force', '--prefer', 'to'] );
+    #run_ok( 'prophet', ['pull', '--from', "file://".$alice_cli->app_handle->handle->fs_root, '--force', '--prefer', 'to'] );
+    run_ok( 'prophet', ['pull', '--from', 'alice', '--force', '--prefer', 'to'] );
     # enumerate statuses
     my $t = MyApp::Model::Task->new(handle => $bob_cli->app_handle->handle);
     TODO: { 
