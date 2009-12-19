@@ -20,7 +20,7 @@ requires('Proc::InvokeEditor');
 requires( 'Any::Moose'    => '0.04' );
 requires( 'Mouse'         => '0.21' );
 requires('XML::Atom::SimpleFeed');
-requires( 'Path::Dispatcher' => '0.09' );    # Path::Dispatcher::Declarative
+requires( 'Path::Dispatcher' => '0.14' );    # Path::Dispatcher::Declarative
 requires('Time::Progress');
 requires('Config::GitLike' => '1.02');
 requires('MIME::Base64::URLSafe');
