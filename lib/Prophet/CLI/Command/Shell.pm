@@ -5,6 +5,7 @@ extends 'Prophet::CLI::Command';
 use File::Spec;
 use Prophet::Util;
 use Text::ParseWords qw(shellwords);
+use Scalar::Util qw(weaken);
 
 has name => (
     is => 'ro',
@@ -18,14 +19,34 @@ has term => (
     lazy    => 1,
     handles => [qw/readline addhistory/],
     default => sub {
+        my $self = shift;
+        my $weakself = $self;
+        weaken($weakself);
+
         require Term::ReadLine;
-        return Term::ReadLine->new("Prophet shell");
+        my $term = Term::ReadLine->new("Prophet shell");
+        $term->Attribs->{attempted_completion_function} = sub {
+            $weakself->_complete(@_);
+        };
+        return $term;
     },
 );
 
-    our $HIST = $ENV{PROPHET_HISTFILE}
-            || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
-    our $LEN = $ENV{PROPHET_HISTLEN} || 500;
+has current_matches => (
+    is      => 'rw',
+    isa     => 'ArrayRef',
+    default => sub { [] },
+);
+
+has match_index => (
+    is      => 'rw',
+    isa     => 'Int',
+    default => 0,
+);
+
+our $HIST = $ENV{PROPHET_HISTFILE}
+        || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
+our $LEN = $ENV{PROPHET_HISTLEN} || 500;
 
 
 sub usage_msg {
@@ -84,6 +105,34 @@ sub _run {
 
         $self->eval($cmd);
     }
+}
+
+sub _complete {
+    my ($self, $text, $line, $start, $end) = @_;
+
+    # we're discarding everything after the cursor for completion purposes. in the
+    # future we may be able to be smarter, but for now it's good enough.
+    # we can't just use $text because we want all the code before the cursor to
+    # matter, not just the current word
+    substr($line, $end) = '';
+
+    my $dispatcher = $self->cli->dispatcher_class->new(cli => $self->cli);
+    my @matches = $dispatcher->complete($text);
+
+    # iterate through the completions
+    return $self->term->completion_matches($text, sub {
+        my ($text, $state) = @_;
+
+        if (!$state) {
+            $self->current_matches(\@matches);
+            $self->match_index(0);
+        }
+        else {
+            $self->match_index($self->match_index + 1);
+        }
+
+        return $self->current_matches->[$self->match_index];
+    });
 }
 
 # make the REPL history persistent
