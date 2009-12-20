@@ -59,7 +59,7 @@ sub append_to_file {
 sub file_exists {
 	my $self = shift;
     my ($file) = validate_pos( @_, 1 );
-        return $self->read_file($file) ? 1 : 0;
+        return defined $self->read_file($file) ? 1 : 0;
 }
 
 
