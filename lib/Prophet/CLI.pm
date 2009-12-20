@@ -16,6 +16,20 @@ has app_class => (
     default => 'Prophet::App',
 );
 
+has dispatcher_class => (
+    is      => 'rw',
+    isa     => 'ClassName',
+    lazy    => 1,
+    default => sub {
+        my $self = shift;
+
+        my $app_class = $self->app_class;
+        my $class = $app_class .'::CLI::Dispatcher';
+        return $class if $app_class->try_to_require( $class );
+        return 'Prophet::CLI::Dispatcher';
+    },
+);
+
 has record_class => (
     is      => 'rw',
     isa     => 'ClassName',
@@ -61,12 +75,11 @@ handles the subcommand for a particular type
 
 =head2 dispatcher_class -> Class
 
-Returns the dispatcher used to dispatch command lines. You'll want to override
-this in your subclass.
+Returns class name of the dispatcher used to dispatch command lines.
+By default app_class::CLI::Dispatcher is used if it can be loaded
+otherwise L<Prophet::CLI::Dispatcher>. Override using:
 
-=cut
-
-sub dispatcher_class { "Prophet::CLI::Dispatcher" }
+    has '+dispatcher_class' => ( default => 'MyApp::Dispatcher' );
 
 =head2 run_one_command
 
