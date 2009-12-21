@@ -46,6 +46,6 @@ $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' .
 # Don't test fetch errors because the user running these tests may or may not
 # have network, so they won't always be the same.
 like( $error,
-    qr|The source replica 'http://web.mit.edu/spang/Public/tmp/bogus-sd' doesn't exist or is unreadable.|,
+    qr{The source replica 'http://web.mit.edu/spang/Public/tmp/bogus-sd' doesn't exist or is unreadable.|Could not fetch http://},
     'prophet replicas *can* be via http',
 );
