@@ -32,18 +32,6 @@ has term => (
     },
 );
 
-has current_matches => (
-    is      => 'rw',
-    isa     => 'ArrayRef',
-    default => sub { [] },
-);
-
-has match_index => (
-    is      => 'rw',
-    isa     => 'Int',
-    default => 0,
-);
-
 our $HIST = $ENV{PROPHET_HISTFILE}
         || (($ENV{HOME} || (getpwuid($<))[7]) . "/.prophetreplhist");
 our $LEN = $ENV{PROPHET_HISTLEN} || 500;
@@ -108,31 +96,16 @@ sub _run {
 }
 
 sub _complete {
-    my ($self, $text, $line, $start, $end) = @_;
+    my ($self, $last_word, $line, $start, $end) = @_;
 
-    # we're discarding everything after the cursor for completion purposes. in the
-    # future we may be able to be smarter, but for now it's good enough.
-    # we can't just use $text because we want all the code before the cursor to
+    # discard everything after the cursor for completion purposes
+    # we can't just use $text because we want all the text before the cursor to
     # matter, not just the current word
     substr($line, $end) = '';
 
     my $dispatcher = $self->cli->dispatcher_class->new(cli => $self->cli);
     my @matches = $dispatcher->complete($line);
-
-    # iterate through the completions
-    return $self->term->completion_matches($line, sub {
-        my ($text, $state) = @_;
-
-        if (!$state) {
-            $self->current_matches(\@matches);
-            $self->match_index(0);
-        }
-        else {
-            $self->match_index($self->match_index + 1);
-        }
-
-        return $self->current_matches->[$self->match_index];
-    });
+    return @matches;
 }
 
 # make the REPL history persistent
