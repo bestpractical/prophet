@@ -25,7 +25,7 @@ has term => (
 
         require Term::ReadLine;
         my $term = Term::ReadLine->new("Prophet shell");
-        $term->Attribs->{attempted_completion_function} = sub {
+        $term->Attribs->{completion_function} = sub {
             $weakself->_complete(@_);
         };
         return $term;
@@ -96,15 +96,18 @@ sub _run {
 }
 
 sub _complete {
-    my ($self, $last_word, $line, $start, $end) = @_;
+    my ($self, $last_word, $line, $start) = @_;
 
-    # discard everything after the cursor for completion purposes
-    # we can't just use $text because we want all the text before the cursor to
+    # we can't just use $last_word because we want all the text before the cursor to
     # matter, not just the current word
-    substr($line, $end) = '';
 
     my $dispatcher = $self->cli->dispatcher_class->new(cli => $self->cli);
-    my @matches = $dispatcher->complete($line);
+
+    # We're supposed to return only the completion of $last_word, not replacements
+    # of $line. So for a completion that returns multiple words, this could screw
+    # up and return only its last word.
+    my @matches = map { s/^.* //; $_ } $dispatcher->complete($line);
+
     return @matches;
 }
 
