@@ -117,10 +117,10 @@ sub _complete {
     substr($line, $end) = '';
 
     my $dispatcher = $self->cli->dispatcher_class->new(cli => $self->cli);
-    my @matches = $dispatcher->complete($text);
+    my @matches = $dispatcher->complete($line);
 
     # iterate through the completions
-    return $self->term->completion_matches($text, sub {
+    return $self->term->completion_matches($line, sub {
         my ($text, $state) = @_;
 
         if (!$state) {
