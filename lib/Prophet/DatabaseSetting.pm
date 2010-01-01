@@ -14,7 +14,7 @@ has label => (
     is  => 'rw',
 );
 
-has type => (default => '__prophet_db_settings');
+has '+type' => ( default => '__prophet_db_settings' );
 
 sub BUILD {
     my $self = shift;

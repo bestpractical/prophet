@@ -15,6 +15,12 @@ use Cwd ();
 use JSON;
 use HTTP::Date;
 
+# Only define a class type constraint for CGI if it's not already defined,
+# because Moose doesn't auto-define class type constraints while Mouse does.
+unless (find_type_constraint('CGI')) {
+    use Any::Moose '::Util::TypeConstraints';
+    class_type('CGI');
+}
 
 
 has app_handle => (
