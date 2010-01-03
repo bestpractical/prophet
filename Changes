@@ -1,3 +1,23 @@
+0.74
+
+User-visible highlights for this release (not all commits are listed here):
+ * Solve double-prompting for username/password in foreign syncs - Christine Spang
+ * Fixes for Moose compatibility - Christine Spang
+ * Unbreak with Mouse > 0.40 - Florian Ragwitz
+ * Some code from SD had accidentially snuck into prophet. rafl++ for alerting me - Jesse Vincent
+ * make menu links relative - Jesse Vincent
+ * propagate "server" into child menus - Jesse Vincent
+ * Announce project_name via Bonjour - Pedro Melo
+ * allow apps to skip overriding dispatcher_class - Ruslan Zakirov
+ * return that file doesn't exist only when lwp_get returns undef - Ruslan Zakirov
+ * Add tab completion for prophet shell - Shawn Moore
+ * check and store in config username and secret token - franck cuny
+ * add --as <alias> to clone - franck cuny
+
+Thanks to the following people who contributed to this release:
+Alex Vandiver, Christine Spang, Florian Ragwitz, Jesse Vincent, Pedro Melo,
+Ruslan Zakirov, Shawn Moore, and franck cuny.
+
 0.73
 
  * Reimplement alias expansion in terms of lists of argument words. - Nelson Elhage
