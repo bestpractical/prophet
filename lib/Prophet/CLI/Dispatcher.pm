@@ -115,7 +115,9 @@ on qr/^(alias(?:es)?|config)?\s+(.*)/ => sub {
 
 on qr/^_gencomp\s*(.*)/ => sub {
     my $self = shift;
-    print "$_\n" for $self->dispatcher->complete($1);
+    my $path = $1;
+    $path = "" if !defined($path);
+    print "$_\n" for $self->dispatcher->complete($path);
 };
 
 sub run_command {
