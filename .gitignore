@@ -6,3 +6,4 @@ Makefile.old
 .prove
 META.yml
 cover_db
+inc/
