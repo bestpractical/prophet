@@ -1,0 +1,4 @@
+zsh:
+    sudo ln -vis `pwd`/etc/prophet.zsh /usr/share/zsh/site-functions/_prophet
+    (tested on Mac OS X 10.6)
+
