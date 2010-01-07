@@ -2,3 +2,7 @@ zsh:
     sudo ln -vis `pwd`/etc/prophet.zsh /usr/share/zsh/site-functions/_prophet
     (tested on Mac OS X 10.6)
 
+bash:
+    symlink etc/prophet.bash to your bash_completion.d directory, if you're using macports this 
+    will be /opt/local/etc/bash_completion.d
+    On a linux platform, this is likely to be /etc/bash_completion.d
