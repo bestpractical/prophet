@@ -48,6 +48,9 @@ sub run {
 
     die "No replica found at '".$self->arg('to')."'.\n" unless $class;
 
+    die "Can't push to HTTP replicas! You probably want to publish instead.\n"
+        if $class->isa("Prophet::Replica::http");
+
     die "Can't push to foreign replica that's never been pulled from! (Override with --force.)\n"
         unless
             $class->isa('Prophet::ForeignReplica') &&
