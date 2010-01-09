@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Prophet::Test tests => 1;
+use Prophet::Test tests => 2;
 use File::Temp qw(tempdir);
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
@@ -18,6 +18,14 @@ my @cmds = (
             "No replica found at '$no_replica'.",
             ],
         comment => 'push to nonexistant replica',
+    },
+    {
+        cmd     => [ 'push', '--to', 'http://foo.com/bar' ],
+        error   => [
+            "Can't push to HTTP replicas! You probably want to publish"
+            ." instead.",
+            ],
+        comment => 'push to HTTP replica',
     },
 );
 
