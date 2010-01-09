@@ -1,6 +1,5 @@
 ~$
 .tmp$
-.sw?$
 .svn$
 .git/*
 .bak$
