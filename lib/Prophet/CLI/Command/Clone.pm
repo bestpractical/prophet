@@ -7,7 +7,7 @@ sub usage_msg {
     my $cmd = $self->cli->get_script_name;
 
     return <<"END_USAGE";
-usage: ${cmd}clone --from <url> [--as <alias>]| --local
+usage: ${cmd}clone --from <url> [--as <alias>] | --local
 END_USAGE
 }
 
