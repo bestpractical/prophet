@@ -11,8 +11,11 @@ doc/luid
 doc/merging-and-conflicts
 doc/notes-on-merging
 doc/repository-layout
+doc/tab-completion
 doc/todo
 doc/web_form_handling
+etc/prophet.bash
+etc/prophet.zsh
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm
 inc/Module/Install/AutoInstall.pm
@@ -54,6 +57,7 @@ lib/Prophet/CLI/Command/Shell.pm
 lib/Prophet/CLI/Command/Show.pm
 lib/Prophet/CLI/Command/Update.pm
 lib/Prophet/CLI/Dispatcher.pm
+lib/Prophet/CLI/Dispatcher/Rule.pm
 lib/Prophet/CLI/MirrorCommand.pm
 lib/Prophet/CLI/Parameters.pm
 lib/Prophet/CLI/ProgressBar.pm
