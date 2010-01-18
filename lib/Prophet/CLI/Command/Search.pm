@@ -145,19 +145,8 @@ sub display_terminal {
     my $groups = $self->group_routine->( [$records->items] );
 
     foreach my $group ( @{$groups} ) {
-        next unless (exists $group->{records}->[0]); # skip headings with no records
-        $group->{label}  ||= 'none';
-        if ( $#{$groups} &&  $group->{label} ) {
-            print "\n"
-                . $group->{label} 
-                . "\n" 
-                . ("=" x ( length $group->{label} ))
-                . "\n\n";
-        }
-
-        for ( $self->sort_routine->( $group->{records} ) ) {
-            print $_->format_summary . "\n";
-        }
+        $self->out_group_heading( $group, $groups );
+        $self->out_record($_) for $self->sort_routine->( $group->{records} );
     }
 
 }
@@ -205,6 +194,29 @@ sub group_by_prop {
 
     ];
 
+}
+
+sub out_group_heading {
+    my $self = shift;
+    my $group = shift;
+    my $groups = shift;
+
+    # skip headings with no records
+    return unless exists $group->{records}->[0];
+
+    return unless @$groups > 1;
+
+    $group->{label} ||= 'none';
+    print "\n". $group->{label} ."\n" 
+        . ("=" x length $group->{label} )
+        . "\n\n";
+
+}
+
+sub out_record {
+    my $self = shift;
+    my $record = shift;
+    print $record->format_summary . "\n";
 }
 
 __PACKAGE__->meta->make_immutable;
