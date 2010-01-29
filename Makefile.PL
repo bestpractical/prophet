@@ -48,7 +48,7 @@ feature 'SQLite replica support' => -default => 1,
     'DBI'                        => 1,
     'DBD::SQLite'                => 1;
 
-feature 'Maintainer testing tools' => -default => 1,
+feature 'Maintainer testing tools' => -default => 0,
     'Test::HTTP::Server::Simple',
     'YAML::Syck'           => 0,
     'Module::Refresh'      => 0,
