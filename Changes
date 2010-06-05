@@ -1,3 +1,6 @@
+0.742
+ * Deal with Path::Dispatcher::Declarative being split from P::D --jesse
+
 0.741
 
  * Actually ship all the javascript and css files for the web frontend.
