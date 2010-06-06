@@ -17,28 +17,22 @@ EOM
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 (undef, $error) = run_command( 'clone', '--from', 'sqlite:foo' );
-is( $error, <<EOM
-I couldn't determine a filesystem root from the given URL.
-Correct syntax is (sqlite:)file:///replica/root .
-EOM
-, 'sqlite:foo errors out' );
+like( $error, qr{.*I couldn't determine a filesystem root from the given URL\.
+Correct syntax is \(sqlite:\)file:///replica/root .
+}, 'sqlite:foo errors out' );
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 (undef, $error) = run_command( 'clone', '--from', 'sqlite://file://foo' );
-is( $error, <<EOM
-I couldn't determine a filesystem root from the given URL.
-Correct syntax is (sqlite:)file:///replica/root .
-EOM
-, 'sqlite://file://foo errors out' );
+like( $error, qr{.*I couldn't determine a filesystem root from the given URL\.
+Correct syntax is \(sqlite:\)file:///replica/root \.
+}, 'sqlite://file://foo errors out' );
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 (undef, $error)
     = run_command( 'clone', '--from', 'sqlite:http://www.example.com/sd' );
-is( $error, <<EOM
-I couldn't determine a filesystem root from the given URL.
-Correct syntax is (sqlite:)file:///replica/root .
-EOM
-, 'SQLite replicas can\'t be via http' );
+like( $error, qr{.*I couldn't determine a filesystem root from the given URL\.
+Correct syntax is \(sqlite:\)file:///replica/root .
+}, 'SQLite replicas can\'t be via http' );
 
 $ENV{'PROPHET_REPO'} = tempdir( CLEANUP => ! $ENV{PROPHET_DEBUG}  ) . '/repo-' . $$;
 (undef, $error) = run_command( 'clone',
