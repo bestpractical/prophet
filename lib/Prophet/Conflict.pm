@@ -71,6 +71,7 @@ sub analyze_changeset {
 
 use Prophet::Resolver::IdenticalChanges;
 use Prophet::Resolver::FromResolutionDB;
+use Prophet::Resolver::Fixup::MissingSourceOldValues;
 use Prophet::Resolver::Failed;
 use Prophet::Resolver::Prompt;
 
@@ -81,7 +82,8 @@ sub generate_resolution {
         sub { Prophet::Resolver::IdenticalChanges->new->run(@_); },
         $resdb ? sub { Prophet::Resolver::FromResolutionDB->new->run(@_) } : (),
         $self->resolvers,
-        (-t STDIN && -t STDOUT) ? sub { Prophet::Resolver::Prompt->new->run(@_); } : (),
+        sub { Prophet::Resolver::Fixup::MissingSourceOldValues->new->run(@_)},
+        (-t STDIN && -t STDOUT) ? sub { Prophet::Resolver::Prompt->new->run(@_) } : (),
         sub { Prophet::Resolver::Failed->new->run(@_) },
     );
     my $resolutions = Prophet::ChangeSet->new({
