@@ -1,3 +1,6 @@
+0.743
+ * Fix test failures so install works again -- spang
+
 0.742
  * Deal with Path::Dispatcher::Declarative being split from P::D --jesse
 
