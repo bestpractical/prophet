@@ -1053,7 +1053,7 @@ Returns true if the record in question exists and false otherwise.
 
 Returns a reference to a list of all the records of type $TYPE.
 
-=head3 list_records
+=head3 list_types
 
 Returns a reference to a list of all the known types in your Prophet database.
 
