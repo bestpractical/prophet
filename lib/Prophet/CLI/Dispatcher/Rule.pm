@@ -1,6 +1,5 @@
 package Prophet::CLI::Dispatcher::Rule;
-use Any::Moose;
-extends 'Path::Dispatcher::Rule';
+use Any::Moose 'Role';
 
 has cli => (
     is        => 'rw',
@@ -9,8 +8,7 @@ has cli => (
     predicate => 'has_cli',
 );
 
-__PACKAGE__->meta->make_immutable;
-no Any::Moose;
+no Any::Moose 'Role';
 
 1;
 
