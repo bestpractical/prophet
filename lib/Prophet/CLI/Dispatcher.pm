@@ -7,6 +7,8 @@ use Prophet::CLI::Dispatcher::Rule::RecordId;
 
 with 'Prophet::CLI::Parameters';
 
+our $cli;
+
 our @PREFIXES = qw(Prophet::CLI::Command);
 sub add_command_prefix { unshift @PREFIXES, @_ }
 

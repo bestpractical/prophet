@@ -1,12 +1,6 @@
 package Prophet::CLI::Dispatcher::Rule;
 use Any::Moose 'Role';
-
-has cli => (
-    is        => 'rw',
-    isa       => 'Prophet::CLI',
-    weak_ref  => 1,
-    predicate => 'has_cli',
-);
+with 'Prophet::CLI::Parameters';
 
 no Any::Moose 'Role';
 

@@ -101,7 +101,7 @@ sub _complete {
     # we can't just use $last_word because we want all the text before the cursor to
     # matter, not just the current word
 
-    my $dispatcher = $self->cli->dispatcher_class->new(cli => $self->cli);
+    my $dispatcher = $self->cli->dispatcher_class->new;
 
     # We're supposed to return only the completion of $last_word, not replacements
     # of $line. So for a completion that returns multiple words, this could screw

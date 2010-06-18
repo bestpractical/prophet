@@ -120,7 +120,7 @@ sub run_one_command {
     #  really, we shouldn't be doing this stuff from the command dispatcher
     $self->context( Prophet::CLIContext->new( app_handle => $self->app_handle ) );
     $self->context->setup_from_args(@args);
-    my $dispatcher = $self->dispatcher_class->new( cli => $self );
+    my $dispatcher = $self->dispatcher_class->new;
 
     # Path::Dispatcher is string-based, so we need to join the args
     # hash with spaces before passing off (args with whitespace in
@@ -129,6 +129,8 @@ sub run_one_command {
             s/"/\\"/g;  # escape double quotes
             /\s/ ? qq{"$_"} : $_;
         } @{ $self->context->primary_commands });
+
+    local $Prophet::CLI::Dispatcher::cli = $self;
     my $dispatch = $dispatcher->dispatch( $dispatch_command_string );
     $self->start_pager();
     $dispatch->run($dispatcher);
