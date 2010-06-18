@@ -208,7 +208,7 @@ TODO: define the format for changesets and records
 
 Files inside the C<records> directory are index files which list off all published versions of a record and the key necessary to retrieve the record from the I<content-addressed store>.
 
-Inside the C<records> directory, you'll     warn "Got types ".join(',',@types);find directories named for each
+Inside the C<records> directory, you'll find directories named for each
 C<type> in your database. Inside each C<type> directory, you'll find a two-level directory tree of single hexadecimal digits. You'll find the record with the type <Foo> and the UUID C<29A3CA16-03C5-11DD-9AE0-E25CFCEE7EC4> stored in 
 
  records/Foo/2/9/29A3CA16-03C5-11DD-9AE0-E25CFCEE7EC4
