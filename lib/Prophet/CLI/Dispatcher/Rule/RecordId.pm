@@ -3,8 +3,10 @@ use Any::Moose;
 extends 'Path::Dispatcher::Rule::Regex';
 with 'Prophet::CLI::Dispatcher::Rule';
 
+use Prophet::CLIContext;
+
 has '+regex' => (
-    default => qr/^$Prophet::CLIContext::ID_REGEX$/i,
+    default => sub { qr/^$Prophet::CLIContext::ID_REGEX$/i },
 );
 
 __PACKAGE__->meta->make_immutable;
