@@ -6,6 +6,7 @@ use Prophet::Replica;
 use Prophet::CLI::Command;
 use Prophet::CLI::Dispatcher;
 use Prophet::CLIContext;
+use Prophet::Record;
 
 use List::Util 'first';
 use Text::ParseWords qw(shellwords);
