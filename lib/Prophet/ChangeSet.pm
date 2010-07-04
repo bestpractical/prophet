@@ -217,6 +217,7 @@ sub as_string {
         @_,
         {   change_filter => 0,
             change_header => 0,
+            change_formatter => undef,
             header_callback => 0,
             skip_empty => 0
         }
@@ -226,8 +227,12 @@ sub as_string {
     
     for my $change ( $self->changes ) {
         next if $args{change_filter} && !$args{change_filter}->($change);
+        if ($args{change_formatter} ) {
+            $body .= $args{change_formatter}->(change => $change, header_callback => $args{change_header});
+        } else {
         $body .= $change->as_string( header_callback => $args{change_header} ) || next;
         $body .= "\n";
+        }
     }
 
     return '' if !$body && $args{'skip_empty'};
