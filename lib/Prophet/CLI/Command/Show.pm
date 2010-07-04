@@ -67,7 +67,6 @@ sub stringify_props {
     # kind of ugly but it simplifies the code
     $props->{id} = $record->luid ." (" . $record->uuid . ")";
 
-    my $max_length = 0;
     my @fields;
 
     for my $field (@show_props) {
@@ -78,19 +77,23 @@ sub stringify_props {
 
         push @fields, [$field, $value];
 
-        $max_length = length($field) if length($field) > $max_length;
     }
 
-    $max_length = 0 if $args{batch};
 
     return join '',
            map {
                my ($field, $value) = @$_;
-               $field .= ':';
-               $field .= ' ' x ($max_length - length($field));
-               "$field $value\n"
+               $self->format_prop($field,$value);
            }
            @fields;
+}
+
+sub format_prop {
+    my $self  = shift;
+    my $field = shift;
+    my $value = shift;
+    "$field: $value\n"
+
 }
 
 __PACKAGE__->meta->make_immutable;
