@@ -27,7 +27,7 @@ sub run {
         record => $record,
         batch   => $self->has_arg('batch'),
         verbose => $self->has_arg('verbose'),
-    );
+    ); 
 }
 
 =head2 stringify_props
@@ -83,7 +83,7 @@ sub stringify_props {
     return join '',
            map {
                my ($field, $value) = @$_;
-               $self->format_prop($field,$value);
+               $self->format_prop(@$_);
            }
            @fields;
 }
@@ -92,8 +92,7 @@ sub format_prop {
     my $self  = shift;
     my $field = shift;
     my $value = shift;
-    "$field: $value\n"
-
+    return "$field: $value\n"
 }
 
 __PACKAGE__->meta->make_immutable;
