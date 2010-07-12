@@ -29,6 +29,7 @@ has dbh => (
                 undef, undef,
                 { RaiseError => 1, AutoCommit => 1 },
             );
+            $dbh->do("PRAGMA default_synchronous = OFF");
         };
         if ($@) {
             die "Unable to open the database file '".$self->db_file
