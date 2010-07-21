@@ -59,6 +59,8 @@ END_WARNING
         }
     }
     
+    push @args, '-e', $args{shell} if defined $args{shell};
+
     push @args, '--recursive', '--' , $args{from}, $args{to};
 
     my $ret = system($rsync, @args);

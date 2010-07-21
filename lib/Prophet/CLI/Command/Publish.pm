@@ -30,6 +30,9 @@ sub run {
     my %previous_sources_by_name
         = $self->app_handle->config->sources( variable => 'publish-url' );
 
+    my %shell_by_name
+        = $self->app_handle->config->sources( variable => 'publish-shell' );
+
     my $to = exists $previous_sources_by_name{$self->arg('to')}
         ? $previous_sources_by_name{$self->arg('to')}
         : $self->arg('to');
@@ -62,6 +65,7 @@ sub run {
     $self->publish_dir(
         from => $from,
         to   => $to,
+        shell => $shell_by_name{$self->arg('to')},
     );
 
     print "Publication complete.\n";
