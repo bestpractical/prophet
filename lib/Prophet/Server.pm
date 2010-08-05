@@ -92,8 +92,10 @@ sub prophet_static_root {
     my $self = shift;
     unless ($PROPHET_STATIC_ROOT) {
 
-        $PROPHET_STATIC_ROOT = File::Spec->catdir( Prophet::Util->updir( $INC{'Prophet.pm'} ),
-            "..", "share", "web", "static" );
+        $PROPHET_STATIC_ROOT = File::Spec->catdir(
+            Prophet::Util->updir( $INC{'Prophet.pm'}, 2 ), "share",
+            "web", "static"
+        );
 
         eval { require File::ShareDir; 1 }
             or die "requires File::ShareDir to determine default static root";
@@ -120,8 +122,10 @@ sub app_static_root {
         my $app_file = ref($self->app_handle) .".pm";
         $app_file =~ s|::|/|g;
 
-         $APP_STATIC_ROOT = File::Spec->catdir( Prophet::Util->updir( $INC{$app_file} ),
-          "..",  "..", "share", "web", "static" );
+        $APP_STATIC_ROOT = File::Spec->catdir(
+            Prophet::Util->updir( $INC{$app_file}, 3 ), "share",
+            "web", "static"
+        );
 
         my $dist = ref($self->app_handle);
         $dist =~ s/::/-/g;
