@@ -134,7 +134,7 @@ sub app_static_root {
             or die "requires File::ShareDir to determine default static root";
 
         $APP_STATIC_ROOT
-            = File::Spec->catfile( File::ShareDir::dist_dir($dist), 'web/static' )
+            = File::Spec->catfile( File::ShareDir::dist_dir($dist), 'web', 'static' )
             if ( !-d $APP_STATIC_ROOT );
 
         $APP_STATIC_ROOT = Cwd::abs_path($APP_STATIC_ROOT);
