@@ -120,4 +120,14 @@ sub hashed_dir_name {
     return ( substr( $hash, 0, 1 ), substr( $hash, 1, 1 ), $hash );
 }
 
+sub catfile {
+    my $self = shift;
+   
+    # File::Spec::catfile is more correct, but
+    # eats over 10% of prophet app runtime, 
+    # which isn't acceptable. 
+    return join('/',@_);
+
+}
+
 1;

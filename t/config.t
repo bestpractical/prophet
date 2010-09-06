@@ -34,7 +34,7 @@ is( scalar @keys, 0, 'no config options are set' );
 {
     copy 't/test_app.conf', $repo;
     local $ENV{'PROPHET_APP_CONFIG'}
-        = File::Spec->catfile($repo,'test_app.conf');
+        = Prophet::Util->catfile($repo,'test_app.conf');
 
     my $app_handle = Prophet::CLI->new->app_handle;
     my $conf = Prophet::Config->new(
@@ -55,7 +55,7 @@ is( scalar @keys, 0, 'no config options are set' );
     $conf->set(
         key => 'replica.sd.url',
         value => 'http://fsck.com/sd/',
-        filename => File::Spec->catfile($repo, 'test_app.conf'),
+        filename => Prophet::Util->catfile($repo, 'test_app.conf'),
     );
     is( $conf->get( key => 'replica.sd.url' ), 'http://fsck.com/sd/',
         'automatic reload after set' );
@@ -69,7 +69,7 @@ is( scalar @keys, 0, 'no config options are set' );
     $conf->set(
         key => 'replica.sd.uuid',
         value => '32b13934-910a-4792-b5ed-c9977b212245',
-        filename => File::Spec->catfile($repo, 'test_app.conf'),
+        filename => Prophet::Util->catfile($repo, 'test_app.conf'),
     );
     is( $app_handle->display_name_for_replica('32b13934-910a-4792-b5ed-c9977b212245'),
         'sd',
@@ -85,7 +85,7 @@ Configuration:
 Config files:
 
 EOF
-    $expect .= File::Spec->catfile( $repo, 'test_app.conf' ) . "\n";
+    $expect .= Prophet::Util->catfile( $repo, 'test_app.conf' ) . "\n";
     $expect .= <<EOF;
 
 Your configuration:

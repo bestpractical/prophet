@@ -92,8 +92,8 @@ EOF
     ok( run_command( qw(publish --to), $bogus_name ),
         'publish to bogus name',
     );
-    ok( ! -f File::Spec->catfile( $new_published, 'config' )
-        && -f File::Spec->catfile( $bogus_name, 'replica-uuid' ),
+    ok( ! -f Prophet::Util->catfile( $new_published, 'config' )
+        && -f Prophet::Util->catfile( $bogus_name, 'replica-uuid' ),
         'did not fall back to url variable' );
 };
 

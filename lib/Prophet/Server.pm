@@ -101,7 +101,7 @@ sub prophet_static_root {
             or die "requires File::ShareDir to determine default static root";
 
         $PROPHET_STATIC_ROOT
-            = File::Spec->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
+            = Prophet::Util->catfile( File::ShareDir::dist_dir('Prophet'), 'web/static' )
             if ( !-d $PROPHET_STATIC_ROOT );
 
         $PROPHET_STATIC_ROOT = Cwd::abs_path($PROPHET_STATIC_ROOT);
@@ -134,7 +134,7 @@ sub app_static_root {
             or die "requires File::ShareDir to determine default static root";
 
         $APP_STATIC_ROOT
-            = File::Spec->catfile( File::ShareDir::dist_dir($dist), 'web', 'static' )
+            = Prophet::Util->catfile( File::ShareDir::dist_dir($dist), 'web', 'static' )
             if ( !-d $APP_STATIC_ROOT );
 
         $APP_STATIC_ROOT = Cwd::abs_path($APP_STATIC_ROOT);
@@ -376,8 +376,8 @@ sub send_static_file {
         $type = 'image/png';
     }
     for my $root ( $self->app_static_root, $self->prophet_static_root) {
-        next unless -f File::Spec->catfile( $root => $filename );
-        my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $root => $filename ) );
+        next unless -f Prophet::Util->catfile( $root => $filename );
+        my $qualified_file = Cwd::fast_abs_path( Prophet::Util->catfile( $root => $filename ) );
         next if substr( $qualified_file, 0, length($root) ) ne $root;
         my $content = Prophet::Util->slurp($qualified_file);
         return $self->send_content( static => 1, content => $content, content_type => $type );

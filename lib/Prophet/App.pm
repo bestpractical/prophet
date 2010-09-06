@@ -255,6 +255,9 @@ name is just the UUID.
 =cut
 
 # friendly names are replica subsections in the config file
+
+use Memoize;
+memoize('display_name_for_replica');
 sub display_name_for_replica {
     my $self = shift;
     my $uuid = shift;

@@ -130,7 +130,7 @@ sub replica_config_file {
     my $self = shift;
 
     return exists $ENV{PROPHET_APP_CONFIG} ? $ENV{PROPHET_APP_CONFIG}
-                : File::Spec->catfile(
+                : Prophet::Util->catfile(
                     $self->app_handle->handle->fs_root, $self->dir_file
     );
 }

@@ -457,7 +457,7 @@ sub _write_record_index_entry {
         type => $args{type}
     );
 
-    my $index_path = File::Spec->catfile( $self->fs_root, $idx_filename );
+    my $index_path = Prophet::Util->catfile( $self->fs_root, $idx_filename );
     my ( undef, $parent, $filename ) = File::Spec->splitpath($index_path);
     mkpath( [$parent] );
 
@@ -524,7 +524,7 @@ sub _delete_record_index {
         uuid => $args{uuid},
         type => $args{type}
     );
-    unlink File::Spec->catfile( $self->fs_root => $idx_filename )
+    unlink Prophet::Util->catfile( $self->fs_root => $idx_filename )
         || die "Could not delete record $idx_filename: " . $!;
 }
 
@@ -550,7 +550,7 @@ memoize '_record_index_filename' unless $^O =~ /MSWin/;
 sub _record_index_filename {
     my $self = shift;
     my %args = validate( @_, { uuid => 1, type => 1 } );
-    return File::Spec->catfile( $self->_record_type_dir( $args{'type'} ), Prophet::Util::hashed_dir_name( $args{uuid} ));
+    return Prophet::Util->catfile( $self->_record_type_dir( $args{'type'} ), Prophet::Util::hashed_dir_name( $args{uuid} ));
 }
 
 sub _record_cas_filename {

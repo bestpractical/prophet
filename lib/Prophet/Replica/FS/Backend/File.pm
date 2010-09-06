@@ -14,7 +14,7 @@ sub read_file {
         return eval {
             local $SIG{__DIE__} = 'DEFAULT';
             Prophet::Util->slurp(
-                File::Spec->catfile( $self->fs_root => $file ) );
+                Prophet::Util->catfile( $self->fs_root => $file ) );
         };
 }
 
@@ -23,7 +23,7 @@ sub read_file_range {
     my %args = validate( @_, { path => 1, position => 1, length => 1 } );
 
     if ($self->fs_root) {
-        my $f = File::Spec->catfile( $self->fs_root => $args{path} );
+        my $f = Prophet::Util->catfile( $self->fs_root => $args{path} );
         return unless -e $f;
         if ( $^O =~ /MSWin/ ) {
             # XXX by sunnavy
@@ -64,7 +64,7 @@ sub write_file {
     my %args = (@_); # validation is too heavy to call here
     #my %args = validate( @_, { path => 1, content => 1 } );
 
-    my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
+    my $file = Prophet::Util->catfile( $self->fs_root => $args{'path'} );
     Prophet::Util->write_file( file => $file, content => $args{content});
 
 }
@@ -73,7 +73,7 @@ sub append_to_file {
 	my $self = shift;
 	my ($filename, $content) = validate_pos(@_, 1,1 );
     open( my $file,
-        ">>" . File::Spec->catfile( $self->fs_root => $filename)
+        ">>" . Prophet::Util->catfile( $self->fs_root => $filename)
     ) || die $!;
     print $file $content || die $!;
 	close $file;
@@ -84,7 +84,7 @@ sub file_exists {
     my ($file) = validate_pos( @_, 1 );
 
 
-    my $path = File::Spec->catfile( $self->fs_root, $file );
+    my $path = Prophet::Util->catfile( $self->fs_root, $file );
     if    ( -f $path ) { return 1 }
     elsif ( -d $path ) { return 2 }
     else               { return 0 }

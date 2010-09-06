@@ -65,8 +65,8 @@ status: stalled
         is( Prophet::Util->slurp(File::Spec->catdir($path => 'replica-uuid')), replica_uuid() );
     };
 
-    ok( -e File::Spec->catfile($path => 'changesets.idx'), 'found changesets index' );
-    my $latest = Prophet::Util->slurp(File::Spec->catfile($path => 'latest-sequence-no'));
+    ok( -e Prophet::Util->catfile($path => 'changesets.idx'), 'found changesets index' );
+    my $latest = Prophet::Util->slurp(Prophet::Util->catfile($path => 'latest-sequence-no'));
     is( $latest, $cli->handle->latest_sequence_no );
     use_ok('Prophet::Replica::prophet');
     diag("Checking changesets in $path");

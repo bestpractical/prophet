@@ -67,7 +67,7 @@ sub set_editor_script {
     my ($self, $script) = @_;
 
     delete $ENV{'VISUAL'};       # Proc::InvokeEditor checks this first
-    $ENV{'EDITOR'} = "$^X " . File::Spec->catfile(getcwd(), 't', 'scripts', $script);
+    $ENV{'EDITOR'} = "$^X " . Prophet::Util->catfile(getcwd(), 't', 'scripts', $script);
     Test::More::diag "export EDITOR=" . $ENV{'EDITOR'} . "\n";
 }
 

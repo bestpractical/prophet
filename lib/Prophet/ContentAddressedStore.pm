@@ -31,7 +31,7 @@ sub write {
 
 sub filename {
     my ($self, $key, $full) = @_;
-    File::Spec->catfile( $full ? $self->fs_root : (),
+    Prophet::Util->catfile( $full ? $self->fs_root : (),
                          $self->root =>
                          Prophet::Util::hashed_dir_name($key) );
 }

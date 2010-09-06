@@ -6,7 +6,7 @@ sub scheme { 'file' }
 sub replica_exists {
     my $self = shift;
     return 0 unless defined $self->fs_root && -d $self->fs_root;
-    return 0 unless -e File::Spec->catfile( $self->fs_root => 'database-uuid' );
+    return 0 unless -e Prophet::Util->catfile( $self->fs_root => 'database-uuid' );
     return 1;
 }
 

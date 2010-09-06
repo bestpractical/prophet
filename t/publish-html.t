@@ -39,10 +39,10 @@ ok(!-e $merge_tickets, "_merge_tickets template directory absent");
 my $bug = File::Spec->catdir($dir => 'Bug');
 ok(-e $bug, "Bug template directory exists");
 
-my $index = File::Spec->catfile($bug =>'index.html');
+my $index = Prophet::Util->catfile($bug =>'index.html');
 ok(-e $index, "Bug/index.html exists");
 
-my $bug_template = File::Spec->catfile($bug => "$bug_uuid.html");
+my $bug_template = Prophet::Util->catfile($bug => "$bug_uuid.html");
 ok(-e $bug_template, "Bug/$bug_uuid.html exists");
 
 my $index_contents = Prophet::Util->slurp($index);
