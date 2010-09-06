@@ -57,13 +57,15 @@ sub read_file {
 
 sub _read_file {
     my $self = shift;
-    my ($file) = validate_pos( @_, 1 );
+    my ($file) = (@_); # validation is too heavy to be called here
+    #my ($file) = validate_pos( @_, 1 );
 	$self->backend->read_file($file);
 }
 
 sub _write_file {
     my $self = shift;
-    my %args = validate( @_, { path => 1, content => 1 } );
+    my %args = (@_); # validate is too heavy to be called here
+    #    my %args = validate( @_, { path => 1, content => 1 } );
 
 	$self->backend->write_file(%args);
 }

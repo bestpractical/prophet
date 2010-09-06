@@ -9,7 +9,8 @@ has fs_root => ( is => 'rw', isa => 'Str');
 
 sub read_file {
 	my $self = shift;
-    my ($file) = validate_pos( @_, 1 );
+    my ($file) = (@_); # validation is too heavy to be called here
+    #my ($file) = validate_pos( @_, 1 );
         return eval {
             local $SIG{__DIE__} = 'DEFAULT';
             Prophet::Util->slurp(
@@ -60,7 +61,8 @@ sub read_file_range {
 
 sub write_file {
     my $self = shift;
-    my %args = validate( @_, { path => 1, content => 1 } );
+    my %args = (@_); # validation is too heavy to call here
+    #my %args = validate( @_, { path => 1, content => 1 } );
 
     my $file = File::Spec->catfile( $self->fs_root => $args{'path'} );
     Prophet::Util->write_file( file => $file, content => $args{content});

@@ -97,7 +97,8 @@ sub escape_utf8 {
 
 sub write_file {
     my $self = shift;
-    my %args = validate( @_, { file => 1, content => 1 } );
+    my %args = (@_); #validate is too heavy to be called here
+    # my %args = validate( @_, { file => 1, content => 1 } );
 
     my ( undef, $parent, $filename ) = File::Spec->splitpath($args{file});
     unless ( -d $parent ) {

@@ -109,7 +109,8 @@ Takes a C<name>, and the C<old> and C<new> values.
 
 sub add_prop_change {
     my $self   = shift;
-    my %args   = validate( @_, { name => 1, old => 0, new => 0 } );
+    my %args   = (@_); # validate is far too heavy to be called here
+    # my %args = validate( @_, { name => 1, old => 0, new => 0 } );
     my $change = Prophet::PropChange->new(
         name      => $args{'name'},
         old_value => $args{'old'},
