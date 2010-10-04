@@ -183,9 +183,9 @@ sub start_pager {
     my $self = shift;
     my $content = shift;
     if (is_interactive() && !$ORIGINAL_STDOUT) {
-        local $ENV{'LESS'} = '-FXe';
+        local $ENV{'LESS'} ||= '-FXe';
         local $ENV{'MORE'};
-        $ENV{'MORE'} = '-FXe' unless $^O =~ /^MSWin/;
+        $ENV{'MORE'} ||= '-FXe' unless $^O =~ /^MSWin/;
 
         my $pager = $self->get_pager();
         return unless $pager;
