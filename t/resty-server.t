@@ -10,7 +10,8 @@ BEGIN {
 
 use Prophet::Test;
 BEGIN {
-    eval {require Test::WWW::Mechanize; } || plan skip_all => "This test  file requirs Test::WWW::Mechanize";
+    eval { require Test::WWW::Mechanize; require Test::HTTP::Server::Simple }
+        || plan skip_all => "This test file requires Test::WWW::Mechanize and Test::HTTP::Server::Simple";
 }
 
 
