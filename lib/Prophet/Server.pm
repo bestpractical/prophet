@@ -143,6 +143,22 @@ sub app_static_root {
     return $APP_STATIC_ROOT;
 }
 
+# Use system-installed CSS and Javascript libraries if they exist, so distros
+# have the option to not ship our embedded copies.
+#
+# I'm not sure if RPM-based systems have a standard location for system
+# Javascript libraries, but this ought to work on Debian/Ubuntu. Patches
+# welcome.
+sub system_js_and_css {
+    my $mapping = {
+        'yui/css/reset.css'
+                => '/usr/share/javascript/yui/reset/reset.css',
+        'jquery/js/jquery-1.2.6.min.js',
+                => '/usr/share/javascript/jquery/jquery.min.js',
+    };
+    return $mapping;
+}
+
 sub css {
     return 
             '/static/prophet/yui/css/reset.css', 
@@ -375,16 +391,27 @@ sub send_static_file {
     } elsif ( $filename =~ /.png$/ ) {
         $type = 'image/png';
     }
-    for my $root ( $self->app_static_root, $self->prophet_static_root) {
-        next unless -f Prophet::Util->catfile( $root => $filename );
-        my $qualified_file = Cwd::fast_abs_path( Prophet::Util->catfile( $root => $filename ) );
-        next if substr( $qualified_file, 0, length($root) ) ne $root;
-        my $content = Prophet::Util->slurp($qualified_file);
-        return $self->send_content( static => 1, content => $content, content_type => $type );
+
+    my $system_library_mapping = $self->system_js_and_css();
+    my $content;
+    if ( $system_library_mapping->{ $filename } ) {
+        $content = Prophet::Util->slurp( $system_library_mapping->{ $filename } );
+    }
+    else {
+        for my $root ( $self->app_static_root, $self->prophet_static_root) {
+            next unless -f Prophet::Util->catfile( $root => $filename );
+            my $qualified_file = Cwd::fast_abs_path( File::Spec->catfile( $root => $filename ) );
+            next if substr( $qualified_file, 0, length($root) ) ne $root;
+            $content = Prophet::Util->slurp($qualified_file);
+        }
     }
 
-    return $self->_send_404;
-
+    if ( defined $content ) {
+        return $self->send_content( static => 1, content => $content, content_type => $type );
+    }
+    else {
+        return $self->_send_404;
+    }
 }
 
 sub send_content {
