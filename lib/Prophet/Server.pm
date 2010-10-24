@@ -43,8 +43,8 @@ sub run {
         Net::Rendezvous::Publish->new;
     };
 
-    eval { require Template::Declare }  || return "Without Template::Declare installed, Prophet's Web UI won't work";
-    eval { require File::ShareDir }  || return "Without File::ShareDir installed, Prophet's Web UI won't work";
+    eval { require Template::Declare }  || die "Without Template::Declare installed, Prophet's Web UI won't work";
+    eval { require File::ShareDir }  || die "Without File::ShareDir installed, Prophet's Web UI won't work";
 
     if ($publisher) {
         $publisher->publish(
