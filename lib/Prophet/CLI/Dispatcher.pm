@@ -68,9 +68,10 @@ dispatcher->add_rule(
             Prophet::CLI::Dispatcher::Rule::RecordId->new,
         ],
         block => sub {
+            my $match = shift;
             my $self = shift;
             $self->context->set_id_from_primary_commands;
-            run($1, $self, @_);
+            run($match->pos(1), $self, @_);
         },
     )
 );
