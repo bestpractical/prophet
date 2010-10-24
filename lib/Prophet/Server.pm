@@ -59,8 +59,17 @@ sub run {
     }
     $self->setup_template_roots();
     print ref($self) . ": Starting up local server. You can stop the server with Ctrl-c.\n";
-    $self->SUPER::run(@_);
-}
+    eval {
+        $self->SUPER::run(@_);
+    };
+    if ($@) {
+        if ( $@ =~ m/^bind to \*:(\d+): Address already in use/ ) {
+            die "\nPort $1 is already in use! Start the server on a different port using --port.\n";
+        } else {
+            die "\nError while starting server:\n\n$@\n";
+        }
+    }
+  }
 
 =head2 database_bonjour_name
 
