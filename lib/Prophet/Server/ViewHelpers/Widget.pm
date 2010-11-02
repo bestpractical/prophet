@@ -8,8 +8,6 @@ BEGIN { delete ${__PACKAGE__."::"}{meta};
 
 use Any::Moose;
 
-use Any::Moose 'Util::TypeConstraints';
-
 =head1 NAME
 
 =head1 METHODS
