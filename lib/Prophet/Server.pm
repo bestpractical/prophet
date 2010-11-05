@@ -1,6 +1,8 @@
 package Prophet::Server;
 use Any::Moose;
-extends qw'HTTP::Server::Simple::CGI';
+
+# this instead of extends silences "You inherit from non-Mouse class" warning
+use base 'HTTP::Server::Simple::CGI';
 
 use Prophet::Server::Controller;
 use Prophet::Server::View;
