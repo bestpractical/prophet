@@ -37,6 +37,8 @@ has read_only  => ( isa  => 'Bool',                        is => 'rw' );
 has static     => ( isa =>  'Bool',                        is => 'rw');
 has view_class => ( isa => 'Str',                       is  => 'rw' );
 has result     => ( isa => 'Prophet::Web::Result',      is  => 'rw' );
+has port       => ( isa => 'Str',
+                    is => 'rw', default => '8080' );
 
 sub run {
     my $self      = shift;

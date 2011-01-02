@@ -41,7 +41,8 @@ sub setup_server {
     if (!$self->app_handle->try_to_require($server_class)) {
         $server_class = "Prophet::Server";
     }
-    my $server = $server_class->new( $self->arg('port') || 8080 );
+    my $server = $self->has_arg('port') ? $server_class->new( port => $self->arg('port') )
+                                        : $server_class->new;
     $server->app_handle( $self->app_handle );
     return $server;
 }
