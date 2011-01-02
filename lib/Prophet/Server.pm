@@ -407,7 +407,8 @@ sub send_static_file {
 
     my $system_library_mapping = $self->system_js_and_css();
     my $content;
-    if ( $system_library_mapping->{ $filename } ) {
+    if ( $system_library_mapping->{ $filename } &&
+         -f $system_library_mapping->{ $filename } ) {
         $content = Prophet::Util->slurp( $system_library_mapping->{ $filename } );
     }
     else {
