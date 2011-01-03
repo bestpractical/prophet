@@ -101,11 +101,8 @@ sub render_templates_into {
      if (!$self->app_handle->try_to_require($server_class)) {
          $server_class = "Prophet::Server";
      }
-    my $server = $server_class->new();
-    $server->app_handle( $self->app_handle );
+    my $server = $server_class->new( app_handle => $self->app_handle );
     $server->setup_template_roots();
-
-
 
     # allow user to specify a specific type to render
     my @types = $self->type || $self->types_to_render;
