@@ -23,11 +23,10 @@ use_ok('Prophet::Record');
 
 my $ua  = Test::WWW::Mechanize->new();
 my $cli = Prophet::CLI->new();
-my $s   = Prophet::TestServer->new();
 
 $cli->handle()->initialize;
 
-$s->app_handle( $cli->app_handle );
+my $s = Prophet::TestServer->new( app_handle => $cli->app_handle );
 
 my $url_root = $s->started_ok("start up my web server");
 
