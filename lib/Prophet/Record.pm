@@ -1,6 +1,7 @@
 package Prophet::Record;
 use Any::Moose;
 use Params::Validate;
+use Term::ANSIColor;
 use Prophet::App; # for require_module. Kinda hacky
 use constant collection_class => 'Prophet::Collection';
 
@@ -716,10 +717,10 @@ sub _parse_format_summary {
     my @out;
     for my $atom ($self->_atomize_summary_format) {
         my %atom_data;
-        my ($format, $prop, $value);
+        my ($format, $prop, $value, $color);
 
         if ($atom =~ /,/) {
-            ($format, $prop) = split /,/, $atom;
+            ($format, $prop, $color) = split /,/, $atom;
 
             $value = $prop;
 
@@ -738,8 +739,7 @@ sub _parse_format_summary {
             format    => $format,
             prop      => $prop,
             value     => $atom_value,
-            formatted => $self->format_atom( $format => $atom_value )
-
+            formatted => $self->format_atom( $format, $atom_value, $color ),
         };
     }
     return @out;
@@ -828,9 +828,7 @@ Dies with a message if there's an error in the format string that sprintf warn()
 =cut
 
 sub format_atom {
-    my $self = shift;
-    my $string = shift;
-    my $value = shift;
+    my ($self, $string, $value, $color) = @_;
 
     my $formatted_atom;
     eval {
@@ -846,7 +844,7 @@ sub format_atom {
             ."summary format for this ticket type.\n\n"
             ."The error encountered was:\n\n'" . $@ . "'\n";
     }
-    return $formatted_atom;
+    return $color ? colored($formatted_atom, $color) : $formatted_atom;
 }
 
 =head2 find_or_create_luid
