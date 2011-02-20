@@ -14,6 +14,8 @@ sub progress_bar {
     my $bar_count = 0;
     my $format = $args{format};
     return sub {
+       # disable autoflush to make \r work properly
+       $| = 1;
        print $bar->report(  $format, ++$bar_count );
     }
 }
