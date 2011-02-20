@@ -18,7 +18,7 @@ requires( 'JSON' => '2.00' );
 requires('Module::Pluggable');
 requires('Proc::InvokeEditor');
 requires( 'Any::Moose'    => '0.04' );
-requires( 'Mouse'         => '0.21' );
+requires( 'Mouse'         => '0.89' );
 requires('XML::Atom::SimpleFeed');
 requires( 'Path::Dispatcher' => '1.02' );
 requires( 'Path::Dispatcher::Declarative' => '0.03' );
