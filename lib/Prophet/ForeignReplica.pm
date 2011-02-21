@@ -21,14 +21,14 @@ records and so on.
 sub fetch_local_metadata { my $self = shift;
     my $key = shift;
     $self->app_handle->handle->fetch_local_metadata( $self->uuid . "-".$key )
-    
+
     }
 sub store_local_metadata { my $self = shift;
     my $key = shift;
     my $value = shift;
    $self->app_handle->handle->store_local_metadata( $self->uuid."-".$key => $value);
-    
-    
+
+
     }
 
 
@@ -124,7 +124,7 @@ sub prompt_for_login {
             = $self->app_handle->config->get( key => $replica_username );
         $args{username} = $check_username if $check_username;
     }
-    
+
     my $secret;
 
     my $was_in_pager = Prophet::CLI->in_pager();
