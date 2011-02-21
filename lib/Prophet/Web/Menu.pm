@@ -300,4 +300,8 @@ sub as_link {
         return $self->label;
     }
 }
+
+__PACKAGE__->meta->make_immutable;
+no Any::Moose;
+
 1;

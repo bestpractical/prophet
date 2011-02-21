@@ -81,6 +81,7 @@ under { method => 'GET' } => sub {
 
 on qr'^(.*)$' => sub { shift->server->show_template($1) || next_rule; };
 
+__PACKAGE__->meta->make_immutable;
 no Any::Moose;
 
 1;

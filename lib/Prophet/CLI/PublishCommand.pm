@@ -81,7 +81,7 @@ END_DIE_MSG
     }
 }
 
-no Any::Moose;
+no Any::Moose 'Role';
 
 1;
 

@@ -236,4 +236,6 @@ sub mirror_from {
     }
 }
 
+no Any::Moose;
+
 1;

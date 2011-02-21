@@ -22,7 +22,7 @@ sub get_collection_object {
     return $records;
 }
 
-no Any::Moose;
+no Any::Moose 'Role';
 
 1;
 

@@ -101,4 +101,6 @@ sub can_write { 1;
 
 }
 
+no Any::Moose;
+
 1;

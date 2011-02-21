@@ -37,4 +37,5 @@ sub new {
     }
 }
 
+no Any::Moose;
 1;

@@ -487,4 +487,7 @@ sub make_link_relative {
     return URI::file->new($link)->rel("file://".$self->cgi->path_info());
 }
 
+__PACKAGE__->meta->make_immutable;
+no Any::Moose;
+
 1;

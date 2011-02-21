@@ -11,7 +11,7 @@ sub context {
     $self->cli->context;
 }
 
-no Any::Moose;
+no Any::Moose 'Role';
 
 1;
 

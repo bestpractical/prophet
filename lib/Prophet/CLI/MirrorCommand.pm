@@ -39,7 +39,7 @@ sub sync_cache_from_source {
     );
 }
 
-no Any::Moose;
+no Any::Moose 'Role';
 
 1;
 

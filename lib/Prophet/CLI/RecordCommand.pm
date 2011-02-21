@@ -98,7 +98,7 @@ sub _type_to_record_class {
     return 'Prophet::Record';
 }
 
-no Any::Moose;
+no Any::Moose 'Role';
 
 1;
 

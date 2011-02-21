@@ -19,7 +19,8 @@ sub progress_bar {
        print $bar->report(  $format, ++$bar_count );
     }
 }
-no Any::Moose;
+
+no Any::Moose 'Role';
 
 1;
 

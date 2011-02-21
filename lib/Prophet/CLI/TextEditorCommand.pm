@@ -134,5 +134,5 @@ process_template
 
 =cut
 
-no Any::Moose;
+no Any::Moose 'Role';
 1;

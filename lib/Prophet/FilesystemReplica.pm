@@ -314,5 +314,6 @@ sub fetch_local_metadata {
 
 }
 
+no Any::Moose;
 
 1;
