@@ -116,12 +116,12 @@ sub prompt_for_login {
     );
 
     # check if username is in config
-    my $replica_username     = 'replica.' . $self->{url} . '.username';
-    my $replica_secret_token = 'replica.' . $self->{url} . '.secret_token';
+    my $replica_username_key     = 'replica.' . $self->scheme . ":" . $self->{url} . '.username';
+    my $replica_token_key        = 'replica.' . $self->scheme . ":" . $self->{url} . '.secret_token';
 
     if ( !$args{username} ) {
         my $check_username
-            = $self->app_handle->config->get( key => $replica_username );
+            = $self->app_handle->config->get( key => $replica_username_key );
         $args{username} = $check_username if $check_username;
     }
 
@@ -140,7 +140,7 @@ sub prompt_for_login {
     }
 
     if ( my $check_password
-        = $self->app_handle->config->get( key => $replica_secret_token ) )
+        = $self->app_handle->config->get( key => $replica_token_key ) )
     {
         $secret = $check_password;
     }
@@ -152,24 +152,6 @@ sub prompt_for_login {
         print "\n";
     }
     Prophet::CLI->start_pager() if ($was_in_pager);
-
-    # make sure replica is initialized
-    $self->app_handle->handle->initialize;
-
-    # store username and secret token in config file
-    if ( !$self->app_handle->config->get( key => $replica_username ) ) {
-        print "Setting replica's username and token in the config file";
-        $self->app_handle->config->group_set(
-            $self->app_handle->config->replica_config_file,
-         [ {
-            key      => $replica_username,
-            value    => $args{username},
-         }, {
-            key      => $replica_secret_token,
-            value    => $secret,
-         } ],
-        );
-    }
 
     return ( $args{username}, $secret );
 }
