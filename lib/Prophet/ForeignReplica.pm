@@ -153,21 +153,21 @@ sub prompt_for_login {
     }
     Prophet::CLI->start_pager() if ($was_in_pager);
 
+    # make sure replica is initialized
+    $self->app_handle->handle->initialize;
+
     # store username and secret token in config file
     if ( !$self->app_handle->config->get( key => $replica_username ) ) {
-        print "Setting replica's username in the config file";
-        $self->app_handle->config->set(
+        print "Setting replica's username and token in the config file";
+        $self->app_handle->config->group_set(
+            $self->app_handle->config->replica_config_file,
+         [ {
             key      => $replica_username,
             value    => $args{username},
-            filename => $self->app_handle->config->origins->{
-                'core.config-format-version'},
-        );
-        print "Setting replica's secret_token in the config file";
-        $self->app_handle->config->set(
+         }, {
             key      => $replica_secret_token,
             value    => $secret,
-            filename => $self->app_handle->config->origins->{
-                'core.config-format-version'},
+         } ],
         );
     }
 
