@@ -151,19 +151,34 @@ sub display_terminal {
 
 }
 
-=head2 sort_by_prop $prop, $records
+=head2 sort_by_prop $prop, $records, $sort_undef_last
 
-Given a property name and an arrayref to a list of records, returns a list of the records
-sorted by their C<created> property, in ascending order.
+Given a property name and an arrayref to a list of records, returns a list of
+the records sorted by their C<created> property, in ascending order.
+
+If $sort_undef_last is true, records which don't have a property defined
+are sorted *after* all other records; otherwise, they are sorted before.
 
 =cut
 
 sub sort_by_prop {
-    my ($self, $prop, $records) = @_;
+    my ($self, $prop, $records, $sort_undef_last) = @_;
 
     no warnings 'uninitialized'; # some records might not have this prop
 
-    return (sort { $a->prop($prop) cmp $b->prop($prop) } @{$records});
+    return (sort {
+        my $prop_a = $a->prop($prop);
+        my $prop_b = $b->prop($prop);
+        if ( $sort_undef_last && !defined($prop_a) ) {
+            return 1;
+        }
+        elsif ( $sort_undef_last && !defined($prop_b) ) {
+            return -1;
+        }
+        else {
+            return $prop_a cmp $prop_b;
+        }
+    } @{$records});
 }
 
 
