@@ -51,6 +51,8 @@ sub run {
         #   $self->sync_cache_from_source( target=> $self->source, source => $original_source);
     }
 
+    # foreign replicas don't typically have a resdb handle, since they aren't
+    # native
     $self->target->import_resolutions_from_remote_replica(
         from  => $self->source,
         force => $self->has_arg('force'),
@@ -111,7 +113,6 @@ sub _do_merge {
 
     my $changesets = 0;
 
-
     if ( $self->has_arg('dry-run') ) {
 
         $self->source->traverse_changesets(
@@ -137,7 +138,7 @@ sub _do_merge {
         );
 
     } else {
-		my $source_latest = $self->source->latest_sequence_no() || 0;
+	my $source_latest = $self->source->latest_sequence_no() || 0;
         if ( $self->has_arg('verbose') ) {
             print "Integrating changes from " . $last_seen_from_source . " to " . $source_latest . "\n";
             $import_args{reporting_callback} = sub {

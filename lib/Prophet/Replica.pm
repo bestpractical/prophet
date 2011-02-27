@@ -258,7 +258,7 @@ sub import_changesets {
                     # If we've seen the changeset, yet we still got here, it
                     # means we saw it by original
 
-                    # replica/sequence pair, but not # the direct upstream's
+                    # replica/sequence pair, but not the direct upstream's
                     # uuid/sequence pair.
                     # recording that can help performance a whole bunch for
                     # next sync
@@ -359,7 +359,6 @@ sub integrate_changeset {
 
     my $changeset = $args{'changeset'};
 
-
     $self->log_debug("Considering changeset ".$changeset->original_sequence_no .
         " from " . $self->display_name_for_replica($changeset->original_source_uuid));
 
@@ -374,8 +373,7 @@ sub integrate_changeset {
     #   - merge tickets for the same
     # we'll want to skip or remove those changesets
 
-
-    if (!  $self->should_accept_changeset($changeset) ){
+    if ( !$self->should_accept_changeset($changeset) ) {
         # if it's a changeset we don't care about, mark it as seen and move on
         $self->record_integration_of_changeset($changeset);
         $args{'reporting_callback'}->( changeset => $changeset, )
@@ -419,11 +417,15 @@ sub integrate_changeset {
             conflict  => $conflict
         ) if ( $args{'reporting_callback'} );
         return 1;
-    } else {
-        $self->log_debug("Integrating changeset ".$changeset->original_sequence_no .
-            " from " . $self->display_name_for_replica($changeset->original_source_uuid));
+    }
+    else {
+        $self->log_debug("Integrating changeset ".
+            $changeset->original_sequence_no .
+            " from " .
+            $self->display_name_for_replica($changeset->original_source_uuid));
         $self->record_changeset_and_integration($changeset);
-        $args{'reporting_callback'}->( changeset => $changeset ) if ( $args{'reporting_callback'} );
+        $args{'reporting_callback'}->( changeset => $changeset )
+            if ( $args{'reporting_callback'} );
         return 1;
     }
 }
@@ -469,7 +471,6 @@ sub last_changeset_from_source {
     return defined $changeset_num ? $changeset_num : -1;
 }
 
-
 =head3 has_seen_changeset { source_uuid => <uuid>, sequence_no => <int> }
 
 Returns true if we've previously integrated this changeset, even if we
@@ -480,16 +481,19 @@ originally received it from a different peer.
 sub has_seen_changeset {
     my $self = shift;
     my %args = validate( @_, {source_uuid => 1, sequence_no => 1});
+
     $self->log_debug("Checking to see if we've ever seen changeset " .
         $args{sequence_no} . " from " .
         $self->display_name_for_replica($args{source_uuid}));
 
+    $self->log_debug("Last changeset from source: "
+                     . $self->last_changeset_from_source($args{source_uuid}));
+
     # If the changeset originated locally, we never want it
     if (lc($args{source_uuid}) eq lc($self->uuid) ) {
         $self->log_debug("\t  - We have. (It originated locally.)");
-        return 1 
+        return 1;
     }
-
     # Otherwise, if the we have a merge ticket from the source, we don't want
     # the changeset if the source's sequence # is >= the changeset's sequence
     # #, we can safely skip it
@@ -537,7 +541,8 @@ sub conflicts_from_changeset {
 
     return undef unless $conflict->has_conflicting_changes;
 
-    $self->log_debug("Conflicting changeset: ".JSON::to_json($conflict, {allow_blessed => 1}));
+    $self->log_debug("Conflicting changeset: ".
+        JSON::to_json($conflict, {allow_blessed => 1}));
 
     return $conflict;
 }
@@ -564,28 +569,37 @@ sub _check_db_uuids_on_merge {
 
 =head3 should_accept_changeset { from => L<Prophet::Replica>, changeset => L<Prophet::ChangeSet> }
 
-Returns true if this replica hasn't yet seen the changeset C<changeset>.
+Returns true if this replica should integrate C<changeset>, false otherwise.
 
 =cut
 
 sub should_accept_changeset {
     my $self = shift;
-    my ($changeset) = validate_pos( @_, { changeset => { isa => 'Prophet::ChangeSet' } });
+    my ($changeset) = validate_pos( @_,
+        { changeset => { isa => 'Prophet::ChangeSet' } });
 
 
     $self->log_debug("Should I accept " .$changeset->original_sequence_no .
-        " from ".$self->display_name_for_replica($changeset->original_source_uuid));
-    return undef if (! $changeset->has_changes);
-    return undef if ( $changeset->is_nullification || $changeset->is_resolution );
-    return undef if $self->has_seen_changeset( sequence_no => $changeset->original_sequence_no,  source_uuid => $changeset->original_source_uuid );
-    $self->log_debug("Yes, it has changes, isn't a nullification and I haven't seen it before");
+        " from ".
+        $self->display_name_for_replica($changeset->original_source_uuid));
 
-    return 1;
+    if ( !$changeset->has_changes || $changeset->is_nullification ||
+          $changeset->is_resolution || $self->has_seen_changeset(
+                sequence_no => $changeset->original_sequence_no,
+                source_uuid => $changeset->original_source_uuid ) ) {
+        return 0;
+    }
+    else {
+        $self->log_debug("Yes, it has changes, isn't a nullification ".
+                        "and I haven't seen it before");
+        return 1;
+    }
 }
 
 =head3 fetch_changesets { after => SEQUENCE_NO }
 
-Fetch all changesets from this replica after the local sequence number SEQUENCE_NO.
+Fetch all changesets from this replica after the local sequence number
+SEQUENCE_NO.
 
 Returns a reference to an array of L<Prophet::ChangeSet> objects.
 
@@ -599,7 +613,8 @@ sub fetch_changesets {
     my %args = validate( @_, { after => 1 } );
     my @results;
 
-    $self->traverse_changesets( %args, callback => sub { my %args = @_; push @results, $args{changeset} } );
+    $self->traverse_changesets( %args,
+        callback => sub { my %args = @_; push @results, $args{changeset} } );
 
     return \@results;
 }
@@ -904,8 +919,9 @@ and then call the _after_record_changes() hook.
 
 sub record_changes {
     my $self      = shift;
-    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet'});
-    $self->_unimplemented ('record_changes') unless ($self->can_write_changesets);
+    my ($changeset) = validate_pos(@_, { isa => 'Prophet::ChangeSet' });
+    $self->_unimplemented ('record_changes')
+        unless ($self->can_write_changesets);
     eval {
         local $SIG{__DIE__} = 'DEFAULT';
         my $inside_edit = $self->current_edit ? 1 : 0;
@@ -934,35 +950,57 @@ sub integrate_changes {
     my ($self, $changeset) = validate_pos( @_, {isa => 'Prophet::Replica'},
                                           { isa => 'Prophet::ChangeSet' } );
     $self->integrate_change($_, $changeset) for ( $changeset->changes );
-
+    use Data::Dump qw(pp);
+    # warn pp $changeset->changes;
 }
 
 =head2 integrate_change L<Prophet::Change> <Prophet::ChangeSet>
 
-Integrates the given change into the current replica. Used in
-L</integrate_changes>.
+Integrates the given change into the current replica using the currently active
+replica backend. Used in L</integrate_changes>.
+
+Changes can have the following types:
+- add_file
+- add_dir
+- update_file
+- delete
+
+Trying to integrate a change of an unknown type will result in a fatal error.
 
 =cut
 
 sub integrate_change {
     my ($self, $change) = validate_pos(@_, { isa => 'Prophet::Replica' },
                                            { isa => 'Prophet::Change' }, 
-                                           { isa => 'Prophet::ChangeSet' } 
-);
+                                           { isa => 'Prophet::ChangeSet' },
+    );
 
     my %new_props = map { $_->name => $_->new_value } $change->prop_changes;
     if ( $change->change_type eq 'add_file' ) {
-        $self->log_debug("add_file: " .$change->record_type. " " .$change->record_uuid);
-        $self->create_record( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
-    } elsif ( $change->change_type eq 'add_dir' ) {
-        $self->log_debug("(IGNORED) add_dir: " .$change->record_type. " " .$change->record_uuid);
-    } elsif ( $change->change_type eq 'update_file' ) {
-        $self->log_debug("update_file: " .$change->record_type. " " .$change->record_uuid);
-        $self->set_record_props( type  => $change->record_type, uuid  => $change->record_uuid, props => \%new_props);
-    } elsif ( $change->change_type eq 'delete' ) {
-        $self->log_debug("delete_file: " .$change->record_type. " " .$change->record_uuid);
-        $self->delete_record( type => $change->record_type, uuid => $change->record_uuid);
-    } else {
+        $self->log_debug("add_file: " . $change->record_type
+                                      . " " . $change->record_uuid);
+        $self->create_record( type  => $change->record_type,
+                              uuid  => $change->record_uuid,
+                              props => \%new_props );
+    }
+    elsif ( $change->change_type eq 'add_dir' ) {
+        $self->log_debug("(IGNORED) add_dir: "
+                         . $change->record_type. " " . $change->record_uuid);
+    }
+    elsif ( $change->change_type eq 'update_file' ) {
+        $self->log_debug("update_file: "
+                         .$change->record_type. " " .$change->record_uuid);
+        $self->set_record_props( type  => $change->record_type,
+                                 uuid  => $change->record_uuid,
+                                 props => \%new_props );
+    }
+    elsif ( $change->change_type eq 'delete' ) {
+        $self->log_debug("delete_file: "
+                         . $change->record_type. " " .$change->record_uuid);
+        $self->delete_record( type => $change->record_type,
+                              uuid => $change->record_uuid );
+    }
+    else {
         Carp::confess( "Unknown change type: " . $change->change_type );
     }
 }
@@ -980,14 +1018,19 @@ sub record_integration_of_changeset {
     my ($changeset) = validate_pos( @_, { isa => 'Prophet::ChangeSet' } );
 
     if ( $changeset->original_source_uuid ne $self->uuid
-        && ( $self->last_changeset_from_source( $changeset->original_source_uuid ) < $changeset->original_sequence_no )
+        && ( $self->last_changeset_from_source(
+                $changeset->original_source_uuid
+            ) < $changeset->original_sequence_no )
         ) {
         $self->record_last_changeset_from_replica(
-            $changeset->original_source_uuid => $changeset->original_sequence_no );
+            $changeset->original_source_uuid,
+            $changeset->original_sequence_no );
     }
     if ( $changeset->source_uuid ) {
-        if ( $self->last_changeset_from_source( $changeset->source_uuid ) < $changeset->sequence_no ) {
-            $self->record_last_changeset_from_replica( $changeset->source_uuid => $changeset->sequence_no );
+        if ( $self->last_changeset_from_source(
+                $changeset->source_uuid ) < $changeset->sequence_no ) {
+            $self->record_last_changeset_from_replica(
+                $changeset->source_uuid => $changeset->sequence_no );
         }
     }
 }
@@ -995,8 +1038,9 @@ sub record_integration_of_changeset {
 sub record_last_changeset_from_replica {
     my $self = shift;
     my ($uuid, $sequence) = validate_pos(@_, 1,1);
-        return $self->store_local_metadata( 'last-changeset-from-' . $uuid => $sequence );
 
+    return $self->store_local_metadata(
+        'last-changeset-from-' . $uuid, $sequence );
 }
 
 =head2 routines which need to be implemented by any Prophet backend store

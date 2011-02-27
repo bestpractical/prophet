@@ -77,7 +77,10 @@ has changeset_cas => (
     },
 );
 
-has current_edit => ( is => 'rw', );
+has current_edit => (
+    is  => 'rw',
+    isa => 'Maybe[Prophet::ChangeSet]',
+);
 
 has current_edit_records => (
     is        => 'rw',
@@ -614,7 +617,11 @@ sub changesets_for_record {
 }
 
 
+=head2 begin_edit
 
+Creates a new L<Prophet::ChangeSet>, which new changes will be added to.
+
+=cut
 
 sub begin_edit {
     my $self = shift;
@@ -638,7 +645,6 @@ sub begin_edit {
     );
     $self->current_edit($changeset);
     $self->current_edit_records( [] );
-
 }
 
 sub _set_original_source_metadata_for_current_edit {

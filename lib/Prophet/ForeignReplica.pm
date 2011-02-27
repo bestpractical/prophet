@@ -18,30 +18,31 @@ records and so on.
 
 =cut
 
-sub fetch_local_metadata { my $self = shift;
+sub fetch_local_metadata {
+    my $self = shift;
     my $key = shift;
-    $self->app_handle->handle->fetch_local_metadata( $self->uuid . "-".$key )
+    return $self->app_handle->handle->fetch_local_metadata(
+       $self->uuid . "-".$key );
+}
 
-    }
-sub store_local_metadata { my $self = shift;
+sub store_local_metadata {
+    my $self = shift;
     my $key = shift;
     my $value = shift;
-   $self->app_handle->handle->store_local_metadata( $self->uuid."-".$key => $value);
-
-
-    }
-
-
-
+    return $self->app_handle->handle->store_local_metadata(
+       $self->uuid."-".$key => $value);
+}
 
 sub conflicts_from_changeset { return; }
 sub can_write_changesets     {1}
 
-sub record_resolutions { die "Resolution handling is not for foreign replicas" }
+sub record_resolutions {
+   die "Resolution handling is not for foreign replicas";
+}
 
 sub import_resolutions_from_remote_source {
     warn 'resdb not implemented yet';
-    return
+    return;
 }
 
 =head2 record_changes L<Prophet::ChangeSet>
@@ -49,7 +50,6 @@ sub import_resolutions_from_remote_source {
 Integrate all changes in this changeset.
 
 =cut
-
 
 sub record_changes {
     my $self = shift;
@@ -116,8 +116,10 @@ sub prompt_for_login {
     );
 
     # check if username is in config
-    my $replica_username_key     = 'replica.' . $self->scheme . ":" . $self->{url} . '.username';
-    my $replica_token_key        = 'replica.' . $self->scheme . ":" . $self->{url} . '.secret_token';
+    my $replica_username_key = 'replica.' . $self->scheme
+                                          .":" . $self->{url} . '.username';
+    my $replica_token_key    = 'replica.' . $self->scheme . ":"
+                                          . $self->{url} . '.secret_token';
 
     if ( !$args{username} ) {
         my $check_username
@@ -162,7 +164,6 @@ sub log {
     Carp::confess unless ($self->app_handle);
     $self->app_handle->log($self->url.": " .$msg);
 }
-
 
 no Any::Moose;
 __PACKAGE__->meta->make_immutable;
