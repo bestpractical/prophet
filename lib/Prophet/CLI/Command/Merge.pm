@@ -109,9 +109,6 @@ sub _do_merge {
         force => $self->has_arg('force'),
     );
 
-    local $| = 1;
-
-
     my $changesets = 0;
 
 
