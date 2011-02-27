@@ -79,12 +79,15 @@ Named parameters:
 
     uri
     username
+    password
     username_prompt
     secret_prompt
 
 To use the default prompts, which ask for a username and password, pass in
-C<uri> and (optionally) C<username>.  The username prompt will be skipped
-if a username is passed in.
+C<uri> and (optionally) C<username>.  Either prompt will be skipped if
+a value is passed in to begin, making this suitable for use in a login
+loop that prompts for values and then tests that they work for authentication,
+looping around if they don't.
 
 You can also override the default prompts by passing in subroutines for
 C<username_prompt> and/or C<secret_prompt>. These subroutines return strings
@@ -104,6 +107,7 @@ sub prompt_for_login {
     my %args = (
         uri             => undef,
         username        => undef,
+        password        => undef,
         secret_prompt   => sub {
             my ($uri, $username) = @_;
             return "Password for $username: @ $uri: ";
@@ -115,7 +119,7 @@ sub prompt_for_login {
         @_,
     );
 
-    # check if username is in config
+    # check if username and password are in config
     my $replica_username_key = 'replica.' . $self->scheme
                                           .":" . $self->{url} . '.username';
     my $replica_token_key    = 'replica.' . $self->scheme . ":"
@@ -126,8 +130,6 @@ sub prompt_for_login {
             = $self->app_handle->config->get( key => $replica_username_key );
         $args{username} = $check_username if $check_username;
     }
-
-    my $secret;
 
     my $was_in_pager = Prophet::CLI->in_pager();
     Prophet::CLI->end_pager();
@@ -144,18 +146,18 @@ sub prompt_for_login {
     if ( my $check_password
         = $self->app_handle->config->get( key => $replica_token_key ) )
     {
-        $secret = $check_password;
+        $args{password} = $check_password;
     }
-    else {
+    elsif ( !defined($args{password}) ) {
         print $args{secret_prompt}( $args{uri}, $args{username} );
         ReadMode 2;
-        chomp( $secret = ReadLine 0 );
+        chomp( $args{password} = ReadLine 0 );
         ReadMode 1;
         print "\n";
     }
     Prophet::CLI->start_pager() if ($was_in_pager);
 
-    return ( $args{username}, $secret );
+    return ( $args{username}, $args{password} );
 }
 
 sub log {
