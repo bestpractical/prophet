@@ -950,8 +950,6 @@ sub integrate_changes {
     my ($self, $changeset) = validate_pos( @_, {isa => 'Prophet::Replica'},
                                           { isa => 'Prophet::ChangeSet' } );
     $self->integrate_change($_, $changeset) for ( $changeset->changes );
-    use Data::Dump qw(pp);
-    # warn pp $changeset->changes;
 }
 
 =head2 integrate_change L<Prophet::Change> <Prophet::ChangeSet>
